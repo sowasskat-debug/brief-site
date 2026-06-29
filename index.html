@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Brief</title>
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Brief">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg:     #ffffff;
+  --gray1:  #f7f7f7;
+  --gray2:  #f0f0f0;
+  --rule:   #e2e2e2;
+  --muted:  #999999;
+  --text:   #0a0a0a;
+  --sub:    #2a2a2a;
+  --red:    #cc0000;
+  --amber:  #b45309;
+  --blue:   #1d4ed8;
+  --violet: #6d28d9;
+  --top-h:  58px;
+  --tab-h:  44px;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Space Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  overscroll-behavior: none;
+}
+
+/* ══ TOPBAR ══ */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+  background: #ffffff;
+  border-bottom: 3px solid #0a0a0a;
+  height: var(--top-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+}
+
+.logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px; font-weight: 400; font-style: italic;
+  color: #0a0a0a; letter-spacing: 0.5px; line-height: 1;
+}
+.logo-dot { color: var(--red); font-style: normal; }
+
+.topbar-date {
+  font-size: 7.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--muted); margin-top: 2px;
+}
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.live-pill {
+  display: flex; align-items: center; gap: 5px;
+  border: 1px solid var(--red); padding: 3px 8px; border-radius: 2px;
+}
+.live-dot {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--red);
+  animation: blink 1.4s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.live-text { font-size: 8px; font-weight: 700; letter-spacing: 2px; color: var(--red); }
+
+.refresh-btn {
+  width: 28px; height: 28px; border: 1px solid var(--rule);
+  border-radius: 2px; background: transparent; color: var(--muted);
+  font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.refresh-btn:active { color: var(--text); border-color: var(--text); }
+.refresh-btn.spinning { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══ DOSE TABS ══ */
+.dose-tabs {
+  position: fixed; top: var(--top-h); left: 0; right: 0; z-index: 59;
+  background: #ffffff;
+  height: var(--tab-h);
+  display: flex;
+  border-bottom: 1px solid var(--rule);
+  transform: translateY(0);
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.dose-tabs.hidden { transform: translateY(calc(-1 * var(--tab-h))); }
+
+.dose-tab {
+  flex: 1; border: none; border-right: 1px solid var(--rule);
+  background: #ffffff; cursor: pointer;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  position: relative; transition: background 0.15s;
+}
+.dose-tab:last-child { border-right: none; }
+.dose-tab:active { background: var(--gray1); }
+
+.tab-emoji { font-size: 13px; line-height: 1; }
+.tab-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 7.5px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); transition: color 0.15s;
+}
+
+.dose-tab.active { background: #ffffff; }
+.dose-tab.active .tab-label { color: var(--text); }
+.dose-tab.active::after {
+  content: ''; position: absolute;
+  bottom: 0; left: 0; right: 0; height: 3px;
+}
+.dose-tab.active.morning::after  { background: var(--amber); }
+.dose-tab.active.afternoon::after { background: var(--blue); }
+.dose-tab.active.evening::after  { background: var(--violet); }
+
+/* ══ SCROLL AREA ══ */
+.scroll-area {
+  margin-top: calc(var(--top-h) + var(--tab-h));
+  height: calc(100vh - var(--top-h) - var(--tab-h));
+  overflow-y: auto;
+  transition: margin-top 0.25s cubic-bezier(0.4,0,0.2,1),
+              height     0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.scroll-area.tabs-hidden {
+  margin-top: var(--top-h);
+  height: calc(100vh - var(--top-h));
+}
+
+/* ══ EDITION BAR ══ */
+.edition-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 16px; background: var(--gray1);
+  border-bottom: 1px solid var(--rule);
+}
+.edition-name {
+  font-size: 7.5px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+}
+.edition-time { font-size: 7.5px; color: var(--muted); letter-spacing: 1px; }
+
+/* ══ HERO CARD ══ */
+.hero-card {
+  padding: 20px 16px 16px; background: #ffffff;
+  border-bottom: 2px solid var(--text);
+  cursor: pointer; -webkit-user-select: none; user-select: none;
+}
+.hero-card:active { background: var(--gray1); }
+
+.hero-kicker {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.hero-flag { font-size: 15px; line-height: 1; }
+.hero-kicker-label {
+  font-size: 7.5px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+}
+.kicker-morning   { color: var(--amber); }
+.kicker-afternoon { color: var(--blue); }
+.kicker-evening   { color: var(--violet); }
+
+.hero-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 23px; font-weight: 400; line-height: 1.22;
+  letter-spacing: -0.2px; color: var(--text); margin-bottom: 14px;
+}
+
+.hero-footer {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hero-source {
+  font-size: 7.5px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+}
+.hero-arrow {
+  font-size: 14px; color: var(--muted);
+  transition: transform 0.2s, color 0.2s;
+}
+.hero-card.open .hero-arrow { transform: rotate(90deg); color: var(--text); }
+
+/* ══ DIVIDER ══ */
+.section-rule {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; background: var(--gray1);
+  border-bottom: 1px solid var(--rule);
+}
+.section-rule-line { flex: 1; height: 1px; background: var(--rule); }
+.section-rule-label {
+  font-size: 7px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+}
+
+/* ══ NEWS ITEM ══ */
+.news-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; background: #ffffff;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer; -webkit-user-select: none; user-select: none;
+}
+.news-item:active { background: var(--gray1); }
+
+.news-num {
+  font-size: 9px; font-weight: 700; color: var(--red);
+  flex-shrink: 0; margin-top: 2px; min-width: 18px; letter-spacing: 0.5px;
+}
+.news-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.news-flag { font-size: 13px; line-height: 1; }
+.news-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 15.5px; font-weight: 400; line-height: 1.3; color: var(--text);
+}
+.news-arrow {
+  font-size: 13px; color: var(--muted); flex-shrink: 0;
+  margin-top: 2px; transition: transform 0.2s, color 0.2s;
+}
+.news-item.open .news-arrow { transform: rotate(90deg); color: var(--text); }
+
+/* ══ SUB-ITEMS CONTAINER ══ */
+.sub-items-container {
+  display: none;
+  background: var(--gray1);
+  border-bottom: 1px solid var(--rule);
+  padding-left: 16px;
+}
+.hero-card.open + .sub-items-container,
+.news-item.open + .sub-items-container {
+  display: block;
+}
+
+.sub-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px 14px 0;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer; -webkit-user-select: none; user-select: none;
+}
+.sub-item:last-child { border-bottom: none; }
+.sub-item:active { opacity: 0.7; }
+.sub-item-flag { font-size: 13px; line-height: 1.2; flex-shrink: 0; }
+.sub-item-text {
+  flex: 1;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px; color: var(--sub); line-height: 1.45;
+}
+.sub-item-arrow {
+  font-size: 12px; color: var(--muted); flex-shrink: 0;
+  margin-top: 1px; transition: transform 0.2s, color 0.2s;
+}
+.sub-item.open .sub-item-arrow { transform: rotate(90deg); color: var(--text); }
+
+/* ══ EXPAND PANEL ══ */
+.card-expand {
+  display: none;
+  background: var(--gray1);
+  border-bottom: 1px solid var(--rule);
+  border-left: 3px solid var(--red);
+  padding: 18px 18px 20px 15px;
+}
+/* Bezpośrednie rozwinięcie dla samodzielnych postów */
+.hero-card.open + .card-expand,
+.news-item.open + .card-expand { 
+  display: block; 
+}
+/* Rozwinięcie wewnątrz grupy */
+.sub-item.open + .card-expand { 
+  display: block; 
+  margin-left: -16px; /* Niweluje padding rodzica */
+}
+
+.expand-article {
+  font-family: 'DM Serif Display', serif;
+  font-size: 15px; line-height: 1.78; color: var(--sub);
+}
+
+.expand-divider { height: 1px; background: var(--rule); margin: 14px 0; }
+
+.expand-source-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.expand-source-left { display: flex; align-items: center; gap: 6px; }
+.expand-source-tag {
+  font-size: 7px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+}
+.expand-sep { color: var(--rule); }
+.expand-source-name {
+  font-size: 7.5px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--text);
+}
+.expand-read-btn {
+  font-size: 7.5px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--red); text-decoration: none;
+  border: 1px solid var(--red); padding: 5px 10px; border-radius: 1px;
+}
+.expand-read-btn:active { background: var(--red); color: #fff; }
+
+/* ══ SKELETON ══ */
+.skel {
+  border-radius: 1px;
+  background: linear-gradient(90deg, #ebebeb 25%, #f5f5f5 50%, #ebebeb 75%);
+  background-size: 300% 100%; animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer { to { background-position: -300% 0; } }
+
+/* ══ TOAST ══ */
+.toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--text); color: #fff;
+  font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  padding: 9px 18px; border-radius: 1px;
+  border-left: 3px solid var(--red);
+  transition: transform 0.25s; white-space: nowrap; z-index: 300;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="logo">Brief<span class="logo-dot">.</span></div>
+    <div class="topbar-date" id="topbarDate">—</div>
+  </div>
+  <div class="topbar-right">
+    <div class="live-pill"><div class="live-dot"></div><div class="live-text">Live</div></div>
+    <button class="refresh-btn" id="refreshBtn" onclick="refresh()">↻</button>
+  </div>
+</div>
+
+<div class="dose-tabs" id="doseTabs">
+  <button class="dose-tab morning"   id="tab-morning"   onclick="switchDose('morning')">
+    <span class="tab-emoji">☀️</span><span class="tab-label">Poranna</span>
+  </button>
+  <button class="dose-tab afternoon" id="tab-afternoon" onclick="switchDose('afternoon')">
+    <span class="tab-emoji">🌤</span><span class="tab-label">Południowa</span>
+  </button>
+  <button class="dose-tab evening"   id="tab-evening"   onclick="switchDose('evening')">
+    <span class="tab-emoji">🌙</span><span class="tab-label">Wieczorna</span>
+  </button>
+</div>
+
+<div class="scroll-area" id="scrollArea">
+  <div id="content"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL  = 'TWOJ_SUPABASE_URL';
+const SUPABASE_ANON = 'TWOJ_SUPABASE_ANON_KEY';
+
+const DOSE_CFG = {
+  morning:   { edition:'Morning Edition',  kicker:'Top Story · Poranna',    kickerClass:'kicker-morning',   time:'09:00' },
+  afternoon: { edition:'Midday Edition',   kicker:'Top Story · Południowa',  kickerClass:'kicker-afternoon', time:'13:00' },
+  evening:   { edition:'Evening Edition',  kicker:'Top Story · Wieczorna',   kickerClass:'kicker-evening',   time:'17:00' },
+};
+
+const SAMPLE = {
+  morning: [
+    { flag:'🇸🇦', text:'Arabia Saudyjska i Kuwejt popierają porozumienie USA-Iran ws. nawigacji w Cieśninie Ormuz.', source_name:'Reuters', source_url:'#',
+      article:'Arabia Saudyjska i Kuwejt oficjalnie poparły projekt porozumienia między Stanami Zjednoczonymi a Iranem, który ma zagwarantować swobodny przepływ statków handlowych przez Cieśninę Ormuz. Ministrowie spraw zagranicznych obu krajów wydali wspólne oświadczenie po rozmowach w Rijadzie, podkreślając że stabilność szlaków morskich jest absolutnie kluczowa dla regionalnej gospodarki i globalnego eksportu ropy naftowej. Według dyplomatów bliskowschodnich porozumienie miałoby wejść w życie po podpisaniu przez USA i Iran wstępnego protokołu i zakładałoby rozmieszczenie obserwatorów morskich ONZ w kluczowych punktach cieśniny. Arabia Saudyjska wyraziła gotowość pośredniczenia w kolejnych rundach rozmów, co jest znaczącym krokiem biorąc pod uwagę historyczne napięcia saudyjsko-irańskie. Kuwejt, jako kraj bezpośrednio graniczący z wodami Zatoki Perskiej, od miesięcy lobbował za dyplomatycznym rozwiązaniem kryzysu nawigacyjnego. Analitycy rynku ropy oceniają, że normalizacja tranzytu przez Ormuz mogłaby obniżyć ceny surowca o 5-8 dolarów za baryłkę w ciągu kilku tygodni.' },
+    { flag:'🇪🇺', text:'Prezes Bundesbanku Nagel ostrzega przed drugą rundą inflacji w strefie euro.', source_name:'Bloomberg', source_url:'#',
+      article:'Joachim Nagel, prezes Bundesbanku i członek Rady Prezesów Europejskiego Banku Centralnego, wydał w środę poważne ostrzeżenie przed ryzykiem drugiej rundy inflacji w strefie euro. W przemówieniu we Frankfurcie Nagel podkreślił, że choć inflacja ogółem spada, inflacja bazowa pozostaje niepokojąco wysoka i wynosi wciąż ponad 2,8 proc. Prezes Bundesbanku wskazał na trzy główne ryzyka: rosnące płace w sektorze usług, niepewność dostaw ropy naftowej przez Ormuz oraz efekty drugiej rundy wynikające z indeksacji umów długoterminowych. Nagel zaznaczył, że obecna polityka EBC pozostaje neutralna i nie przesądza o kierunku kolejnych ruchów stóp, jednak bank musi zachować czujność. Jego komentarze zostały odebrane przez rynki jako jastrzębie, co spowodowało wzrost rentowności dwuletnich obligacji niemieckich o 8 punktów bazowych. Euro umocniło się do 1,092 wobec dolara bezpośrednio po publikacji wypowiedzi.' },
+    { flag:'🇺🇸', text:'USA i Iran finalizują wstępne rozmowy w Dosze przed podpisaniem porozumienia nuklearnego.', source_name:'AP News', source_url:'#',
+      article:'Dyplomaci Stanów Zjednoczonych i Iranu zakończyli drugą rundę rozmów wstępnych w Dosze, które mają utorować drogę do szerszego porozumienia nuklearnego. Według źródeł zbliżonych do negocjacji Qatar pełni rolę niezbędnego bufora umożliwiającego komunikację między stronami, które nie mają bezpośrednich stosunków dyplomatycznych. Głównym przedmiotem sporu pozostaje kwestia stopnia wzbogacania uranu: Iran domaga się prawa do wzbogacania do poziomu 20 proc. na własne potrzeby medyczne i energetyczne, podczas gdy USA nalegają na limit 3,67 proc. zgodny z oryginalnym porozumieniem JCPOA z 2015 roku. Strony osiągnęły wstępne porozumienie w kwestii harmonogramu znoszenia sankcji oraz mechanizmu weryfikacji przez MAEA. Kolejna runda rozmów zaplanowana jest na przyszły tydzień. Izrael wyraził zaniepokojenie tempem negocjacji, obawiając się że pośpiech może prowadzić do niewystarczających gwarancji bezpieczeństwa.' },
+    { flag:'🚢', text:'Incydent morski u wybrzeży Jemenu — UKMTO wydaje alert dla żeglugi na Morzu Czerwonym.', source_name:'BBC News', source_url:'#',
+      article:'Brytyjskie Centrum Zarządzania Handlem Morskim UKMTO wydało alert bezpieczeństwa po zgłoszeniu incydentu 14 mil morskich od południowego wybrzeża Jemenu. Statek handlowy pływający pod banderą Panamy poinformował o wykryciu niezidentyfikowanego obiektu podwodnego na kursie kolizyjnym, co zmusiło załogę do nagłej zmiany kursu i awaryjnego zwiększenia prędkości. Żaden członek załogi nie został ranny, a statek kontynuuje rejs do portu docelowego. To już trzeci podobny incydent w ciągu ostatnich siedmiu dni na tym odcinku Morza Czerwonego i Zatoki Adeńskiej. Siły koalicji morskiej Operation Prosperity Guardian wysłały okręt patrolowy w rejon incydentu. Huci dotychczas nie przyznali się do odpowiedzialności za zdarzenie, jednak eksperci wskazują na charakterystyczny modus operandi grupy.' },
+    { flag:'📊', text:'Chiny kupują waluty obce za rekordowe 92,6 mld juanów — Bank Ludowy broni kursu renminbi.', source_name:'Financial Times', source_url:'#',
+      article:'Państwowa Administracja Dewizowa Chin opublikowała dane pokazujące, że w maju Bank Ludowy Chin przeprowadził netto zakupy walut obcych na rekordowym poziomie 92,6 miliarda juanów, co odpowiada około 12,8 miliarda dolarów. Jest to najwyższy miesięczny poziom interwencji walutowej od co najmniej trzech lat i wyraźny sygnał, że Pekin aktywnie broni kursu renminbi przed dalszą deprecjacją wobec dolara. Kurs USD/CNY oscylował w okolicach 7,26, bliżej dolnej granicy dopuszczalnego pasma wahań wyznaczonego przez bank centralny. Analitycy z Goldman Sachs oceniają, że skala interwencji odzwierciedla obawy władz przed negatywnym wpływem słabej waluty na nastroje konsumentów i zaufanie inwestorów zagranicznych. Dane zbiegły się w czasie z rozczarowującymi wynikami chińskiego eksportu za maj, który wzrósł zaledwie o 1,2 proc. rok do roku wobec oczekiwanych 2,8 proc.' },
+    { flag:'⚓', text:'Miny morskie w Ormuz: Lloyd\'s of London podnosi składki o 15 proc., alternatywne trasy drożeją.', source_name:'Deutsche Welle', source_url:'#',
+      article:'Wiodące towarzystwa ubezpieczeniowe skupione wokół Lloyd\'s of London ogłosiły kolejną podwyżkę składek ubezpieczeniowych dla statków przepływających przez Cieśninę Ormuz — tym razem o 15 procent w stosunku do poprzedniego miesiąca. Łącznie od początku roku koszty ubezpieczenia tranzytu przez Ormuz wzrosły o ponad 65 procent. Eksperci wojskowomorscy szacują, że w wodach cieśniny i przyległych akwenach może znajdować się od 12 do 18 nieoznakowanych min morskich. Największe firmy żeglugowe, w tym Maersk i MSC, potwierdziły że utrzymują alternatywne trasy przez Przylądek Dobrej Nadziei mimo że wydłużają czas dostaw o 10-14 dni i znacząco zwiększają koszty paliwa. Niemieckie Stowarzyszenie Armatorów szacuje, że dotychczasowe zakłócenia żeglugi kosztowały europejski handel co najmniej 2,3 miliarda euro w samym pierwszym kwartale roku.' },
+    { flag:'🇮🇹', text:'Włochy notują nadwyżkę handlową z UE na poziomie 316 mln euro — eksport maszyn i żywności winduje wyniki.', source_name:'Reuters', source_url:'#',
+      article:'Włoski Narodowy Instytut Statystyczny ISTAT opublikował dane wskazujące, że w kwietniu Włochy osiągnęły nadwyżkę handlową w relacjach z Unią Europejską na poziomie 316 milionów euro. To wynik powyżej oczekiwań analityków, którzy prognozowali nadwyżkę w okolicach 200 milionów euro. Głównym motorem wzrostu był eksport maszyn przemysłowych, który zwiększył się o 7,2 proc. rok do roku, oraz produktów spożywczych i napojów, które zanotowały wzrost o 9,4 proc. Eksport odzieży i wyrobów luksusowych natomiast lekko rozczarował, rosnąc o zaledwie 2,1 proc. wskutek osłabionego popytu z Chin. Ekonomiści zwracają uwagę, że mimo solidnych wyników eksportowych włoska gospodarka pozostaje pod presją wysokich kosztów energii, które w przemyśle są o 28 proc. wyższe niż przed kryzysem energetycznym z 2022 roku. Oczekuje się, że Banca d\'Italia w swoim kwartalnym raporcie obniży prognozę wzrostu PKB na cały rok.' },
+  ],
+  afternoon: [
+    { flag:'🤝', text:'Trump i Zełenski rozmawiają o zakończeniu wojny i uzgadniają spotkanie na szczycie G7 we Włoszech.', source_name:'AP News', source_url:'#',
+      article:'Prezydenci Donald Trump i Wołodymyr Zełenski odbyli w środę blisko 90-minutową rozmowę telefoniczną poświęconą możliwym ścieżkom zakończenia konfliktu zbrojnego w Ukrainie, co potwierdziły rzeczniczki obu Białych Domów. Trump po raz pierwszy publicznie zaproponował konkretne ramy czasowe dla negocjacji pokojowych, sugerując że wstępne zawieszenie broni mogłoby zostać osiągnięte w ciągu 90 dni przy odpowiednim zaangażowaniu dyplomatycznym. Zełenski wyraził gotowość do rozmów, jednak podkreślił, że Ukraina nie zaakceptuje żadnego porozumienia wymagającego rezygnacji z integralności terytorialnej lub suwerenności. Obaj przywódcy uzgodnili bezpośrednie spotkanie na marginesie szczytu G7 we włoskiej Apulii. Kijów oczekuje konkretnych gwarancji bezpieczeństwa, w tym zobowiązań NATO lub wielostronnych gwarancji ze strony mocarstw zachodnich jako warunku wstępnego jakichkolwiek formalnych negocjacji z Moskwą. Kreml na razie nie skomentował doniesień o rozmowie.' },
+    { flag:'🇮🇳', text:'Indie i USA finalizują umowę handlową z cięciami ceł w technologii, farmacji i rolnictwie.', source_name:'Reuters', source_url:'#',
+      article:'Negocjatorzy handlowi Indii i Stanów Zjednoczonych są na finiszu rozmów dotyczących kompleksowej tymczasowej umowy handlowej, której podpisanie może nastąpić podczas planowanej wizyty premiera Narendry Modiego w Waszyngtonie w przyszłym miesiącu. Zgodnie z informacjami z kręgów rządowych obu krajów porozumienie miałoby obejmować obniżki ceł na indyjskie wyroby farmaceutyczne eksportowane do USA nawet o 40 procent oraz redukcję indyjskich taryf na amerykańskie dobra technologiczne i półprzewodniki o 25-30 procent. Sektor rolniczy pozostaje najtrudniejszym do uzgodnienia elementem negocjacji: USA naciskają na większy dostęp dla amerykańskiej soi i kukurydzy, co spotyka się z oporem ze strony indyjskich lobbystów rolniczych. Administracja Bidena postrzega umowę jako strategiczny element zacieśniania więzi z Indiami w obliczu chińskiej ekspansji gospodarczej w regionie Indopacyfiku. Waszyngton liczy, że porozumienie przyczyni się do przekierowania łańcuchów dostaw z Chin do Indii.' },
+    { flag:'🛢️', text:'OPEC+ zwołuje nadzwyczajne spotkanie po spadku Brent poniżej 70 USD — Arabia Saudyjska naciska na cięcia.', source_name:'Bloomberg', source_url:'#',
+      article:'Organizacja Krajów Eksportujących Ropę Naftową i jej sojusznicy skupieni w formule OPEC+ zdecydowali o zwołaniu nadzwyczajnego wirtualnego posiedzenia na przyszły tydzień w związku ze spadkiem cen ropy Brent poniżej 70 dolarów za baryłkę po raz pierwszy od ponad roku. Cena surowca znalazła się pod presją rozczarowujących danych o popycie z Chin oraz rosnących zapasów w USA. Arabia Saudyjska, główny eksporter kartelu, sygnalizuje gotowość do pogłębienia obowiązujących cięć produkcji o dodatkowe 500 tysięcy baryłek dziennie. Rosja wykazuje mniejszy entuzjazm dla nowych redukcji, gdyż jej bieżące cięcia są częściowo nieuznawane przez rynki ze względu na podejrzenia o niestosowanie się do uzgodnionych limitów. Irak i Kazachstan, które historycznie przekraczały swoje limity produkcyjne, zostały wezwane do przedstawienia planów wyrównawczych. Analitycy oceniają, że dodatkowe cięcia mogłyby ustabilizować ceny w przedziale 72-75 dolarów.' },
+    { flag:'🇮🇶', text:'Irak i Liban z nadzieją na porozumienie USA-Iran — Bagdad gotowy przyjąć rolę stałego mediatora.', source_name:'Al Jazeera', source_url:'#',
+      article:'Rządy Iraku i Libanu wydały odrębne oświadczenia wyrażające pozytywną ocenę doniesień o zbliżającym się porozumieniu między Stanami Zjednoczonymi a Iranem. Premier Iraku Mohammed al-Sudani zaproponował nawet, że Bagdad jest gotowy przyjąć rolę stałego centrum dialogu bliskowschodniego i zaoferował iracką ziemię jako miejsce przyszłych bezpośrednich rozmów USA-Iran. Liban, którego gospodarka od lat jest zakładnikiem napięć regionalnych, postrzega ewentualne porozumienie jako szansę na odcięcie Hezbollahu od irańskich dostaw broni i finansowania. Analitycy zwracają jednak uwagę na paradoks: stabilizacja Iranu może jednocześnie wzmocnić polityczną pozycję proirańskich partii politycznych w obu krajach. Izrael wyraził poważne zastrzeżenia wobec zbyt pochopnego zawierania porozumień z Teheranem, które mogłyby nie zawierać wystarczających gwarancji dotyczących irańskiego programu rakietowego i działalności proxy w regionie.' },
+    { flag:'📈', text:'Fed utrzymuje stopy: rynki wyceniają 72 proc. szans na obniżkę w lipcu po konferencji Powella.', source_name:'Financial Times', source_url:'#',
+      article:'Federalny Komitet Otwartego Rynku Stanów Zjednoczonych jednogłośnie utrzymał stopy procentowe w docelowym przedziale 5,25-5,50 proc., co było zgodne z oczekiwaniami wszystkich 47 ekonomistów ankietowanych przez Reuters. Największe zainteresowanie wzbudziła konferencja prasowa przewodniczącego Jerome Powella, podczas której wyraźnie zmienił ton w porównaniu z poprzednim posiedzeniem. Powell przyznał, że ostatnie dane o inflacji są zachęcające i wskazał, że bank centralny potrzebuje już tylko jednego lub dwóch kolejnych raportów potwierdzających spadający trend przed podjęciem decyzji o obniżce. Rynki kontraktów terminowych wyceniły prawdopodobieństwo obniżki na posiedzeniu w lipcu na 72 procent, wzrost z 45 procent notowanych przed konferencją. Indeks S&P 500 wzrósł o 1,3 procent, a rentowność 10-letnich obligacji skarbowych USA spadła o 12 punktów bazowych do poziomu 4,18 proc. Dolar osłabił się wobec euro i funta.' },
+    { flag:'🇮🇳', text:'Indie i Wielka Brytania na ostatniej prostej negocjacji FTA — kwestia whisky i wiz kluczowym impasem.', source_name:'BBC News', source_url:'#',
+      article:'Negocjatorzy Indii i Wielkiej Brytanii weszli w decydującą fazę rozmów nad wieloletnią dwustronną umową o wolnym handlu (FTA), która jest jednym z priorytetów handlowych rządu Rishi Sunaka od jego objęcia urzędu w 2022 roku. Kluczowym nierozwiązanym problemem pozostaje kwestia ceł na szkocką whisky, którą Indie obciążają 150-procentową taryfą, a Londyn domaga się jej stopniowej redukcji do 75, a docelowo 40 procent. Po indyjskiej stronie największy opór budzą żądania liberalizacji wiz dla brytyjskich specjalistów oraz ochrona lokalnego przemysłu motoryzacyjnego przed tańszymi brytyjskimi samochodami. Obie strony deklarują, że finalizacja umowy jest możliwa przed sierpniową przerwą parlamentarną, jednak wewnętrzni krytycy w obu krajach ostrzegają, że presja czasowa może prowadzić do niedoskonałych kompromisów. Szacuje się, że pełne FTA mogłoby zwiększyć dwustronną wymianę handlową z obecnych 36 miliardów funtów do 50 miliardów funtów rocznie do 2030 roku.' },
+    { flag:'🌍', text:'G7 uzgadnia pakiet sankcji wobec Rosji wartości 50 mld USD z nowym mechanizmem egzekwowania.', source_name:'AP News', source_url:'#',
+      article:'Przywódcy grupy G7 ogłosili osiągnięcie porozumienia w sprawie bezprecedensowego pakietu sankcji wymierzonych w rosyjską gospodarkę, których łączna szacowana wartość oddziaływania ma wynieść 50 miliardów dolarów. Pakiet obejmuje cztery główne elementy: rozszerzenie embarga naftowego na rosyjskie produkty rafineryjne, zamrożenie kolejnych 15 miliardów dolarów aktywów rosyjskich oligarchów i instytucji powiązanych z Kremlem, nowe ograniczenia dla banków z siedzibą w krajach trzecich obsługujących rosyjski handel zagraniczny oraz zakaz eksportu do Rosji zaawansowanych technologii produkcji półprzewodników. Po raz pierwszy G7 uzgodniła też wspólny mechanizm egzekwowania sankcji, który ma zapobiegać ich obchodzeniu przez kraje trzecie. Rosja zapowiedział odwetowe działania gospodarcze, w tym możliwe zamrożenie aktywów zachodnich firm wciąż działających na rosyjskim rynku.' },
+  ],
+  evening: [
+    {
+      flag: '⚔️', text: 'Chaos wokół rozejmu: Trump ogłasza pokój, Izrael kontynuuje ataki na Liban.',
+      subItems: [
+        {
+           flag: '🇺🇸', text: 'Trump: Izrael i Hezbollah uzgodniły pokój. Reuters: nie widać jego oznak.',
+           source_name: 'Reuters',
+           article: 'Donald Trump wywołał potężne zamieszanie na arenie międzynarodowej, ogłaszając na swojej platformie społecznościowej, że Izrael i Hezbollah zawarły kompleksowe porozumienie pokojowe, które natychmiast weszło w życie. Według kandydata na prezydenta USA, to jego zakulisowe działania doprowadziły do deeskalacji. Jednakże dziennikarze agencji Reuters przebywający na miejscu stanowczo zaprzeczyli tym doniesieniom, raportując, że na granicy libańsko-izraelskiej nie widać żadnych oznak wstrzymania ognia. Walki artyleryjskie i naloty trwają z niesłabnącą siłą. Przedstawiciele Białego Domu odmówili komentarza do wpisów Trumpa, nazywając je "niebezpieczną dezinformacją polityczną". Sztab republikański utrzymuje natomiast, że umowa jest na stole, ale jest sabotowana przez obecną administrację.'
+        },
+        {
+           flag: '🇱🇧', text: 'Izrael nie ustępuje: Wypowiedzi Netanjahu, ofiary i groźby zrównania Libanu z ziemią.',
+           source_name: 'AFP',
+           article: 'Mimo doniesień o rzekomym pokoju, rzeczywistość na Bliskim Wschodzie staje się coraz bardziej brutalna. Francuska agencja prasowa AFP poinformowała o kolejnym zmasowanym ataku izraelskiego lotnictwa na Liban, w wyniku którego zginęło co najmniej 16 osób, w tym cywile. Premier Benjamin Netanjahu uciął wszelkie spekulacje pokojowe, oświadczając, że "izraelskie siły zbrojne pozostaną w Libanie tak długo, jak to konieczne". Sytuację zaognił dodatkowo izraelski minister obrony, który w publicznej wypowiedzi stwierdził szokująco, że "cały Liban musi spłonąć", aby wyeliminować infrastrukturę terrorystów. Te radykalne stanowiska wywołały natychmiastowe potępienie ze strony społeczności międzynarodowej, w tym czołowych dyplomatów Unii Europejskiej.'
+        },
+        {
+           flag: '🇮🇷', text: 'MSZ Iranu Araghci: "Ludobójcza sekta śmierci w Tel Awiwie stanowi zagrożenie dla ludzkości".',
+           source_name: 'Al Jazeera',
+           article: 'Minister spraw zagranicznych Iranu, Abbas Araghchi, wystosował jedno z najostrzejszych oświadczeń dyplomatycznych w najnowszej historii bliskowschodniego konfliktu. Podczas konferencji w Teheranie nazwał izraelski rząd "ludobójczą sektą śmierci urzędującą w Tel Awiwie". Araghchi argumentował, że brutalne działania militarne Izraela w Libanie oraz kontynuacja walk na innych frontach stanowią bezpośrednie, egzystencjalne zagrożenie dla całej ludzkości. Irański dyplomata wezwał Organizację Narodów Zjednoczonych do nałożenia miażdżących sankcji gospodarczych i militarnej izolacji Izraela. Wystąpienie to wskazuje na całkowite zamrożenie jakichkolwiek prób łagodzenia napięć dyplomatycznych w regionie.'
+        }
+      ]
+    },
+    {
+      flag: '🚢', text: 'Zabezpieczenie Cieśniny Ormuz i astronomiczne koszty działań Pentagonu.',
+      subItems: [
+        {
+           flag: '🇺🇸', text: 'Pentagon: wojna w Iranie kosztowała już 80 mld $. Zabezpieczymy żeglugę w Ormuz.',
+           source_name: 'The Wall Street Journal',
+           article: 'Rzecznik Departamentu Obrony Stanów Zjednoczonych przedstawił przed komisją Kongresu zaktualizowany raport dotyczący kosztów amerykańskiego zaangażowania militarnego na Bliskim Wschodzie. Wynika z niego, że operacje związane z szeroko pojętym zapobieganiem konfliktom w Iranie oraz zabezpieczaniem kluczowych szlaków logistycznych kosztowały już amerykańskich podatników zawrotną kwotę 80 miliardów dolarów. Mimo tych astronomicznych wydatków, Pentagon stanowczo potwierdził, że Marynarka Wojenna USA pozostanie w pełnej gotowości bojowej. Zapewnienie bezpieczeństwa międzynarodowej żeglugi w Cieśninie Ormuz pozostaje dla Waszyngtonu priorytetem o strategicznym znaczeniu dla stabilności globalnych cen energii.'
+        },
+        {
+           flag: '🇮🇷', text: 'Statki zwolnione z opłat, ale zobowiązane do informowania o tranzycie 48h wcześniej.',
+           source_name: 'Lloyd\'s List',
+           article: 'Nowy, rygorystyczny reżim nawigacyjny w rejonie Cieśniny Ormuz zaczyna funkcjonować w praktyce. Jak informują międzynarodowe agencje żeglugowe, statki handlowe zostały tymczasowo zwolnione z wnoszenia dodatkowych opłat tranzytowych przez okres najbliższych 60 dni w geście "dobrej woli". Warunkiem koniecznym do bezproblemowego przepłynięcia jest jednak bezwzględne przesłanie oficjalnej prośby o zgodę z dokładnie 48-godzinnym wyprzedzeniem. System wydaje się powoli normować ruch morski — według oficjalnych rejestrów, w ciągu zaledwie jednej doby przez ten newralgiczny szlak wodny bezpiecznie przepłynęło 25 wielkogabarytowych jednostek. Branża logistyczna ostrożnie liczy na trwałe unormowanie sytuacji u wybrzeży Półwyspu Arabskiego.'
+        }
+      ]
+    },
+    {
+      flag: '🏛', text: 'Strategiczne rezerwy państwowe: NBP i Rosja intensywnie gromadzą złoto.',
+      subItems: [
+        {
+           flag: '🇵🇱', text: 'NBP: zasoby złota rosną do 613,9 tony. Polska w czołówce państw z rezerwami kruszcu.',
+           source_name: 'Narodowy Bank Polski',
+           article: 'Narodowy Bank Polski kontynuuje niezwykle agresywną strategię dywersyfikacji narodowych rezerw finansowych. Zgodnie z oficjalnym komunikatem instytucji, zasoby fizycznego złota zgromadzone przez NBP wzrosły do imponującego poziomu 613,9 tony. Jest to świadome działanie zarządu banku centralnego, mające na celu zabezpieczenie długoterminowej siły polskiego złotego w dobie bezprecedensowej niepewności geopolitycznej w Europie. Masowe zakupy kruszcu realizowane systematycznie w ostatnich miesiącach windują Polskę do absolutnej czołówki państw pod względem wielkości posiadanych rezerw metali szlachetnych, co stanowi mocny sygnał stabilności dla rynków finansowych i zagranicznych agencji ratingowych.'
+        },
+        {
+           flag: '🇷🇺', text: 'Rosja posiada obecnie gigantyczne rezerwy wynoszące 2292,3 tony złota.',
+           source_name: 'Bloomberg',
+           article: 'Federalna Służba Statystyki Państwowej w Moskwie potwierdziła najnowsze dane dotyczące rezerw surowcowych Federacji Rosyjskiej. Według ujawnionych raportów, zasoby złota należące do rosyjskiego banku centralnego wynoszą obecnie gigantyczne 2292,3 tony, co czyni z Rosji jednego z największych posiadaczy tego kruszcu na planecie. Rezerwy te pełnią kluczową rolę w rosyjskiej strategii przetrwania w warunkach drastycznych, zachodnich sankcji gospodarczych i odcięcia od międzynarodowego systemu rozliczeń SWIFT. Kreml konsekwentnie wykorzystuje kruszec jako zabezpieczenie handlu na rynkach azjatyckich, skutecznie omijając finansową blokadę narzuconą przez państwa zrzeszone w grupie G7.'
+        }
+      ]
+    },
+    {
+      flag: '🇵🇱', text: 'Koszty życia w Polsce: Obowiązkowe ceny mieszkań i droższe paliwa.',
+      subItems: [
+        {
+           flag: '🏠', text: 'Sejm nakazuje developerom publikację cen nieruchomości na dane.gov.pl.',
+           source_name: 'Business Insider Polska',
+           article: 'Sejm Rzeczypospolitej Polskiej przegłosował przełomową nowelizację, która ma ukrócić spekulacje na rozgrzanym rynku nieruchomości. Nowe przepisy wprowadzają bezwzględny obowiązek prawny dla wszystkich firm deweloperskich, polegający na systematycznym publikowaniu ostatecznych, transakcyjnych cen każdego sprzedanego mieszkania. Wszystkie dane będą musiały bezwzględnie trafiać bezpośrednio na otwarty, rządowy portal dane.gov.pl, co stworzy weryfikowalny rejestr rynkowy dla każdego obywatela. Ministerstwo Rozwoju argumentuje, że ten bezprecedensowy krok pozwoli złamać asymetrię informacyjną i położy kres procederowi sztucznego zawyżania stawek w cennikach ofertowych, z którym borykają się od miesięcy młode rodziny.'
+        },
+        {
+           flag: '⛽', text: 'Ceny paliw rosną. Powrót podatku VAT podniesie stawki na stacjach.',
+           source_name: 'Autokult',
+           article: 'Polscy kierowcy muszą przygotować się na uderzenie po kieszeniach na stacjach benzynowych w kluczowym momencie przedwakacyjnych wyjazdów. Najnowsze analityczne prognozy rynkowe wskazują, że średnie ceny detaliczne do 22 czerwca ukształtują się na wysokim poziomie 5,94 zł za litr popularnej benzyny Pb95 oraz 6,12 zł za litr oleju napędowego (ON). Sytuację drastycznie pogarsza oficjalne potwierdzenie, że rządowa tarcza antyinflacyjna nie zostanie wydłużona, co oznacza nieunikniony i bardzo szybki powrót standardowej, 23-procentowej stawki podatku VAT na paliwa silnikowe. Eksperci z branży logistycznej alarmują, że gwałtowny skok kosztów transportu natychmiast przełoży się na wzrost cen produktów w sklepach detalicznych.'
+        }
+      ]
+    },
+    {
+      flag: '🇮🇹', text: 'Dyplomatyczny kryzys: Włochy odwołują wizytę w USA po kpinach Trumpa.',
+      subItems: [
+        {
+           flag: '🇮🇹', text: 'Trump wyśmiewa Premier Meloni, MSZ Włoch odwołuje zaplanowaną wizytę.',
+           source_name: 'Corriere della Sera',
+           article: 'Rozłam pomiędzy dwojgiem kluczowych polityków konserwatywnych na świecie przerodził się w oficjalny kryzys państwowy. Włoskie Ministerstwo Spraw Zagranicznych podjęło radykalną, niespotykaną w stosunkach z sojusznikami decyzję o anulowaniu dawno zaplanowanej delegacji rządowej do Stanów Zjednoczonych. Krok ten jest bezpośrednią reakcją władz w Rzymie na wywiad telewizyjny Donalda Trumpa, w którym z kpiną wyśmiewał on premier Giorgię Meloni, twierdząc, że "błagała" go o wspólne zdjęcie na szczycie G7. Włoski rząd potraktował tę arogancką retorykę jako niedopuszczalne pogwałcenie protokołu dyplomatycznego i znieważenie godności państwa włoskiego, zamrażając strategiczne dwustronne relacje w kluczowym dla NATO momencie.'
+        },
+        {
+           flag: '🇺🇸', text: 'Trump twardo o swojej dyplomacji: "Nie zawarłem porozumienia z desperacji".',
+           source_name: 'Fox News',
+           article: 'W obliczu zmasowanej, rosnącej krytyki dotyczącej jego polityki zagranicznej oraz zarzutów o dążenie do niekorzystnych dla sojuszników kompromisów, Donald Trump wydał kategoryczne oświadczenie obronne. Kandydat na prezydenta USA stanowczo odrzucił narrację politycznych przeciwników, jakoby jego inicjatywy mediacyjne na arenie międzynarodowej wynikały z jakiejkolwiek słabości. "Nigdy nie zawarłem Porozumienia z desperacji i nie zamierzam tego robić" — oświadczył, broniąc swojej strategii opartej wyłącznie na twardych, bezwzględnych kalkulacjach biznesowych i prymacie interesów amerykańskich. Zapewnił swoich lojalnych wyborców, że to obecna administracja w Waszyngtonie kompromituje wizerunek Stanów Zjednoczonych uległością.'
+        }
+      ]
+    },
+    {
+      flag: '🇺🇦', text: 'Trwa potężny atak ukraińskich dronów na obwód moskiewski.',
+      source_name: 'The Guardian',
+      article: 'Władze Federacji Rosyjskiej mierzą się obecnie z najpoważniejszym atakiem na terytorium stolicy od początku trwania zbrojnego konfliktu. Siły zbrojne Ukrainy przypuściły zmasowane, niespodziewane uderzenie przy użyciu dziesiątek nowoczesnych bezzałogowców dalekiego zasięgu, biorąc na cel strategiczną infrastrukturę przemysłową w samej Moskwie oraz gęsto zaludnionym obwodzie moskiewskim. Niezależne agencje prasowe donoszą o głośnych eksplozjach, pożarach w zakładach zbrojeniowych oraz ogólnej panice wśród cywilnych mieszkańców. Rosyjskie systemy obrony przeciwlotniczej pracują na najwyższych obrotach, próbując przechwycić nadlatujące roje dronów. Ze względów bezpieczeństwa narodowego wstrzymano całkowicie cywilny ruch lotniczy na wszystkich głównych moskiewskich lotniskach, co paraliżuje transport.'
+    },
+    {
+      flag: '🇨🇳', text: 'Chiny wstrzymują eksport indu, kluczowego pierwiastka dla elektroniki.',
+      source_name: 'Financial Times',
+      article: 'Rząd w Pekinie wytoczył najpotężniejsze jak dotąd działo w narastającej, globalnej wojnie technologicznej ze Stanami Zjednoczonymi. Chińskie Ministerstwo Handlu niespodziewanie ogłosiło całkowite i bezwzględne wstrzymanie eksportu indu — niezwykle rzadkiego pierwiastka chemicznego. Chiny posiadają niemal absolutny, światowy monopol na ten surowiec, kontrolując zdecydowaną większość jego wydobycia i rafinacji. Pierwiastek ten jest absolutnie niezastąpiony w masowej produkcji nowoczesnych ekranów dotykowych OLED, paneli fotowoltaicznych oraz wysokowydajnych półprzewodników. Ta odwetowa decyzja wywoła natychmiastowy paraliż w zachodnich łańcuchach dostaw dla branży high-tech, prowadząc do drastycznych braków na rynkach i potężnego wzrostu cen elektroniki użytkowej konsumenckiej na całym świecie.'
+    },
+    {
+      flag: '🇩🇪', text: 'Zarząd Volkswagena ocenia stan firmy jako "krytyczny". Czekają nas cięcia.',
+      source_name: 'Handelsblatt',
+      article: 'Doszło do bezprecedensowego wstrząsu w najważniejszej gałęzi potężnego, niemieckiego przemysłu motoryzacyjnego. Zarząd Volkswagen AG, największego producenta samochodów w całej Europie, zwołał w trybie pilnym zamknięte spotkanie kryzysowe z inwestorami oraz wpływową radą zakładową. Podczas dramatycznej prezentacji oficjalnie i bez owijania w bawełnę oceniono obecny stan finansowy oraz operacyjny całego koncernu jako "krytyczny", wprost wskazując na realne zagrożenie dla bytu przedsiębiorstwa. Katastrofalne załamanie wyników sprzedaży na rynku chińskim, bolesne opóźnienia technologiczne w oprogramowaniu modeli z rodziny ID oraz niebotyczne koszty produkcji w krajowych fabrykach doprowadziły rentowność na skraj głębokiego załamania. Prezes firmy poinformował, że nie ma wyjścia i musi wdrożyć brutalny, radykalny program restrukturyzacji, który prawdopodobnie obejmie masowe zwolnienia.'
+    },
+    {
+      flag: '🤖', text: 'Polski rząd sfinansuje aż 50% kosztów projektów związanych ze sztuczną inteligencją.',
+      source_name: 'Puls Biznesu',
+      article: 'Polski rząd oficjalnie ogłosił niezwykle ambitny, miliardowy program bezpośredniego wsparcia dla rodzimej, innowacyjnej branży nowych technologii. Zgodnie z zapowiedziami płynącymi z Ministerstwa Cyfryzacji, uruchomiony zostanie wkrótce specjalny, potężny fundusz celowy, który będzie bezpowrotnie finansował aż do 50% całkowitych kosztów operacyjnych, wdrożeniowych i badawczych dla krajowych projektów związanych z implementacją i rozwojem algorytmów Sztucznej Inteligencji (AI). Program ma nadrzędny cel: natychmiastowe zahamowanie drenażu najlepszych mózgów z polskich uniwersytetów i przyciągnięcie z powrotem innowacyjnych start-upów, które dotychczas szukały hojnego kapitału w Dolinie Krzemowej. Dofinansowaniem mają zostać objęte nie tylko gigantyczne korporacje, ale również zwinne małe i średnie przedsiębiorstwa automatyzujące swoje codzienne procesy produkcyjne.'
+    },
+    {
+      flag: '🇪🇺', text: 'Lider niemieckiej opozycji Friedrich Merz odrzuca nową propozycję budżetu UE.',
+      source_name: 'Der Spiegel',
+      article: 'Friedrich Merz, wiodący lider potężnej niemieckiej opozycyjnej partii CDU, wytoczył najcięższe działa przeciwko brukselskim planom solidarności finansowej w ramach Unii. Podczas burzliwej, zaciętej debaty w gmachu Bundestagu kategorycznie odrzucił najnowszą, forsowaną propozycję wieloletnich ram budżetowych Unii Europejskiej. Lider chadeków bez wahania nazwał unijny projekt finansowy "całkowicie nie do przyjęcia, skandalicznym i szkodliwym" z punktu widzenia portfela przeciętnego niemieckiego podatnika. Merz stanowczo sprzeciwia się jakimkolwiek dalszym mechanizmom bezpowrotnego uwspólnotowienia europejskiego długu oraz żądaniom drastycznego, niesprawiedliwego zwiększenia składek członkowskich ze strony Berlina. Stanowisko to jednoznacznie zwiastuje zablokowanie negocjacji w Radzie, jeżeli CDU zgodnie z prognozami zwycięży w nadchodzących wkrótce wyborach parlamentarnych u naszych zachodnich sąsiadów.'
+    },
+    {
+      flag: '🇨🇭', text: 'Szwajcarska Agrola zamyka wszystkie stacje tankowania ekologicznego wodoru.',
+      source_name: 'Neue Zürcher Zeitung',
+      article: 'To wyjątkowo czarny i pesymistyczny dzień dla głównych europejskich wizjonerów i lobbystów zeroemisyjnego, całkowicie ekologicznego transportu ciężkiego w Europie. Szwajcarski, narodowy potentat energetyczny, renomowana firma Agrola, wydał szokujący opinię publiczną komunikat o trwałym i natychmiastowym zamknięciu całej swojej sieci innowacyjnych stacji tankowania wodoru. Zarząd spółki w oficjalnym stanowisku w ogóle nie ukrywa, że ta drastyczna decyzja została podyktowana druzgocącym i strukturalnym brakiem jakiejkolwiek rentowności całego wodorowego przedsięwzięcia na rynku. Rozbudowa niezwykle wymagającej infrastruktury pod ciśnieniem okazała się biznesową studnią bez dna z powodu astronomicznych kosztów serwisu, a realny popyt na to paliwo praktycznie nie istnieje wobec gwałtownego rozwoju pojazdów w pełni elektrycznych (BEV).'
+    },
+    {
+      flag: '🌱', text: 'Sukces rolnictwa w UE: Polska zajmuje 1. miejsce w wymianie pokoleniowej.',
+      source_name: 'Rzeczpospolita',
+      article: 'Polska administracja rządowa może oficjalnie odtrąbić gigantyczny, poparty twardymi danymi sukces na trudnej arenie rolniczej Unii Europejskiej. Najnowsze, niezwykle szczegółowe dane zaprezentowane przez unijny urząd Eurostat jednoznacznie potwierdzają, że Polska zajęła zaszczytne, bezapelacyjne pierwsze miejsce w całej wspólnocie pod względem dynamiki i skuteczności wymiany pokoleniowej w wielkoskalowym sektorze rolniczym. Dzięki potężnym, celowym zastrzykom gotówki z unijnych programów bezzwrotnego wsparcia finansowego, dziesiątki tysięcy innowacyjnych, świetnie wykształconych menedżerów przejęło gospodarstwa. Wdrażają oni na wsiach rewolucyjne rozwiązania, takie jak rolnictwo precyzyjne oparte na danych i automatyzację maszyn. Uchroniło to polską prowincję przed losem Europy Zachodniej, gdzie wsie wyludniają się z braku następców do ciężkiej pracy.'
+    },
+    {
+      flag: '🏄', text: 'Nadchodzi weekend w Warszawie. W sobotę tradycyjne plenerowe Wianki nad Wisłą.',
+      source_name: 'Onet Wiadomości',
+      article: 'Szykuje się wspaniały, niezwykle intensywny kulturalnie weekend w sercu największego miasta Polski. Władze stolicy oficjalnie zapowiedziały, że już w tę najbliższą sobotę na zrewitalizowanych bulwarach wiślanych w Warszawie odbędzie się ogromna, plenerowa edycja tradycyjnej, słowiańskiej imprezy, czyli "Wianków nad Wisłą". To prestiżowe, wyczekiwane wydarzenie, które czerpie pełnymi garściami ze starych, ludowych obchodów Nocy Kupały, co roku przyciąga bezpośrednio nad rzekę setki tysięcy młodych uczestników i całych rodzin z różnych zakątków kraju. Stołeczny ratusz sfinansował bezpłatne koncerty największych gwiazd polskiej estrady, fenomenalne pokazy świetlno-pirotechniczne oraz symboliczne, nastrojowe puszczanie ukwieconych wianków z szybkim nurtem rzeki w centrum metropolii. Wiąże się to ze znacznymi utrudnieniami logistycznymi w ruchu ulicznym w okolicy Starego Miasta.'
+    }
+  ],
+};
+
+let currentDose = getCurrentDose();
+let cache = {};
+let lastScrollY = 0, tabsHidden = false;
+let suppressScrollHide = false;
+
+const scrollArea = document.getElementById('scrollArea');
+scrollArea.addEventListener('scroll', function() {
+  const sy = this.scrollTop;
+  const delta = sy - lastScrollY;
+
+  // Ignoruj skoki spowodowane zmianą layoutu (np. otwarcie/zamknięcie klastra),
+  // a nie realnym przewijaniem palcem — duży, nagły skok w jedną ramkę.
+  if (suppressScrollHide || Math.abs(delta) > 150) {
+    lastScrollY = sy;
+    return;
+  }
+
+  const tabs = document.getElementById('doseTabs');
+  if (delta > 0 && sy > 40 && !tabsHidden) {
+    tabs.classList.add('hidden'); this.classList.add('tabs-hidden'); tabsHidden = true;
+  } else if (delta < -8 && tabsHidden) {
+    tabs.classList.remove('hidden'); this.classList.remove('tabs-hidden'); tabsHidden = false;
+  }
+  lastScrollY = sy;
+}, { passive: true });
+
+function getCurrentDose() {
+  const h = new Date().getHours();
+  return h < 11 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+}
+function uid() { return Math.random().toString(36).slice(2,9); }
+function esc(s='') { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,' '); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+async function fetchFromSupabase(dose) {
+  if (SUPABASE_URL === 'TWOJ_SUPABASE_URL') return null;
+  const today = new Date().toISOString().split('T')[0];
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/briefs?dose=eq.${dose}&date=eq.${today}&order=created_at.desc&limit=1`, {
+    headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` }
+  });
+  const d = await res.json();
+  return d?.length > 0 ? d[0].items : null;
+}
+
+// ══ RSS — pobiera nagłówki na żywo ════════════════════
+const RSS_SOURCES = [
+  'https://feeds.reuters.com/reuters/worldNews',
+  'https://feeds.bbci.co.uk/news/world/rss.xml',
+  'https://rss.dw.com/xml/rss-en-world',
+  'https://feeds.reuters.com/reuters/businessNews',
+];
+const RSS_PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
+
+async function fetchLiveRSS() {
+  const all = [];
+  const seen = new Set();
+  for (const url of RSS_SOURCES) {
+    try {
+      const r = await fetch(RSS_PROXY + encodeURIComponent(url));
+      const d = await r.json();
+      if (d.status !== 'ok') continue;
+      (d.items || []).slice(0, 12).forEach(item => {
+        const key = (item.title||'').slice(0,40);
+        if (!item.title || seen.has(key)) return;
+        seen.add(key);
+        all.push({
+          title: item.title,
+          link: item.link || '',
+          desc: (item.description||'').replace(/<[^>]*>/g,'').slice(0,350),
+        });
+      });
+    } catch(e) { /* skip broken feed */ }
+  }
+  return all.slice(0, 25);
+}
+
+// ══ AI — grupuje newsy na żywo wg tematu/osoby/kraju ══
+async function groupWithAI(rawItems, dose) {
+  const doseLabels = { morning:'poranną', afternoon:'południową', evening:'wieczorną' };
+  const headlines = rawItems.map((it,i) => `${i+1}. ${it.title}`).join('\n');
+
+  const prompt = `Masz listę nagłówków newsów RSS dla dawki ${doseLabels[dose]}.
+
+ZADANIE:
+1. Wybierz 10-12 najważniejszych i najbardziej różnorodnych newsów.
+2. POGRUPUJ je tematycznie — jeśli kilka dotyczy tej samej osoby, wydarzenia lub kraju
+   (np. kilka newsów o tej samej osobie/sytuacji), połącz je w JEDEN klaster z wieloma pozycjami.
+3. Newsy niepowiązane z innymi mają klaster z JEDNĄ pozycją.
+4. Wynikiem powinno być 4-6 klastrów łącznie.
+
+Dla każdego klastra zwróć:
+- title: krótki tytuł klastra PO POLSKU (np. "Zełenski i rozmowy pokojowe")
+- flag: jedno emoji reprezentujące temat
+- items: lista 1+ newsów, każdy z polami:
+  - text: zwięzły bullet PO POLSKU (1 zdanie, max 110 znaków)
+  - flag: emoji flagi/ikony dla tego newsa
+  - idx: numer oryginalnego newsa z listy (od 1)
+
+Odpowiedz TYLKO czystym JSON array, zero markdown:
+[{"title":"...","flag":"🇺🇦","items":[{"text":"...","flag":"🇺🇦","idx":3}]}]
+
+NEWSY:
+${headlines}`;
+
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1500,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  const data = await r.json();
+  const raw = (data.content?.[0]?.text || '[]').replace(/```json|```/g,'').trim();
+  const clusters = JSON.parse(raw);
+
+  // Zbuduj finalną strukturę zgodną z renderDose (subItems)
+  return clusters.map(cluster => {
+    const subs = cluster.items.map(it => {
+      const idx = Math.max(0, (it.idx||1) - 1);
+      const orig = rawItems[idx] || rawItems[0];
+      return {
+        flag: it.flag || '📰',
+        text: it.text || '',
+        rssLink: orig.link,
+        rawTitle: orig.title,
+        rawDesc: orig.desc,
+      };
+    });
+
+    if (subs.length === 1) {
+      // Klaster z jednym newsem = zwykły news (bez subItems)
+      return { flag: cluster.flag || subs[0].flag, text: subs[0].text,
+               rssLink: subs[0].rssLink, rawTitle: subs[0].rawTitle, rawDesc: subs[0].rawDesc };
+    }
+    // Klaster z wieloma newsami = grupa
+    return { flag: cluster.flag || '📰', text: cluster.title || subs[0].text, subItems: subs };
+  });
+}
+
+async function loadDose(dose, force=false) {
+  if (cache[dose] && !force) { renderDose(dose, cache[dose]); return; }
+  renderSkeleton();
+  try {
+    let items = await fetchFromSupabase(dose);
+
+    if (!items) {
+      // Brak Supabase — próbuj live RSS + AI grouping
+      try {
+        const raw = await fetchLiveRSS();
+        if (raw.length > 5) {
+          items = await groupWithAI(raw, dose);
+        }
+      } catch(e) { /* fallback below */ }
+    }
+
+    if (!items) items = SAMPLE[dose];
+
+    cache[dose] = items.map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) }));
+    renderDose(dose, cache[dose]);
+  } catch(e) {
+    cache[dose] = SAMPLE[dose].map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) }));
+    renderDose(dose, cache[dose]);
+  }
+}
+
+function renderSkeleton() {
+  document.getElementById('content').innerHTML = `
+    <div class="edition-bar">
+      <div class="skel" style="width:110px;height:8px"></div>
+      <div class="skel" style="width:50px;height:8px"></div>
+    </div>
+    <div style="padding:20px 16px;background:#fff;border-bottom:2px solid #0a0a0a;display:flex;flex-direction:column;gap:12px">
+      <div class="skel" style="width:70px;height:8px"></div>
+      <div class="skel" style="width:100%;height:20px"></div>
+      <div class="skel" style="width:85%;height:20px"></div>
+      <div class="skel" style="width:55%;height:20px"></div>
+      <div class="skel" style="width:40%;height:8px"></div>
+    </div>
+    <div class="section-rule"><div class="section-rule-line"></div><div class="section-rule-label">Więcej Tematów</div><div class="section-rule-line"></div></div>
+    ${[1,2,3,4,5,6].map(()=>`
+      <div style="display:flex;gap:12px;padding:14px 16px;background:#fff;border-bottom:1px solid #e2e2e2">
+        <div class="skel" style="width:18px;height:9px;flex-shrink:0;margin-top:3px"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+          <div class="skel" style="width:95%;height:13px"></div>
+          <div class="skel" style="width:70%;height:13px"></div>
+        </div>
+      </div>`).join('')}`;
+}
+
+function expandBlock(item) {
+  if (item.article) {
+    return `
+      <div class="expand-article">${item.article}</div>
+      <div class="expand-divider"></div>
+      <div class="expand-source-row">
+        <div class="expand-source-left">
+          <span class="expand-source-tag">Źródło</span>
+          <span class="expand-sep">/</span>
+          <span class="expand-source-name">${item.source_name||'—'}</span>
+        </div>
+        ${item.source_url && item.source_url !== '#'
+          ? `<a class="expand-read-btn" href="${item.source_url}" target="_blank">Czytaj →</a>`
+          : item.rssLink
+          ? `<a class="expand-read-btn" href="${item.rssLink}" target="_blank">Czytaj →</a>`
+          : ''}
+      </div>`;
+  }
+  return `
+    <div class="expand-loading" id="load-${item.id}">
+      <div class="mini-spinner"></div>Szukam artykułu...
+    </div>
+    <div id="lazy-${item.id}" style="display:none">
+      <div class="expand-article" id="art-${item.id}"></div>
+      <div class="expand-divider"></div>
+      <div class="expand-source-row">
+        <div class="expand-source-left">
+          <span class="expand-source-tag">Źródło</span>
+          <span class="expand-sep">/</span>
+          <span class="expand-source-name" id="sn-${item.id}">—</span>
+        </div>
+        <a class="expand-read-btn" id="sl-${item.id}" href="#" target="_blank" style="display:none">Czytaj →</a>
+      </div>
+    </div>`;
+}
+
+function renderSubItems(subItems) {
+  if (!subItems || subItems.length === 0) return '';
+  return subItems.map(sub => `
+    <div class="sub-item" id="item-${sub.id}" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
+      <span class="sub-item-flag">${sub.flag||'📰'}</span>
+      <div class="sub-item-text">${sub.text}</div>
+      <div class="sub-item-arrow">›</div>
+    </div>
+    <div class="card-expand" id="exp-${sub.id}">${expandBlock(sub)}</div>
+  `).join('');
+}
+
+function renderDose(dose, items) {
+  const cfg = DOSE_CFG[dose];
+  if (!items || items.length === 0) return;
+  const hero = items[0];
+  const isHeroGroup = hero.subItems && hero.subItems.length > 0;
+
+  const heroBlock = isHeroGroup ? `
+    <div class="hero-card" id="group-${hero.id}" onclick="toggleGroup('${hero.id}')">
+      <div class="hero-kicker">
+        <span class="hero-flag">${hero.flag||'📰'}</span>
+        <span class="hero-kicker-label ${cfg.kickerClass}">${cfg.kicker}</span>
+      </div>
+      <div class="hero-title">${hero.text}</div>
+      <div class="hero-footer">
+        <span class="hero-source">${hero.subItems.length} powiązane newsy</span>
+        <span class="hero-arrow">›</span>
+      </div>
+    </div>
+    <div class="sub-items-container" id="subc-${hero.id}">
+      ${renderSubItems(hero.subItems)}
+    </div>`
+    : `
+    <div class="hero-card" id="item-${hero.id}" onclick="toggleSubItem('${hero.id}')">
+      <div class="hero-kicker">
+        <span class="hero-flag">${hero.flag||'📰'}</span>
+        <span class="hero-kicker-label ${cfg.kickerClass}">${cfg.kicker}</span>
+      </div>
+      <div class="hero-title">${hero.text}</div>
+      <div class="hero-footer">
+        <span class="hero-source">${hero.source_name || 'Czytaj pełny artykuł'}</span>
+        <span class="hero-arrow">›</span>
+      </div>
+    </div>
+    <div class="card-expand" id="exp-${hero.id}">${expandBlock(hero)}</div>`;
+
+  const restBlocks = items.slice(1).map((item, i) => {
+    const isGroup = item.subItems && item.subItems.length > 0;
+    if (isGroup) {
+      return `
+        <div class="news-item" id="group-${item.id}" onclick="toggleGroup('${item.id}')">
+          <div class="news-num">0${i+2}</div>
+          <div class="news-body">
+            <span class="news-flag">${item.flag||'📰'}</span>
+            <div class="news-title">${item.text}</div>
+          </div>
+          <div class="news-arrow">›</div>
+        </div>
+        <div class="sub-items-container" id="subc-${item.id}">
+          ${renderSubItems(item.subItems)}
+        </div>`;
+    } else {
+      return `
+        <div class="news-item" id="item-${item.id}" onclick="toggleSubItem('${item.id}')">
+          <div class="news-num">0${i+2}</div>
+          <div class="news-body">
+            <span class="news-flag">${item.flag||'📰'}</span>
+            <div class="news-title">${item.text}</div>
+          </div>
+          <div class="news-arrow">›</div>
+        </div>
+        <div class="card-expand" id="exp-${item.id}">${expandBlock(item)}</div>`;
+    }
+  }).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="edition-bar">
+      <div class="edition-name">${cfg.edition}</div>
+      <div class="edition-time">${cfg.time} · ${new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'short'})}</div>
+    </div>
+    ${heroBlock}
+    <div class="section-rule">
+      <div class="section-rule-line"></div>
+      <div class="section-rule-label">Więcej tematów</div>
+      <div class="section-rule-line"></div>
+    </div>
+    ${restBlocks}`;
+
+  scrollArea.scrollTop = 0;
+}
+
+// ── Poziom 1: otwórz/zamknij GRUPĘ (klaster tematyczny) ──
+function toggleGroup(groupId) {
+  const groupEl = document.getElementById('group-'+groupId);
+  const subcEl  = document.getElementById('subc-'+groupId);
+  if (!groupEl || !subcEl) return;
+  const isOpen = groupEl.classList.contains('open');
+
+  // Layout zmieni wysokość strony — zignoruj wynikły z tego scroll event,
+  // żeby taby Poranna/Południowa/Wieczorna nie chowały się przy zwykłym kliknięciu.
+  suppressScrollHide = true;
+  setTimeout(() => { suppressScrollHide = false; }, 400);
+
+  // Zamknij WSZYSTKIE grupy i sub-itemy (i ich expandy) na poziomie głównym
+  document.querySelectorAll('.hero-card.open, .news-item.open').forEach(c => c.classList.remove('open'));
+  document.querySelectorAll('.sub-item.open').forEach(c => c.classList.remove('open'));
+
+  if (!isOpen) {
+    groupEl.classList.add('open');
+    // Jeśli grupa ma tylko 1 podpunkt — otwórz go automatycznie
+    const subItems = subcEl.querySelectorAll('.sub-item');
+    if (subItems.length === 1) {
+      const onlyId = subItems[0].id.replace('item-','');
+      setTimeout(() => toggleSubItem(onlyId), 60);
+    }
+  }
+}
+
+// ── Poziom 2: otwórz/zamknij POJEDYNCZY news → pokazuje artykuł ──
+async function toggleSubItem(id) {
+  const itemEl = document.getElementById('item-'+id);
+  const exp    = document.getElementById('exp-'+id);
+  if (!itemEl || !exp) return;
+  const isOpen = itemEl.classList.contains('open');
+
+  suppressScrollHide = true;
+  setTimeout(() => { suppressScrollHide = false; }, 400);
+
+  // Zamknij inne otwarte sub-itemy (ale NIE zamykaj nadrzędnej grupy)
+  document.querySelectorAll('.sub-item.open').forEach(c => {
+    if (c.id !== 'item-'+id) c.classList.remove('open');
+  });
+
+  if (!isOpen) {
+    itemEl.classList.add('open');
+    const loadEl = document.getElementById('load-'+id);
+    if (!loadEl || exp.dataset.loaded) return;
+    exp.dataset.loaded = '1';
+
+    const itemData = findItemById(id);
+    if (!itemData) return;
+
+    const result = await lazyExpand(itemData.rawTitle||itemData.text, itemData.rawDesc||'');
+    const artEl = document.getElementById('art-'+id);
+    const snEl  = document.getElementById('sn-'+id);
+    const slEl  = document.getElementById('sl-'+id);
+    if (artEl) artEl.textContent = result.article||'';
+    if (snEl) snEl.textContent = result.source_name||'—';
+    if (slEl && result.source_url) { slEl.href=result.source_url; slEl.style.display='inline-flex'; }
+    loadEl.style.display = 'none';
+    const lazyEl = document.getElementById('lazy-'+id);
+    if (lazyEl) lazyEl.style.display = 'block';
+  } else {
+    itemEl.classList.remove('open');
+  }
+}
+
+// Szuka itemu (płaskiego lub w subItems) po id w cache
+function findItemById(id) {
+  for (const dayItems of Object.values(cache)) {
+    for (const it of dayItems) {
+      if (it.id === id) return it;
+      if (it.subItems) {
+        const found = it.subItems.find(s => s.id === id);
+        if (found) return found;
+      }
+    }
+  }
+  return null;
+}
+
+async function lazyExpand(title, desc) {
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-6", max_tokens:2000,
+        tools:[{type:"web_search_20250305",name:"web_search"}],
+        system:`Znajdź oficjalny artykuł w internecie i napisz go PO POLSKU (6-8 zdań, konkretne fakty, liczby, nazwiska). Odpowiedz TYLKO JSON: {"article":"...","source_name":"...","source_url":"..."}`,
+        messages:[{role:"user",content:`Tytuł: "${title}"\nKontekst: ${desc}`}]
+      })
+    });
+    const data = await r.json();
+    const tb = data.content?.filter(b=>b.type==='text').pop();
+    return JSON.parse((tb?.text||'{}').replace(/```json|```/g,'').trim());
+  } catch(e) { return {article:'',source_name:'',source_url:''}; }
+}
+
+function switchDose(dose) {
+  currentDose = dose;
+  suppressScrollHide = true;
+  setTimeout(() => { suppressScrollHide = false; }, 400);
+  document.querySelectorAll('.dose-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+dose).classList.add('active');
+  // Taby zawsze widoczne po zmianie dawki
+  document.getElementById('doseTabs').classList.remove('hidden');
+  scrollArea.classList.remove('tabs-hidden');
+  tabsHidden = false;
+  lastScrollY = 0;
+  loadDose(dose);
+}
+
+async function refresh() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  delete cache[currentDose];
+  await loadDose(currentDose, true);
+  btn.classList.remove('spinning');
+  showToast('Zaktualizowano');
+}
+
+document.getElementById('topbarDate').textContent =
+  new Date().toLocaleDateString('pl-PL',{weekday:'short',month:'short',day:'numeric',year:'numeric'}).toUpperCase();
+
+document.querySelectorAll('.dose-tab').forEach(t=>t.classList.remove('active'));
+document.getElementById('tab-'+currentDose).classList.add('active');
+loadDose(currentDose);
+
+// ══ PWA — rejestracja Service Workera ════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(() => console.log('Service Worker zarejestrowany'))
+      .catch((err) => console.warn('SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
