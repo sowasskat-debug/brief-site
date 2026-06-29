@@ -563,14 +563,17 @@ function showToast(msg) {
 }
 
 // ══ briefs.json — generowany przez bota na Telegramie ═
+function localDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 async function fetchFromBriefsJson(dose) {
   try {
     const r = await fetch('./briefs.json', { cache: 'no-store' });
     if (!r.ok) return null;
     const d = await r.json();
-    const today = new Date().toISOString().split('T')[0];
     const doseData = d?.[dose];
-    if (!doseData || doseData.date !== today || !doseData.items?.length) return null;
+    if (!doseData || doseData.date !== localDateStr() || !doseData.items?.length) return null;
     return doseData.items;
   } catch(e) { return null; }
 }
