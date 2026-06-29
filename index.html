@@ -562,6 +562,19 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+// ══ briefs.json — generowany przez bota na Telegramie ═
+async function fetchFromBriefsJson(dose) {
+  try {
+    const r = await fetch('./briefs.json', { cache: 'no-store' });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const today = new Date().toISOString().split('T')[0];
+    const doseData = d?.[dose];
+    if (!doseData || doseData.date !== today || !doseData.items?.length) return null;
+    return doseData.items;
+  } catch(e) { return null; }
+}
+
 async function fetchFromSupabase(dose) {
   if (SUPABASE_URL === 'TWOJ_SUPABASE_URL') return null;
   const today = new Date().toISOString().split('T')[0];
@@ -572,118 +585,13 @@ async function fetchFromSupabase(dose) {
   return d?.length > 0 ? d[0].items : null;
 }
 
-// ══ RSS — pobiera nagłówki na żywo ════════════════════
-const RSS_SOURCES = [
-  'https://feeds.reuters.com/reuters/worldNews',
-  'https://feeds.bbci.co.uk/news/world/rss.xml',
-  'https://rss.dw.com/xml/rss-en-world',
-  'https://feeds.reuters.com/reuters/businessNews',
-];
-const RSS_PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
-
-async function fetchLiveRSS() {
-  const all = [];
-  const seen = new Set();
-  for (const url of RSS_SOURCES) {
-    try {
-      const r = await fetch(RSS_PROXY + encodeURIComponent(url));
-      const d = await r.json();
-      if (d.status !== 'ok') continue;
-      (d.items || []).slice(0, 12).forEach(item => {
-        const key = (item.title||'').slice(0,40);
-        if (!item.title || seen.has(key)) return;
-        seen.add(key);
-        all.push({
-          title: item.title,
-          link: item.link || '',
-          desc: (item.description||'').replace(/<[^>]*>/g,'').slice(0,350),
-        });
-      });
-    } catch(e) { /* skip broken feed */ }
-  }
-  return all.slice(0, 25);
-}
-
-// ══ AI — grupuje newsy na żywo wg tematu/osoby/kraju ══
-async function groupWithAI(rawItems, dose) {
-  const doseLabels = { morning:'poranną', afternoon:'południową', evening:'wieczorną' };
-  const headlines = rawItems.map((it,i) => `${i+1}. ${it.title}`).join('\n');
-
-  const prompt = `Masz listę nagłówków newsów RSS dla dawki ${doseLabels[dose]}.
-
-ZADANIE:
-1. Wybierz 10-12 najważniejszych i najbardziej różnorodnych newsów.
-2. POGRUPUJ je tematycznie — jeśli kilka dotyczy tej samej osoby, wydarzenia lub kraju
-   (np. kilka newsów o tej samej osobie/sytuacji), połącz je w JEDEN klaster z wieloma pozycjami.
-3. Newsy niepowiązane z innymi mają klaster z JEDNĄ pozycją.
-4. Wynikiem powinno być 4-6 klastrów łącznie.
-
-Dla każdego klastra zwróć:
-- title: krótki tytuł klastra PO POLSKU (np. "Zełenski i rozmowy pokojowe")
-- flag: jedno emoji reprezentujące temat
-- items: lista 1+ newsów, każdy z polami:
-  - text: zwięzły bullet PO POLSKU (1 zdanie, max 110 znaków)
-  - flag: emoji flagi/ikony dla tego newsa
-  - idx: numer oryginalnego newsa z listy (od 1)
-
-Odpowiedz TYLKO czystym JSON array, zero markdown:
-[{"title":"...","flag":"🇺🇦","items":[{"text":"...","flag":"🇺🇦","idx":3}]}]
-
-NEWSY:
-${headlines}`;
-
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1500,
-      messages: [{ role: "user", content: prompt }]
-    })
-  });
-  const data = await r.json();
-  const raw = (data.content?.[0]?.text || '[]').replace(/```json|```/g,'').trim();
-  const clusters = JSON.parse(raw);
-
-  // Zbuduj finalną strukturę zgodną z renderDose (subItems)
-  return clusters.map(cluster => {
-    const subs = cluster.items.map(it => {
-      const idx = Math.max(0, (it.idx||1) - 1);
-      const orig = rawItems[idx] || rawItems[0];
-      return {
-        flag: it.flag || '📰',
-        text: it.text || '',
-        rssLink: orig.link,
-        rawTitle: orig.title,
-        rawDesc: orig.desc,
-      };
-    });
-
-    if (subs.length === 1) {
-      // Klaster z jednym newsem = zwykły news (bez subItems)
-      return { flag: cluster.flag || subs[0].flag, text: subs[0].text,
-               rssLink: subs[0].rssLink, rawTitle: subs[0].rawTitle, rawDesc: subs[0].rawDesc };
-    }
-    // Klaster z wieloma newsami = grupa
-    return { flag: cluster.flag || '📰', text: cluster.title || subs[0].text, subItems: subs };
-  });
-}
-
 async function loadDose(dose, force=false) {
   if (cache[dose] && !force) { renderDose(dose, cache[dose]); return; }
   renderSkeleton();
   try {
-    let items = await fetchFromSupabase(dose);
+    let items = await fetchFromBriefsJson(dose);
 
-    if (!items) {
-      // Brak Supabase — próbuj live RSS + AI grouping
-      try {
-        const raw = await fetchLiveRSS();
-        if (raw.length > 5) {
-          items = await groupWithAI(raw, dose);
-        }
-      } catch(e) { /* fallback below */ }
-    }
+    if (!items) items = await fetchFromSupabase(dose);
 
     if (!items) items = SAMPLE[dose];
 
