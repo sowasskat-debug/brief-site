@@ -647,21 +647,7 @@ function expandBlock(item) {
       </div>`;
   }
   return `
-    <div class="expand-loading" id="load-${item.id}">
-      <div class="mini-spinner"></div>Szukam artykułu...
-    </div>
-    <div id="lazy-${item.id}" style="display:none">
-      <div class="expand-article" id="art-${item.id}"></div>
-      <div class="expand-divider"></div>
-      <div class="expand-source-row">
-        <div class="expand-source-left">
-          <span class="expand-source-tag">Źródło</span>
-          <span class="expand-sep">/</span>
-          <span class="expand-source-name" id="sn-${item.id}">—</span>
-        </div>
-        <a class="expand-read-btn" id="sl-${item.id}" href="#" target="_blank" style="display:none">Czytaj →</a>
-      </div>
-    </div>`;
+    <div class="expand-loading">Brak rozszerzonego artykułu dla tego newsa.</div>`;
 }
 
 function renderSubItems(subItems) {
@@ -784,7 +770,7 @@ function toggleGroup(groupId) {
 }
 
 // ── Poziom 2: otwórz/zamknij POJEDYNCZY news → pokazuje artykuł ──
-async function toggleSubItem(id) {
+function toggleSubItem(id) {
   const itemEl = document.getElementById('item-'+id);
   const exp    = document.getElementById('exp-'+id);
   if (!itemEl || !exp) return;
@@ -800,57 +786,9 @@ async function toggleSubItem(id) {
 
   if (!isOpen) {
     itemEl.classList.add('open');
-    const loadEl = document.getElementById('load-'+id);
-    if (!loadEl || exp.dataset.loaded) return;
-    exp.dataset.loaded = '1';
-
-    const itemData = findItemById(id);
-    if (!itemData) return;
-
-    const result = await lazyExpand(itemData.rawTitle||itemData.text, itemData.rawDesc||'');
-    const artEl = document.getElementById('art-'+id);
-    const snEl  = document.getElementById('sn-'+id);
-    const slEl  = document.getElementById('sl-'+id);
-    if (artEl) artEl.textContent = result.article||'';
-    if (snEl) snEl.textContent = result.source_name||'—';
-    if (slEl && result.source_url) { slEl.href=result.source_url; slEl.style.display='inline-flex'; }
-    loadEl.style.display = 'none';
-    const lazyEl = document.getElementById('lazy-'+id);
-    if (lazyEl) lazyEl.style.display = 'block';
   } else {
     itemEl.classList.remove('open');
   }
-}
-
-// Szuka itemu (płaskiego lub w subItems) po id w cache
-function findItemById(id) {
-  for (const dayItems of Object.values(cache)) {
-    for (const it of dayItems) {
-      if (it.id === id) return it;
-      if (it.subItems) {
-        const found = it.subItems.find(s => s.id === id);
-        if (found) return found;
-      }
-    }
-  }
-  return null;
-}
-
-async function lazyExpand(title, desc) {
-  try {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-6", max_tokens:2000,
-        tools:[{type:"web_search_20250305",name:"web_search"}],
-        system:`Znajdź oficjalny artykuł w internecie i napisz go PO POLSKU (6-8 zdań, konkretne fakty, liczby, nazwiska). Odpowiedz TYLKO JSON: {"article":"...","source_name":"...","source_url":"..."}`,
-        messages:[{role:"user",content:`Tytuł: "${title}"\nKontekst: ${desc}`}]
-      })
-    });
-    const data = await r.json();
-    const tb = data.content?.filter(b=>b.type==='text').pop();
-    return JSON.parse((tb?.text||'{}').replace(/```json|```/g,'').trim());
-  } catch(e) { return {article:'',source_name:'',source_url:''}; }
 }
 
 function switchDose(dose) {
