@@ -876,29 +876,27 @@ async function togglePush() {
     showToast('Powiadomienia jeszcze niedostępne');
     return;
   }
-  // SDK może się jeszcze ładować w tle (np. wolny internet) — zamiast od razu
-  // pokazywać błąd, kolejkujemy akcję, a ona wykona się jak tylko SDK będzie gotowe.
-  // Jeśli SDK w ogóle się nie załaduje (np. blokowane przez adblocker), informujemy o tym po chwili.
-  let wykonano = false;
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    wykonano = true;
+  if (!window.OneSignal) {
+    showToast('Nie można załadować powiadomień — sprawdź AdBlock lub połączenie');
+    return;
+  }
+  try {
     if (OneSignal.User.PushSubscription.optedIn) {
       await OneSignal.User.PushSubscription.optOut();
       showToast('Powiadomienia wyłączone');
     } else {
       await OneSignal.Notifications.requestPermission();
+      if (Notification.permission === 'denied') {
+        showToast('Powiadomienia zablokowane — odblokuj w ustawieniach Chrome');
+        return;
+      }
       await OneSignal.User.PushSubscription.optIn();
       showToast('Powiadomienia włączone');
     }
     updateBellBtn();
-  });
-
-  setTimeout(() => {
-    if (!wykonano) {
-      showToast('Nie można załadować powiadomień — sprawdź AdBlock lub połączenie');
-    }
-  }, 5000);
+  } catch (e) {
+    showToast('Błąd: ' + (e.message || 'spróbuj ponownie'));
+  }
 }
 
 // ══ Wymuś świeże dane przy każdym powrocie do apki ════
