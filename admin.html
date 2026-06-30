@@ -330,16 +330,21 @@ function renderContent() {
 // Zawsze odświeżamy z GitHuba tuż przed zapisem (świeży sha) i weryfikujemy,
 // że element pod danym indeksem wciąż ma ten sam tekst (bot mógł dopisać coś w międzyczasie).
 async function withFreshBriefs(expectedTextAtPath, fn) {
-  const fresh = await ghGetJson(BRIEFS_PATH);
-  if (!fresh.data) { showToast('Brak briefs.json na GitHubie'); return; }
-  const ok = expectedTextAtPath(fresh.data);
-  if (!ok) {
-    showToast('Dane się zmieniły w międzyczasie — odśwież i spróbuj ponownie');
-    briefsState = fresh;
-    renderContent();
-    return;
+  try {
+    const fresh = await ghGetJson(BRIEFS_PATH);
+    if (!fresh.data) { showToast('Brak briefs.json na GitHubie'); return; }
+    const ok = expectedTextAtPath(fresh.data);
+    if (!ok) {
+      showToast('Dane się zmieniły w międzyczasie — odśwież i spróbuj ponownie');
+      briefsState = fresh;
+      renderContent();
+      return;
+    }
+    await fn(fresh);
+  } catch (e) {
+    console.error('Błąd podczas usuwania:', e);
+    showToast(`Błąd: ${e.message}`);
   }
-  await fn(fresh);
 }
 
 async function appendRejected(items) {
