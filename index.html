@@ -177,6 +177,12 @@ html, body {
   letter-spacing: -0.2px; color: var(--text); margin-bottom: 14px;
 }
 
+.item-time {
+  font-size: 8px; color: var(--muted); letter-spacing: 0.3px;
+  margin-top: 3px;
+}
+.hero-card > .item-time { margin-bottom: 10px; margin-top: -6px; }
+
 .hero-footer {
   display: flex; align-items: center; justify-content: space-between;
 }
@@ -628,6 +634,14 @@ function renderSkeleton() {
       </div>`).join('')}`;
 }
 
+function formatAddedAt(item) {
+  if (!item.added_at) return '';
+  const [datePart, timePart] = item.added_at.split(' ');
+  if (!datePart || !timePart) return '';
+  const [, m, d] = datePart.split('-');
+  return `${d}.${m} · ${timePart}`;
+}
+
 function expandBlock(item) {
   if (item.article) {
     return `
@@ -655,7 +669,7 @@ function renderSubItems(subItems) {
   return subItems.map(sub => `
     <div class="sub-item" id="item-${sub.id}" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
       <span class="sub-item-flag">${sub.flag||'📰'}</span>
-      <div class="sub-item-text">${sub.text}</div>
+      <div class="sub-item-text">${sub.text}${sub.added_at ? `<div class="item-time">${formatAddedAt(sub)}</div>` : ''}</div>
       <div class="sub-item-arrow">›</div>
     </div>
     <div class="card-expand" id="exp-${sub.id}">${expandBlock(sub)}</div>
@@ -690,6 +704,7 @@ function renderDose(dose, items) {
         <span class="hero-kicker-label ${cfg.kickerClass}">${cfg.kicker}</span>
       </div>
       <div class="hero-title">${hero.text}</div>
+      ${hero.added_at ? `<div class="item-time">${formatAddedAt(hero)}</div>` : ''}
       <div class="hero-footer">
         <span class="hero-source">${hero.source_name || 'Czytaj pełny artykuł'}</span>
         <span class="hero-arrow">›</span>
@@ -719,6 +734,7 @@ function renderDose(dose, items) {
           <div class="news-body">
             <span class="news-flag">${item.flag||'📰'}</span>
             <div class="news-title">${item.text}</div>
+            ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}
           </div>
           <div class="news-arrow">›</div>
         </div>
