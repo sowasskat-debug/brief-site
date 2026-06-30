@@ -1,6 +1,9 @@
 // Service Worker — Brief PWA
 // Cel: (1) umożliwić "Zainstaluj jako apkę" na Androidzie,
-//      (2) podstawowy cache, żeby apka otwierała się nawet bez sieci.
+//      (2) podstawowy cache, żeby apka otwierała się nawet bez sieci,
+//      (3) obsługa push notifications przez OneSignal.
+
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
 
 const CACHE_NAME = 'brief-cache-v1';
 const CORE_ASSETS = [
