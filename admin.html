@@ -333,7 +333,7 @@ async function withFreshBriefs(expectedTextAtPath, fn) {
   try {
     const fresh = await ghGetJson(BRIEFS_PATH);
     if (!fresh.data) { showToast('Brak briefs.json na GitHubie'); return; }
-    const ok = expectedTextAtPath(fresh.data);
+    const ok = expectedTextAtPath(fresh);
     if (!ok) {
       showToast('Dane się zmieniły w międzyczasie — odśwież i spróbuj ponownie');
       briefsState = fresh;
