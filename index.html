@@ -858,7 +858,7 @@ const ONESIGNAL_APP_ID = '20698631-0f06-4308-a11e-4a0388c68853';
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
   if (ONESIGNAL_APP_ID === 'TWOJ_ONESIGNAL_APP_ID') return;
-  await OneSignal.init({ appId: ONESIGNAL_APP_ID });
+  await OneSignal.init({ appId: ONESIGNAL_APP_ID, serviceWorkerPath: 'service-worker.js', serviceWorkerParam: { scope: '/' } });
   updateBellBtn();
   OneSignal.User.PushSubscription.addEventListener('change', updateBellBtn);
 });
@@ -872,19 +872,33 @@ function updateBellBtn() {
 }
 
 async function togglePush() {
-  if (ONESIGNAL_APP_ID === 'TWOJ_ONESIGNAL_APP_ID' || !window.OneSignal) {
+  if (ONESIGNAL_APP_ID === 'TWOJ_ONESIGNAL_APP_ID') {
     showToast('Powiadomienia jeszcze niedostępne');
     return;
   }
-  if (OneSignal.User.PushSubscription.optedIn) {
-    await OneSignal.User.PushSubscription.optOut();
-    showToast('Powiadomienia wyłączone');
-  } else {
-    await OneSignal.Notifications.requestPermission();
-    await OneSignal.User.PushSubscription.optIn();
-    showToast('Powiadomienia włączone');
-  }
-  updateBellBtn();
+  // SDK może się jeszcze ładować w tle (np. wolny internet) — zamiast od razu
+  // pokazywać błąd, kolejkujemy akcję, a ona wykona się jak tylko SDK będzie gotowe.
+  // Jeśli SDK w ogóle się nie załaduje (np. blokowane przez adblocker), informujemy o tym po chwili.
+  let wykonano = false;
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    wykonano = true;
+    if (OneSignal.User.PushSubscription.optedIn) {
+      await OneSignal.User.PushSubscription.optOut();
+      showToast('Powiadomienia wyłączone');
+    } else {
+      await OneSignal.Notifications.requestPermission();
+      await OneSignal.User.PushSubscription.optIn();
+      showToast('Powiadomienia włączone');
+    }
+    updateBellBtn();
+  });
+
+  setTimeout(() => {
+    if (!wykonano) {
+      showToast('Nie można załadować powiadomień — sprawdź AdBlock lub połączenie');
+    }
+  }, 5000);
 }
 
 // ══ Wymuś świeże dane przy każdym powrocie do apki ════
