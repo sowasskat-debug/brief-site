@@ -331,7 +331,12 @@ html, body {
   transition: transform 0.25s; white-space: nowrap; z-index: 300;
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
+
+.bell-btn { background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 6px; }
+.bell-btn.active { filter: grayscale(0); }
+.bell-btn.inactive { filter: grayscale(1); opacity: 0.4; }
 </style>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
 
@@ -342,6 +347,7 @@ html, body {
   </div>
   <div class="topbar-right">
     <div class="live-pill"><div class="live-dot"></div><div class="live-text">Live</div></div>
+    <button class="bell-btn inactive" id="bellBtn" onclick="togglePush()" title="Powiadomienia push">🔔</button>
     <button class="refresh-btn" id="refreshBtn" onclick="refresh()">↻</button>
   </div>
 </div>
@@ -845,6 +851,56 @@ if ('serviceWorker' in navigator) {
       .catch((err) => console.warn('SW registration failed:', err));
   });
 }
+
+// ══ OneSignal — push notifications ════════════════════
+const ONESIGNAL_APP_ID = 'TWOJ_ONESIGNAL_APP_ID';
+
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal) {
+  if (ONESIGNAL_APP_ID === 'TWOJ_ONESIGNAL_APP_ID') return;
+  await OneSignal.init({ appId: ONESIGNAL_APP_ID });
+  updateBellBtn();
+  OneSignal.User.PushSubscription.addEventListener('change', updateBellBtn);
+});
+
+function updateBellBtn() {
+  const btn = document.getElementById('bellBtn');
+  if (!btn || !window.OneSignal) return;
+  const subscribed = OneSignal.User.PushSubscription.optedIn;
+  btn.classList.toggle('active', !!subscribed);
+  btn.classList.toggle('inactive', !subscribed);
+}
+
+async function togglePush() {
+  if (ONESIGNAL_APP_ID === 'TWOJ_ONESIGNAL_APP_ID' || !window.OneSignal) {
+    showToast('Powiadomienia jeszcze niedostępne');
+    return;
+  }
+  if (OneSignal.User.PushSubscription.optedIn) {
+    await OneSignal.User.PushSubscription.optOut();
+    showToast('Powiadomienia wyłączone');
+  } else {
+    await OneSignal.Notifications.requestPermission();
+    await OneSignal.User.PushSubscription.optIn();
+    showToast('Powiadomienia włączone');
+  }
+  updateBellBtn();
+}
+
+// ══ Wymuś świeże dane przy każdym powrocie do apki ════
+// (np. po wznowieniu z tła zamiast pełnego przeładowania strony)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    delete cache[currentDose];
+    loadDose(currentDose, true);
+  }
+});
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    delete cache[currentDose];
+    loadDose(currentDose, true);
+  }
+});
 </script>
 </body>
 </html>
