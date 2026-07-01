@@ -317,6 +317,24 @@ html, body {
 
 .expand-divider { height: 1px; background: var(--rule); margin: 14px 0; }
 
+/* Wpływ na rynek — wyróżniona linijka z kolorowymi strzałkami */
+.impact-box {
+  margin-top: 12px; padding: 10px 12px;
+  border-left: 3px solid var(--amber);
+  background: rgba(0,0,0,.03); border-radius: 0 6px 6px 0;
+}
+[data-theme="dark"] .impact-box { background: rgba(255,255,255,.04); }
+.impact-label {
+  display: block; font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 4px;
+}
+.impact-text { font-size: 13.5px; line-height: 1.5; color: var(--text); font-weight: 500; }
+.imp-up { color: #16a34a; font-weight: 700; }
+.imp-down { color: #dc2626; font-weight: 700; }
+[data-theme="dark"] .imp-up { color: #22c55e; }
+[data-theme="dark"] .imp-down { color: #ef4444; }
+
 .expand-source-row {
   display: flex; align-items: center; justify-content: space-between;
 }
@@ -961,6 +979,18 @@ function escAttr(s) {
   return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 }
 
+// Linia "Wpływ na rynek": koloruje strzałki ↑ (zielony) / ↓ (czerwony)
+function impactHtml(item) {
+  if (!item.impact) return '';
+  const colored = item.impact
+    .replace(/↑/g, '<span class="imp-up">↑</span>')
+    .replace(/↓/g, '<span class="imp-down">↓</span>');
+  return `<div class="impact-box">
+    <span class="impact-label">Wpływ na rynek</span>
+    <span class="impact-text">${colored}</span>
+  </div>`;
+}
+
 function expandBlock(item) {
   const slug = itemSlug(item.text);
   const shareUrl = `https://brifup.com/#${currentDose}/${slug}`;
@@ -976,6 +1006,7 @@ function expandBlock(item) {
       : '';
     return `
       <div class="expand-article">${item.article}</div>
+      ${impactHtml(item)}
       <div class="expand-divider"></div>
       <div class="expand-source-row">
         <div class="expand-source-left">
@@ -1569,6 +1600,7 @@ function dtShowDetail(item) {
       ${item.article
         ? `<div class="dt-detail-body">${item.article}</div>`
         : `<div class="dt-detail-no-article">Brak rozszerzonego artykułu dla tego wpisu.</div>`}
+      ${impactHtml(item)}
       <div class="dt-source-row">
         <div>
           <div class="dt-source-label">ŹRÓDŁO</div>
