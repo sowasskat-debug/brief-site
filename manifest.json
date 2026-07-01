@@ -1,6 +1,6 @@
 {
-  "name": "Brief — Poranna, Południowa, Wieczorna",
-  "short_name": "Brief",
+  "name": "BriefUp — Poranna, Południowa, Wieczorna",
+  "short_name": "BriefUp",
   "description": "Codzienny brief newsowy — 3 dawki dziennie, AI tłumaczy i grupuje newsy ze świata.",
   "start_url": "./index.html",
   "scope": "./",
