@@ -312,20 +312,19 @@ html, body {
 }
 .expand-read-btn:active { background: var(--red); color: #fff; }
 
-.expand-share-row {
-  margin-top: 12px;
-  display: flex; justify-content: flex-end;
-}
+.expand-actions { display: flex; align-items: center; gap: 8px; }
+.expand-share-row { margin-top: 12px; display: flex; justify-content: flex-end; }
 .expand-share-btn {
-  background: none; border: none; cursor: pointer;
+  background: none; cursor: pointer;
   font-family: 'Space Mono', monospace;
   font-size: 7.5px; font-weight: 700;
   letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--sub); padding: 5px 0;
-  display: flex; align-items: center; gap: 5px;
+  color: var(--sub); padding: 5px 10px;
+  border: 1px solid var(--rule); border-radius: 1px;
+  display: flex; align-items: center; gap: 4px;
 }
-.expand-share-btn:active { color: var(--text); }
-.expand-share-icon { font-size: 11px; }
+.expand-share-btn:active { background: var(--rule); }
+.expand-share-icon { font-size: 10px; }
 
 @keyframes deepLinkFlash {
   0%,100% { background: transparent; }
@@ -707,6 +706,11 @@ function expandBlock(item) {
     ><span class="expand-share-icon">↑</span>Udostępnij</button>`;
 
   if (item.article) {
+    const readBtn = item.source_url && item.source_url !== '#'
+      ? `<a class="expand-read-btn" href="${item.source_url}" target="_blank">Czytaj →</a>`
+      : item.rssLink
+      ? `<a class="expand-read-btn" href="${item.rssLink}" target="_blank">Czytaj →</a>`
+      : '';
     return `
       <div class="expand-article">${item.article}</div>
       <div class="expand-divider"></div>
@@ -716,13 +720,8 @@ function expandBlock(item) {
           <span class="expand-sep">/</span>
           <span class="expand-source-name">${item.source_name||'—'}</span>
         </div>
-        ${item.source_url && item.source_url !== '#'
-          ? `<a class="expand-read-btn" href="${item.source_url}" target="_blank">Czytaj →</a>`
-          : item.rssLink
-          ? `<a class="expand-read-btn" href="${item.rssLink}" target="_blank">Czytaj →</a>`
-          : ''}
-      </div>
-      <div class="expand-share-row">${shareBtn}</div>`;
+        <div class="expand-actions">${shareBtn}${readBtn}</div>
+      </div>`;
   }
   return `
     <div class="expand-loading">Brak rozszerzonego artykułu dla tego newsa.</div>
