@@ -25,7 +25,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -352,6 +352,130 @@ html, body {
 .expand-share-btn:active { background: var(--rule); }
 .expand-share-icon { font-size: 10px; }
 
+/* ══ DESKTOP LAYOUT (≥1024px) ══════════════════════════════════════════════ */
+@media (max-width: 1023px) { .dt-app { display: none !important; } }
+@media (min-width: 1024px) {
+  body { overflow: hidden; }
+  .topbar, .dose-tabs, .scroll-area, .install-banner { display: none !important; }
+  .dt-app { display: flex !important; }
+}
+.dt-app {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background: #f5f3ef;
+  color: var(--text);
+}
+[data-theme="dark"] .dt-app { background: #0f0f0f; }
+
+/* header */
+.dt-header {
+  height: 56px; flex-shrink: 0;
+  background: #f5f3ef; border-bottom: 1px solid #dbd8d2;
+  display: flex; align-items: center; padding: 0 28px; gap: 18px;
+}
+[data-theme="dark"] .dt-header { background: #0f0f0f; border-bottom-color: #2a2a2a; }
+.dt-logo { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 28px; color: var(--text); letter-spacing: -0.5px; line-height: 1; flex-shrink: 0; }
+.dt-logo-dot { color: var(--red); font-style: normal; }
+.dt-header-sep { width: 1px; height: 22px; background: #dbd8d2; flex-shrink: 0; }
+[data-theme="dark"] .dt-header-sep { background: #2a2a2a; }
+.dt-header-date { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1px; flex-shrink: 0; }
+.dt-tabs { display: flex; gap: 3px; background: #e8e5df; padding: 3px; border-radius: 6px; margin-left: 8px; flex-shrink: 0; }
+[data-theme="dark"] .dt-tabs { background: #1e1e1e; }
+.dt-tab { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 14px; border-radius: 4px; cursor: pointer; color: var(--muted); border: none; background: transparent; white-space: nowrap; }
+.dt-tab:hover { color: var(--text); }
+.dt-tab.active { background: var(--bg); color: var(--text); }
+.dt-tab.active.morning  { background: var(--amber); color: #fff; }
+.dt-tab.active.afternoon { background: var(--text); color: var(--bg); }
+.dt-tab.active.evening  { background: var(--violet); color: #fff; }
+.dt-header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.dt-live { display: flex; align-items: center; gap: 5px; font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: var(--red); flex-shrink: 0; }
+.dt-live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--red); animation: blink 1.4s ease-in-out infinite; }
+
+/* 3-column body */
+.dt-body { display: grid; grid-template-columns: 210px 1fr 380px; flex: 1; overflow: hidden; }
+
+/* left index */
+.dt-index { border-right: 1px solid #dbd8d2; overflow-y: auto; }
+[data-theme="dark"] .dt-index { border-right-color: #2a2a2a; }
+.dt-index-section { padding: 18px 0 4px; border-bottom: 1px solid #eae7e1; }
+[data-theme="dark"] .dt-index-section { border-bottom-color: #222; }
+.dt-index-section:last-child { border-bottom: none; }
+.dt-index-title { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 0 18px 8px; }
+.dt-index-item { padding: 7px 18px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-left: 2px solid transparent; user-select: none; -webkit-user-select: none; }
+.dt-index-item:hover { background: rgba(0,0,0,.03); }
+[data-theme="dark"] .dt-index-item:hover { background: rgba(255,255,255,.04); }
+.dt-index-item.active { border-left-color: var(--red); background: rgba(204,0,0,.05); }
+.dt-index-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dt-index-label { font-size: 12px; color: var(--text); font-weight: 500; flex: 1; }
+.dt-index-n { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); }
+.dt-index-item.dim .dt-index-label { color: var(--muted); font-weight: 400; }
+
+/* center feed */
+.dt-feed { display: flex; flex-direction: column; border-right: 1px solid #dbd8d2; overflow: hidden; }
+[data-theme="dark"] .dt-feed { border-right-color: #2a2a2a; }
+.dt-feed-header { padding: 12px 22px; border-bottom: 1px solid #e2dfd9; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; background: #f5f3ef; }
+[data-theme="dark"] .dt-feed-header { background: #0f0f0f; border-bottom-color: #222; }
+.dt-feed-title { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+.dt-feed-count { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); }
+.dt-feed-list { overflow-y: auto; flex: 1; background: #f5f3ef; }
+[data-theme="dark"] .dt-feed-list { background: #0f0f0f; }
+
+/* feed items */
+.dt-item { padding: 12px 22px; border-bottom: 1px solid #eae7e1; cursor: pointer; display: grid; grid-template-columns: 28px 20px 1fr; gap: 10px; align-items: flex-start; }
+[data-theme="dark"] .dt-item { border-bottom-color: #1e1e1e; }
+.dt-item:hover { background: rgba(0,0,0,.025); }
+[data-theme="dark"] .dt-item:hover { background: rgba(255,255,255,.04); }
+.dt-item.selected { background: rgba(204,0,0,.05); border-left: 2px solid var(--red); padding-left: 20px; }
+.dt-item.top-item { border-left: 2px solid var(--red); padding-left: 20px; }
+.dt-item.group-header { background: #efecea; }
+[data-theme="dark"] .dt-item.group-header { background: #141414; }
+.dt-item.group-header:hover { background: #e8e5e0; }
+.dt-item-num { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); padding-top: 2px; text-align: right; }
+.dt-item-flag { font-size: 14px; padding-top: 1px; }
+.dt-item-body { min-width: 0; }
+.dt-item-badges { display: flex; gap: 5px; margin-bottom: 3px; }
+.dt-badge { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 0.5px; padding: 1px 5px; border-radius: 2px; }
+.dt-badge-brk { background: var(--red); color: #fff; }
+.dt-item-headline { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; margin-bottom: 3px; }
+.dt-item-meta { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); display: flex; gap: 8px; }
+
+/* group sub-items */
+.dt-group-subs { padding-left: 18px; border-bottom: 1px solid #eae7e1; }
+[data-theme="dark"] .dt-group-subs { border-bottom-color: #1e1e1e; }
+.dt-sub-item { padding: 9px 22px 9px 0; border-bottom: 1px solid #f0ede8; display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+[data-theme="dark"] .dt-sub-item { border-bottom-color: #1c1c1c; }
+.dt-sub-item:last-child { border-bottom: none; }
+.dt-sub-item:hover { background: rgba(0,0,0,.02); }
+.dt-sub-item.selected { border-left: 2px solid var(--red); padding-left: 6px; }
+.dt-sub-flag { font-size: 13px; flex-shrink: 0; }
+.dt-sub-text { font-size: 12px; color: var(--sub); line-height: 1.4; }
+
+/* right detail panel */
+.dt-detail { background: var(--bg); display: flex; flex-direction: column; overflow-y: auto; }
+.dt-detail-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); }
+.dt-detail-empty-icon { font-size: 28px; opacity: .25; }
+.dt-detail-empty-text { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; }
+.dt-detail-content { padding: 26px 26px 20px; }
+.dt-detail-flag { font-size: 26px; margin-bottom: 10px; }
+.dt-detail-badges { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.dt-detail-badge { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 3px 8px; border-radius: 3px; background: var(--gray1); color: var(--muted); border: 1px solid var(--rule); }
+.dt-detail-headline { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--text); line-height: 1.3; margin-bottom: 8px; }
+.dt-detail-time { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 1px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.dt-detail-body { font-family: 'DM Serif Display', serif; font-size: 14px; color: var(--sub); line-height: 1.78; margin-bottom: 18px; }
+.dt-detail-no-article { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 18px; }
+.dt-source-row { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid var(--rule); margin-bottom: 20px; }
+.dt-source-label { font-family: 'Space Mono', monospace; font-size: 8px; color: var(--muted); letter-spacing: 2px; margin-bottom: 3px; }
+.dt-source-name { font-size: 12px; color: var(--sub); }
+.dt-read-btn { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1.5px; color: var(--red); border: 1px solid var(--red); padding: 6px 12px; cursor: pointer; background: none; border-radius: 2px; text-decoration: none; display: inline-block; flex-shrink: 0; }
+.dt-read-btn:hover { background: var(--red); color: #fff; }
+.dt-related { padding: 0 26px 20px; }
+.dt-related-title { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.dt-related-item { padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: 12px; color: var(--muted); cursor: pointer; display: flex; gap: 7px; line-height: 1.4; }
+.dt-related-item:hover { color: var(--text); }
+.dt-related-item:last-child { border-bottom: none; }
+
 @keyframes deepLinkFlash {
   0%,100% { background: transparent; }
   30% { background: rgba(204,0,0,0.08); }
@@ -480,6 +604,45 @@ html, body {
   <div class="install-actions">
     <button class="install-btn-add" onclick="installApp()">Dodaj</button>
     <button class="install-btn-dismiss" onclick="dismissInstall()">Nie teraz</button>
+  </div>
+</div>
+
+<!-- ═══ DESKTOP LAYOUT ═══ -->
+<div class="dt-app" id="dtApp">
+  <div class="dt-header">
+    <div class="dt-logo">Brif<span class="dt-logo-dot">.</span>up</div>
+    <div class="dt-header-sep"></div>
+    <div class="dt-header-date" id="dtHeaderDate">—</div>
+    <div class="dt-tabs">
+      <div class="dt-tab morning"   id="dttab-morning"   onclick="switchDose('morning')">☀ PORANNE</div>
+      <div class="dt-tab afternoon" id="dttab-afternoon" onclick="switchDose('afternoon')">◑ POPOŁUDNIOWE</div>
+      <div class="dt-tab evening"   id="dttab-evening"   onclick="switchDose('evening')">☽ WIECZORNE</div>
+    </div>
+    <div class="dt-header-right">
+      <div class="dt-live"><div class="dt-live-dot"></div>LIVE</div>
+      <button class="theme-btn" onclick="toggleTheme()" id="dtThemeBtn">🌙</button>
+      <button class="bell-btn inactive" id="dtBellBtn" onclick="togglePush()">🔔</button>
+      <button class="refresh-btn" onclick="refresh()">↻</button>
+    </div>
+  </div>
+  <div class="dt-body">
+    <div class="dt-index">
+      <div class="dt-index-section" id="dtCategories"></div>
+      <div class="dt-index-section" id="dtArchive"></div>
+    </div>
+    <div class="dt-feed">
+      <div class="dt-feed-header">
+        <span class="dt-feed-title" id="dtFeedTitle">—</span>
+        <span class="dt-feed-count" id="dtFeedCount">—</span>
+      </div>
+      <div class="dt-feed-list" id="dtFeedList"></div>
+    </div>
+    <div class="dt-detail" id="dtDetail">
+      <div class="dt-detail-empty">
+        <div class="dt-detail-empty-icon">→</div>
+        <div class="dt-detail-empty-text">Wybierz news aby przeczytać artykuł</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -913,6 +1076,7 @@ function renderDose(dose, items) {
     </div>
     ${restBlocks}`;
 
+  renderDesktop(dose, items);
   scrollArea.scrollTop = 0;
 }
 
@@ -971,6 +1135,9 @@ function switchDose(dose) {
   setTimeout(() => { suppressScrollHide = false; }, 400);
   document.querySelectorAll('.dose-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+dose).classList.add('active');
+  document.querySelectorAll('.dt-tab').forEach(t=>t.classList.remove('active'));
+  const dtTab = document.getElementById('dttab-'+dose);
+  if (dtTab) dtTab.classList.add('active');
   // Taby zawsze widoczne po zmianie dawki
   document.getElementById('doseTabs').classList.remove('hidden');
   scrollArea.classList.remove('tabs-hidden');
@@ -1199,6 +1366,215 @@ async function togglePush() {
     showToast('Błąd: ' + (e.message || 'spróbuj ponownie'));
   }
 }
+
+// ══ DESKTOP LOGIC ═════════════════════════════════════
+
+let dtItemsMap = {};
+let dtCurrentItemId = null;
+
+function isDesktop() { return window.innerWidth >= 1024; }
+
+function dtGetCategory(item) {
+  const t = (item.text || '').toLowerCase();
+  if (/fed|ebc|ecb|boj|nbp|monetarn|inflacj|obniżk|podwyżk|stopa|stóp|oprocentow|rrr/.test(t)) return 'Fed / Banki';
+  if (/geopolit|sankcj|wojn|armia|iran|ukraina|rosja|chiny\b|izrael|palestyn|konflikt|atak|droni|rakiet/.test(t)) return 'Geopolityka';
+  if (/\bai\b|sztuczn|chip|nvidia|intel|apple\b|google\b|microsoft|openai|technolog|startup|\bmeta\b|amazo/.test(t)) return 'Tech / AI';
+  if (/ropa|gaz\b|złot|metal|surowc|opec|brent|barrel|węgiel|miedź/.test(t)) return 'Surowce';
+  return 'Rynki';
+}
+
+const DT_CAT_COLORS = {
+  'Fed / Banki':'#ef4444','Geopolityka':'#f97316','Tech / AI':'#06b6d4','Surowce':'#22c55e','Rynki':'#6366f1'
+};
+
+function dtRenderSidebar(items) {
+  const counts = {};
+  function countIt(it) { const c = dtGetCategory(it); counts[c] = (counts[c]||0)+1; }
+  items.forEach(it => it.subItems?.length > 0 ? it.subItems.forEach(countIt) : countIt(it));
+  const catsEl = document.getElementById('dtCategories');
+  if (catsEl) {
+    const order = ['Fed / Banki','Geopolityka','Tech / AI','Surowce','Rynki'];
+    catsEl.innerHTML = '<div class="dt-index-title">Tematy</div>' +
+      order.filter(c => counts[c]).map(c =>
+        `<div class="dt-index-item" onclick="dtFilterCat(this)">
+          <div class="dt-index-dot" style="background:${DT_CAT_COLORS[c]}"></div>
+          <span class="dt-index-label">${c}</span>
+          <span class="dt-index-n">${counts[c]}</span>
+        </div>`
+      ).join('');
+  }
+  const archEl = document.getElementById('dtArchive');
+  if (archEl) {
+    const today = new Date();
+    let html = '<div class="dt-index-title">Archiwum</div>';
+    for (let i = 1; i <= 3; i++) {
+      const d = new Date(today); d.setDate(today.getDate() - i);
+      const label = d.toLocaleDateString('pl-PL',{day:'numeric',month:'short'});
+      html += `<div class="dt-index-item dim"><div class="dt-index-dot" style="background:#ccc"></div><span class="dt-index-label">${label}</span></div>`;
+    }
+    archEl.innerHTML = html;
+  }
+}
+
+function dtFilterCat(el) {
+  document.querySelectorAll('#dtCategories .dt-index-item').forEach(e => e.classList.remove('active'));
+  el.classList.toggle('active');
+}
+
+function renderDesktop(dose, items) {
+  if (!isDesktop()) return;
+  dtItemsMap = {};
+  items.forEach(it => {
+    dtItemsMap[it.id] = it;
+    (it.subItems||[]).forEach(sub => { dtItemsMap[sub.id] = sub; });
+  });
+
+  const doseNames = {morning:'Poranne',afternoon:'Popołudniowe',evening:'Wieczorne'};
+  const dateStr = new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
+  const ftEl = document.getElementById('dtFeedTitle');
+  const fcEl = document.getElementById('dtFeedCount');
+  if (ftEl) ftEl.textContent = `${doseNames[dose]} · ${dateStr}`;
+  if (fcEl) {
+    const total = items.reduce((s,it) => s + (it.subItems?.length > 0 ? it.subItems.length : 1), 0);
+    fcEl.textContent = `${total} wpisów`;
+  }
+
+  let html = '';
+  items.forEach((item, i) => {
+    const num = String(i+1).padStart(3,'0');
+    const isGroup = item.subItems?.length > 0;
+    const isTop = !!item.top;
+    if (isGroup) {
+      const subsHtml = item.subItems.map(sub =>
+        `<div class="dt-sub-item" id="dts-${sub.id}" onclick="event.stopPropagation();dtPickItem('${sub.id}')">
+          <span class="dt-sub-flag">${sub.flag||'📰'}</span>
+          <div class="dt-sub-text">${sub.text}</div>
+        </div>`
+      ).join('');
+      html += `<div class="dt-item group-header${isTop?' top-item':''}" id="dti-${item.id}" onclick="dtToggleGroup('${item.id}')">
+        <div class="dt-item-num">${num}</div>
+        <div class="dt-item-flag">${item.flag||'📰'}</div>
+        <div class="dt-item-body">
+          ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-brk">BREAKING</span></div>':''}
+          <div class="dt-item-headline">${item.text}</div>
+          <div class="dt-item-meta"><span>↓ ${item.subItems.length} powiązane</span></div>
+        </div>
+      </div>
+      <div class="dt-group-subs" id="dtg-${item.id}" style="display:none">${subsHtml}</div>`;
+    } else {
+      const t = formatAddedAt(item);
+      html += `<div class="dt-item${isTop?' top-item':''}" id="dti-${item.id}" onclick="dtPickItem('${item.id}')">
+        <div class="dt-item-num">${num}</div>
+        <div class="dt-item-flag">${item.flag||'📰'}</div>
+        <div class="dt-item-body">
+          ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-brk">BREAKING</span></div>':''}
+          <div class="dt-item-headline">${item.text}</div>
+          ${(t||item.source_name)?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${item.source_name}</span>`:''}</div>`:''}
+        </div>
+      </div>`;
+    }
+  });
+
+  const feedList = document.getElementById('dtFeedList');
+  if (feedList) feedList.innerHTML = html;
+
+  dtRenderSidebar(items);
+  dtShowEmpty();
+}
+
+function dtToggleGroup(id) {
+  const g = document.getElementById(`dtg-${id}`);
+  const h = document.getElementById(`dti-${id}`);
+  if (!g) return;
+  const open = g.style.display !== 'none';
+  g.style.display = open ? 'none' : 'block';
+  h?.classList.toggle('selected', !open);
+  if (open) {
+    document.querySelectorAll('.dt-sub-item.selected').forEach(e => e.classList.remove('selected'));
+    dtShowEmpty();
+  }
+}
+
+function dtPickItem(id) {
+  const item = dtItemsMap[id];
+  if (!item) return;
+  document.querySelectorAll('.dt-item.selected,.dt-sub-item.selected').forEach(e => e.classList.remove('selected'));
+  (document.getElementById(`dti-${id}`) || document.getElementById(`dts-${id}`))?.classList.add('selected');
+  dtCurrentItemId = id;
+  dtShowDetail(item);
+}
+
+function dtShowEmpty() {
+  const det = document.getElementById('dtDetail');
+  if (det) det.innerHTML = `<div class="dt-detail-empty"><div class="dt-detail-empty-icon">→</div><div class="dt-detail-empty-text">Wybierz news aby przeczytać artykuł</div></div>`;
+  dtCurrentItemId = null;
+}
+
+function dtShowDetail(item) {
+  const det = document.getElementById('dtDetail');
+  if (!det) return;
+  const cat = dtGetCategory(item);
+  const time = formatAddedAt(item);
+  const readBtn = (item.source_url && item.source_url !== '#')
+    ? `<a class="dt-read-btn" href="${item.source_url}" target="_blank" rel="noopener">CZYTAJ →</a>`
+    : (item.rssLink ? `<a class="dt-read-btn" href="${item.rssLink}" target="_blank" rel="noopener">CZYTAJ →</a>` : '');
+  const allItems = cache[currentDose] || [];
+  const related = [];
+  for (const it of allItems) {
+    if (related.length >= 3) break;
+    const cands = it.subItems?.length > 0 ? it.subItems : [it];
+    for (const c of cands) {
+      if (c.id !== item.id && related.length < 3) related.push(c);
+    }
+  }
+  det.innerHTML = `
+    <div class="dt-detail-content">
+      <div class="dt-detail-flag">${item.flag||'📰'}</div>
+      <div class="dt-detail-badges"><span class="dt-detail-badge">${cat.toUpperCase()}</span></div>
+      <div class="dt-detail-headline">${item.text}</div>
+      <div class="dt-detail-time">${time||'—'}</div>
+      ${item.article
+        ? `<div class="dt-detail-body">${item.article}</div>`
+        : `<div class="dt-detail-no-article">Brak rozszerzonego artykułu dla tego wpisu.</div>`}
+      <div class="dt-source-row">
+        <div>
+          <div class="dt-source-label">ŹRÓDŁO</div>
+          <div class="dt-source-name">${item.source_name||'—'}</div>
+        </div>
+        ${readBtn}
+      </div>
+    </div>
+    ${related.length ? `<div class="dt-related">
+      <div class="dt-related-title">Inne wpisy</div>
+      ${related.map(r=>`<div class="dt-related-item" onclick="dtPickItem('${r.id}')"><span>${r.flag||'📰'}</span><span>${r.text.length>80?r.text.slice(0,80)+'…':r.text}</span></div>`).join('')}
+    </div>` : ''}`;
+}
+
+// init desktop header
+(function() {
+  const el = document.getElementById('dtHeaderDate');
+  if (el) el.textContent = new Date().toLocaleDateString('pl-PL',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
+  document.querySelectorAll('.dt-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('dttab-'+currentDose);
+  if (tab) tab.classList.add('active');
+  // sync theme btn
+  const dtTheme = document.getElementById('dtThemeBtn');
+  if (dtTheme) {
+    const theme = document.documentElement.getAttribute('data-theme');
+    dtTheme.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+})();
+
+// sync desktop theme btn on toggle
+const _origToggleTheme = toggleTheme;
+toggleTheme = function() {
+  _origToggleTheme();
+  const dtBtn = document.getElementById('dtThemeBtn');
+  if (dtBtn) {
+    const theme = document.documentElement.getAttribute('data-theme');
+    dtBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+};
 
 // ══ Wymuś świeże dane przy każdym powrocie do apki ════
 // (np. po wznowieniu z tła zamiast pełnego przeładowania strony)
