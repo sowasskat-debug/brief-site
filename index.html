@@ -1217,24 +1217,44 @@ loadDose(currentDose);
       if (attempts < 25) setTimeout(() => tryOpen(attempts + 1), 200);
       return;
     }
-    let found = null;
+    let found = null, parent = null;
     outer: for (const it of items) {
       if (itemSlug(it.text) === slug) { found = it; break; }
       if (it.subItems) {
         for (const sub of it.subItems) {
-          if (itemSlug(sub.text) === slug) { found = sub; break outer; }
+          if (itemSlug(sub.text) === slug) { found = sub; parent = it; break outer; }
         }
       }
     }
     if (!found) return;
-    const el = document.getElementById('item-' + found.id);
-    if (!el) return;
-    if (!el.classList.contains('open')) toggleSubItem(found.id);
+
+    const isGroup = found.subItems && found.subItems.length > 0;
+
+    // Sub-item w klastrze jest ukryty w zwiniętym kontenerze — najpierw otwórz nadrzędną grupę,
+    // dopiero potem sam podpunkt. Bez tego scrollIntoView skacze do niewidocznego elementu.
+    if (parent) {
+      const groupEl = document.getElementById('group-' + parent.id);
+      if (groupEl && !groupEl.classList.contains('open')) toggleGroup(parent.id);
+    }
+
     setTimeout(() => {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('deep-link-highlight');
-      setTimeout(() => el.classList.remove('deep-link-highlight'), 2000);
-    }, 120);
+      let el;
+      if (isGroup) {
+        // Udostępniono nagłówek klastra — otwórz grupę i podświetl jej nagłówek
+        el = document.getElementById('group-' + found.id);
+        if (el && !el.classList.contains('open')) toggleGroup(found.id);
+      } else {
+        el = document.getElementById('item-' + found.id);
+        // toggleGroup mógł już auto-otworzyć jedyny podpunkt — otwieraj tylko jeśli zamknięty
+        if (el && !el.classList.contains('open')) toggleSubItem(found.id);
+      }
+      if (!el) return;
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('deep-link-highlight');
+        setTimeout(() => el.classList.remove('deep-link-highlight'), 2000);
+      }, 160);
+    }, parent ? 140 : 0);
   }
   setTimeout(() => tryOpen(0), 150);
 })();
