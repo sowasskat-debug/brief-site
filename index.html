@@ -1389,10 +1389,11 @@ function dismissInstall() {
 }
 
 // ══ PWA — rejestracja Service Workera ════════════════
+let swRegistration = null;
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('service-worker.js')
-      .then(() => console.log('Service Worker zarejestrowany'))
+      .then((reg) => { swRegistration = reg; console.log('Service Worker zarejestrowany'); })
       .catch((err) => console.warn('SW registration failed:', err));
   });
   // Auto-reload gdy nowy SW przejmie kontrolę (nowa wersja apki)
@@ -1401,6 +1402,27 @@ if ('serviceWorker' in navigator) {
     if (!refreshing) { refreshing = true; window.location.reload(); }
   });
 }
+
+// ══ Wykrywanie nowej wersji apki (index.html) ════════
+// W zainstalowanej PWA system zwykle WZNAWIA istniejące okno bez nawigacji
+// sieciowej, więc świeży index.html nie jest pobierany aż do pełnego restartu
+// (w Chrome każde wejście to realna nawigacja, dlatego tam zmiany widać od razu).
+// Tu przy każdym powrocie na pierwszy plan porównujemy ETag/Last-Modified
+// index.html z wersją, z której wystartowała apka — jeśli się zmienił,
+// przeładowujemy. Działa automatycznie, bez ręcznego bumpowania wersji.
+let loadedAppTag = null;
+async function checkAppShellUpdate() {
+  try {
+    // Zmuś przeglądarkę do ponownego sprawdzenia samego service-workera
+    if (swRegistration) { swRegistration.update().catch(() => {}); }
+    const res = await fetch('./index.html', { cache: 'reload' });
+    const tag = res.headers.get('etag') || res.headers.get('last-modified') || res.headers.get('content-length');
+    if (!tag) return;
+    if (loadedAppTag === null) { loadedAppTag = tag; return; } // pierwsza wizyta = wersja bazowa
+    if (tag !== loadedAppTag) { loadedAppTag = tag; window.location.reload(); }
+  } catch (_) { /* offline — zostajemy na obecnej wersji */ }
+}
+window.addEventListener('load', () => { checkAppShellUpdate(); });
 
 // ══ OneSignal — push notifications ════════════════════
 const ONESIGNAL_APP_ID = '20698631-0f06-4308-a11e-4a0388c68853';
@@ -1690,6 +1712,7 @@ toggleTheme = function() {
 // (np. po wznowieniu z tła zamiast pełnego przeładowania strony)
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
+    checkAppShellUpdate();   // nowa wersja apki? → przeładuj
     delete cache[currentDose];
     loadDose(currentDose, true);
   }
