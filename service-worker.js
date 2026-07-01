@@ -5,7 +5,7 @@
 
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
 
-const CACHE_NAME = 'brifup-cache-v4';
+const CACHE_NAME = 'brifup-cache-v5';
 const STATIC_ASSETS = [
   './index.html',
   './manifest.json',

@@ -910,9 +910,14 @@ async function loadDose(dose, force=false) {
     if (!items) items = SAMPLE[dose];
 
     cache[dose] = items.map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) }));
+    // Newest-first: sub-itemy w każdym klastrze, a potem top-level
+    cache[dose].forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
+    cache[dose] = sortNewestFirst(cache[dose]);
     renderDose(dose, cache[dose]);
   } catch(e) {
     cache[dose] = SAMPLE[dose].map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) }));
+    cache[dose].forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
+    cache[dose] = sortNewestFirst(cache[dose]);
     renderDose(dose, cache[dose]);
   }
 }
@@ -947,6 +952,26 @@ function formatAddedAt(item) {
   if (!datePart || !timePart) return '';
   const [, m, d] = datePart.split('-');
   return `${d}.${m} · ${timePart}`;
+}
+
+// ── Sortowanie do wyświetlania: NAJNOWSZE ZAWSZE NA GÓRZE ──────────────
+// Autorytatywne, deterministyczne, po stronie frontu — NIE polegamy na kolejności
+// z bota/DeepSeeka (ta bywa zawodna). Front to ostatnia warstwa, więc gwarantuje
+// poprawną kolejność niezależnie od tego, co przyjdzie w briefs.json.
+function itemTimestamp(it) {
+  // Dla klastra bierzemy NAJNOWSZY sub-item, żeby klaster ze świeżym newsem szedł do góry
+  const cands = (it.subItems && it.subItems.length) ? it.subItems : [it];
+  let best = 0;
+  for (const s of cands) {
+    if (!s || !s.added_at) continue;
+    const t = Date.parse(String(s.added_at).replace(' ', 'T'));
+    if (!isNaN(t) && t > best) best = t;
+  }
+  return best; // brak daty → 0 → ląduje na dole
+}
+function sortNewestFirst(items) {
+  // slice() — nie mutujemy oryginału; stabilny sort zachowuje kolejność przy równych czasach
+  return (items || []).slice().sort((a, b) => itemTimestamp(b) - itemTimestamp(a));
 }
 
 function itemSlug(text) {
