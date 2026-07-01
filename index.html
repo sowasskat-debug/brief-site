@@ -312,6 +312,27 @@ html, body {
 }
 .expand-read-btn:active { background: var(--red); color: #fff; }
 
+.expand-share-row {
+  margin-top: 12px;
+  display: flex; justify-content: flex-end;
+}
+.expand-share-btn {
+  background: none; border: none; cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 7.5px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--sub); padding: 5px 0;
+  display: flex; align-items: center; gap: 5px;
+}
+.expand-share-btn:active { color: var(--text); }
+.expand-share-icon { font-size: 11px; }
+
+@keyframes deepLinkFlash {
+  0%,100% { background: transparent; }
+  30% { background: rgba(204,0,0,0.08); }
+}
+.deep-link-highlight { animation: deepLinkFlash 1.8s ease; }
+
 /* ══ SKELETON ══ */
 .skel {
   border-radius: 1px;
@@ -648,7 +669,43 @@ function formatAddedAt(item) {
   return `${d}.${m} · ${timePart}`;
 }
 
+function itemSlug(text) {
+  let h = 5381;
+  for (let i = 0; i < Math.min(text.length, 80); i++) {
+    h = ((h << 5) + h) ^ text.charCodeAt(i);
+    h = h >>> 0;
+  }
+  return h.toString(36);
+}
+
+async function shareItem(url, title) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'BrifUp', text: title, url });
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link skopiowany');
+  } catch(e) {
+    showToast('Nie można skopiować linku');
+  }
+}
+
+function escAttr(s) {
+  return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+}
+
 function expandBlock(item) {
+  const slug = itemSlug(item.text);
+  const shareUrl = `https://brifup.com/#${currentDose}/${slug}`;
+  const shareBtn = `<button class="expand-share-btn"
+    onclick="event.stopPropagation();shareItem('${escAttr(shareUrl)}','${escAttr(item.text)}')"
+    ><span class="expand-share-icon">↑</span>Udostępnij</button>`;
+
   if (item.article) {
     return `
       <div class="expand-article">${item.article}</div>
@@ -664,10 +721,12 @@ function expandBlock(item) {
           : item.rssLink
           ? `<a class="expand-read-btn" href="${item.rssLink}" target="_blank">Czytaj →</a>`
           : ''}
-      </div>`;
+      </div>
+      <div class="expand-share-row">${shareBtn}</div>`;
   }
   return `
-    <div class="expand-loading">Brak rozszerzonego artykułu dla tego newsa.</div>`;
+    <div class="expand-loading">Brak rozszerzonego artykułu dla tego newsa.</div>
+    <div class="expand-share-row">${shareBtn}</div>`;
 }
 
 function renderSubItems(subItems) {
@@ -842,6 +901,46 @@ document.getElementById('topbarDate').textContent =
 document.querySelectorAll('.dose-tab').forEach(t=>t.classList.remove('active'));
 document.getElementById('tab-'+currentDose).classList.add('active');
 loadDose(currentDose);
+
+// ══ Deep link: brifup.com/#morning/slug ═══════════════
+(function() {
+  const hash = location.hash.slice(1);
+  if (!hash) return;
+  const sep = hash.indexOf('/');
+  if (sep === -1) return;
+  const dose = hash.slice(0, sep);
+  const slug = hash.slice(sep + 1);
+  if (!['morning','afternoon','evening'].includes(dose) || !slug) return;
+
+  if (dose !== currentDose) switchDose(dose);
+
+  function tryOpen(attempts) {
+    const items = cache[dose];
+    if (!items) {
+      if (attempts < 25) setTimeout(() => tryOpen(attempts + 1), 200);
+      return;
+    }
+    let found = null;
+    outer: for (const it of items) {
+      if (itemSlug(it.text) === slug) { found = it; break; }
+      if (it.subItems) {
+        for (const sub of it.subItems) {
+          if (itemSlug(sub.text) === slug) { found = sub; break outer; }
+        }
+      }
+    }
+    if (!found) return;
+    const el = document.getElementById('item-' + found.id);
+    if (!el) return;
+    if (!el.classList.contains('open')) toggleSubItem(found.id);
+    setTimeout(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('deep-link-highlight');
+      setTimeout(() => el.classList.remove('deep-link-highlight'), 2000);
+    }, 120);
+  }
+  setTimeout(() => tryOpen(0), 150);
+})();
 
 // ══ Swipe między dawkami ══════════════════════════════
 (function() {
