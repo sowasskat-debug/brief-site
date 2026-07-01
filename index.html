@@ -1710,17 +1710,28 @@ toggleTheme = function() {
 
 // ══ Wymuś świeże dane przy każdym powrocie do apki ════
 // (np. po wznowieniu z tła zamiast pełnego przeładowania strony)
+// Po wznowieniu apki dawka ma pasować do AKTUALNEJ godziny (rano→poranna, po 17→wieczorna itd.),
+// a nie zostać na tej, którą otwarto wcześniej. getCurrentDose() liczymy na nowo z zegara —
+// bez tego, gdy apka wisiała w tle przez zmianę okna (np. przez północ), pokazywała starą dawkę.
+function syncDoseToTime() {
+  const powinnaByc = getCurrentDose();
+  if (powinnaByc !== currentDose) {
+    delete cache[powinnaByc];      // świeże dane dla nowej dawki
+    switchDose(powinnaByc);        // przełącza taby + ładuje właściwą dawkę
+  } else {
+    delete cache[currentDose];
+    loadDose(currentDose, true);   // ta sama dawka → tylko odśwież dane
+  }
+}
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     checkAppShellUpdate();   // nowa wersja apki? → przeładuj
-    delete cache[currentDose];
-    loadDose(currentDose, true);
+    syncDoseToTime();        // dawka zgodna z aktualną godziną + świeże dane
   }
 });
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) {
-    delete cache[currentDose];
-    loadDose(currentDose, true);
+    syncDoseToTime();
   }
 });
 </script>
