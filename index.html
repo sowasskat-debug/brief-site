@@ -355,7 +355,8 @@ html, body {
 /* ══ DESKTOP LAYOUT (≥1024px) ══════════════════════════════════════════════ */
 @media (max-width: 1023px) { .dt-app { display: none !important; } }
 @media (min-width: 1024px) {
-  body { overflow: hidden; }
+  body { overflow: hidden; background: #f5f3ef; }
+  [data-theme="dark"] body { background: #0f0f0f; }
   .topbar, .dose-tabs, .scroll-area, .install-banner { display: none !important; }
   .dt-app { display: flex !important; }
 }
@@ -363,11 +364,15 @@ html, body {
   display: none;
   flex-direction: column;
   height: 100vh;
+  max-width: 1600px;
+  margin: 0 auto;
   font-family: 'Inter', sans-serif;
   background: #f5f3ef;
   color: var(--text);
+  border-left: 1px solid #dbd8d2;
+  border-right: 1px solid #dbd8d2;
 }
-[data-theme="dark"] .dt-app { background: #0f0f0f; }
+[data-theme="dark"] .dt-app { background: #0f0f0f; border-color: #2a2a2a; }
 
 /* header */
 .dt-header {
@@ -1371,6 +1376,8 @@ async function togglePush() {
 
 let dtItemsMap = {};
 let dtCurrentItemId = null;
+let dtAllItems = [];
+let dtActiveFilter = null;
 
 function isDesktop() { return window.innerWidth >= 1024; }
 
@@ -1417,28 +1424,32 @@ function dtRenderSidebar(items) {
 }
 
 function dtFilterCat(el) {
+  const cat = el.querySelector('.dt-index-label')?.textContent;
+  if (!cat) return;
+  const wasActive = dtActiveFilter === cat;
   document.querySelectorAll('#dtCategories .dt-index-item').forEach(e => e.classList.remove('active'));
-  el.classList.toggle('active');
+  if (wasActive) {
+    dtActiveFilter = null;
+    dtRenderFeed(dtAllItems);
+  } else {
+    dtActiveFilter = cat;
+    el.classList.add('active');
+    const filtered = dtAllItems.filter(it =>
+      it.subItems?.length > 0
+        ? it.subItems.some(sub => dtGetCategory(sub) === cat)
+        : dtGetCategory(it) === cat
+    );
+    dtRenderFeed(filtered);
+  }
+  const fcEl = document.getElementById('dtFeedCount');
+  if (fcEl) {
+    const src = dtActiveFilter ? document.getElementById('dtFeedList').querySelectorAll('.dt-item').length : dtAllItems.reduce((s,it) => s + (it.subItems?.length > 0 ? it.subItems.length : 1), 0);
+    fcEl.textContent = `${src} wpisów`;
+  }
+  dtShowEmpty();
 }
 
-function renderDesktop(dose, items) {
-  if (!isDesktop()) return;
-  dtItemsMap = {};
-  items.forEach(it => {
-    dtItemsMap[it.id] = it;
-    (it.subItems||[]).forEach(sub => { dtItemsMap[sub.id] = sub; });
-  });
-
-  const doseNames = {morning:'Poranne',afternoon:'Popołudniowe',evening:'Wieczorne'};
-  const dateStr = new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
-  const ftEl = document.getElementById('dtFeedTitle');
-  const fcEl = document.getElementById('dtFeedCount');
-  if (ftEl) ftEl.textContent = `${doseNames[dose]} · ${dateStr}`;
-  if (fcEl) {
-    const total = items.reduce((s,it) => s + (it.subItems?.length > 0 ? it.subItems.length : 1), 0);
-    fcEl.textContent = `${total} wpisów`;
-  }
-
+function dtRenderFeed(items) {
   let html = '';
   items.forEach((item, i) => {
     const num = String(i+1).padStart(3,'0');
@@ -1474,10 +1485,31 @@ function renderDesktop(dose, items) {
       </div>`;
     }
   });
-
   const feedList = document.getElementById('dtFeedList');
   if (feedList) feedList.innerHTML = html;
+}
 
+function renderDesktop(dose, items) {
+  if (!isDesktop()) return;
+  dtItemsMap = {};
+  dtAllItems = items;
+  dtActiveFilter = null;
+  items.forEach(it => {
+    dtItemsMap[it.id] = it;
+    (it.subItems||[]).forEach(sub => { dtItemsMap[sub.id] = sub; });
+  });
+
+  const doseNames = {morning:'Poranne',afternoon:'Popołudniowe',evening:'Wieczorne'};
+  const dateStr = new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
+  const ftEl = document.getElementById('dtFeedTitle');
+  const fcEl = document.getElementById('dtFeedCount');
+  if (ftEl) ftEl.textContent = `${doseNames[dose]} · ${dateStr}`;
+  if (fcEl) {
+    const total = items.reduce((s,it) => s + (it.subItems?.length > 0 ? it.subItems.length : 1), 0);
+    fcEl.textContent = `${total} wpisów`;
+  }
+
+  dtRenderFeed(items);
   dtRenderSidebar(items);
   dtShowEmpty();
 }
