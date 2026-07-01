@@ -567,7 +567,8 @@ html, body {
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
 (function(){
-  var t=localStorage.getItem('brifup_theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  // Domyślnie jasny (dzienny) motyw na pierwszej wizycie — nie dziedziczymy trybu ciemnego z ustawień systemu.
+  var t=localStorage.getItem('brifup_theme')||'light';
   document.documentElement.setAttribute('data-theme',t);
 })();
 </script>
@@ -1228,9 +1229,9 @@ loadDose(currentDose);
 
 // ══ Dark mode ═════════════════════════════════════════
 (function() {
+  // Domyślnie jasny (dzienny) motyw na pierwszej wizycie — nie dziedziczymy trybu ciemnego z ustawień systemu.
   const saved = localStorage.getItem('brifup_theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const theme = saved || (prefersDark ? 'dark' : 'light');
+  const theme = saved || 'light';
   document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('themeBtn');
   if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
