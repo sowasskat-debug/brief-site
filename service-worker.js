@@ -5,7 +5,7 @@
 
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
 
-const CACHE_NAME = 'brifup-cache-v3';
+const CACHE_NAME = 'brifup-cache-v4';
 const STATIC_ASSETS = [
   './index.html',
   './manifest.json',
@@ -40,10 +40,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // index.html — zawsze z sieci (żeby zmiany były widoczne od razu)
+  // index.html — zawsze z sieci, z pominięciem cache przeglądarki (GitHub Pages daje HTML max-age=600,
+  // przez co inaczej widać starą wersję nawet przy network-first). cache:'reload' wymusza świeży pobór.
   if (url.endsWith('/') || url.includes('index.html') || !url.includes('.')) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('./index.html'))
+      fetch(event.request, { cache: 'reload' }).catch(() => caches.match('./index.html'))
     );
     return;
   }
