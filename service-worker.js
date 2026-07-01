@@ -5,24 +5,22 @@
 
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
 
-const CACHE_NAME = 'brief-cache-v1';
-const CORE_ASSETS = [
-  './index.html',
+const CACHE_NAME = 'brifup-cache-v2';
+// Tylko zasoby statyczne które się nie zmieniają często
+const STATIC_ASSETS = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  './og-image.png',
 ];
 
-// Instalacja — cache podstawowych plików apki (nie danych z briefs.json,
-// te mają być zawsze świeże z sieci)
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
 });
 
-// Aktywacja — usuń stare wersje cache
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -32,25 +30,32 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch — strategia "network first, cache fallback"
-// Dla briefs.json zawsze próbuj sieć najpierw (świeże dane),
-// dla resztek (HTML/CSS/ikony) cache jest wystarczający offline.
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
 
-  // Nie cache'uj wywołań do Anthropic API / RSS proxy / zewnętrznych API
-  if (url.includes('api.anthropic.com') || url.includes('rss2json') || url.includes('supabase')) {
-    return; // pozwól przejść normalnie do sieci, bez przechwytywania
+  // Zewnętrzne API — nie przechwytuj
+  if (url.includes('api.anthropic.com') || url.includes('rss2json') ||
+      url.includes('supabase') || url.includes('onesignal') ||
+      url.includes('fonts.googleapis') || url.includes('fonts.gstatic')) {
+    return;
   }
 
+  // index.html — zawsze z sieci (żeby zmiany były widoczne od razu)
+  if (url.endsWith('/') || url.includes('index.html') || !url.includes('.')) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
+  // Pozostałe pliki statyczne — network first, cache fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Zapisz świeżą wersję do cache w tle
-        const respClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, respClone));
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
       })
-      .catch(() => caches.match(event.request)) // offline fallback
+      .catch(() => caches.match(event.request))
   );
 });

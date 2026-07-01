@@ -1146,6 +1146,11 @@ if ('serviceWorker' in navigator) {
       .then(() => console.log('Service Worker zarejestrowany'))
       .catch((err) => console.warn('SW registration failed:', err));
   });
+  // Auto-reload gdy nowy SW przejmie kontrolę (nowa wersja apki)
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) { refreshing = true; window.location.reload(); }
+  });
 }
 
 // ══ OneSignal — push notifications ════════════════════
