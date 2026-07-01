@@ -5,9 +5,9 @@
 
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
 
-const CACHE_NAME = 'brifup-cache-v2';
-// Tylko zasoby statyczne które się nie zmieniają często
+const CACHE_NAME = 'brifup-cache-v3';
 const STATIC_ASSETS = [
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
