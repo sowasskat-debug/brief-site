@@ -2011,19 +2011,21 @@ window.addEventListener('pageshow', (event) => {
 
   // long-press handler — podpinamy na content (event delegation)
   let pressTimer = null;
+  let pressStartX = 0, pressStartY = 0;
   const content = document.getElementById('content');
 
   function attachLongPress() {
     content.addEventListener('pointerdown', (e) => {
       if (!getAdminPat()) return;
       const card = e.target.closest('.hero-card, .news-item');
-      if (!card) return;
+      if (!card || e.target.closest('.admin-del-btn')) return;
+      pressStartX = e.clientX; pressStartY = e.clientY;
       pressTimer = setTimeout(() => {
         clearDelBtn();
         const btn = document.createElement('button');
         btn.className = 'admin-del-btn';
         btn.textContent = '×';
-        btn.title = 'Usuń news';
+        btn.addEventListener('pointerdown', (ev) => ev.stopPropagation());
         btn.addEventListener('click', (ev) => {
           ev.stopPropagation();
           const itemId = card.id.replace(/^(item-|group-)/, '');
@@ -2031,18 +2033,24 @@ window.addEventListener('pageshow', (event) => {
         });
         card.appendChild(btn);
         activeDelBtn = btn;
-        navigator.vibrate && navigator.vibrate(30);
+        navigator.vibrate && navigator.vibrate(40);
       }, 2000);
     });
     content.addEventListener('pointerup', () => clearTimeout(pressTimer));
     content.addEventListener('pointercancel', () => clearTimeout(pressTimer));
-    content.addEventListener('pointermove', () => clearTimeout(pressTimer));
+    // anuluj tylko gdy palec przesunął się o >12px (tolerancja na drżenie)
+    content.addEventListener('pointermove', (e) => {
+      const dx = e.clientX - pressStartX, dy = e.clientY - pressStartY;
+      if (Math.sqrt(dx*dx + dy*dy) > 12) clearTimeout(pressTimer);
+    });
   }
 
   async function adminDeleteItem(itemId, cardEl) {
     const pat = getAdminPat();
     if (!pat) return;
-    if (!confirm('Usunąć ten news?')) { clearDelBtn(); return; }
+    // bez confirm() — PWA blokuje dialogi; zamiast tego przycisk zmienia się na ✓
+    const btn = activeDelBtn;
+    if (btn) { btn.textContent = '…'; btn.style.background = '#888'; }
 
     try {
       // pobierz aktualne briefs.json
@@ -2066,7 +2074,7 @@ window.addEventListener('pageshow', (event) => {
         });
         if (dose.items.length !== before) usunięto = true;
       }
-      if (!usunięto) { alert('Nie znaleziono newsa — może już usunięty?'); clearDelBtn(); return; }
+      if (!usunięto) { if (btn) { btn.textContent = '?'; btn.style.background = '#d97706'; } setTimeout(clearDelBtn, 1500); return; }
 
       // zapisz z powrotem
       const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(briefs))));
@@ -2083,8 +2091,9 @@ window.addEventListener('pageshow', (event) => {
       exp && exp.remove();
       clearDelBtn();
     } catch (err) {
-      alert('Błąd: ' + err.message);
-      clearDelBtn();
+      if (btn) { btn.textContent = '!'; btn.style.background = '#dc2626'; }
+      setTimeout(clearDelBtn, 2000);
+      console.error('Admin delete error:', err.message);
     }
   }
 
