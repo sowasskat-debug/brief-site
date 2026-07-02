@@ -2093,17 +2093,19 @@ window.addEventListener('pageshow', (event) => {
     document.body.appendChild(overlay);
     const input = overlay.querySelector('.admin-reason-input');
     setTimeout(() => input.focus(), 100);
-    overlay.querySelector('.admin-reason-cancel').addEventListener('click', () => {
-      overlay.remove(); clearDelBtn();
+    overlay.querySelector('.admin-reason-cancel').addEventListener('click', (e) => {
+      e.stopPropagation(); overlay.remove(); clearDelBtn();
     });
-    overlay.querySelector('.admin-reason-confirm').addEventListener('click', () => {
+    overlay.querySelector('.admin-reason-confirm').addEventListener('click', (e) => {
+      e.stopPropagation();
       const reason = input.value.trim();
       overlay.remove();
+      clearDelBtn();
       adminDeleteItem(itemText, cardEl, reason);
     });
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { const reason = input.value.trim(); overlay.remove(); adminDeleteItem(itemText, cardEl, reason); }
-      if (e.key === 'Escape') { overlay.remove(); clearDelBtn(); }
+      if (e.key === 'Enter') { e.stopPropagation(); const reason = input.value.trim(); overlay.remove(); clearDelBtn(); adminDeleteItem(itemText, cardEl, reason); }
+      if (e.key === 'Escape') { e.stopPropagation(); overlay.remove(); clearDelBtn(); }
     });
   }
 
@@ -2175,10 +2177,17 @@ window.addEventListener('pageshow', (event) => {
       exp && exp.remove();
       clearDelBtn();
     } catch (err) {
-      if (btn) { btn.textContent = '!'; btn.style.background = '#dc2626'; }
-      setTimeout(clearDelBtn, 2000);
+      adminToast('Błąd: ' + err.message);
       console.error('Admin delete error:', err.message);
     }
+  }
+
+  function adminToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;pointer-events:none;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
   }
 
   // podepnij po załadowaniu contentu
