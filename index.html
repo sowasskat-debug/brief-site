@@ -2111,7 +2111,8 @@ window.addEventListener('pageshow', (event) => {
 
   async function adminDeleteItem(itemText, cardEl, reason = '') {
     const pat = getAdminPat();
-    if (!pat) return;
+    if (!pat) { adminToast('Brak tokenu — aktywuj przez ?admin=PAT'); return; }
+    adminToast('Usuwam…');
     const btn = activeDelBtn;
     if (btn) { btn.textContent = '…'; btn.style.background = '#888'; }
 
