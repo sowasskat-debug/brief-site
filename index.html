@@ -2093,20 +2093,32 @@ window.addEventListener('pageshow', (event) => {
     document.body.appendChild(overlay);
     const input = overlay.querySelector('.admin-reason-input');
     setTimeout(() => input.focus(), 100);
-    overlay.querySelector('.admin-reason-cancel').addEventListener('click', (e) => {
-      e.stopPropagation(); overlay.remove(); clearDelBtn();
-    });
-    overlay.querySelector('.admin-reason-confirm').addEventListener('click', (e) => {
-      e.stopPropagation();
-      adminToast('Kliknięto Usuń…');
+
+    let handled = false;
+    function doCancel(e) {
+      if (handled) return; handled = true;
+      e.preventDefault(); e.stopPropagation();
+      overlay.remove(); clearDelBtn();
+    }
+    function doConfirm(e) {
+      if (handled) return; handled = true;
+      e.preventDefault(); e.stopPropagation();
       const reason = input.value.trim();
       overlay.remove();
       clearDelBtn();
       adminDeleteItem(itemText, cardEl, reason);
-    });
+    }
+    // pointerdown zamiast click — na Androidzie zamknięcie klawiatury po tapnięciu
+    // potrafi "zjeść" event click przez przesunięcie layoutu w trakcie gestu.
+    const cancelBtn = overlay.querySelector('.admin-reason-cancel');
+    const confirmBtn = overlay.querySelector('.admin-reason-confirm');
+    cancelBtn.addEventListener('pointerdown', doCancel);
+    cancelBtn.addEventListener('click', doCancel);
+    confirmBtn.addEventListener('pointerdown', doConfirm);
+    confirmBtn.addEventListener('click', doConfirm);
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.stopPropagation(); const reason = input.value.trim(); overlay.remove(); clearDelBtn(); adminDeleteItem(itemText, cardEl, reason); }
-      if (e.key === 'Escape') { e.stopPropagation(); overlay.remove(); clearDelBtn(); }
+      if (e.key === 'Enter') doConfirm(e);
+      if (e.key === 'Escape') doCancel(e);
     });
   }
 
