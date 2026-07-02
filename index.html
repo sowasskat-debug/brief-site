@@ -2098,6 +2098,7 @@ window.addEventListener('pageshow', (event) => {
     });
     overlay.querySelector('.admin-reason-confirm').addEventListener('click', (e) => {
       e.stopPropagation();
+      adminToast('Kliknięto Usuń…');
       const reason = input.value.trim();
       overlay.remove();
       clearDelBtn();
