@@ -1320,6 +1320,10 @@ function expandBlockArchive(item) {
   return `<div class="expand-loading">Brak rozszerzonego artykułu dla tego newsa.</div>`;
 }
 
+function escAttr(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function renderDose(dose, items) {
   const cfg = DOSE_CFG[dose];
   if (!items || items.length === 0) return;
@@ -1327,7 +1331,7 @@ function renderDose(dose, items) {
   const isHeroGroup = hero.subItems && hero.subItems.length > 0;
 
   const heroBlock = isHeroGroup ? `
-    <div class="hero-card" id="group-${hero.id}" data-text="${hero.text.replace(/"/g,'&quot;')}" onclick="toggleGroup('${hero.id}')">
+    <div class="hero-card" id="group-${hero.id}" data-text="${escAttr(hero.text)}" onclick="toggleGroup('${hero.id}')">
       <div class="hero-kicker">
         <span class="hero-flag">${hero.flag||'📰'}</span>
         <span class="hero-kicker-label ${cfg.kickerClass}">${cfg.kicker}</span>
@@ -1342,7 +1346,7 @@ function renderDose(dose, items) {
       ${renderSubItems(hero.subItems)}
     </div>`
     : `
-    <div class="hero-card" id="item-${hero.id}" data-text="${hero.text.replace(/"/g,'&quot;')}" onclick="toggleSubItem('${hero.id}')">
+    <div class="hero-card" id="item-${hero.id}" data-text="${escAttr(hero.text)}" onclick="toggleSubItem('${hero.id}')">
       <div class="hero-kicker">
         <span class="hero-flag">${hero.flag||'📰'}</span>
         <span class="hero-kicker-label ${cfg.kickerClass}">${cfg.kicker}</span>
@@ -1360,7 +1364,7 @@ function renderDose(dose, items) {
     const isGroup = item.subItems && item.subItems.length > 0;
     if (isGroup) {
       return `
-        <div class="news-item" id="group-${item.id}" data-text="${item.text.replace(/"/g,'&quot;')}" onclick="toggleGroup('${item.id}')">
+        <div class="news-item" id="group-${item.id}" data-text="${escAttr(item.text)}" onclick="toggleGroup('${item.id}')">
           <div class="news-num">0${i+2}</div>
           <div class="news-body">
             <span class="news-flag">${item.flag||'📰'}</span>
@@ -1373,7 +1377,7 @@ function renderDose(dose, items) {
         </div>`;
     } else {
       return `
-        <div class="news-item" id="item-${item.id}" data-text="${item.text.replace(/"/g,'&quot;')}" onclick="toggleSubItem('${item.id}')">
+        <div class="news-item" id="item-${item.id}" data-text="${escAttr(item.text)}" onclick="toggleSubItem('${item.id}')">
           <div class="news-num">0${i+2}</div>
           <div class="news-body">
             <span class="news-flag">${item.flag||'📰'}</span>
@@ -2150,7 +2154,7 @@ window.addEventListener('pageshow', (event) => {
         });
         if (dose.items.length !== before) usunięto = true;
       }
-      if (!usunięto) { if (btn) { btn.textContent = '?'; btn.style.background = '#d97706'; } setTimeout(clearDelBtn, 1500); return; }
+      if (!usunięto) { adminToast('Nie znaleziono newsa w briefs.json (niedopasowany tekst)'); return; }
 
       // zapisz z powrotem
       const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(briefs))));
