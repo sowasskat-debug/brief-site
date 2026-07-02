@@ -398,6 +398,40 @@ html, body {
 .news-item { position: relative; }
 .admin-del-btn:active { background: #b91c1c; }
 
+/* popup z powodem usunięcia */
+.admin-reason-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000;
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: reasonFadeIn .15s ease;
+}
+@keyframes reasonFadeIn { from { opacity:0; } to { opacity:1; } }
+.admin-reason-box {
+  background: #fff; border-radius: 16px 16px 0 0;
+  padding: 20px 16px 32px; width: 100%; max-width: 480px;
+}
+[data-theme="dark"] .admin-reason-box { background: #1a1a1a; }
+.admin-reason-title {
+  font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+}
+.admin-reason-input {
+  width: 100%; border: 1px solid var(--rule); border-radius: 8px;
+  padding: 10px 12px; font-size: 15px; font-family: inherit;
+  color: var(--text); background: var(--bg); outline: none;
+  box-sizing: border-box; margin-bottom: 12px;
+}
+.admin-reason-input:focus { border-color: #dc2626; }
+.admin-reason-actions { display: flex; gap: 8px; }
+.admin-reason-confirm {
+  flex: 1; background: #dc2626; color: #fff; border: none;
+  border-radius: 8px; padding: 12px; font-size: 15px; font-weight: 600;
+  cursor: pointer;
+}
+.admin-reason-cancel {
+  background: none; border: 1px solid var(--rule); border-radius: 8px;
+  padding: 12px 16px; font-size: 15px; color: var(--sub); cursor: pointer;
+}
+
 /* ══ DESKTOP LAYOUT (≥1024px) ══════════════════════════════════════════════ */
 @media (max-width: 1023px) { .dt-app { display: none !important; } }
 @media (min-width: 1024px) {
@@ -2028,7 +2062,7 @@ window.addEventListener('pageshow', (event) => {
         btn.addEventListener('pointerdown', (ev) => ev.stopPropagation());
         btn.addEventListener('click', (ev) => {
           ev.stopPropagation();
-          adminDeleteItem(card.dataset.text, card);
+          showReasonPopup(card.dataset.text, card);
         });
         card.appendChild(btn);
         activeDelBtn = btn;
@@ -2044,10 +2078,38 @@ window.addEventListener('pageshow', (event) => {
     });
   }
 
-  async function adminDeleteItem(itemText, cardEl) {
+  function showReasonPopup(itemText, cardEl) {
+    const overlay = document.createElement('div');
+    overlay.className = 'admin-reason-overlay';
+    overlay.innerHTML = `
+      <div class="admin-reason-box">
+        <div class="admin-reason-title">Dlaczego usuwasz ten news?</div>
+        <input class="admin-reason-input" type="text" placeholder="np. polityka krajowa, ustawa mieszkaniowa…" maxlength="80" />
+        <div class="admin-reason-actions">
+          <button class="admin-reason-cancel">Anuluj</button>
+          <button class="admin-reason-confirm">Usuń</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('.admin-reason-input');
+    setTimeout(() => input.focus(), 100);
+    overlay.querySelector('.admin-reason-cancel').addEventListener('click', () => {
+      overlay.remove(); clearDelBtn();
+    });
+    overlay.querySelector('.admin-reason-confirm').addEventListener('click', () => {
+      const reason = input.value.trim();
+      overlay.remove();
+      adminDeleteItem(itemText, cardEl, reason);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { const reason = input.value.trim(); overlay.remove(); adminDeleteItem(itemText, cardEl, reason); }
+      if (e.key === 'Escape') { overlay.remove(); clearDelBtn(); }
+    });
+  }
+
+  async function adminDeleteItem(itemText, cardEl, reason = '') {
     const pat = getAdminPat();
     if (!pat) return;
-    // bez confirm() — PWA blokuje dialogi; zamiast tego przycisk zmienia się na ✓
     const btn = activeDelBtn;
     if (btn) { btn.textContent = '…'; btn.style.background = '#888'; }
 
@@ -2082,6 +2144,29 @@ window.addEventListener('pageshow', (event) => {
         body: JSON.stringify({ message: 'Admin: usuń news', content: newContent, sha, branch: 'main' })
       });
       if (!putRes.ok) throw new Error('Błąd zapisu briefs.json');
+
+      // zapisz do rejected.json z powodem
+      if (reason) {
+        try {
+          const rGetRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/rejected.json`, {
+            headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json' }
+          });
+          let rList = [], rSha = null;
+          if (rGetRes.ok) {
+            const rBody = await rGetRes.json();
+            rSha = rBody.sha;
+            rList = JSON.parse(atob(rBody.content.replace(/\n/g, '')));
+          }
+          rList.push({ text: itemText, reason, date: new Date().toISOString().split('T')[0] });
+          if (rList.length > 200) rList = rList.slice(rList.length - 200);
+          const rContent = btoa(unescape(encodeURIComponent(JSON.stringify(rList))));
+          await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/rejected.json`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: 'Admin: odrzucono news [skip ci]', content: rContent, sha: rSha, branch: 'main' })
+          });
+        } catch(e) { console.warn('Nie zapisano powodu odrzucenia:', e.message); }
+      }
 
       // usuń z DOM
       const uid = cardEl.id.replace(/^(item-|group-)/, '');
