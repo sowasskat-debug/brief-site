@@ -383,6 +383,21 @@ html, body {
 .expand-share-btn:active { background: var(--rule); }
 .expand-share-icon { font-size: 10px; }
 
+/* ══ ADMIN DELETE BUTTON ══ */
+.admin-del-btn {
+  position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #dc2626; border: none; cursor: pointer;
+  font-size: 16px; line-height: 1; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10; box-shadow: 0 1px 4px rgba(0,0,0,.25);
+  animation: adminDelPop .15s ease;
+}
+@keyframes adminDelPop { from { transform: translateY(-50%) scale(.6); opacity:0; } to { transform: translateY(-50%) scale(1); opacity:1; } }
+.hero-card { position: relative; }
+.news-item { position: relative; }
+.admin-del-btn:active { background: #b91c1c; }
+
 /* ══ DESKTOP LAYOUT (≥1024px) ══════════════════════════════════════════════ */
 @media (max-width: 1023px) { .dt-app { display: none !important; } }
 @media (min-width: 1024px) {
@@ -1969,6 +1984,113 @@ window.addEventListener('pageshow', (event) => {
     syncDoseToTime();
   }
 });
+
+// ══ ADMIN — long-press delete ══════════════════════════════════════════════
+// Aktywacja jednorazowa: otwórz brifup.com?admin=TWÓJ_PAT_GITHUB
+// Potem: przytrzymaj news 2s → pojawia się ×, kliknij żeby usunąć
+(() => {
+  const OWNER = 'sowasskat-debug', REPO = 'brief-site', PATH = 'briefs.json';
+
+  // jednorazowa aktywacja przez URL
+  const urlPat = new URLSearchParams(location.search).get('admin');
+  if (urlPat) {
+    localStorage.setItem('brifAdminPat', urlPat);
+    history.replaceState(null, '', location.pathname + location.hash);
+  }
+
+  function getAdminPat() { return localStorage.getItem('brifAdminPat'); }
+
+  // usuwa przycisk × z aktualnie aktywnego elementu
+  let activeDelBtn = null;
+  function clearDelBtn() {
+    if (activeDelBtn) { activeDelBtn.remove(); activeDelBtn = null; }
+  }
+  document.addEventListener('click', (e) => {
+    if (activeDelBtn && !activeDelBtn.contains(e.target)) clearDelBtn();
+  });
+
+  // long-press handler — podpinamy na content (event delegation)
+  let pressTimer = null;
+  const content = document.getElementById('content');
+
+  function attachLongPress() {
+    content.addEventListener('pointerdown', (e) => {
+      if (!getAdminPat()) return;
+      const card = e.target.closest('.hero-card, .news-item');
+      if (!card) return;
+      pressTimer = setTimeout(() => {
+        clearDelBtn();
+        const btn = document.createElement('button');
+        btn.className = 'admin-del-btn';
+        btn.textContent = '×';
+        btn.title = 'Usuń news';
+        btn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const itemId = card.id.replace(/^(item-|group-)/, '');
+          adminDeleteItem(itemId, card);
+        });
+        card.appendChild(btn);
+        activeDelBtn = btn;
+        navigator.vibrate && navigator.vibrate(30);
+      }, 2000);
+    });
+    content.addEventListener('pointerup', () => clearTimeout(pressTimer));
+    content.addEventListener('pointercancel', () => clearTimeout(pressTimer));
+    content.addEventListener('pointermove', () => clearTimeout(pressTimer));
+  }
+
+  async function adminDeleteItem(itemId, cardEl) {
+    const pat = getAdminPat();
+    if (!pat) return;
+    if (!confirm('Usunąć ten news?')) { clearDelBtn(); return; }
+
+    try {
+      // pobierz aktualne briefs.json
+      const getRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`, {
+        headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json' }
+      });
+      if (!getRes.ok) throw new Error('Błąd pobierania briefs.json');
+      const { sha, content: b64 } = await getRes.json();
+      const briefs = JSON.parse(atob(b64.replace(/\n/g, '')));
+
+      // usuń item ze wszystkich dawek
+      let usunięto = false;
+      for (const doseKey of Object.keys(briefs)) {
+        const dose = briefs[doseKey];
+        if (!dose || !dose.items) continue;
+        const before = dose.items.length;
+        dose.items = dose.items.filter(it => it.id !== itemId);
+        // sprawdź też subItems
+        dose.items.forEach(it => {
+          if (it.subItems) it.subItems = it.subItems.filter(s => s.id !== itemId);
+        });
+        if (dose.items.length !== before) usunięto = true;
+      }
+      if (!usunięto) { alert('Nie znaleziono newsa — może już usunięty?'); clearDelBtn(); return; }
+
+      // zapisz z powrotem
+      const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(briefs))));
+      const putRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Admin: usuń news', content: newContent, sha, branch: 'main' })
+      });
+      if (!putRes.ok) throw new Error('Błąd zapisu briefs.json');
+
+      // usuń z DOM
+      const exp = document.getElementById(`exp-${itemId}`) || document.getElementById(`subc-${itemId}`);
+      cardEl.remove();
+      exp && exp.remove();
+      clearDelBtn();
+    } catch (err) {
+      alert('Błąd: ' + err.message);
+      clearDelBtn();
+    }
+  }
+
+  // podepnij po załadowaniu contentu
+  if (content) attachLongPress();
+})();
 </script>
 </body>
 </html>
