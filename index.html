@@ -177,6 +177,19 @@ html, body {
 }
 .edition-time { font-size: 7.5px; color: var(--muted); letter-spacing: 1px; }
 
+/* Chudy pasek „wczorajsze wydanie" — pokazywany tylko dla dawki, której dzisiejsze wydanie jeszcze nie wyszło */
+.prevbar {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 5px 14px; background: #fbf6ee; border-bottom: 1px solid #ece1cf;
+}
+[data-theme="dark"] .prevbar { background: #241f17; border-bottom-color: #3a3020; }
+.prevbar .pb-ico { font-size: 9px; color: var(--amber); line-height: 1; }
+.prevbar .pb-txt { font-size: 7.5px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--amber); }
+.prevbar .pb-dot { color: #d8c3a3; }
+[data-theme="dark"] .prevbar .pb-dot { color: #5a4a2e; }
+.prevbar .pb-meta { font-size: 7.5px; color: #a98a5c; letter-spacing: .6px; }
+[data-theme="dark"] .prevbar .pb-meta { color: #b0966a; }
+
 /* ══ HERO CARD ══ */
 .hero-card {
   padding: 20px 16px 16px; background: var(--bg);
@@ -839,6 +852,7 @@ const SAMPLE = {
 
 let currentDose = getCurrentDose();
 let cache = {};
+let doseDates = {};   // data (YYYY-MM-DD) treści każdej dawki z briefs.json — do wykrycia „wczorajszego wydania"
 let lastScrollY = 0, tabsHidden = false;
 let suppressScrollHide = false;
 
@@ -867,6 +881,22 @@ function getCurrentDose() {
   const h = new Date().getHours();
   return h < 11 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
 }
+// Data DZIŚ w formacie 'YYYY-MM-DD' (lokalna, jak bot dla Europe/Warsaw) — do wykrycia starej dawki
+function todayLocalISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+// Czy oglądana dawka to jeszcze wczorajsze wydanie (dzisiejsze jeszcze nie powstało)?
+function isPrevEdition(dose) {
+  const d = doseDates[dose];
+  return !!d && d < todayLocalISO();
+}
+// 'YYYY-MM-DD' -> np. '1 lip'
+function formatDoseDate(iso) {
+  const p = (iso || '').split('-').map(Number);
+  if (p.length !== 3) return '';
+  return new Date(p[0], p[1]-1, p[2]).toLocaleDateString('pl-PL', { day:'numeric', month:'short' });
+}
 function uid() { return Math.random().toString(36).slice(2,9); }
 function esc(s='') { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,' '); }
 function showToast(msg) {
@@ -885,6 +915,7 @@ async function fetchFromBriefsJson(dose) {
     const d = await r.json();
     const doseData = d?.[dose];
     if (!doseData || !doseData.items?.length) return null;
+    doseDates[dose] = doseData.date || null;   // data treści tej dawki (do oznaczenia starego wydania)
     return doseData.items;
   } catch(e) { return null; }
 }
@@ -896,12 +927,14 @@ async function fetchFromSupabase(dose) {
     headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` }
   });
   const d = await res.json();
-  return d?.length > 0 ? d[0].items : null;
+  if (d?.length > 0) { doseDates[dose] = today; return d[0].items; }
+  return null;
 }
 
 async function loadDose(dose, force=false) {
   if (cache[dose] && !force) { renderDose(dose, cache[dose]); return; }
   renderSkeleton();
+  doseDates[dose] = null;   // reset — ustawi się przy udanym pobraniu z briefs.json/supabase
   try {
     let items = await fetchFromBriefsJson(dose);
 
@@ -1125,11 +1158,12 @@ function renderDose(dose, items) {
     }
   }).join('');
 
+  const editionBar = isPrevEdition(dose)
+    ? `<div class="prevbar"><span class="pb-ico">◷</span><span class="pb-txt">Wczorajsze wydanie</span><span class="pb-dot">·</span><span class="pb-meta">${formatDoseDate(doseDates[dose])} · nowe ~${cfg.time}</span></div>`
+    : `<div class="edition-bar"><div class="edition-name">${cfg.edition}</div><div class="edition-time">${cfg.time} · ${new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'short'})}</div></div>`;
+
   document.getElementById('content').innerHTML = `
-    <div class="edition-bar">
-      <div class="edition-name">${cfg.edition}</div>
-      <div class="edition-time">${cfg.time} · ${new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'short'})}</div>
-    </div>
+    ${editionBar}
     ${heroBlock}
     <div class="section-rule">
       <div class="section-rule-line"></div>
@@ -1602,7 +1636,9 @@ function renderDesktop(dose, items) {
   const dateStr = new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
   const ftEl = document.getElementById('dtFeedTitle');
   const fcEl = document.getElementById('dtFeedCount');
-  if (ftEl) ftEl.textContent = `${doseNames[dose]} · ${dateStr}`;
+  if (ftEl) ftEl.textContent = isPrevEdition(dose)
+    ? `${doseNames[dose]} · ◷ WCZORAJSZE WYDANIE (${formatDoseDate(doseDates[dose])})`
+    : `${doseNames[dose]} · ${dateStr}`;
   if (fcEl) {
     const total = items.reduce((s,it) => s + (it.subItems?.length > 0 ? it.subItems.length : 1), 0);
     fcEl.textContent = `${total} wpisów`;
