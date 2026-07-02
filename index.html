@@ -547,6 +547,41 @@ html, body {
   font-size: 15px; padding: 4px 6px; line-height: 1;
 }
 
+.archive-btn { background: none; border: none; cursor: pointer; font-size: 15px; padding: 4px 6px; line-height: 1; }
+
+/* ══ ARCHIWUM ══ */
+.archive-overlay {
+  position: fixed; inset: 0; z-index: 300; background: var(--bg);
+  display: flex; flex-direction: column;
+  transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.archive-overlay.show { transform: translateY(0); }
+.archive-header {
+  display: flex; align-items: center; gap: 4px;
+  height: var(--top-h); padding: 0 10px 0 16px; flex-shrink: 0;
+  border-bottom: 3px solid var(--text);
+}
+.archive-back { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text); padding: 4px 10px 4px 0; }
+.archive-title { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 18px; color: var(--text); flex: 1; }
+.archive-close { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--muted); padding: 4px 8px; line-height: 1; }
+.archive-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+.archive-date-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px; border-bottom: 1px solid var(--rule); cursor: pointer;
+}
+.archive-date-row:active { background: var(--gray1); }
+.archive-date-main { font-family: 'DM Serif Display', serif; font-size: 16px; color: var(--text); text-transform: capitalize; }
+.archive-date-sub { font-size: 8px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; margin-top: 3px; }
+.archive-date-arrow { font-size: 14px; color: var(--muted); }
+
+.archive-empty { padding: 60px 24px; text-align: center; color: var(--muted); font-size: 11px; line-height: 1.6; }
+
+.archive-day-section-title {
+  padding: 9px 16px; background: var(--gray1); border-bottom: 1px solid var(--rule);
+  font-size: 7.5px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+}
+
 /* ══ PULL-TO-REFRESH ══ */
 #ptr {
   display: flex; align-items: center; justify-content: center;
@@ -613,10 +648,20 @@ html, body {
   </div>
   <div class="topbar-right">
     <div class="live-pill"><div class="live-dot"></div><div class="live-text">Live</div></div>
+    <button class="archive-btn" id="archiveBtn" onclick="openArchive()" title="Archiwum">🗄</button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tryb ciemny">🌙</button>
     <button class="bell-btn inactive" id="bellBtn" onclick="togglePush()" title="Powiadomienia push">🔔</button>
     <button class="refresh-btn" id="refreshBtn" onclick="refresh()">↻</button>
   </div>
+</div>
+
+<div class="archive-overlay" id="archiveOverlay">
+  <div class="archive-header">
+    <button class="archive-back" id="archiveBack" onclick="showArchiveList()" style="visibility:hidden">←</button>
+    <div class="archive-title" id="archiveTitle">Archiwum</div>
+    <button class="archive-close" onclick="closeArchive()">✕</button>
+  </div>
+  <div class="archive-body" id="archiveBody"></div>
 </div>
 
 <div class="dose-tabs" id="doseTabs">
@@ -1092,6 +1137,140 @@ function renderSubItems(subItems) {
   `).join('');
 }
 
+// ══ Archiwum — przeglądanie dawek z poprzednich dni ══════════════════
+// Bot przy każdym przejściu na nowy dzień zapisuje zamykaną dawkę do
+// archive/{data}.json (ten sam kształt co briefs.json) i rejestruje datę
+// w archive/index.json. Tu tylko czytamy te pliki — bez zapisu.
+let archiveDatesCache = null;
+let archiveDayCache = {};
+
+function openArchive() {
+  document.getElementById('archiveOverlay').classList.add('show');
+  showArchiveList();
+}
+// Otwiera overlay od razu na konkretnym dniu (np. z bocznego panelu desktopu) — BEZ wywoływania
+// showArchiveList() równolegle, bo dwa jednoczesne fetch-e mogłyby się wyścigowo nadpisać w body.innerHTML.
+function openArchiveToDay(dateStr) {
+  document.getElementById('archiveOverlay').classList.add('show');
+  showArchiveDay(dateStr);
+}
+function closeArchive() {
+  document.getElementById('archiveOverlay').classList.remove('show');
+}
+
+async function showArchiveList() {
+  document.getElementById('archiveTitle').textContent = 'Archiwum';
+  document.getElementById('archiveBack').style.visibility = 'hidden';
+  const body = document.getElementById('archiveBody');
+  body.innerHTML = '<div class="archive-empty">Ładowanie…</div>';
+  try {
+    if (!archiveDatesCache) {
+      const r = await fetch('./archive/index.json', { cache: 'no-store' });
+      archiveDatesCache = r.ok ? await r.json() : [];
+    }
+    if (!archiveDatesCache || !archiveDatesCache.length) {
+      body.innerHTML = '<div class="archive-empty">Archiwum jest jeszcze puste.<br>Pierwsze dawki pojawią się tu automatycznie następnego dnia.</div>';
+      return;
+    }
+    const sorted = archiveDatesCache.slice().sort((a, b) => b.localeCompare(a)); // najnowsze na górze
+    body.innerHTML = sorted.map(d => {
+      const dt = new Date(d + 'T00:00:00');
+      const main = dt.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+      const sub = dt.toLocaleDateString('pl-PL', { weekday: 'long' });
+      return `<div class="archive-date-row" onclick="showArchiveDay('${d}')">
+        <div><div class="archive-date-main">${main}</div><div class="archive-date-sub">${sub}</div></div>
+        <div class="archive-date-arrow">›</div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    body.innerHTML = '<div class="archive-empty">Nie udało się wczytać archiwum.</div>';
+  }
+}
+
+async function showArchiveDay(dateStr) {
+  document.getElementById('archiveTitle').textContent = dateStr;
+  document.getElementById('archiveBack').style.visibility = 'visible';
+  const body = document.getElementById('archiveBody');
+  body.innerHTML = '<div class="archive-empty">Ładowanie…</div>';
+  try {
+    let dayData = archiveDayCache[dateStr];
+    if (!dayData) {
+      const r = await fetch(`./archive/${dateStr}.json`, { cache: 'no-store' });
+      dayData = r.ok ? await r.json() : {};
+      archiveDayCache[dateStr] = dayData;
+    }
+    const doseNames = { morning: '☀ Poranna', afternoon: '◑ Popołudniowa', evening: '☽ Wieczorna' };
+    let html = '';
+    for (const key of ['morning', 'afternoon', 'evening']) {
+      const dose = dayData[key];
+      if (!dose || !dose.items || !dose.items.length) continue;
+      const items = sortNewestFirst(dose.items).map(i => ({
+        ...i, id: 'a-' + uid(),
+        subItems: sortNewestFirst(i.subItems).map(s => ({ ...s, id: 'a-' + uid() }))
+      }));
+      html += `<div class="archive-day-section-title">${doseNames[key]}</div>`;
+      html += items.map((item, idx) => renderArchiveItem(item, idx)).join('');
+    }
+    body.innerHTML = html || '<div class="archive-empty">Brak zapisanych newsów dla tego dnia.</div>';
+  } catch (e) {
+    body.innerHTML = '<div class="archive-empty">Nie udało się wczytać tej dawki.</div>';
+  }
+}
+
+function renderArchiveItem(item, idx) {
+  const isGroup = item.subItems && item.subItems.length > 0;
+  if (isGroup) {
+    return `
+      <div class="news-item" id="group-${item.id}" onclick="toggleGroup('${item.id}')">
+        <div class="news-num">${String(idx + 1).padStart(2, '0')}</div>
+        <div class="news-body"><span class="news-flag">${item.flag || '📰'}</span><div class="news-title">${item.text}</div></div>
+        <div class="news-arrow">›</div>
+      </div>
+      <div class="sub-items-container" id="subc-${item.id}">${renderArchiveSubItems(item.subItems)}</div>`;
+  }
+  return `
+    <div class="news-item" id="item-${item.id}" onclick="toggleSubItem('${item.id}')">
+      <div class="news-num">${String(idx + 1).padStart(2, '0')}</div>
+      <div class="news-body">
+        <span class="news-flag">${item.flag || '📰'}</span>
+        <div class="news-title">${item.text}</div>
+        ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}
+      </div>
+      <div class="news-arrow">›</div>
+    </div>
+    <div class="card-expand" id="exp-${item.id}">${expandBlockArchive(item)}</div>`;
+}
+function renderArchiveSubItems(subItems) {
+  if (!subItems || !subItems.length) return '';
+  return subItems.map(sub => `
+    <div class="sub-item" id="item-${sub.id}" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
+      <span class="sub-item-flag">${sub.flag || '📰'}</span>
+      <div class="sub-item-text">${sub.text}${sub.added_at ? `<div class="item-time">${formatAddedAt(sub)}</div>` : ''}</div>
+      <div class="sub-item-arrow">›</div>
+    </div>
+    <div class="card-expand" id="exp-${sub.id}">${expandBlockArchive(sub)}</div>`).join('');
+}
+// Jak expandBlock, ale bez "Udostępnij" — deep-linki obsługują tylko żywe dawki, nie archiwum.
+function expandBlockArchive(item) {
+  if (item.article) {
+    const readBtn = item.source_url && item.source_url !== '#'
+      ? `<a class="expand-read-btn" href="${item.source_url}" target="_blank">Czytaj →</a>` : '';
+    return `
+      <div class="expand-article">${item.article}</div>
+      ${impactHtml(item)}
+      <div class="expand-divider"></div>
+      <div class="expand-source-row">
+        <div class="expand-source-left">
+          <span class="expand-source-tag">Źródło</span>
+          <span class="expand-sep">/</span>
+          <span class="expand-source-name">${item.source_name || '—'}</span>
+        </div>
+        <div class="expand-actions">${readBtn}</div>
+      </div>`;
+  }
+  return `<div class="expand-loading">Brak rozszerzonego artykułu dla tego newsa.</div>`;
+}
+
 function renderDose(dose, items) {
   const cfg = DOSE_CFG[dose];
   if (!items || items.length === 0) return;
@@ -1543,16 +1722,36 @@ function dtRenderSidebar(items) {
         </div>`
       ).join('');
   }
+  dtRenderArchiveSidebar();
+}
+
+// Boczny panel desktopu — ostatnie kilka dni z prawdziwego archive/index.json (nie placeholder).
+// Klik na dzień otwiera ten sam overlay archiwum co na mobile.
+async function dtRenderArchiveSidebar() {
   const archEl = document.getElementById('dtArchive');
-  if (archEl) {
-    const today = new Date();
+  if (!archEl) return;
+  try {
+    if (!archiveDatesCache) {
+      const r = await fetch('./archive/index.json', { cache: 'no-store' });
+      archiveDatesCache = r.ok ? await r.json() : [];
+    }
+    if (!archiveDatesCache || !archiveDatesCache.length) {
+      archEl.innerHTML = '<div class="dt-index-title">Archiwum</div><div class="dt-index-item dim"><span class="dt-index-label">Jeszcze puste</span></div>';
+      return;
+    }
+    const sorted = archiveDatesCache.slice().sort((a, b) => b.localeCompare(a));
     let html = '<div class="dt-index-title">Archiwum</div>';
-    for (let i = 1; i <= 3; i++) {
-      const d = new Date(today); d.setDate(today.getDate() - i);
-      const label = d.toLocaleDateString('pl-PL',{day:'numeric',month:'short'});
-      html += `<div class="dt-index-item dim"><div class="dt-index-dot" style="background:#ccc"></div><span class="dt-index-label">${label}</span></div>`;
+    html += sorted.slice(0, 5).map(d => {
+      const dt = new Date(d + 'T00:00:00');
+      const label = dt.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+      return `<div class="dt-index-item" onclick="openArchiveToDay('${d}')"><div class="dt-index-dot" style="background:#8a8577"></div><span class="dt-index-label">${label}</span></div>`;
+    }).join('');
+    if (sorted.length > 5) {
+      html += `<div class="dt-index-item" onclick="openArchive()"><span class="dt-index-label" style="color:var(--muted)">Zobacz wszystkie →</span></div>`;
     }
     archEl.innerHTML = html;
+  } catch (e) {
+    archEl.innerHTML = '<div class="dt-index-title">Archiwum</div>';
   }
 }
 
