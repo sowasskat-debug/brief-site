@@ -1293,7 +1293,7 @@ function renderDose(dose, items) {
   const isHeroGroup = hero.subItems && hero.subItems.length > 0;
 
   const heroBlock = isHeroGroup ? `
-    <div class="hero-card" id="group-${hero.id}" onclick="toggleGroup('${hero.id}')">
+    <div class="hero-card" id="group-${hero.id}" data-text="${hero.text.replace(/"/g,'&quot;')}" onclick="toggleGroup('${hero.id}')">
       <div class="hero-kicker">
         <span class="hero-flag">${hero.flag||'📰'}</span>
         <span class="hero-kicker-label ${cfg.kickerClass}">${cfg.kicker}</span>
@@ -1308,7 +1308,7 @@ function renderDose(dose, items) {
       ${renderSubItems(hero.subItems)}
     </div>`
     : `
-    <div class="hero-card" id="item-${hero.id}" onclick="toggleSubItem('${hero.id}')">
+    <div class="hero-card" id="item-${hero.id}" data-text="${hero.text.replace(/"/g,'&quot;')}" onclick="toggleSubItem('${hero.id}')">
       <div class="hero-kicker">
         <span class="hero-flag">${hero.flag||'📰'}</span>
         <span class="hero-kicker-label ${cfg.kickerClass}">${cfg.kicker}</span>
@@ -1326,7 +1326,7 @@ function renderDose(dose, items) {
     const isGroup = item.subItems && item.subItems.length > 0;
     if (isGroup) {
       return `
-        <div class="news-item" id="group-${item.id}" onclick="toggleGroup('${item.id}')">
+        <div class="news-item" id="group-${item.id}" data-text="${item.text.replace(/"/g,'&quot;')}" onclick="toggleGroup('${item.id}')">
           <div class="news-num">0${i+2}</div>
           <div class="news-body">
             <span class="news-flag">${item.flag||'📰'}</span>
@@ -1339,7 +1339,7 @@ function renderDose(dose, items) {
         </div>`;
     } else {
       return `
-        <div class="news-item" id="item-${item.id}" onclick="toggleSubItem('${item.id}')">
+        <div class="news-item" id="item-${item.id}" data-text="${item.text.replace(/"/g,'&quot;')}" onclick="toggleSubItem('${item.id}')">
           <div class="news-num">0${i+2}</div>
           <div class="news-body">
             <span class="news-flag">${item.flag||'📰'}</span>
@@ -2028,8 +2028,7 @@ window.addEventListener('pageshow', (event) => {
         btn.addEventListener('pointerdown', (ev) => ev.stopPropagation());
         btn.addEventListener('click', (ev) => {
           ev.stopPropagation();
-          const itemId = card.id.replace(/^(item-|group-)/, '');
-          adminDeleteItem(itemId, card);
+          adminDeleteItem(card.dataset.text, card);
         });
         card.appendChild(btn);
         activeDelBtn = btn;
@@ -2045,7 +2044,7 @@ window.addEventListener('pageshow', (event) => {
     });
   }
 
-  async function adminDeleteItem(itemId, cardEl) {
+  async function adminDeleteItem(itemText, cardEl) {
     const pat = getAdminPat();
     if (!pat) return;
     // bez confirm() — PWA blokuje dialogi; zamiast tego przycisk zmienia się na ✓
@@ -2067,10 +2066,9 @@ window.addEventListener('pageshow', (event) => {
         const dose = briefs[doseKey];
         if (!dose || !dose.items) continue;
         const before = dose.items.length;
-        dose.items = dose.items.filter(it => it.id !== itemId);
-        // sprawdź też subItems
+        dose.items = dose.items.filter(it => it.text !== itemText);
         dose.items.forEach(it => {
-          if (it.subItems) it.subItems = it.subItems.filter(s => s.id !== itemId);
+          if (it.subItems) it.subItems = it.subItems.filter(s => s.text !== itemText);
         });
         if (dose.items.length !== before) usunięto = true;
       }
@@ -2086,7 +2084,8 @@ window.addEventListener('pageshow', (event) => {
       if (!putRes.ok) throw new Error('Błąd zapisu briefs.json');
 
       // usuń z DOM
-      const exp = document.getElementById(`exp-${itemId}`) || document.getElementById(`subc-${itemId}`);
+      const uid = cardEl.id.replace(/^(item-|group-)/, '');
+      const exp = document.getElementById(`exp-${uid}`) || document.getElementById(`subc-${uid}`);
       cardEl.remove();
       exp && exp.remove();
       clearDelBtn();
