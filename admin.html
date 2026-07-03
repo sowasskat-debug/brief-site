@@ -404,6 +404,9 @@ async function deleteSubItem(idx, subIdx) {
       const [removed] = group.subItems.splice(actualSubIdx, 1);
       if (group.subItems.length === 0) {
         data[currentDose].items.splice(groupIdx, 1);
+      } else if (group.subItems.length === 1) {
+        // Klaster z 1 subItem to nie klaster — zamień na samodzielny post
+        data[currentDose].items[groupIdx] = group.subItems[0];
       }
       briefsState = fresh;
       await saveBriefs(data, `Admin: usunięto news z grupy (${currentDose}) [skip ci]`);
