@@ -1037,9 +1037,11 @@ async function loadDose(dose, force=false) {
     if (!items) items = SAMPLE[dose];
 
     cache[dose] = items.map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) }));
-    // Newest-first: sub-itemy w każdym klastrze, a potem top-level
+    // Sub-itemy w klastrach: newest-first. Top-level: zachowaj [0] jako top story wybrany przez bota,
+    // resztę sortuj newest-first.
     cache[dose].forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
-    cache[dose] = sortNewestFirst(cache[dose]);
+    const [topStory, ...rest] = cache[dose];
+    cache[dose] = topStory ? [topStory, ...sortNewestFirst(rest)] : [];
     renderDose(dose, cache[dose]);
   } catch(e) {
     cache[dose] = SAMPLE[dose].map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) }));
