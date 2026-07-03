@@ -1004,7 +1004,10 @@ function showToast(msg) {
 // front-end ufa serwerowi i nie porównuje dat między różnymi zegarami/strefami.
 async function fetchFromBriefsJson(dose) {
   try {
-    const r = await fetch('./briefs.json', { cache: 'no-store' });
+    // Znak zapytania z timestampem: CDN przed GitHub Pages (Cloudflare itp.) cache'uje
+    // po pełnym URL, a nagłówek cache:'no-store' dotyczy tylko cache przeglądarki —
+    // bez unikalnego query stringa CDN mógł serwować nieaktualną wersję pliku.
+    const r = await fetch(`./briefs.json?_=${Date.now()}`, { cache: 'no-store' });
     if (!r.ok) return null;
     const d = await r.json();
     const doseData = d?.[dose];
