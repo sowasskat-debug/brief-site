@@ -2198,24 +2198,29 @@ window.addEventListener('pageshow', (event) => {
       }
 
       // zawsze zapisz do rejected.json — bez tego bot re-dodaje usunięte posty przy następnym uruchomieniu
+// Retry na 409 (stale SHA): dwie otwarte karty mogą zapisać jednocześnie — czytamy i nadpisujemy od nowa
       try {
-        const rGetRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/rejected.json`, {
-          headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json' }
-        });
-        let rList = [], rSha = null;
-        if (rGetRes.ok) {
-          const rBody = await rGetRes.json();
-          rSha = rBody.sha;
-          rList = JSON.parse(b64ToUtf8(rBody.content));
+        for (let rProba = 0; rProba < 3; rProba++) {
+          const rGetRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/rejected.json`, {
+            headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json' }
+          });
+          let rList = [], rSha = null;
+          if (rGetRes.ok) {
+            const rBody = await rGetRes.json();
+            rSha = rBody.sha;
+            rList = JSON.parse(b64ToUtf8(rBody.content));
+          }
+          rList.push({ text: itemText, reason: reason || null, date: new Date().toISOString().split('T')[0] });
+          if (rList.length > 200) rList = rList.slice(rList.length - 200);
+          const rContent = utf8ToB64(JSON.stringify(rList));
+          const rPutRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/rejected.json`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: 'Admin: odrzucono news [skip ci]', content: rContent, sha: rSha, branch: 'main' })
+          });
+          if (rPutRes.ok || rPutRes.status !== 409) break;
+          console.warn(`rejected.json: konflikt SHA (próba ${rProba+1}/3), ponawiam…`);
         }
-        rList.push({ text: itemText, reason: reason || null, date: new Date().toISOString().split('T')[0] });
-        if (rList.length > 200) rList = rList.slice(rList.length - 200);
-        const rContent = utf8ToB64(JSON.stringify(rList));
-        await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/rejected.json`, {
-          method: 'PUT',
-          headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: 'Admin: odrzucono news [skip ci]', content: rContent, sha: rSha, branch: 'main' })
-        });
       } catch(e) { console.warn('Nie zapisano rejected.json:', e.message); }
 
       // usuń z DOM
