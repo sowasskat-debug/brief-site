@@ -2139,14 +2139,6 @@ window.addEventListener('pageshow', (event) => {
     if (btn) { btn.textContent = '…'; btn.style.background = '#888'; }
 
     try {
-      // pobierz aktualne briefs.json
-      const getRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`, {
-        headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json' }
-      });
-      if (!getRes.ok) throw new Error('Błąd pobierania briefs.json');
-      const { sha, content: b64 } = await getRes.json();
-      const briefs = JSON.parse(b64ToUtf8(b64));
-
       // dopasowanie odporne na drobne różnice (spacje, normalizacja unicode) —
       // treść mogła zostać nieznacznie przetworzona ponownie przez bota od czasu renderowania
       function norm(s) { return (s || '').normalize('NFC').trim().replace(/\s+/g, ' '); }
@@ -2159,28 +2151,43 @@ window.addEventListener('pageshow', (event) => {
         return false;
       }
 
-      // usuń item ze wszystkich dawek
-      let usunięto = false;
-      for (const doseKey of Object.keys(briefs)) {
-        const dose = briefs[doseKey];
-        if (!dose || !dose.items) continue;
-        const before = dose.items.length;
-        dose.items = dose.items.filter(it => !isMatch(it.text));
-        dose.items.forEach(it => {
-          if (it.subItems) it.subItems = it.subItems.filter(s => !isMatch(s.text));
+      // pobierz-filtruj-zapisz w pętli: przy konflikcie (409 — bot zapisał coś w międzyczasie)
+      // pobieramy ŚWIEŻĄ treść i nakładamy usunięcie na nią od nowa, zamiast ślepo ponawiać
+      // stary zapis, który nadpisałby to, co zmienił bot.
+      let putRes = null;
+      const maxProb = 3;
+      for (let proba = 1; proba <= maxProb; proba++) {
+        const getRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`, {
+          headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json' }
         });
-        if (dose.items.length !== before) usunięto = true;
-      }
-      if (!usunięto) { adminToast('Nie znaleziono newsa — być może bot go już zaktualizował. Odśwież stronę i spróbuj ponownie.'); return; }
+        if (!getRes.ok) throw new Error('Błąd pobierania briefs.json');
+        const { sha, content: b64 } = await getRes.json();
+        const briefs = JSON.parse(b64ToUtf8(b64));
 
-      // zapisz z powrotem
-      const newContent = utf8ToB64(JSON.stringify(briefs));
-      const putRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'Admin: usuń news', content: newContent, sha, branch: 'main' })
-      });
-      if (!putRes.ok) throw new Error('Błąd zapisu briefs.json');
+        // usuń item ze wszystkich dawek
+        let usunięto = false;
+        for (const doseKey of Object.keys(briefs)) {
+          const dose = briefs[doseKey];
+          if (!dose || !dose.items) continue;
+          const before = dose.items.length;
+          dose.items = dose.items.filter(it => !isMatch(it.text));
+          dose.items.forEach(it => {
+            if (it.subItems) it.subItems = it.subItems.filter(s => !isMatch(s.text));
+          });
+          if (dose.items.length !== before) usunięto = true;
+        }
+        if (!usunięto) { adminToast('Nie znaleziono newsa — być może bot go już zaktualizował. Odśwież stronę i spróbuj ponownie.'); return; }
+
+        const newContent = utf8ToB64(JSON.stringify(briefs));
+        putRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'Admin: usuń news', content: newContent, sha, branch: 'main' })
+        });
+        if (putRes.ok) break;
+        if (putRes.status !== 409 || proba === maxProb) throw new Error('Błąd zapisu briefs.json');
+        console.warn(`Admin delete: konflikt zapisu (próba ${proba}/${maxProb}), ponawiam na świeżych danych…`);
+      }
 
       // zapisz do rejected.json z powodem
       if (reason) {
