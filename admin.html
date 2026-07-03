@@ -374,10 +374,12 @@ async function saveBriefs(data, message) {
 async function deleteSoloItem(idx) {
   const expected = briefsState.data[currentDose].items[idx];
   await withFreshBriefs(
-    (fresh) => fresh.data[currentDose]?.items[idx]?.text === expected.text,
+    (fresh) => fresh.data[currentDose]?.items?.some(i => i.text === expected.text),
     async (fresh) => {
       const data = fresh.data;
-      const [removed] = data[currentDose].items.splice(idx, 1);
+      const actualIdx = data[currentDose].items.findIndex(i => i.text === expected.text);
+      if (actualIdx === -1) { showToast('Post już nie istnieje'); briefsState = fresh; renderContent(); return; }
+      const [removed] = data[currentDose].items.splice(actualIdx, 1);
       briefsState = fresh;
       await saveBriefs(data, `Admin: usunięto news (${currentDose}) [skip ci]`);
       await appendRejected([removed]);
@@ -389,14 +391,19 @@ async function deleteSoloItem(idx) {
 
 async function deleteSubItem(idx, subIdx) {
   const expected = briefsState.data[currentDose].items[idx]?.subItems?.[subIdx];
+  const expectedGroupText = briefsState.data[currentDose].items[idx]?.text;
   await withFreshBriefs(
-    (fresh) => fresh.data[currentDose]?.items[idx]?.subItems?.[subIdx]?.text === expected?.text,
+    (fresh) => fresh.data[currentDose]?.items?.some(i => i.text === expectedGroupText && i.subItems?.some(s => s.text === expected?.text)),
     async (fresh) => {
       const data = fresh.data;
-      const group = data[currentDose].items[idx];
-      const [removed] = group.subItems.splice(subIdx, 1);
+      const groupIdx = data[currentDose].items.findIndex(i => i.text === expectedGroupText);
+      if (groupIdx === -1) { showToast('Grupa już nie istnieje'); briefsState = fresh; renderContent(); return; }
+      const group = data[currentDose].items[groupIdx];
+      const actualSubIdx = group.subItems.findIndex(s => s.text === expected?.text);
+      if (actualSubIdx === -1) { showToast('Post już nie istnieje'); briefsState = fresh; renderContent(); return; }
+      const [removed] = group.subItems.splice(actualSubIdx, 1);
       if (group.subItems.length === 0) {
-        data[currentDose].items.splice(idx, 1);
+        data[currentDose].items.splice(groupIdx, 1);
       }
       briefsState = fresh;
       await saveBriefs(data, `Admin: usunięto news z grupy (${currentDose}) [skip ci]`);
@@ -410,10 +417,12 @@ async function deleteSubItem(idx, subIdx) {
 async function deleteGroup(idx) {
   const expected = briefsState.data[currentDose].items[idx];
   await withFreshBriefs(
-    (fresh) => fresh.data[currentDose]?.items[idx]?.text === expected.text,
+    (fresh) => fresh.data[currentDose]?.items?.some(i => i.text === expected.text),
     async (fresh) => {
       const data = fresh.data;
-      const [removed] = data[currentDose].items.splice(idx, 1);
+      const actualIdx = data[currentDose].items.findIndex(i => i.text === expected.text);
+      if (actualIdx === -1) { showToast('Grupa już nie istnieje'); briefsState = fresh; renderContent(); return; }
+      const [removed] = data[currentDose].items.splice(actualIdx, 1);
       briefsState = fresh;
       await saveBriefs(data, `Admin: usunięto grupę (${currentDose}) [skip ci]`);
       await appendRejected(removed.subItems && removed.subItems.length ? removed.subItems : [removed]);
