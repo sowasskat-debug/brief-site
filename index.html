@@ -2172,8 +2172,14 @@ window.addEventListener('pageshow', (event) => {
           const before = dose.items.length;
           dose.items = dose.items.filter(it => !isMatch(it.text));
           dose.items.forEach(it => {
-            if (it.subItems) it.subItems = it.subItems.filter(s => !isMatch(s.text));
+            if (it.subItems) {
+              const subBefore = it.subItems.length;
+              it.subItems = it.subItems.filter(s => !isMatch(s.text));
+              if (it.subItems.length !== subBefore) usunięto = true;
+            }
           });
+          // usuń grupy, którym nie zostały żadne subItems
+          dose.items = dose.items.filter(it => !it.subItems || it.subItems.length > 0);
           if (dose.items.length !== before) usunięto = true;
         }
         if (!usunięto) { adminToast('Nie znaleziono newsa — być może bot go już zaktualizował. Odśwież stronę i spróbuj ponownie.'); return; }
@@ -2189,28 +2195,26 @@ window.addEventListener('pageshow', (event) => {
         console.warn(`Admin delete: konflikt zapisu (próba ${proba}/${maxProb}), ponawiam na świeżych danych…`);
       }
 
-      // zapisz do rejected.json z powodem
-      if (reason) {
-        try {
-          const rGetRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/rejected.json`, {
-            headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json' }
-          });
-          let rList = [], rSha = null;
-          if (rGetRes.ok) {
-            const rBody = await rGetRes.json();
-            rSha = rBody.sha;
-            rList = JSON.parse(b64ToUtf8(rBody.content));
-          }
-          rList.push({ text: itemText, reason, date: new Date().toISOString().split('T')[0] });
-          if (rList.length > 200) rList = rList.slice(rList.length - 200);
-          const rContent = utf8ToB64(JSON.stringify(rList));
-          await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/rejected.json`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: 'Admin: odrzucono news [skip ci]', content: rContent, sha: rSha, branch: 'main' })
-          });
-        } catch(e) { console.warn('Nie zapisano powodu odrzucenia:', e.message); }
-      }
+      // zawsze zapisz do rejected.json — bez tego bot re-dodaje usunięte posty przy następnym uruchomieniu
+      try {
+        const rGetRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/rejected.json`, {
+          headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json' }
+        });
+        let rList = [], rSha = null;
+        if (rGetRes.ok) {
+          const rBody = await rGetRes.json();
+          rSha = rBody.sha;
+          rList = JSON.parse(b64ToUtf8(rBody.content));
+        }
+        rList.push({ text: itemText, reason: reason || null, date: new Date().toISOString().split('T')[0] });
+        if (rList.length > 200) rList = rList.slice(rList.length - 200);
+        const rContent = utf8ToB64(JSON.stringify(rList));
+        await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/rejected.json`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${pat}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'Admin: odrzucono news [skip ci]', content: rContent, sha: rSha, branch: 'main' })
+        });
+      } catch(e) { console.warn('Nie zapisano rejected.json:', e.message); }
 
       // usuń z DOM
       const uid = cardEl.id.replace(/^(item-|group-)/, '');
