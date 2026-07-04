@@ -1241,7 +1241,9 @@ async function showArchiveList() {
   }
 }
 
-async function showArchiveDay(dateStr) {
+// highlightSlug: opcjonalny slug (z deep-linku #archive/{data}/{dawka}/{slug}) — po wyrenderowaniu
+// otwiera i podświetla dokładnie ten news/klaster, tak samo jak deep-link do żywej dawki.
+async function showArchiveDay(dateStr, highlightSlug) {
   document.getElementById('archiveTitle').textContent = dateStr;
   document.getElementById('archiveBack').style.visibility = 'visible';
   const body = document.getElementById('archiveBody');
@@ -1255,6 +1257,7 @@ async function showArchiveDay(dateStr) {
     }
     const doseNames = { morning: '☀ Poranna', afternoon: '◑ Popołudniowa', evening: '☽ Wieczorna' };
     let html = '';
+    let highlight = null; // { id, isGroup, parentId }
     for (const key of ['morning', 'afternoon', 'evening']) {
       const dose = dayData[key];
       if (!dose || !dose.items || !dose.items.length) continue;
@@ -1262,16 +1265,49 @@ async function showArchiveDay(dateStr) {
         ...i, id: 'a-' + uid(),
         subItems: sortNewestFirst(i.subItems).map(s => ({ ...s, id: 'a-' + uid() }))
       }));
+      if (highlightSlug && !highlight) {
+        outer: for (const it of items) {
+          if (itemSlug(it.text) === highlightSlug) { highlight = { id: it.id, isGroup: !!(it.subItems && it.subItems.length) }; break; }
+          if (it.subItems) {
+            for (const sub of it.subItems) {
+              if (itemSlug(sub.text) === highlightSlug) { highlight = { id: sub.id, isGroup: false, parentId: it.id }; break outer; }
+            }
+          }
+        }
+      }
       html += `<div class="archive-day-section-title">${doseNames[key]}</div>`;
-      html += items.map((item, idx) => renderArchiveItem(item, idx)).join('');
+      html += items.map((item, idx) => renderArchiveItem(item, idx, dateStr, key)).join('');
     }
     body.innerHTML = html || '<div class="archive-empty">Brak zapisanych newsów dla tego dnia.</div>';
+
+    if (highlight) {
+      if (highlight.parentId) {
+        const groupEl = document.getElementById('group-' + highlight.parentId);
+        if (groupEl && !groupEl.classList.contains('open')) toggleGroup(highlight.parentId);
+      }
+      setTimeout(() => {
+        let el;
+        if (highlight.isGroup) {
+          el = document.getElementById('group-' + highlight.id);
+          if (el && !el.classList.contains('open')) toggleGroup(highlight.id);
+        } else {
+          el = document.getElementById('item-' + highlight.id);
+          if (el && !el.classList.contains('open')) toggleSubItem(highlight.id);
+        }
+        if (!el) return;
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('deep-link-highlight');
+          setTimeout(() => el.classList.remove('deep-link-highlight'), 2000);
+        }, 160);
+      }, highlight.parentId ? 140 : 0);
+    }
   } catch (e) {
     body.innerHTML = '<div class="archive-empty">Nie udało się wczytać tej dawki.</div>';
   }
 }
 
-function renderArchiveItem(item, idx) {
+function renderArchiveItem(item, idx, dateStr, dose) {
   const isGroup = item.subItems && item.subItems.length > 0;
   if (isGroup) {
     return `
@@ -1280,7 +1316,7 @@ function renderArchiveItem(item, idx) {
         <div class="news-body"><span class="news-flag">${item.flag || '📰'}</span><div class="news-title">${item.text}</div></div>
         <div class="news-arrow">›</div>
       </div>
-      <div class="sub-items-container" id="subc-${item.id}">${renderArchiveSubItems(item.subItems)}</div>`;
+      <div class="sub-items-container" id="subc-${item.id}">${renderArchiveSubItems(item.subItems, dateStr, dose)}</div>`;
   }
   return `
     <div class="news-item" id="item-${item.id}" onclick="toggleSubItem('${item.id}')">
@@ -1292,9 +1328,9 @@ function renderArchiveItem(item, idx) {
       </div>
       <div class="news-arrow">›</div>
     </div>
-    <div class="card-expand" id="exp-${item.id}">${expandBlockArchive(item)}</div>`;
+    <div class="card-expand" id="exp-${item.id}">${expandBlockArchive(item, dateStr, dose)}</div>`;
 }
-function renderArchiveSubItems(subItems) {
+function renderArchiveSubItems(subItems, dateStr, dose) {
   if (!subItems || !subItems.length) return '';
   return subItems.map(sub => `
     <div class="sub-item" id="item-${sub.id}" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
@@ -1302,10 +1338,18 @@ function renderArchiveSubItems(subItems) {
       <div class="sub-item-text">${sub.text}${sub.added_at ? `<div class="item-time">${formatAddedAt(sub)}</div>` : ''}</div>
       <div class="sub-item-arrow">›</div>
     </div>
-    <div class="card-expand" id="exp-${sub.id}">${expandBlockArchive(sub)}</div>`).join('');
+    <div class="card-expand" id="exp-${sub.id}">${expandBlockArchive(sub, dateStr, dose)}</div>`).join('');
 }
-// Jak expandBlock, ale bez "Udostępnij" — deep-linki obsługują tylko żywe dawki, nie archiwum.
-function expandBlockArchive(item) {
+// Jak expandBlock, ale z linkiem w formacie #archive/{data}/{dawka}/{slug} — deep-linki do archiwum
+// otwierają ten konkretny dzień/dawkę zamiast dzisiejszych danych.
+function expandBlockArchive(item, dateStr, dose) {
+  const shareBtn = (dateStr && dose) ? (() => {
+    const slug = itemSlug(item.text);
+    const shareUrl = `https://brifup.com/#archive/${dateStr}/${dose}/${slug}`;
+    return `<button class="expand-share-btn"
+      onclick="event.stopPropagation();shareItem('${escAttr(shareUrl)}','${escAttr(item.text)}')"
+      ><span class="expand-share-icon">↑</span>Udostępnij</button>`;
+  })() : '';
   if (item.article) {
     const readBtn = item.source_url && item.source_url !== '#'
       ? `<a class="expand-read-btn" href="${item.source_url}" target="_blank">Czytaj →</a>` : '';
@@ -1319,10 +1363,12 @@ function expandBlockArchive(item) {
           <span class="expand-sep">/</span>
           <span class="expand-source-name">${item.source_name || '—'}</span>
         </div>
-        <div class="expand-actions">${readBtn}</div>
+        <div class="expand-actions">${shareBtn}${readBtn}</div>
       </div>`;
   }
-  return `<div class="expand-loading">Brak rozszerzonego artykułu dla tego newsa.</div>`;
+  return `
+    <div class="expand-loading">Brak rozszerzonego artykułu dla tego newsa.</div>
+    <div class="expand-share-row">${shareBtn}</div>`;
 }
 
 function escAttr(s) {
@@ -1494,6 +1540,18 @@ document.getElementById('topbarDate').textContent =
 document.querySelectorAll('.dose-tab').forEach(t=>t.classList.remove('active'));
 document.getElementById('tab-'+currentDose).classList.add('active');
 loadDose(currentDose);
+
+// ══ Deep link do archiwum: brifup.com/#archive/2026-07-03/afternoon/slug ══
+(function() {
+  const hash = location.hash.slice(1);
+  const parts = hash.split('/');
+  if (parts[0] !== 'archive' || parts.length < 4) return;
+  const dateStr = parts[1], slug = parts[3];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !slug) return;
+
+  document.getElementById('archiveOverlay').classList.add('show');
+  showArchiveDay(dateStr, slug);
+})();
 
 // ══ Deep link: brifup.com/#morning/slug ═══════════════
 (function() {
