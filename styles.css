@@ -299,6 +299,12 @@ html, body {
   margin-left: -16px; /* Niweluje padding rodzica */
 }
 
+.expand-image {
+  width: calc(100% + 32px); margin: -16px -16px 14px -16px;
+  height: 180px; object-fit: cover; display: block;
+  border-radius: 0;
+}
+
 .expand-article {
   font-family: 'DM Serif Display', serif;
   font-size: 15px; line-height: 1.78; color: var(--sub);

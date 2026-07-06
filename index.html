@@ -507,7 +507,11 @@ function expandBlock(item) {
       : item.rssLink
       ? `<a class="expand-read-btn" href="${item.rssLink}" target="_blank">Czytaj →</a>`
       : '';
+    const imgHtml = item.image_url
+      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : '';
     return `
+      ${imgHtml}
       <div class="expand-article">${item.article}</div>
       ${impactHtml(item)}
       <div class="expand-divider"></div>
@@ -699,7 +703,11 @@ function expandBlockArchive(item, dateStr, dose) {
   if (item.article) {
     const readBtn = item.source_url && item.source_url !== '#'
       ? `<a class="expand-read-btn" href="${item.source_url}" target="_blank">Czytaj →</a>` : '';
+    const imgHtml = item.image_url
+      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : '';
     return `
+      ${imgHtml}
       <div class="expand-article">${item.article}</div>
       ${impactHtml(item)}
       <div class="expand-divider"></div>
