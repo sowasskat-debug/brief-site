@@ -508,7 +508,7 @@ function expandBlock(item) {
       ? `<a class="expand-read-btn" href="${item.rssLink}" target="_blank">Czytaj →</a>`
       : '';
     const imgHtml = item.image_url
-      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
       : '';
     return `
       ${imgHtml}
@@ -704,7 +704,7 @@ function expandBlockArchive(item, dateStr, dose) {
     const readBtn = item.source_url && item.source_url !== '#'
       ? `<a class="expand-read-btn" href="${item.source_url}" target="_blank">Czytaj →</a>` : '';
     const imgHtml = item.image_url
-      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
       : '';
     return `
       ${imgHtml}
