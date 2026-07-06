@@ -1114,6 +1114,20 @@ function dismissInstall() {
 
 // ══ PWA — rejestracja Service Workera ════════════════
 let swRegistration = null;
+
+// Zabezpieczenie przed pętlą przeładowań: oba mechanizmy odświeżania niżej (nowy SW przejął
+// kontrolę / wykryto nowy index.html) odpalają się niezależnie od siebie i przy KAŻDYM powrocie
+// do apki (visibilitychange) — bez wspólnego, jednorazowego bezpiecznika mogłyby zapętlić się
+// w reload-po-reload, zwłaszcza na wolnym połączeniu, gdzie sam reload nie zdąży się dokończyć,
+// zanim znów zostanie wykryta "nowa wersja". sessionStorage (nie zwykła zmienna) przeżywa sam
+// reload, więc realnie ogranicza to do JEDNEGO przeładowania na całą sesję karty/apki.
+function reloadOnce(powod) {
+  if (sessionStorage.getItem('brifup_reloaded_for_update')) return;
+  sessionStorage.setItem('brifup_reloaded_for_update', '1');
+  console.log('Odświeżam raz z powodu:', powod);
+  window.location.reload();
+}
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('service-worker.js')
@@ -1121,10 +1135,7 @@ if ('serviceWorker' in navigator) {
       .catch((err) => console.warn('SW registration failed:', err));
   });
   // Auto-reload gdy nowy SW przejmie kontrolę (nowa wersja apki)
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) { refreshing = true; window.location.reload(); }
-  });
+  navigator.serviceWorker.addEventListener('controllerchange', () => reloadOnce('nowy Service Worker'));
 }
 
 // ══ Wykrywanie nowej wersji apki (index.html) ════════
@@ -1143,7 +1154,7 @@ async function checkAppShellUpdate() {
     const tag = res.headers.get('etag') || res.headers.get('last-modified') || res.headers.get('content-length');
     if (!tag) return;
     if (loadedAppTag === null) { loadedAppTag = tag; return; } // pierwsza wizyta = wersja bazowa
-    if (tag !== loadedAppTag) { loadedAppTag = tag; window.location.reload(); }
+    if (tag !== loadedAppTag) { loadedAppTag = tag; reloadOnce('nowa wersja index.html'); }
   } catch (_) { /* offline — zostajemy na obecnej wersji */ }
 }
 window.addEventListener('load', () => { checkAppShellUpdate(); });
