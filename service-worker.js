@@ -5,13 +5,14 @@
 
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
 
-const CACHE_NAME = 'brifup-cache-v6';
+const CACHE_NAME = 'brifup-cache-v7';
 // UWAGA: index.html NIE jest tu precache'owany — patrz komentarz przy jego fetch-handlerze niżej.
 const STATIC_ASSETS = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
   './og-image.png',
+  './styles.css',
 ];
 
 self.addEventListener('install', (event) => {
