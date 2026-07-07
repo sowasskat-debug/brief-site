@@ -1231,11 +1231,12 @@ function dtGetCategory(item) {
   if (/geopolit|sankcj|wojn|armia|iran|ukraina|rosja|chiny\b|izrael|palestyn|konflikt|atak|droni|rakiet/.test(t)) return 'Geopolityka';
   if (/\bai\b|sztuczn|chip|nvidia|intel|apple\b|google\b|microsoft|openai|technolog|startup|\bmeta\b|amazo/.test(t)) return 'Tech / AI';
   if (/ropa|gaz\b|złot|metal|surowc|opec|brent|barrel|węgiel|miedź/.test(t)) return 'Surowce';
+  if (/sejm|senat\b|rząd|premier|prezydent|minister\b|koalicj|partie\b|partia\b|wybor|ustaw|weto|opozycj|parlament|tusk|duda|trump|biden|harris|macron|scholz|orbán|orban|kongres|biały dom|white house|administracj|ceł|taryf|nato\b|unia europejsk|komisja europejsk|trybunał|prokurat|kampania/.test(t)) return 'Polityka';
   return 'Rynki';
 }
 
 const DT_CAT_COLORS = {
-  'Fed / Banki':'#ef4444','Geopolityka':'#f97316','Tech / AI':'#06b6d4','Surowce':'#22c55e','Rynki':'#6366f1'
+  'Fed / Banki':'#ef4444','Geopolityka':'#f97316','Tech / AI':'#06b6d4','Surowce':'#22c55e','Polityka':'#8b5cf6','Rynki':'#6366f1'
 };
 
 function dtRenderSidebar(items) {
@@ -1245,7 +1246,7 @@ function dtRenderSidebar(items) {
   dtArchiveAllItems.forEach(it => it.subItems?.length > 0 ? it.subItems.forEach(countIt) : countIt(it));
   const catsEl = document.getElementById('dtCategories');
   if (catsEl) {
-    const order = ['Fed / Banki','Geopolityka','Tech / AI','Surowce','Rynki'];
+    const order = ['Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Rynki'];
     catsEl.innerHTML = '<div class="dt-index-title">Tematy</div>' +
       order.filter(c => counts[c]).map(c =>
         `<div class="dt-index-item" onclick="dtFilterCat(this)">
@@ -1315,7 +1316,7 @@ function dtRenderSidebarCounts() {
   dtArchiveAllItems.forEach(it => it.subItems?.length > 0 ? it.subItems.forEach(countIt) : countIt(it));
   const catsEl = document.getElementById('dtCategories');
   if (!catsEl) return;
-  const order = ['Fed / Banki','Geopolityka','Tech / AI','Surowce','Rynki'];
+  const order = ['Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Rynki'];
   const activeFilter = dtActiveFilter;
   catsEl.innerHTML = '<div class="dt-index-title">Tematy</div>' +
     order.filter(c => counts[c]).map(c =>
