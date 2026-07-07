@@ -1227,11 +1227,11 @@ function isDesktop() { return window.innerWidth >= 1024; }
 
 function dtGetCategory(item) {
   const t = (item.text || '').toLowerCase();
-  if (/fed|ebc|ecb|boj|nbp|monetarn|inflacj|obniżk|podwyżk|stopa|stóp|oprocentow|rrr/.test(t)) return 'Fed / Banki';
-  if (/geopolit|sankcj|wojn|armia|iran|ukraina|rosja|chiny\b|izrael|palestyn|konflikt|atak|droni|rakiet|kijów|kijowie|moskw|kreml|żołnier|eliminowan|straty|pentagon|zelenski|zełenski|putin|oblężen|ofensyw|front\b|front |batalion|brygad|ostrzał|bombardow|siły zbrojn|obron|inwazj|okupac|terytorium|przejmuj|przejął|przeją|wycofan|deeskalac|rozejm|zawieszenie broni|sojusznik|wywiad wojsk|cia\b|fsb\b|służby/.test(t)) return 'Geopolityka';
-  if (/\bai\b|sztuczn|chip|nvidia|intel|apple\b|google\b|microsoft|openai|technolog|startup|\bmeta\b|amazo/.test(t)) return 'Tech / AI';
-  if (/ropa|gaz\b|złot|metal|surowc|opec|brent|barrel|węgiel|miedź/.test(t)) return 'Surowce';
-  if (/sejm|senat\b|rząd|premier|prezydent|minister\b|koalicj|partie\b|partia\b|wybor|ustaw|weto|opozycj|parlament|tusk|duda|trump|biden|harris|macron|scholz|orbán|orban|kongres|biały dom|white house|administracj|ceł|taryf|nato\b|unia europejsk|komisja europejsk|trybunał|prokurat|kampania/.test(t)) return 'Polityka';
+  if (/\bfed\b|ebc\b|ecb\b|boj\b|nbp\b|monetarn|inflacj|stopa proc|stóp proc|stopy proc|obniżk stóp|podwyżk stóp|oprocentow|rrr\b|bank centraln|rezerw federal|polityk pieniężn/.test(t)) return 'Fed / Banki';
+  if (/geopolit|wojn|armi|iran|ukrain|\brosj|chin[iy]|chińsk|izrael|palestyn|konflikt zbrojn|dron|rakiet|kijów|kijowie|moskw|kreml|żołnier|eliminowan|pentagon|zelenski|zełenski|putin|oblężen|ofensyw|batalion|brygad|ostrzał|bombardow|inwazj|okupac|rozejm|zawieszenie broni|wywiad wojsk|cia\b|fsb\b|zbrojn|obronn|marynark|okręt|pocisk|cieśnin|hormuz|ormuz|suez|damaszk|syri|libi|jemen|huti|wagnera|africa corps|straty bojow|wycofan wojsk|eskalac|deeskalac|budanow|hezbol|sankcj|taliba|generał|wojsk\b|sabotaż|nord stream|sudan\b|kongo\b/.test(t)) return 'Geopolityka';
+  if (/\bai\b|sztuczn intel|chip|nvidia|intel\b|apple\b|google\b|microsoft|openai|technolog|startup|meta\b|amazon\b|spacex|deepseek|anthropic|gemini|llm\b|blockchain|krypto|bitcoin|ethereum|sam altman|elon musk|model językow|robot|satelit|starlink|tesla\b|alibaba/.test(t)) return 'Tech / AI';
+  if (/\brop[ay]\b|ropa naft|gaz ziemn|gaz\b|złot[ao]\b|metal|surowc|opec|brent|barrel|węgiel|miedź|kaw[aęy]\b|soja\b|pszenica|kukurydza|zboż|żywność|paliw|energetyk|energia\b|jądrowa|atomow|lng\b|skroplony gaz/.test(t)) return 'Surowce';
+  if (/sejm|senat\b|rząd|premier|prezydent|ministerstw|minister\b|koalicj|partie\b|partia\b|wybor|ustaw\b|ustawa|weto\b|opozycj|parlament|tusk|duda\b|trump|biden|harris\b|macron|scholz|orbán|orban|kongres\b|biały dom|white house|administracj|cła\b|ceł\b|taryf|nato\b|unia europejsk|komisja europejsk|trybunał|prokurat|kampania wybor|le pen|sąd\b|wyrok|skazuj|uniewinni|kandydow|partyjn|polityczn/.test(t)) return 'Polityka';
   return 'Rynki';
 }
 
