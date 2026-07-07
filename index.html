@@ -1220,6 +1220,8 @@ let dtItemsMap = {};
 let dtCurrentItemId = null;
 let dtAllItems = [];
 let dtActiveFilter = null;
+let dtArchiveAllItems = []; // [{...item, _archiveDate, _dose}]
+let dtArchiveLoaded = false;
 
 function isDesktop() { return window.innerWidth >= 1024; }
 
@@ -1240,6 +1242,7 @@ function dtRenderSidebar(items) {
   const counts = {};
   function countIt(it) { const c = dtGetCategory(it); counts[c] = (counts[c]||0)+1; }
   items.forEach(it => it.subItems?.length > 0 ? it.subItems.forEach(countIt) : countIt(it));
+  dtArchiveAllItems.forEach(it => it.subItems?.length > 0 ? it.subItems.forEach(countIt) : countIt(it));
   const catsEl = document.getElementById('dtCategories');
   if (catsEl) {
     const order = ['Fed / Banki','Geopolityka','Tech / AI','Surowce','Rynki'];
@@ -1255,8 +1258,6 @@ function dtRenderSidebar(items) {
   dtRenderArchiveSidebar();
 }
 
-// Boczny panel desktopu — ostatnie kilka dni z prawdziwego archive/index.json (nie placeholder).
-// Klik na dzień otwiera ten sam overlay archiwum co na mobile.
 async function dtRenderArchiveSidebar() {
   const archEl = document.getElementById('dtArchive');
   if (!archEl) return;
@@ -1280,9 +1281,50 @@ async function dtRenderArchiveSidebar() {
       html += `<div class="dt-index-item" onclick="openArchive()"><span class="dt-index-label" style="color:var(--muted)">Zobacz wszystkie →</span></div>`;
     }
     archEl.innerHTML = html;
+
+    if (!dtArchiveLoaded) {
+      dtArchiveLoaded = true;
+      dtArchiveAllItems = [];
+      for (const d of sorted) {
+        try {
+          if (!archiveDayCache[d]) {
+            const r = await fetch(`./archive/${d}.json`, { cache: 'no-store' });
+            if (r.ok) archiveDayCache[d] = await r.json();
+          }
+          if (archiveDayCache[d]) {
+            for (const dose of ['morning','afternoon','evening']) {
+              const doseData = archiveDayCache[d][dose];
+              if (doseData?.items) {
+                doseData.items.forEach(it => dtArchiveAllItems.push({...it, _archiveDate: d, _dose: dose}));
+              }
+            }
+          }
+        } catch(e) {}
+      }
+      dtRenderSidebarCounts();
+    }
   } catch (e) {
     archEl.innerHTML = '<div class="dt-index-title">Archiwum</div>';
   }
+}
+
+function dtRenderSidebarCounts() {
+  const counts = {};
+  function countIt(it) { const c = dtGetCategory(it); counts[c] = (counts[c]||0)+1; }
+  dtAllItems.forEach(it => it.subItems?.length > 0 ? it.subItems.forEach(countIt) : countIt(it));
+  dtArchiveAllItems.forEach(it => it.subItems?.length > 0 ? it.subItems.forEach(countIt) : countIt(it));
+  const catsEl = document.getElementById('dtCategories');
+  if (!catsEl) return;
+  const order = ['Fed / Banki','Geopolityka','Tech / AI','Surowce','Rynki'];
+  const activeFilter = dtActiveFilter;
+  catsEl.innerHTML = '<div class="dt-index-title">Tematy</div>' +
+    order.filter(c => counts[c]).map(c =>
+      `<div class="dt-index-item${activeFilter===c?' active':''}" onclick="dtFilterCat(this)">
+        <div class="dt-index-dot" style="background:${DT_CAT_COLORS[c]}"></div>
+        <span class="dt-index-label">${c}</span>
+        <span class="dt-index-n">${counts[c]}</span>
+      </div>`
+    ).join('');
 }
 
 function dtFilterCat(el) {
@@ -1293,22 +1335,75 @@ function dtFilterCat(el) {
   if (wasActive) {
     dtActiveFilter = null;
     dtRenderFeed(dtAllItems);
+    const fcEl = document.getElementById('dtFeedCount');
+    if (fcEl) fcEl.textContent = `${dtAllItems.reduce((s,it) => s + (it.subItems?.length > 0 ? it.subItems.length : 1), 0)} wpisów`;
   } else {
     dtActiveFilter = cat;
     el.classList.add('active');
-    const filtered = dtAllItems.filter(it =>
-      it.subItems?.length > 0
-        ? it.subItems.some(sub => dtGetCategory(sub) === cat)
-        : dtGetCategory(it) === cat
-    );
-    dtRenderFeed(filtered);
-  }
-  const fcEl = document.getElementById('dtFeedCount');
-  if (fcEl) {
-    const src = dtActiveFilter ? document.getElementById('dtFeedList').querySelectorAll('.dt-item').length : dtAllItems.reduce((s,it) => s + (it.subItems?.length > 0 ? it.subItems.length : 1), 0);
-    fcEl.textContent = `${src} wpisów`;
+    function matchesCat(it) {
+      return it.subItems?.length > 0 ? it.subItems.some(sub => dtGetCategory(sub) === cat) : dtGetCategory(it) === cat;
+    }
+    const today = new Date().toISOString().slice(0,10);
+    const byDate = {};
+    const todayMatching = dtAllItems.filter(matchesCat);
+    if (todayMatching.length) byDate[today] = todayMatching;
+    dtArchiveAllItems.filter(matchesCat).forEach(it => {
+      const d = it._archiveDate;
+      if (!byDate[d]) byDate[d] = [];
+      byDate[d].push(it);
+    });
+    const sortedDates = Object.keys(byDate).sort((a,b) => b.localeCompare(a));
+    dtRenderFeedCrossDay(byDate, sortedDates, today);
+    const total = sortedDates.reduce((s,d) => s + byDate[d].reduce((ss,it) => ss + (it.subItems?.length > 0 ? it.subItems.length : 1), 0), 0);
+    const fcEl = document.getElementById('dtFeedCount');
+    if (fcEl) fcEl.textContent = `${total} wpisów`;
   }
   dtShowEmpty();
+}
+
+function dtRenderFeedCrossDay(byDate, sortedDates, today) {
+  let html = '';
+  let globalIdx = 0;
+  sortedDates.forEach(d => {
+    const label = d === today
+      ? 'Dziś'
+      : new Date(d + 'T00:00:00').toLocaleDateString('pl-PL', {day:'numeric', month:'long', year:'numeric'});
+    html += `<div style="padding:8px 12px 4px;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-top:1px solid var(--border)">${label}</div>`;
+    byDate[d].forEach(item => {
+      globalIdx++;
+      const num = String(globalIdx).padStart(3,'0');
+      const isGroup = item.subItems?.length > 0;
+      if (isGroup) {
+        const subsHtml = item.subItems.map(sub =>
+          `<div class="dt-sub-item" id="dts-${sub.id}" onclick="event.stopPropagation();dtPickItem('${sub.id}')">
+            <span class="dt-sub-flag">${sub.flag||'📰'}</span>
+            <div class="dt-sub-text">${sub.text}</div>
+          </div>`
+        ).join('');
+        html += `<div class="dt-item group-header" id="dti-${item.id}" onclick="dtToggleGroup('${item.id}')">
+          <div class="dt-item-num">${num}</div>
+          <div class="dt-item-flag">${item.flag||'📰'}</div>
+          <div class="dt-item-body">
+            <div class="dt-item-headline">${item.text}</div>
+            <div class="dt-item-meta"><span>↓ ${item.subItems.length} powiązane</span></div>
+          </div>
+        </div>
+        <div class="dt-group-subs" id="dtg-${item.id}" style="display:none">${subsHtml}</div>`;
+      } else {
+        const t = formatAddedAt(item);
+        html += `<div class="dt-item" id="dti-${item.id}" onclick="dtPickItem('${item.id}')">
+          <div class="dt-item-num">${num}</div>
+          <div class="dt-item-flag">${item.flag||'📰'}</div>
+          <div class="dt-item-body">
+            <div class="dt-item-headline">${item.text}</div>
+            ${(t||item.source_name)?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${item.source_name}</span>`:''}</div>`:''}
+          </div>
+        </div>`;
+      }
+    });
+  });
+  const feedList = document.getElementById('dtFeedList');
+  if (feedList) feedList.innerHTML = html;
 }
 
 function dtRenderFeed(items) {
