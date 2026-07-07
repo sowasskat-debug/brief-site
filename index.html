@@ -1232,11 +1232,12 @@ function dtGetCategory(item) {
   if (/\bai\b|sztuczn intel|chip|nvidia|intel\b|apple\b|google\b|microsoft|openai|technolog|startup|meta\b|amazon\b|spacex|deepseek|anthropic|gemini|llm\b|blockchain|krypto|bitcoin|ethereum|sam altman|elon musk|model językow|robot|satelit|starlink|tesla\b|alibaba/.test(t)) return 'Tech / AI';
   if (/\brop[ay]\b|ropa naft|gaz ziemn|gaz\b|złot[ao]\b|metal|surowc|opec|brent|barrel|węgiel|miedź|kaw[aęy]\b|soja\b|pszenica|kukurydza|zboż|żywność|paliw|energetyk|energia\b|jądrowa|atomow|lng\b|skroplony gaz/.test(t)) return 'Surowce';
   if (/sejm|senat\b|rząd|premier|prezydent|ministerstw|minister\b|koalicj|partie\b|partia\b|wybor|ustaw\b|ustawa|weto\b|opozycj|parlament|tusk|duda\b|trump|biden|harris\b|macron|scholz|orbán|orban|kongres\b|biały dom|white house|administracj|cła\b|ceł\b|taryf|nato\b|unia europejsk|komisja europejsk|trybunał|prokurat|kampania wybor|le pen|sąd\b|wyrok|skazuj|uniewinni|kandydow|partyjn|polityczn/.test(t)) return 'Polityka';
+  if (/policj|narkotyk|przemyt|aresztowan|zatrzyman|konfiskat|morderst|zabójst|przestępst|\bfifa\b|piłka nożn|igrzysk|olimpiad|wulkan|erupcj|trzęsienie ziemi|powódź|tsunami|huragan|tornado|epidemi|pandemi|szczepionk|chorob|wirus\b|festiwal|katastrofa|wypadek\b|cristiano|messi|lebron|watykan|papież|mdma\b|kokain|heroiny|heroina|fentanyl|fifa\b|nfl\b|nba\b|formula 1|formula one/.test(t)) return 'Świat';
   return 'Rynki';
 }
 
 const DT_CAT_COLORS = {
-  'Fed / Banki':'#ef4444','Geopolityka':'#f97316','Tech / AI':'#06b6d4','Surowce':'#22c55e','Polityka':'#8b5cf6','Rynki':'#6366f1'
+  'Fed / Banki':'#ef4444','Geopolityka':'#f97316','Tech / AI':'#06b6d4','Surowce':'#22c55e','Polityka':'#8b5cf6','Świat':'#0ea5e9','Rynki':'#6366f1'
 };
 
 function dtRenderSidebar(items) {
@@ -1246,7 +1247,7 @@ function dtRenderSidebar(items) {
   dtArchiveAllItems.forEach(it => it.subItems?.length > 0 ? it.subItems.forEach(countIt) : countIt(it));
   const catsEl = document.getElementById('dtCategories');
   if (catsEl) {
-    const order = ['Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Rynki'];
+    const order = ['Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Świat','Rynki'];
     catsEl.innerHTML = '<div class="dt-index-title">Tematy</div>' +
       order.filter(c => counts[c]).map(c =>
         `<div class="dt-index-item" onclick="dtFilterCat(this)">
@@ -1316,7 +1317,7 @@ function dtRenderSidebarCounts() {
   dtArchiveAllItems.forEach(it => it.subItems?.length > 0 ? it.subItems.forEach(countIt) : countIt(it));
   const catsEl = document.getElementById('dtCategories');
   if (!catsEl) return;
-  const order = ['Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Rynki'];
+  const order = ['Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Świat','Rynki'];
   const activeFilter = dtActiveFilter;
   catsEl.innerHTML = '<div class="dt-index-title">Tematy</div>' +
     order.filter(c => counts[c]).map(c =>
