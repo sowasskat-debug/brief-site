@@ -1341,9 +1341,7 @@ function dtFilterCat(el) {
   } else {
     dtActiveFilter = cat;
     el.classList.add('active');
-    function matchesCat(it) {
-      return it.subItems?.length > 0 ? it.subItems.some(sub => dtGetCategory(sub) === cat) : dtGetCategory(it) === cat;
-    }
+    const matchesCat = it => it.subItems?.length > 0 ? it.subItems.some(sub => dtGetCategory(sub) === cat) : dtGetCategory(it) === cat;
     const today = new Date().toISOString().slice(0,10);
     const byDate = {};
     const todayMatching = dtAllItems.filter(matchesCat);
