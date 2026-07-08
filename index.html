@@ -987,6 +987,32 @@ loadDose(currentDose);
 
     const isGroup = found.subItems && found.subItems.length > 0;
 
+    // Desktop ma osobny layout (lista + panel szczegółów po prawej), więc mobilne toggle/scroll
+    // nie działają na jego DOM — link udostępniony z telefonu nic tu nie otwierał. Otwieramy news
+    // przez desktopowe API (dtPickItem), w razie potrzeby rozwijając najpierw jego klaster.
+    if (isDesktop()) {
+      if (!dtItemsMap[found.id]) {           // desktopowy feed jeszcze nie zbudowany — spróbuj później
+        if (attempts < 25) setTimeout(() => tryOpen(attempts + 1), 200);
+        return;
+      }
+      if (parent) {
+        const g = document.getElementById('dtg-' + parent.id);
+        if (g && g.style.display === 'none') dtToggleGroup(parent.id);
+      } else if (isGroup) {
+        const g = document.getElementById('dtg-' + found.id);
+        if (g && g.style.display === 'none') dtToggleGroup(found.id);
+      }
+      dtPickItem(found.id);
+      setTimeout(() => {
+        const el = document.getElementById('dts-' + found.id) || document.getElementById('dti-' + found.id);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('deep-link-highlight');
+        setTimeout(() => el.classList.remove('deep-link-highlight'), 2000);
+      }, 120);
+      return;
+    }
+
     // Sub-item w klastrze jest ukryty w zwiniętym kontenerze — najpierw otwórz nadrzędną grupę,
     // dopiero potem sam podpunkt. Bez tego scrollIntoView skacze do niewidocznego elementu.
     if (parent) {
