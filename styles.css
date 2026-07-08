@@ -495,7 +495,9 @@ html, body {
 .dt-item:hover { background: rgba(0,0,0,.025); }
 [data-theme="dark"] .dt-item:hover { background: rgba(255,255,255,.04); }
 .dt-item.selected { background: rgba(204,0,0,.05); border-left: 2px solid var(--red); padding-left: 20px; }
-/* Top story (wersja "gazeta"): kicker z czerwonym podkreśleniem + większy nagłówek, bez paska i tła */
+/* Top story (wersja "gazeta"): kicker z czerwonym podkreśleniem + większy nagłówek */
+.dt-item.top-item { border-left: 3px solid var(--red); padding-left: 19px; background: rgba(204,0,0,.04); }
+[data-theme="dark"] .dt-item.top-item { background: rgba(204,0,0,.07); }
 .dt-item.top-item .dt-item-headline { font-size: 17px; font-weight: 600; }
 .dt-item.top-item .dt-item-badges { margin-bottom: 6px; }
 .dt-item.group-header { background: var(--bg); }
