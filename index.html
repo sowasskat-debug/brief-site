@@ -511,7 +511,7 @@ function zrodloPl(n) {
 // Znaczek wiarygodności "🧭 N źródeł" — pusty gdy mniej niż 2 różne źródła.
 function srcBadge(item) {
   const n = confirmCount(item);
-  return n >= 2 ? `<span class="src-badge">🧭 ${n} ${zrodloPl(n)}</span>` : '';
+  return n >= 2 ? `<span class="src-badge"><span class="src-check">✓</span>${n} ${zrodloPl(n)}</span>` : '';
 }
 
 // Linia "Wpływ na rynek": koloruje strzałki ↑ (zielony) / ↓ (czerwony)
@@ -769,13 +769,14 @@ function renderDose(dose, items) {
 
   const heroBlock = isHeroGroup ? `
     <div class="hero-card" id="group-${hero.id}" data-text="${escAttr(hero.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${hero.id}')">
+      ${srcBadge(hero) ? `<div class="card-corner">${srcBadge(hero)}</div>` : ''}
       <div class="hero-kicker">
         <span class="hero-flag">${hero.flag||'📰'}</span>
         <span class="hero-kicker-label ${cfg.kickerClass}">${cfg.kicker}</span>
       </div>
       <div class="hero-title">${hero.text}</div>
       <div class="hero-footer">
-        <span class="hero-source">${srcBadge(hero) ? confirmCount(hero) + ' ' + zrodloPl(confirmCount(hero)) + ' potwierdza' : hero.subItems.length + ' powiązane newsy'}</span>
+        <span class="hero-source">${hero.subItems.length} powiązane newsy</span>
         <span class="hero-arrow">›</span>
       </div>
     </div>
@@ -802,11 +803,11 @@ function renderDose(dose, items) {
     if (isGroup) {
       return `
         <div class="news-item" id="group-${item.id}" data-text="${escAttr(item.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${item.id}')">
+          ${srcBadge(item) ? `<div class="card-corner">${srcBadge(item)}</div>` : ''}
           <div class="news-num">0${i+2}</div>
           <div class="news-body">
             <span class="news-flag">${item.flag||'📰'}</span>
             <div class="news-title">${item.text}</div>
-            ${srcBadge(item) ? `<div class="news-srcmeta">${srcBadge(item)}</div>` : ''}
           </div>
           <div class="news-arrow">›</div>
         </div>
