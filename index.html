@@ -494,6 +494,26 @@ function displaySource(item) {
   } catch (_) { return '—'; }
 }
 
+// Ile RÓŻNYCH źródeł potwierdza dany klaster (to samo wydarzenie opisane przez kilka serwisów).
+// Liczymy unikalne nazwy/domeny źródeł wśród podpunktów — sygnał wiarygodności. 0 = nie pokazujemy.
+function confirmCount(item) {
+  if (!item || !item.subItems || item.subItems.length < 2) return 0;
+  const s = new Set();
+  item.subItems.forEach(sub => { const d = displaySource(sub); if (d && d !== '—') s.add(d.toLowerCase()); });
+  return s.size;
+}
+// Polska odmiana: 1 źródło, 2-4 źródła, 5+ źródeł
+function zrodloPl(n) {
+  if (n === 1) return 'źródło';
+  const d = n % 10, dd = n % 100;
+  return (d >= 2 && d <= 4 && !(dd >= 12 && dd <= 14)) ? 'źródła' : 'źródeł';
+}
+// Znaczek wiarygodności "🧭 N źródeł" — pusty gdy mniej niż 2 różne źródła.
+function srcBadge(item) {
+  const n = confirmCount(item);
+  return n >= 2 ? `<span class="src-badge">🧭 ${n} ${zrodloPl(n)}</span>` : '';
+}
+
 // Linia "Wpływ na rynek": koloruje strzałki ↑ (zielony) / ↓ (czerwony)
 function impactHtml(item) {
   if (!item.impact) return '';
@@ -755,7 +775,7 @@ function renderDose(dose, items) {
       </div>
       <div class="hero-title">${hero.text}</div>
       <div class="hero-footer">
-        <span class="hero-source">${hero.subItems.length} powiązane newsy</span>
+        <span class="hero-source">${srcBadge(hero) ? confirmCount(hero) + ' ' + zrodloPl(confirmCount(hero)) + ' potwierdza' : hero.subItems.length + ' powiązane newsy'}</span>
         <span class="hero-arrow">›</span>
       </div>
     </div>
@@ -786,6 +806,7 @@ function renderDose(dose, items) {
           <div class="news-body">
             <span class="news-flag">${item.flag||'📰'}</span>
             <div class="news-title">${item.text}</div>
+            ${srcBadge(item) ? `<div class="news-srcmeta">${srcBadge(item)}</div>` : ''}
           </div>
           <div class="news-arrow">›</div>
         </div>
@@ -1423,7 +1444,7 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
           <div class="dt-item-flag">${item.flag||'📰'}</div>
           <div class="dt-item-body">
             <div class="dt-item-headline">${item.text}</div>
-            <div class="dt-item-meta"><span>↓ ${item.subItems.length} powiązane</span></div>
+            <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`}</div>
           </div>
         </div>
         <div class="dt-group-subs" id="dtg-${item.id}" style="display:none">${subsHtml}</div>`;
@@ -1463,7 +1484,7 @@ function dtRenderFeed(items) {
         <div class="dt-item-body">
           ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-brk">BREAKING</span></div>':''}
           <div class="dt-item-headline">${item.text}</div>
-          <div class="dt-item-meta"><span>↓ ${item.subItems.length} powiązane</span></div>
+          <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`}</div>
         </div>
       </div>
       <div class="dt-group-subs" id="dtg-${item.id}" style="display:none">${subsHtml}</div>`;
@@ -1568,7 +1589,7 @@ function dtShowDetail(item) {
   det.innerHTML = `
     <div class="dt-detail-content">
       <div class="dt-detail-flag">${item.flag||'📰'}</div>
-      <div class="dt-detail-badges"><span class="dt-detail-badge">${cat.toUpperCase()}</span></div>
+      <div class="dt-detail-badges"><span class="dt-detail-badge">${cat.toUpperCase()}</span>${srcBadge(item)}</div>
       <div class="dt-detail-headline">${item.text}</div>
       <div class="dt-detail-time">${time||'—'}</div>
       ${item.article
