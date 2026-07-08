@@ -1471,7 +1471,7 @@ function dtRenderFeed(items) {
   items.forEach((item, i) => {
     const num = String(i+1).padStart(3,'0');
     const isGroup = item.subItems?.length > 0;
-    const isTop = !!item.top;
+    const isTop = i === 0 || !!item.top; // top story = pozycja [0] (tak jak hero na telefonie)
     if (isGroup) {
       const subsHtml = item.subItems.map(sub =>
         `<div class="dt-sub-item" id="dts-${sub.id}" onclick="event.stopPropagation();dtPickItem('${sub.id}')">
@@ -1483,7 +1483,7 @@ function dtRenderFeed(items) {
         <div class="dt-item-num">${num}</div>
         <div class="dt-item-flag">${item.flag||'📰'}</div>
         <div class="dt-item-body">
-          ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-brk">BREAKING</span></div>':''}
+          ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
           <div class="dt-item-headline">${item.text}</div>
           <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`}</div>
         </div>
@@ -1495,7 +1495,7 @@ function dtRenderFeed(items) {
         <div class="dt-item-num">${num}</div>
         <div class="dt-item-flag">${item.flag||'📰'}</div>
         <div class="dt-item-body">
-          ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-brk">BREAKING</span></div>':''}
+          ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
           <div class="dt-item-headline">${item.text}</div>
           ${(t||item.source_name)?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${item.source_name}</span>`:''}</div>`:''}
         </div>
