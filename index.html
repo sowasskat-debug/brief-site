@@ -1687,7 +1687,32 @@ async function pollLiveUpdates() {
   showToast('Nowe newsy');
 }
 
-setInterval(pollLiveUpdates, LIVE_POLL_MS);
+// Sprytny polling: najpierw TANIE sprawdzenie nagłówkiem (HEAD ~kilkaset bajtów) czy briefs.json
+// w ogóle się zmienił; pełne dane (219 KB) ściągamy TYLKO gdy zmienił się jego ETag/rozmiar. Dzięki
+// temu można pytać często (co minutę), a transfer zostaje znikomy — efekt prawie jak push.
+let lastBriefsTag = null;
+
+async function probeBriefsTag() {
+  try {
+    const r = await fetch(`./briefs.json?_=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+    if (!r.ok) return null;
+    return r.headers.get('etag') || r.headers.get('last-modified') || r.headers.get('content-length');
+  } catch (_) { return null; }
+}
+
+async function liveTick() {
+  if (document.visibilityState !== 'visible') return;
+  const overlay = document.getElementById('archiveOverlay');
+  if (overlay && overlay.classList.contains('show')) return;
+  const tag = await probeBriefsTag();
+  if (tag !== null && tag === lastBriefsTag) return; // plik bez zmian → nic nie pobieramy
+  lastBriefsTag = tag;                               // (tag === null → HEAD niedostępny → pełny poll jako fallback)
+  await pollLiveUpdates();
+}
+
+// Ustal punkt odniesienia na starcie, żeby pierwszy tik nie ściągał całości bez potrzeby.
+probeBriefsTag().then(t => { if (t) lastBriefsTag = t; });
+setInterval(liveTick, LIVE_POLL_MS);
 
 // ══ ADMIN — long-press delete ══════════════════════════════════════════════
 // Aktywacja jednorazowa: otwórz brifup.com?admin=TWÓJ_PAT_GITHUB
