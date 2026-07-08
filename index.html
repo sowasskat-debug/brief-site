@@ -1642,6 +1642,53 @@ window.addEventListener('pageshow', (event) => {
   }
 });
 
+// ══ Auto-odświeżanie na żywo (jak FinancialJuice) ══════════════════════════
+// Gdy karta jest widoczna, co interwał sprawdzamy briefs.json bieżącej dawki. Jeśli DOSZŁY
+// (lub zmieniły się) newsy, podmieniamy treść W MIEJSCU — bez pełnego przeładowania, zachowując
+// pozycję scrolla i (na desktopie) otwarty artykuł. Ten sam kod obsługuje www, PWA na PC i telefon.
+const LIVE_POLL_MS = 60000;
+
+// Podpis treści niezależny od kolejności — łapie nowe/usunięte/przeredagowane newsy (po tekście + czasie).
+function doseSignature(items) {
+  const parts = [];
+  const push = it => parts.push((it.text || '') + '|' + (it.added_at || ''));
+  (items || []).forEach(it => { push(it); (it.subItems || []).forEach(push); });
+  return parts.sort().join('§');
+}
+
+async function pollLiveUpdates() {
+  if (document.visibilityState !== 'visible') return;
+  const overlay = document.getElementById('archiveOverlay');
+  if (overlay && overlay.classList.contains('show')) return; // nie przeszkadzaj w archiwum
+  const dose = currentDose;
+  let fresh;
+  try { fresh = await fetchFromBriefsJson(dose); } catch (_) { return; }
+  if (!fresh || dose !== currentDose || !cache[dose]) return;
+  if (doseSignature(fresh) === doseSignature(cache[dose])) return; // nic nowego
+
+  // Przetwórz identycznie jak loadDose: własne id-ki + sortowanie (top story + reszta newest-first).
+  const processed = fresh.map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(s => ({ ...s, id: uid() })) }));
+  processed.forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
+  const [top, ...rest] = processed;
+  cache[dose] = top ? [top, ...sortNewestFirst(rest)] : [];
+
+  // Zapamiętaj pozycję scrolla obu widoków (renderDose zeruje scrollArea, renderDesktop — listę).
+  const mobTop = scrollArea ? scrollArea.scrollTop : 0;
+  const feedList = document.getElementById('dtFeedList');
+  const deskTop = feedList ? feedList.scrollTop : 0;
+
+  renderDose(dose, cache[dose]);
+  renderDesktop(dose, cache[dose]);
+
+  if (scrollArea) scrollArea.scrollTop = mobTop;
+  const feedList2 = document.getElementById('dtFeedList');
+  if (feedList2) feedList2.scrollTop = deskTop;
+
+  showToast('Nowe newsy');
+}
+
+setInterval(pollLiveUpdates, LIVE_POLL_MS);
+
 // ══ ADMIN — long-press delete ══════════════════════════════════════════════
 // Aktywacja jednorazowa: otwórz brifup.com?admin=TWÓJ_PAT_GITHUB
 // Potem: przytrzymaj news 2s → pojawia się ×, kliknij żeby usunąć
