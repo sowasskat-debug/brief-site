@@ -482,6 +482,18 @@ function escAttr(s) {
   return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 }
 
+// Nazwa źródła do wyświetlenia. Gdy bot nie zapisał source_name, ale jest odnośnik (source_url
+// lub rssLink), pokaż domenę zamiast "—" — skoro jest link "Czytaj", źródło nie jest nieznane.
+function displaySource(item) {
+  if (item && item.source_name) return item.source_name;
+  const link = (item && item.source_url && item.source_url !== '#') ? item.source_url : (item && item.rssLink) || '';
+  if (!link) return '—';
+  try {
+    const h = new URL(link).hostname.replace(/^www\./, '');
+    return h || '—';
+  } catch (_) { return '—'; }
+}
+
 // Linia "Wpływ na rynek": koloruje strzałki ↑ (zielony) / ↓ (czerwony)
 function impactHtml(item) {
   if (!item.impact) return '';
@@ -519,7 +531,7 @@ function expandBlock(item) {
         <div class="expand-source-left">
           <span class="expand-source-tag">Źródło</span>
           <span class="expand-sep">/</span>
-          <span class="expand-source-name">${item.source_name||'—'}</span>
+          <span class="expand-source-name">${displaySource(item)}</span>
         </div>
         <div class="expand-actions">${shareBtn}${readBtn}</div>
       </div>`;
@@ -715,7 +727,7 @@ function expandBlockArchive(item, dateStr, dose) {
         <div class="expand-source-left">
           <span class="expand-source-tag">Źródło</span>
           <span class="expand-sep">/</span>
-          <span class="expand-source-name">${item.source_name || '—'}</span>
+          <span class="expand-source-name">${displaySource(item)}</span>
         </div>
         <div class="expand-actions">${shareBtn}${readBtn}</div>
       </div>`;
@@ -1564,7 +1576,7 @@ function dtShowDetail(item) {
       <div class="dt-source-row">
         <div>
           <div class="dt-source-label">ŹRÓDŁO</div>
-          <div class="dt-source-name">${item.source_name||'—'}</div>
+          <div class="dt-source-name">${displaySource(item)}</div>
         </div>
         <div class="dt-detail-actions">${shareBtn}${readBtn}</div>
       </div>
