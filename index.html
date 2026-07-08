@@ -1509,6 +1509,13 @@ function dtShowDetail(item) {
   const readBtn = (item.source_url && item.source_url !== '#')
     ? `<a class="dt-read-btn" href="${item.source_url}" target="_blank" rel="noopener">CZYTAJ →</a>`
     : (item.rssLink ? `<a class="dt-read-btn" href="${item.rssLink}" target="_blank" rel="noopener">CZYTAJ →</a>` : '');
+  // Udostępnianie także w wersji desktop (dotąd był tylko na mobile). Archiwalny wpis niesie
+  // _archiveDate/_dose — wtedy link prowadzi do konkretnego dnia/dawki, inaczej do bieżącej dawki.
+  const shareSlug = itemSlug(item.text);
+  const shareUrl = (item._archiveDate && item._dose)
+    ? `https://brifup.com/#archive/${item._archiveDate}/${item._dose}/${shareSlug}`
+    : `https://brifup.com/#${currentDose}/${shareSlug}`;
+  const shareBtn = `<button class="dt-share-btn" onclick="shareItem('${escAttr(shareUrl)}','${escAttr(item.text)}')"><span class="dt-share-icon">↑</span>Udostępnij</button>`;
   const allItems = cache[currentDose] || [];
   const related = [];
   for (const it of allItems) {
@@ -1533,7 +1540,7 @@ function dtShowDetail(item) {
           <div class="dt-source-label">ŹRÓDŁO</div>
           <div class="dt-source-name">${item.source_name||'—'}</div>
         </div>
-        ${readBtn}
+        <div class="dt-detail-actions">${shareBtn}${readBtn}</div>
       </div>
     </div>
     ${related.length ? `<div class="dt-related">
