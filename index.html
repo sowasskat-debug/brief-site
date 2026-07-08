@@ -1508,7 +1508,9 @@ function renderDesktop(dose, items) {
 
   dtRenderFeed(items);
   dtRenderSidebar(items);
-  dtShowEmpty();
+  // Nie czyść panelu szczegółów przy każdym renderze (np. zmiana dawki morning/evening) — zostaw
+  // ostatnio wybrany artykuł widoczny, aż użytkownik kliknie inny. Placeholder tylko na starcie.
+  if (!dtCurrentItemId) dtShowEmpty();
 }
 
 function dtToggleGroup(id) {
