@@ -464,8 +464,8 @@ html, body {
 .dt-body { display: grid; grid-template-columns: 210px 1fr 380px; flex: 1; overflow: hidden; }
 
 /* left index */
-.dt-index { border-right: 1px solid #dbd8d2; overflow-y: auto; }
-[data-theme="dark"] .dt-index { border-right-color: #2a2a2a; }
+.dt-index { border-right: 1px solid #dbd8d2; overflow-y: auto; background: var(--bg); }
+[data-theme="dark"] .dt-index { border-right-color: #2a2a2a; background: #0f0f0f; }
 .dt-index-section { padding: 18px 0 4px; border-bottom: 1px solid #eae7e1; }
 [data-theme="dark"] .dt-index-section { border-bottom-color: #222; }
 .dt-index-section:last-child { border-bottom: none; }
@@ -498,9 +498,9 @@ html, body {
 /* Top story (wersja "gazeta"): kicker z czerwonym podkreśleniem + większy nagłówek, bez paska i tła */
 .dt-item.top-item .dt-item-headline { font-size: 17px; font-weight: 600; }
 .dt-item.top-item .dt-item-badges { margin-bottom: 6px; }
-.dt-item.group-header { background: #efecea; }
+.dt-item.group-header { background: var(--bg); }
 [data-theme="dark"] .dt-item.group-header { background: #141414; }
-.dt-item.group-header:hover { background: #e8e5e0; }
+.dt-item.group-header:hover { background: rgba(0,0,0,.025); }
 .dt-item-num { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); padding-top: 2px; text-align: right; }
 .dt-item-flag { font-size: 14px; padding-top: 1px; }
 .dt-item-body { min-width: 0; }
