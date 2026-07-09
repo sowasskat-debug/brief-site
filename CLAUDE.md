@@ -17,6 +17,7 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 - `admin.html` — panel admina (osobny, token GitHub w sessionStorage).
 - `service-worker.js` — PWA cache + import OneSignal SDK.
 - `briefs.json` — bieżące dane (patrz niżej). `archive/*.json` — archiwum dzienne. `rejected.json` — ręcznie odrzucone (uczy filtr bota).
+  - **`rejected.json` = warstwa PRZYKŁADÓW (few-shot):** bot czyta **tylko ostatnie 40 wpisów** jako REGUŁA 0, więc świeże odrzucenia wypierają stare. Dobre do „naucz filtr TEGO konkretnego newsa". **Trwałe kategorie** (np. „odrzucaj promo bankowe", „fixingi CB bez wpływu na EUR/PLN") NIE tu — idą do stałej `WSPOLNE_ODRZUCENIA` w bocie (repo `financialnewsbot`), inaczej po ~40 nowych odrzuceniach wzorzec wypadnie z okna. Kształt wpisu: `{ "text", "flag", "reason"? }` (pole `reason` opcjonalne — bot dokleja je jako „[powód: …]").
 - `manifest.json`, ikony, `og-image.png`, `CNAME`, `robots.txt`, `sitemap.xml`.
 
 ## Kształt danych (`briefs.json`)
