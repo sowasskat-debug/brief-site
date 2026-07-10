@@ -83,6 +83,8 @@
   <button class="mob-swp-dose act" id="mobDoseBtn-morning"   onclick="switchDose('morning');mobSwpClose()">☀️ Poranna</button>
   <button class="mob-swp-dose"     id="mobDoseBtn-afternoon" onclick="switchDose('afternoon');mobSwpClose()">🌤 Południowa</button>
   <button class="mob-swp-dose"     id="mobDoseBtn-evening"   onclick="switchDose('evening');mobSwpClose()">🌛 Wieczorna</button>
+  <div class="mob-swp-sec">Archiwum</div>
+  <div id="mobSwpArchive"></div>
 </div>
 <div class="mob-edge-grip" id="mobEdgeGrip" onclick="mobSwpOpen()" title="Tematy / dawka"></div>
 
@@ -933,6 +935,12 @@ function renderDose(dose, items) {
     });
     mobActiveCat = null;
     mobSwpBuildCats(items);
+    mobSwpBuildArchive();
+    // Archiwum wczytuje na PC renderDesktop; na mobile robimy to tutaj (idempotentne, guard dtArchiveLoaded).
+    // Po załadowaniu odświeżamy panel, żeby doszła lista dni i cross-day filtr kategorii miał dane.
+    if (typeof dtRenderArchiveSidebar === 'function') {
+      dtRenderArchiveSidebar().then(() => { mobSwpBuildCats(items); mobSwpBuildArchive(); }).catch(()=>{});
+    }
   }
 
   renderDesktop(dose, items);
@@ -1834,6 +1842,10 @@ setInterval(liveTick, LIVE_POLL_MS);
 // ═══ MOBILE SWIPE PANEL — funkcje ═══════════════════════════════════════════
 
 function mobSwpOpen() {
+  // Odśwież listy przy otwarciu — archiwum ładuje się asynchronicznie po starcie.
+  const items = cache[currentDose];
+  if (items) mobSwpBuildCats(items);
+  mobSwpBuildArchive();
   document.getElementById('mobSwpPanel').classList.add('open');
   document.getElementById('mobSwpOv').classList.add('vis');
 }
@@ -1887,34 +1899,105 @@ function mobSwpBuildCats(items) {
   });
 }
 
+// Markup mobilnej karty (klaster albo pojedynczy) — ten sam co w renderDose, reużyty w widoku kategorii.
+// Rozwijanie działa czysto na DOM (toggleGroup/toggleSubItem), bo treść renderujemy inline tutaj.
+function mobCatCardHtml(item, num) {
+  const isGroup = item.subItems && item.subItems.length > 0;
+  if (isGroup) {
+    return `
+      <div class="news-item" id="group-${item.id}" data-text="${escAttr(item.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${item.id}')">
+        ${srcBadge(item) ? `<div class="card-corner">${srcBadge(item)}</div>` : ''}
+        <div class="news-num">${num}</div>
+        <div class="news-body">
+          <span class="news-flag">${item.flag||'📰'}</span>
+          <div class="news-title">${item.text}</div>
+        </div>
+        <div class="news-arrow">›</div>
+      </div>
+      <div class="sub-items-container" id="subc-${item.id}">${renderSubItems(item.subItems)}</div>`;
+  }
+  return `
+    <div class="news-item" id="item-${item.id}" data-text="${escAttr(item.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${item.id}')">
+      <div class="news-num">${num}</div>
+      <div class="news-body">
+        <span class="news-flag">${item.flag||'📰'}</span>
+        <div class="news-title">${item.text}</div>
+      </div>
+      ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}
+      <div class="news-arrow">›</div>
+    </div>
+    <div class="card-expand" id="exp-${item.id}">${expandBlock(item)}</div>`;
+}
+
+// Klik w kategorię (mobile) = parytet z PC: przerysowuje #content na WSZYSTKIE pasujące artykuły
+// z dzisiejszej dawki + całego archiwum, pogrupowane nagłówkami dat. 'all' wraca do normalnej dawki.
 function mobileFilterCat(cat) {
   mobActiveCat = cat || 'all';
   document.querySelectorAll('.mob-swp-cat').forEach(el => {
     el.classList.toggle('act', el.dataset.cat === mobActiveCat);
   });
   const contentEl = document.getElementById('content');
-  contentEl.querySelectorAll('.hero-card, .news-item').forEach(el => {
-    if (mobActiveCat === 'all') {
-      el.classList.remove('mob-hidden');
-    } else {
-      // Pojedynczy wpis: data-category; klaster: data-categories (spacją)
-      const single = el.dataset.category;
-      const multi  = el.dataset.categories;
-      const matches = single === mobActiveCat ||
-        (multi && multi.split(' ').includes(mobActiveCat));
-      el.classList.toggle('mob-hidden', !matches);
-    }
+  if (!contentEl) return;
+
+  if (mobActiveCat === 'all') {
+    const items = cache[currentDose];
+    if (items) renderDose(currentDose, items);   // wraca do widoku dawki (z filtrem suwaka)
+    return;
+  }
+
+  const c = mobActiveCat;
+  const matchesCat = it => it.subItems?.length > 0 ? it.subItems.some(sub => dtGetCategory(sub) === c) : dtGetCategory(it) === c;
+  const today = new Date().toISOString().slice(0,10);
+  const byDate = {};
+  const todayItems = (cache[currentDose] || []).filter(matchesCat);
+  if (todayItems.length) byDate[today] = todayItems;
+  (typeof dtArchiveAllItems !== 'undefined' ? dtArchiveAllItems : []).filter(matchesCat).forEach(it => {
+    const d = it._archiveDate;
+    (byDate[d] = byDate[d] || []).push(it);
   });
-  contentEl.querySelectorAll('.sub-items-container').forEach(el => {
-    const parentId = el.id.replace('subc-', '');
-    const parent = contentEl.querySelector(`#group-${parentId}`);
-    el.classList.toggle('mob-hidden', !!parent && parent.classList.contains('mob-hidden'));
+  const dates = Object.keys(byDate).sort((a,b) => b.localeCompare(a));
+
+  let html = '';
+  let n = 0;
+  dates.forEach(d => {
+    const label = d === today
+      ? 'Dziś'
+      : new Date(d+'T00:00:00').toLocaleDateString('pl-PL',{day:'numeric',month:'long',year:'numeric'});
+    html += `<div class="mob-cat-daysep"><span>${label}</span></div>`;
+    byDate[d].forEach(item => {
+      n++;
+      if (!item.id) item.id = 'c-' + uid();                              // itemy z archiwum nie mają id
+      if (item.subItems) item.subItems.forEach(s => { if (!s.id) s.id = 'c-' + uid(); });
+      html += mobCatCardHtml(item, String(n).padStart(2,'0'));
+    });
   });
-  contentEl.querySelectorAll('.card-expand').forEach(el => {
-    const parentId = el.id.replace('exp-', '');
-    const parent = contentEl.querySelector(`#item-${parentId}`);
-    el.classList.toggle('mob-hidden', !!parent && parent.classList.contains('mob-hidden'));
-  });
+  contentEl.innerHTML = html || '<div class="archive-empty" style="padding:40px 16px;text-align:center;color:var(--muted)">Brak artykułów w tej kategorii.</div>';
+  const sa = document.getElementById('scrollArea'); if (sa) sa.scrollTop = 0;
+}
+
+// Lista dni archiwum w panelu bocznym (parytet z sidebar PC). Klik otwiera istniejącą nakładkę archiwum.
+function mobSwpBuildArchive() {
+  const el = document.getElementById('mobSwpArchive');
+  if (!el) return;
+  const dni = (typeof archiveDatesCache !== 'undefined' && archiveDatesCache) ? archiveDatesCache.slice() : [];
+  if (!dni.length) {
+    el.innerHTML = `<div class="mob-swp-cat" style="opacity:.5;cursor:default"><span class="mob-swp-cat-nm" style="font-style:normal;font-size:12px">Jeszcze puste</span></div>`;
+    return;
+  }
+  dni.sort((a,b) => b.localeCompare(a));
+  let html = dni.slice(0,7).map(d => {
+    const label = new Date(d+'T00:00:00').toLocaleDateString('pl-PL',{day:'numeric',month:'long'});
+    return `<button class="mob-swp-cat" onclick="openArchiveToDay('${d}');mobSwpClose()">
+      <span class="mob-swp-cat-dot" style="background:#8a8577"></span>
+      <span class="mob-swp-cat-nm" style="font-size:13px">${label}</span>
+    </button>`;
+  }).join('');
+  if (dni.length > 7) {
+    html += `<button class="mob-swp-cat" onclick="openArchive();mobSwpClose()">
+      <span class="mob-swp-cat-nm" style="font-style:normal;font-size:12px;color:var(--muted)">Zobacz wszystkie →</span>
+    </button>`;
+  }
+  el.innerHTML = html;
 }
 
 function mobGripPulse() {

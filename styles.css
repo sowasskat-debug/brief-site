@@ -830,6 +830,19 @@ html, body {
 
 } /* end @media mobile */
 
+/* Separator daty w mobilnym widoku kategorii (cross-day) */
+.mob-cat-daysep {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px 6px; background: var(--gray1);
+  border-bottom: 1px solid var(--rule);
+  position: sticky; top: 0; z-index: 4;
+}
+.mob-cat-daysep span {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--red);
+}
+
 /* ═══ Przesuwak jakości ("samo mięso" ↔ "wszystko") ═══ */
 .meat-bar {
   display: flex; align-items: center; gap: 10px;
@@ -848,14 +861,21 @@ html, body {
 .meat-edge:first-child { color: var(--red); }   /* strona "mięsa" akcentem */
 .meat-slider {
   flex: 1; -webkit-appearance: none; appearance: none;
+  accent-color: var(--red);
   height: 2px; background: var(--rule); border-radius: 2px;
   outline: none; cursor: pointer; margin: 0;
 }
+.meat-slider::-webkit-slider-runnable-track {
+  height: 2px; background: var(--rule); border-radius: 2px;
+}
 .meat-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; appearance: none;
+  -webkit-appearance: none; appearance: none; margin-top: -6px;
   width: 14px; height: 14px; border-radius: 50%;
   background: var(--red); cursor: pointer; border: 2px solid var(--bg);
   box-shadow: 0 0 0 1px var(--red);
+}
+.meat-slider::-moz-range-track {
+  height: 2px; background: var(--rule); border-radius: 2px;
 }
 .meat-slider::-moz-range-thumb {
   width: 12px; height: 12px; border-radius: 50%;
@@ -867,9 +887,16 @@ html, body {
   text-transform: uppercase; color: var(--sub);
   min-width: 68px; text-align: right; white-space: nowrap;
 }
-/* Desktop: pasek wewnątrz kolumny feedu */
+/* Desktop: kompaktowy pasek w kolumnie feedu (nie rozciągnięty na całą szerokość) */
 .dt-meat-bar { display: none; }
 @media (min-width: 1024px) {
   .meat-bar#meatBar { display: none; }          /* mobilny pasek chowamy na desktopie */
-  .dt-meat-bar { display: flex; padding: 8px 20px; }
+  .dt-meat-bar {
+    display: flex; justify-content: flex-end; gap: 8px;
+    padding: 7px 20px; border-bottom: 1px solid var(--rule);
+  }
+  .dt-meat-bar .meat-slider { flex: 0 0 150px; }   /* stała, wąska szerokość */
+  .dt-meat-bar .meat-state { display: none; }       /* usuń zdublowane „Wszystko" — krawędzie już to mówią */
+  /* Ukryj mobilny panel/gest na desktopie — inaczej nieostylowany ląduje w rogu */
+  .mob-swp-ov, .mob-swp-panel, .mob-edge-grip { display: none !important; }
 }
