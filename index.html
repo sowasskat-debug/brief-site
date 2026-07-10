@@ -863,15 +863,20 @@ function renderDose(dose, items) {
   {
     const cEl = document.getElementById('content');
     items.forEach(item => {
-      const cat = dtGetCategory(item);
-      ['group-','item-'].forEach(pfx => {
-        const el = cEl.querySelector(`#${pfx}${item.id}`);
-        if (el) el.dataset.category = cat;
-      });
-      const subEl = cEl.querySelector(`#subc-${item.id}`);
-      if (subEl) subEl.dataset.category = cat;
-      const expEl = cEl.querySelector(`#exp-${item.id}`);
-      if (expEl) expEl.dataset.category = cat;
+      if (item.subItems?.length > 0) {
+        // Klaster: zbieramy wszystkie unikalne kategorie podwpisów
+        const cats = [...new Set(item.subItems.map(s => dtGetCategory(s)))].join(' ');
+        const gEl = cEl.querySelector(`#group-${item.id}`);
+        if (gEl) gEl.dataset.categories = cats;
+        const subEl = cEl.querySelector(`#subc-${item.id}`);
+        if (subEl) subEl.dataset.categories = cats;
+      } else {
+        const cat = dtGetCategory(item);
+        const iEl = cEl.querySelector(`#item-${item.id}`);
+        if (iEl) iEl.dataset.category = cat;
+        const expEl = cEl.querySelector(`#exp-${item.id}`);
+        if (expEl) expEl.dataset.category = cat;
+      }
     });
     mobActiveCat = null;
     mobSwpBuildCats(items);
@@ -994,6 +999,7 @@ function switchDose(dose) {
   tabsHidden = false;
   lastScrollY = 0;
   loadDose(dose);
+  setTimeout(mobGripPulse, 320);
 }
 
 async function refresh() {
@@ -1787,9 +1793,20 @@ function mobSwpClose() {
 
 function mobSwpBuildCats(items) {
   const counts = {};
+  // Liczymy tak jak desktop: klastry rozbijamy na podwpisy
+  let total = 0;
   items.forEach(it => {
-    const c = dtGetCategory(it);
-    counts[c] = (counts[c] || 0) + 1;
+    if (it.subItems?.length > 0) {
+      it.subItems.forEach(sub => {
+        const c = dtGetCategory(sub);
+        counts[c] = (counts[c] || 0) + 1;
+        total++;
+      });
+    } else {
+      const c = dtGetCategory(it);
+      counts[c] = (counts[c] || 0) + 1;
+      total++;
+    }
   });
   const order = ['Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Świat','Rynki'];
   const catsEl = document.getElementById('mobSwpCats');
@@ -1797,7 +1814,7 @@ function mobSwpBuildCats(items) {
   catsEl.innerHTML =
     `<button class="mob-swp-cat${!mobActiveCat || mobActiveCat === 'all' ? ' act' : ''}" data-cat="all" onclick="mobileFilterCat('all');mobSwpClose()">
       <span class="mob-swp-cat-nm" style="font-style:normal">Wszystko</span>
-      <span class="mob-swp-cat-cnt">${items.length}</span>
+      <span class="mob-swp-cat-cnt">${total}</span>
     </button>` +
     order.filter(c => counts[c]).map(c =>
       `<button class="mob-swp-cat${mobActiveCat === c ? ' act' : ''}" data-cat="${c}" onclick="mobileFilterCat('${c.replace(/'/g,"\\'")}');mobSwpClose()">
@@ -1822,7 +1839,16 @@ function mobileFilterCat(cat) {
   });
   const contentEl = document.getElementById('content');
   contentEl.querySelectorAll('.hero-card, .news-item').forEach(el => {
-    el.classList.toggle('mob-hidden', !(mobActiveCat === 'all' || el.dataset.category === mobActiveCat));
+    if (mobActiveCat === 'all') {
+      el.classList.remove('mob-hidden');
+    } else {
+      // Pojedynczy wpis: data-category; klaster: data-categories (spacją)
+      const single = el.dataset.category;
+      const multi  = el.dataset.categories;
+      const matches = single === mobActiveCat ||
+        (multi && multi.split(' ').includes(mobActiveCat));
+      el.classList.toggle('mob-hidden', !matches);
+    }
   });
   contentEl.querySelectorAll('.sub-items-container').forEach(el => {
     const parentId = el.id.replace('subc-', '');
@@ -1834,6 +1860,14 @@ function mobileFilterCat(cat) {
     const parent = contentEl.querySelector(`#item-${parentId}`);
     el.classList.toggle('mob-hidden', !!parent && parent.classList.contains('mob-hidden'));
   });
+}
+
+function mobGripPulse() {
+  const grip = document.getElementById('mobEdgeGrip');
+  if (!grip) return;
+  grip.classList.remove('pulsing');
+  void grip.offsetWidth; // reflow, żeby restart animacji zadziałał
+  grip.classList.add('pulsing');
 }
 
 // ═══ MOBILE SWIPE PANEL — gest touch/mouse ═══════════════════════════════════
