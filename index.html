@@ -985,6 +985,7 @@ function toggleSubItem(id) {
 }
 
 function switchDose(dose) {
+  const prevDose = currentDose;
   currentDose = dose;
   suppressScrollHide = true;
   setTimeout(() => { suppressScrollHide = false; }, 400);
@@ -999,7 +1000,7 @@ function switchDose(dose) {
   tabsHidden = false;
   lastScrollY = 0;
   loadDose(dose);
-  setTimeout(mobGripPulse, 320);
+  if (prevDose === 'afternoon' && dose === 'morning') setTimeout(mobGripPulse, 320);
 }
 
 async function refresh() {
