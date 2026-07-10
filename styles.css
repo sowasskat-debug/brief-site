@@ -830,6 +830,10 @@ html, body {
 
 } /* end @media mobile */
 
+/* Flaga zamiast kolorowej kropki dla tematów Wojna Iran/Ukraina + Polityka lokalna */
+.dt-index-flag { font-size: 12px; line-height: 1; flex-shrink: 0; width: 16px; text-align: center; }
+.mob-swp-cat-flag { font-size: 16px; line-height: 1; flex-shrink: 0; width: 20px; text-align: center; }
+
 /* Separator daty w mobilnym widoku kategorii (cross-day) */
 .mob-cat-daysep {
   display: flex; align-items: center; gap: 10px;

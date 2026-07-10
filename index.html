@@ -357,9 +357,15 @@ function onMeatSlide(rawValue) {
               : meatMin >= MEAT_MAX ? 'Samo mięso'
               : meatMin >= MEAT_MAX/2 ? 'Grube tematy' : 'Ważniejsze';
   ['meatLabel','dtMeatLabel'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = label; });
-  // Przerysuj bieżącą dawkę z cache (bez ponownego pobierania).
-  const items = cache[currentDose];
-  if (items && items.length) { renderDose(currentDose, items); renderDesktop(currentDose, items); }
+  // Przerysuj respektując aktywny temat: gdy temat wybrany, filtruj mięso WEWNĄTRZ tematu
+  // (np. "same mięso na Ukrainie"). W przeciwnym razie normalny widok dawki.
+  if (isDesktop()) {
+    if (dtActiveFilter) dtRenderCatFilter(dtActiveFilter);
+    else { const items = cache[currentDose]; if (items && items.length) renderDesktop(currentDose, items); }
+  } else {
+    if (mobActiveCat && mobActiveCat !== 'all') mobileFilterCat(mobActiveCat);
+    else { const items = cache[currentDose]; if (items && items.length) renderDose(currentDose, items); }
+  }
 }
 let doseDates = {};   // data (YYYY-MM-DD) treści każdej dawki z briefs.json — do wykrycia „wczorajszego wydania"
 let lastScrollY = 0, tabsHidden = false;
@@ -1390,17 +1396,35 @@ function isDesktop() { return window.innerWidth >= 1024; }
 function dtGetCategory(item) {
   const t = (item.text || '').toLowerCase();
   if (/\bfed\b|ebc\b|ecb\b|boj\b|nbp\b|monetarn|inflacj|stopa proc|stóp proc|stopy proc|obniżk stóp|podwyżk stóp|oprocentow|rrr\b|bank centraln|rezerw federal|polityk pieniężn/.test(t)) return 'Fed / Banki';
-  if (/geopolit|wojn|armi|iran|ukrain|\brosj|chin[iy]|chińsk|izrael|palestyn|konflikt zbrojn|dron|rakiet|kijów|kijowie|moskw|kreml|żołnier|eliminowan|pentagon|zelenski|zełenski|putin|oblężen|ofensyw|batalion|brygad|ostrzał|bombardow|inwazj|okupac|rozejm|zawieszenie broni|wywiad wojsk|cia\b|fsb\b|zbrojn|obronn|marynark|okręt|pocisk|cieśnin|hormuz|ormuz|suez|damaszk|syri|libi|jemen|huti|wagnera|africa corps|straty bojow|wycofan wojsk|eskalac|deeskalac|budanow|hezbol|sankcj|taliba|generał|wojsk\b|sabotaż|nord stream|sudan\b|kongo\b/.test(t)) return 'Geopolityka';
+  // Wojna Ukraina — wyjęte z Geopolityki. Ukraina/Kijów/Zełenski w KONTEKŚCIE wojennym (żeby "Ukraina wchodzi do UE" nie łapało),
+  // plus jednoznaczne nazwy z frontu.
+  if (/(ukrain|kijów|kijowie|zełensk|zelensk)[\s\S]*(wojn|front|ofensyw|atak|dron|ostrzał|\brosj|okup|walk|żołnier|pocisk|rakiet|obron|natarci|kontrofensyw|strat|zabit|rani|bombard|sankcj|zawieszenie broni|rozejm)|(wojn|front|ofensyw|dron|ostrzał|okup|bombard)[\s\S]*(ukrain|kijów|zełensk)|donbas|bachmut|awdijiw|awdiïw|zaporoż|chersoń|charków|charkiw|kramatorsk|pokrowsk|kupiańsk|siewierodonieck|mariupol|budanow|\bzsu\b|obwód kursk|\bkursk/.test(t)) return 'Wojna Ukraina';
+  // Wojna Iran — wyjęte z Geopolityki.
+  if (/iran|irań|teheran|ajatollah|chamenei|chomeini|ormuz|hormuz|hezbol|\bhuti\b|houthi|natanz|isfahan|fordow|\birgc\b|gwardia rewolucyjn|korpus straż/.test(t)) return 'Wojna Iran';
+  if (/geopolit|wojn|armi|\brosj|chin[iy]|chińsk|izrael|palestyn|konflikt zbrojn|dron|rakiet|moskw|kreml|żołnier|eliminowan|pentagon|putin|oblężen|ofensyw|batalion|brygad|ostrzał|bombardow|inwazj|okupac|rozejm|zawieszenie broni|wywiad wojsk|cia\b|fsb\b|zbrojn|obronn|marynark|okręt|pocisk|cieśnin|suez|damaszk|syri|libi|jemen|wagnera|africa corps|straty bojow|wycofan wojsk|eskalac|deeskalac|taliba|generał|wojsk\b|sabotaż|nord stream|sudan\b|kongo\b/.test(t)) return 'Geopolityka';
   if (/\bai\b|sztuczn intel|chip|nvidia|intel\b|apple\b|google\b|microsoft|openai|technolog|startup|meta\b|amazon\b|spacex|deepseek|anthropic|gemini|llm\b|blockchain|krypto|bitcoin|ethereum|sam altman|elon musk|model językow|robot|satelit|starlink|tesla\b|alibaba/.test(t)) return 'Tech / AI';
   if (/\brop[ay]\b|ropa naft|gaz ziemn|gaz\b|złot[ao]\b|metal|surowc|opec|brent|barrel|węgiel|miedź|kaw[aęy]\b|soja\b|pszenica|kukurydza|zboż|żywność|paliw|energetyk|energia\b|jądrowa|atomow|lng\b|skroplony gaz/.test(t)) return 'Surowce';
-  if (/sejm|senat\b|rząd|premier|prezydent|ministerstw|minister\b|koalicj|partie\b|partia\b|wybor|ustaw\b|ustawa|weto\b|opozycj|parlament|tusk|duda\b|trump|biden|harris\b|macron|scholz|orbán|orban|kongres\b|biały dom|white house|administracj|cła\b|ceł\b|taryf|nato\b|unia europejsk|komisja europejsk|trybunał|prokurat|kampania wybor|le pen|sąd\b|wyrok|skazuj|uniewinni|kandydow|partyjn|polityczn/.test(t)) return 'Polityka';
+  // Polityka lokalna — cała polska polityka wewnętrzna (instytucje/partie/politycy PL). Przed 'Polityka' (zagraniczną).
+  if (/sejm|senat\b|sejmik|samorząd|wojewód|\bgmin|ratusz\b|radni|radny|marszałek|prezydent miasta|rada ministrów|premier polsk|\bpis\b|prawo i sprawiedliw|platform obywatelsk|koalicja obywatelsk|konfederacj|nowa lewica|\bpsl\b|polska ?2050|polski ład|\btusk\b|kaczyńsk|nawrock|hołowni|kosiniak|sikorsk|\bżurek\b|bodnar|błaszczak|morawieck|mentzen|zandberg|ziobro|romanowsk|trybunał konstytucyjn|\bkrs\b|prokuratura krajow|\bknf\b|\bzus\b|\bpip\b|poseł|posłank|posłów|posła\b/.test(t)) return 'Polityka lokalna';
+  if (/trump|biden|harris\b|obama|macron|scholz|\bmerz\b|orbán|orban|le pen|meloni|starmer|sunak|erdogan|\bkongres\b|izba reprezentant|biały dom|white house|unia europejsk|komisja europejsk|parlament europejsk|bruksel|nato\b|administracj|cła\b|ceł\b|taryf|departament stanu|sekretarz stanu|wybor|ustaw\b|ustawa|weto\b|opozycj|parlament|trybunał|prokurat|kampania wybor|kandydow|partyjn|polityczn|sąd\b|wyrok|skazuj|uniewinni/.test(t)) return 'Polityka';
   if (/policj|narkotyk|przemyt|aresztowan|zatrzyman|konfiskat|morderst|zabójst|przestępst|\bfifa\b|piłka nożn|igrzysk|olimpiad|wulkan|erupcj|trzęsienie ziemi|powódź|tsunami|huragan|tornado|epidemi|pandemi|szczepionk|chorob|wirus\b|festiwal|katastrofa|wypadek\b|cristiano|messi|lebron|watykan|papież|mdma\b|kokain|heroiny|heroina|fentanyl|fifa\b|nfl\b|nba\b|formula 1|formula one/.test(t)) return 'Świat';
   return 'Rynki';
 }
 
 const DT_CAT_COLORS = {
-  'Fed / Banki':'#ef4444','Geopolityka':'#f97316','Tech / AI':'#06b6d4','Surowce':'#22c55e','Polityka':'#8b5cf6','Świat':'#0ea5e9','Rynki':'#6366f1'
+  'Fed / Banki':'#ef4444','Geopolityka':'#f97316','Tech / AI':'#06b6d4','Surowce':'#22c55e','Polityka':'#8b5cf6','Świat':'#0ea5e9','Rynki':'#6366f1',
+  'Wojna Ukraina':'#eab308','Wojna Iran':'#b91c1c','Polityka lokalna':'#db2777'
 };
+// Tematy z flagą zamiast kolorowej kropki w sidebarze/panelu.
+const DT_CAT_FLAG = { 'Wojna Iran':'🇮🇷','Wojna Ukraina':'🇺🇦','Polityka lokalna':'🇵🇱' };
+// Zwraca znacznik tematu: flagę (jeśli jest) albo kolorową kropkę. dotClass/flagClass zależne od kontekstu (desktop vs mobile).
+function catMarker(c, dotClass, flagClass) {
+  return DT_CAT_FLAG[c]
+    ? `<span class="${flagClass}">${DT_CAT_FLAG[c]}</span>`
+    : `<div class="${dotClass}" style="background:${DT_CAT_COLORS[c]||'#888'}"></div>`;
+}
+// Kolejność tematów w sidebarze i panelu (wspólna). Wojny i polityka lokalna na górze — najważniejsze.
+const DT_CAT_ORDER = ['Wojna Ukraina','Wojna Iran','Polityka lokalna','Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Świat','Rynki'];
 
 function dtRenderSidebar(items) {
   const counts = {};
@@ -1409,11 +1433,10 @@ function dtRenderSidebar(items) {
   dtArchiveAllItems.forEach(it => it.subItems?.length > 0 ? it.subItems.forEach(countIt) : countIt(it));
   const catsEl = document.getElementById('dtCategories');
   if (catsEl) {
-    const order = ['Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Świat','Rynki'];
     catsEl.innerHTML = '<div class="dt-index-title">Tematy</div>' +
-      order.filter(c => counts[c]).map(c =>
+      DT_CAT_ORDER.filter(c => counts[c]).map(c =>
         `<div class="dt-index-item" onclick="dtFilterCat(this)">
-          <div class="dt-index-dot" style="background:${DT_CAT_COLORS[c]}"></div>
+          ${catMarker(c, 'dt-index-dot', 'dt-index-flag')}
           <span class="dt-index-label">${c}</span>
           <span class="dt-index-n">${counts[c]}</span>
         </div>`
@@ -1479,12 +1502,11 @@ function dtRenderSidebarCounts() {
   dtArchiveAllItems.forEach(it => it.subItems?.length > 0 ? it.subItems.forEach(countIt) : countIt(it));
   const catsEl = document.getElementById('dtCategories');
   if (!catsEl) return;
-  const order = ['Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Świat','Rynki'];
   const activeFilter = dtActiveFilter;
   catsEl.innerHTML = '<div class="dt-index-title">Tematy</div>' +
-    order.filter(c => counts[c]).map(c =>
+    DT_CAT_ORDER.filter(c => counts[c]).map(c =>
       `<div class="dt-index-item${activeFilter===c?' active':''}" onclick="dtFilterCat(this)">
-        <div class="dt-index-dot" style="background:${DT_CAT_COLORS[c]}"></div>
+        ${catMarker(c, 'dt-index-dot', 'dt-index-flag')}
         <span class="dt-index-label">${c}</span>
         <span class="dt-index-n">${counts[c]}</span>
       </div>`
@@ -1498,29 +1520,39 @@ function dtFilterCat(el) {
   document.querySelectorAll('#dtCategories .dt-index-item').forEach(e => e.classList.remove('active'));
   if (wasActive) {
     dtActiveFilter = null;
-    dtRenderFeed(dtAllItems);
-    const fcEl = document.getElementById('dtFeedCount');
-    if (fcEl) fcEl.textContent = `${dtAllItems.reduce((s,it) => s + (it.subItems?.length > 0 ? it.subItems.length : 1), 0)} wpisów`;
+    renderDesktop(currentDose, cache[currentDose] || dtAllItems);   // wróć do widoku dawki (z filtrem suwaka)
   } else {
     dtActiveFilter = cat;
     el.classList.add('active');
-    const matchesCat = it => it.subItems?.length > 0 ? it.subItems.some(sub => dtGetCategory(sub) === cat) : dtGetCategory(it) === cat;
-    const today = new Date().toISOString().slice(0,10);
-    const byDate = {};
-    const todayMatching = dtAllItems.filter(matchesCat);
-    if (todayMatching.length) byDate[today] = todayMatching;
-    dtArchiveAllItems.filter(matchesCat).forEach(it => {
-      const d = it._archiveDate;
-      if (!byDate[d]) byDate[d] = [];
-      byDate[d].push(it);
-    });
-    const sortedDates = Object.keys(byDate).sort((a,b) => b.localeCompare(a));
-    dtRenderFeedCrossDay(byDate, sortedDates, today);
-    const total = sortedDates.reduce((s,d) => s + byDate[d].reduce((ss,it) => ss + (it.subItems?.length > 0 ? it.subItems.length : 1), 0), 0);
-    const fcEl = document.getElementById('dtFeedCount');
-    if (fcEl) fcEl.textContent = `${total} wpisów`;
+    dtRenderCatFilter(cat);
   }
   dtShowEmpty();
+}
+
+// Cross-day widok tematu na PC + filtr jakości (suwak). meatMin>0 → tylko "mięso" tego tematu.
+// Podłoga: wąski temat nigdy nie pustoszeje — przy "samo mięso" pokazuje przynajmniej najgrubszy item.
+function dtRenderCatFilter(cat) {
+  const matchesCat = it => it.subItems?.length > 0 ? it.subItems.some(sub => dtGetCategory(sub) === cat) : dtGetCategory(it) === cat;
+  const today = new Date().toISOString().slice(0,10);
+  const matching = [];
+  dtAllItems.filter(matchesCat).forEach(it => matching.push({ it, d: today }));
+  dtArchiveAllItems.filter(matchesCat).forEach(it => matching.push({ it, d: it._archiveDate }));
+
+  let survivors = matching;
+  if (meatMin > 0) {
+    survivors = matching.filter(x => meatScore(x.it) >= meatMin);
+    if (!survivors.length && matching.length) {
+      survivors = matching.slice().sort((a,b) => meatScore(b.it) - meatScore(a.it)).slice(0,1);
+    }
+  }
+
+  const byDate = {};
+  survivors.forEach(x => { (byDate[x.d] = byDate[x.d] || []).push(x.it); });
+  const sortedDates = Object.keys(byDate).sort((a,b) => b.localeCompare(a));
+  dtRenderFeedCrossDay(byDate, sortedDates, today);
+  const total = sortedDates.reduce((s,d) => s + byDate[d].reduce((ss,it) => ss + (it.subItems?.length > 0 ? it.subItems.length : 1), 0), 0);
+  const fcEl = document.getElementById('dtFeedCount');
+  if (fcEl) fcEl.textContent = `${total} wpisów`;
 }
 
 function dtRenderFeedCrossDay(byDate, sortedDates, today) {
@@ -1875,7 +1907,12 @@ function mobSwpBuildCats(items) {
       total++;
     }
   });
-  const order = ['Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Świat','Rynki'];
+  // Kategorie liczymy też z archiwum (jak sidebar PC) — inaczej temat bez itemów w bieżącej dawce
+  // nie pojawia się w panelu, mimo że klik pokazuje cross-day. total zostaje = bieżąca dawka ("Wszystko").
+  (typeof dtArchiveAllItems !== 'undefined' ? dtArchiveAllItems : []).forEach(it => {
+    if (it.subItems?.length > 0) it.subItems.forEach(sub => { const c = dtGetCategory(sub); counts[c] = (counts[c] || 0) + 1; });
+    else { const c = dtGetCategory(it); counts[c] = (counts[c] || 0) + 1; }
+  });
   const catsEl = document.getElementById('mobSwpCats');
   if (!catsEl) return;
   catsEl.innerHTML =
@@ -1883,9 +1920,9 @@ function mobSwpBuildCats(items) {
       <span class="mob-swp-cat-nm" style="font-style:normal">Wszystko</span>
       <span class="mob-swp-cat-cnt">${total}</span>
     </button>` +
-    order.filter(c => counts[c]).map(c =>
+    DT_CAT_ORDER.filter(c => counts[c]).map(c =>
       `<button class="mob-swp-cat${mobActiveCat === c ? ' act' : ''}" data-cat="${c}" onclick="mobileFilterCat('${c.replace(/'/g,"\\'")}');mobSwpClose()">
-        <span class="mob-swp-cat-dot" style="background:${DT_CAT_COLORS[c]}"></span>
+        ${catMarker(c, 'mob-swp-cat-dot', 'mob-swp-cat-flag')}
         <span class="mob-swp-cat-nm">${c}</span>
         <span class="mob-swp-cat-cnt">${counts[c]}</span>
       </button>`
@@ -1948,13 +1985,21 @@ function mobileFilterCat(cat) {
   const c = mobActiveCat;
   const matchesCat = it => it.subItems?.length > 0 ? it.subItems.some(sub => dtGetCategory(sub) === c) : dtGetCategory(it) === c;
   const today = new Date().toISOString().slice(0,10);
+  const matching = [];
+  (cache[currentDose] || []).filter(matchesCat).forEach(it => matching.push({ it, d: today }));
+  (typeof dtArchiveAllItems !== 'undefined' ? dtArchiveAllItems : []).filter(matchesCat).forEach(it => matching.push({ it, d: it._archiveDate }));
+
+  // Suwak jakości WEWNĄTRZ tematu. Podłoga: nie pustoszej — przy "samo mięso" pokaż najgrubszy.
+  let survivors = matching;
+  if (meatMin > 0) {
+    survivors = matching.filter(x => meatScore(x.it) >= meatMin);
+    if (!survivors.length && matching.length) {
+      survivors = matching.slice().sort((a,b) => meatScore(b.it) - meatScore(a.it)).slice(0,1);
+    }
+  }
+
   const byDate = {};
-  const todayItems = (cache[currentDose] || []).filter(matchesCat);
-  if (todayItems.length) byDate[today] = todayItems;
-  (typeof dtArchiveAllItems !== 'undefined' ? dtArchiveAllItems : []).filter(matchesCat).forEach(it => {
-    const d = it._archiveDate;
-    (byDate[d] = byDate[d] || []).push(it);
-  });
+  survivors.forEach(x => { (byDate[x.d] = byDate[x.d] || []).push(x.it); });
   const dates = Object.keys(byDate).sort((a,b) => b.localeCompare(a));
 
   let html = '';
