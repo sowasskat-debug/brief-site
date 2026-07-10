@@ -804,25 +804,26 @@ html, body {
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 5px;
-  height: 52px;
+  width: 3px;
+  height: 32px;
   background: var(--rule);
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 3px 3px 0;
   z-index: 100;
   cursor: pointer;
-  transition: background .15s, width .12s;
+  opacity: 0.5;
+  transition: opacity .15s, width .12s;
 }
 .mob-edge-grip:hover,
-.mob-edge-grip:active { background: var(--red); width: 7px; }
+.mob-edge-grip:active { opacity: 1; width: 5px; }
 
 @keyframes gripPulse {
-  0%   { width: 5px;  background: var(--rule); border-radius: 0 4px 4px 0; }
-  18%  { width: 28px; background: var(--red);  border-radius: 0 8px 8px 0; }
-  55%  { width: 28px; background: var(--red);  border-radius: 0 8px 8px 0; }
-  100% { width: 5px;  background: var(--rule); border-radius: 0 4px 4px 0; }
+  0%   { width: 3px;  opacity: 0.5; border-radius: 0 3px 3px 0; }
+  18%  { width: 22px; opacity: 1;   border-radius: 0 6px 6px 0; background: var(--red); }
+  60%  { width: 22px; opacity: 1;   border-radius: 0 6px 6px 0; background: var(--red); }
+  100% { width: 3px;  opacity: 0.5; border-radius: 0 3px 3px 0; background: var(--rule); }
 }
 .mob-edge-grip.pulsing {
-  animation: gripPulse 1s cubic-bezier(.4,0,.2,1) forwards;
+  animation: gripPulse 1.1s cubic-bezier(.4,0,.2,1) forwards;
 }
 
 .mob-hidden { display: none !important; }
