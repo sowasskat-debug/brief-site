@@ -4,367 +4,355 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0f">
-<title>FALA — trendy teraz</title>
+<title>Flusso — puls rynku teraz</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0a0a0f;--bg2:#131318;--bg3:#1c1c24;--acc:#ff2d55;--acc2:#30d158;--txt:#f0f0f6;--txt2:#8888a0;--gap:3px}
+:root{--bg:#0a0a0f;--bg2:#131318;--bg3:#1c1c24;--acc:#ff2d55;--acc2:#30d158;--txt:#f0f0f6;--txt2:#8888a0;--gap:3px;--maxw:1600px}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column}
 
-#hdr{flex-shrink:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:var(--bg);border-bottom:1px solid rgba(255,255,255,.06)}
+#hdr{flex-shrink:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:var(--bg);border-bottom:1px solid rgba(255,255,255,.06);width:100%;max-width:var(--maxw);margin:0 auto}
 #hdr-logo{font-size:21px;font-weight:900;letter-spacing:-.5px;color:var(--acc)}
 #hdr-live{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--txt2);text-transform:uppercase}
 #live-dot{width:6px;height:6px;border-radius:50%;background:var(--acc);animation:blink 1.2s ease-in-out infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
-#tfilter{flex-shrink:0;display:flex;gap:5px;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.04);overflow-x:auto;-webkit-overflow-scrolling:touch}
+#tfilter{flex-shrink:0;display:flex;gap:5px;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.04);overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:var(--maxw);margin:0 auto}
 #tfilter::-webkit-scrollbar{display:none}
 .tf-btn{flex-shrink:0;padding:4px 11px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--bg3);color:var(--txt2);border:none;cursor:pointer;transition:all .2s}
 .tf-btn.active{background:var(--acc);color:#fff}
+.tf-count{margin-left:auto;flex-shrink:0;font-size:9.5px;color:var(--txt2);align-self:center;padding-right:2px;letter-spacing:.04em}
 
-#tiles-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:var(--gap);gap:var(--gap);display:flex;flex-direction:column;padding-bottom:12px}
-#tiles-wrap::-webkit-scrollbar{display:none}
+#scroller{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;width:100%}
+#scroller::-webkit-scrollbar{display:none}
+#tiles-wrap{padding:var(--gap);gap:var(--gap);display:flex;flex-direction:column;padding-bottom:16px;width:100%;max-width:var(--maxw);margin:0 auto}
 
-.rg{display:flex;flex-direction:row;gap:var(--gap);height:0;overflow:hidden;flex-shrink:0;transition:height .88s cubic-bezier(.34,1.06,.64,1)}
+.rg{display:flex;flex-direction:row;gap:var(--gap);height:0;overflow:hidden;flex-shrink:0;transition:height .8s cubic-bezier(.34,1.06,.64,1)}
 .rg.grown{height:var(--rh)}
 
-.tile{flex-grow:1;flex-shrink:1;flex-basis:0%;overflow:hidden;position:relative;border-radius:2px;cursor:pointer;background:var(--bg2);min-width:22px;transition:flex-grow .88s cubic-bezier(.34,1.06,.64,1),transform .12s ease;will-change:flex-grow}
+.tile{flex-grow:1;flex-shrink:1;flex-basis:0%;overflow:hidden;position:relative;border-radius:2px;cursor:pointer;background:var(--bg2);min-width:22px;transition:flex-grow .8s cubic-bezier(.34,1.06,.64,1),transform .12s ease;will-change:flex-grow}
 .tile.grown{flex-grow:var(--w)}
 .tile:active{transform:scale(.965)}
-.tile::before{content:'';position:absolute;inset:0;background:var(--tc,#ff2d55);opacity:.15;z-index:0}
+.tile::before{content:'';position:absolute;inset:0;background:var(--tc,#ff2d55);opacity:.16;z-index:0}
 
-.tc{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;transition:opacity .7s;pointer-events:none;object-fit:cover;object-position:center 20%;z-index:1}
+.tc{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;transition:opacity .6s;pointer-events:none;object-fit:cover;object-position:center 22%;z-index:1}
 .tc.vis{opacity:1}
 .bar{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tc,#ff2d55);z-index:2}
 
-.ti{position:absolute;bottom:0;left:0;right:0;padding:5px 7px 6px;opacity:0;transition:opacity .4s;display:flex;flex-direction:column;gap:1px;z-index:2}
+.ti{position:absolute;bottom:0;left:0;right:0;padding:5px 7px 6px;opacity:0;transition:opacity .4s;display:flex;flex-direction:column;gap:1px;z-index:2;background:linear-gradient(to top,rgba(0,0,0,.94) 0%,rgba(0,0,0,.7) 38%,rgba(0,0,0,.24) 66%,transparent 100%)}
 .ti.vis{opacity:1}
-.rg:not(.r6) .ti{background:linear-gradient(to top,rgba(0,0,0,.93) 0%,rgba(0,0,0,.68) 38%,rgba(0,0,0,.22) 66%,transparent 100%)}
-.rg.r6 .ti{top:0;background:none;justify-content:center;padding:2px 7px 2px 10px}
-.rg.r6 .tc{display:none}
 
-.ttop{display:flex;align-items:center;gap:3px;margin-bottom:1px}
-.chip{font-size:7.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 5px;border-radius:2px;background:rgba(255,255,255,.13);color:#fff;white-space:nowrap;flex-shrink:0}
-.chip.live{background:var(--acc);animation:blink .9s ease-in-out infinite}
-.chip.athl{background:#f7931a}
-.vel{font-size:8px;font-weight:900;white-space:nowrap;flex-shrink:0;letter-spacing:0}
-.v0{color:var(--txt2)}.v1{color:#ffd60a}.v2{color:#ff8800}.v3{color:var(--acc);animation:blink .7s ease-in-out infinite}
-.pct{font-size:9px;font-weight:800;color:var(--acc);font-variant-numeric:tabular-nums;white-space:nowrap;margin-left:auto;flex-shrink:0}
+.ttop{display:flex;align-items:center;gap:4px;margin-bottom:1px}
+.chip{font-size:7.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 5px;border-radius:2px;background:rgba(255,255,255,.14);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;flex-shrink:1}
+.cov{font-size:8.5px;font-weight:900;color:#ff9f43;white-space:nowrap;flex-shrink:0;letter-spacing:0}
+.fresh{font-size:8px;font-weight:600;color:var(--txt2);white-space:nowrap;margin-left:auto;flex-shrink:0}
 .flag{font-size:12px;line-height:1;margin-bottom:1px}
 .ttl{font-size:10px;font-weight:700;line-height:1.28;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .src{font-size:7.5px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 
-.rg.r1 .ttl{font-size:13px;-webkit-line-clamp:3}.rg.r1 .chip{font-size:8.5px}.rg.r1 .pct{font-size:11px}.rg.r1 .src{font-size:8.5px}.rg.r1 .flag{font-size:16px}.rg.r1 .vel{font-size:10px}
-.rg.r2 .ttl{font-size:11.5px;-webkit-line-clamp:2}.rg.r2 .pct{font-size:10px}.rg.r2 .flag{font-size:14px}
-.rg.r3 .ttl{font-size:10.5px;-webkit-line-clamp:2}.rg.r3 .pct{font-size:9.5px}.rg.r3 .flag{font-size:13px}
-.rg.r4 .ttl{font-size:10px;-webkit-line-clamp:1}.rg.r4 .src{display:none}.rg.r4 .flag{font-size:12px}
-.rg.r5 .ttl{font-size:9px;-webkit-line-clamp:1}.rg.r5 .src{display:none}.rg.r5 .flag{font-size:11px}
-.rg.r6 .ttl{font-size:8.5px;-webkit-line-clamp:1}.rg.r6 .chip{display:none}.rg.r6 .src{display:none}.rg.r6 .flag{font-size:10px;margin-bottom:0}.rg.r6 .pct{font-size:8.5px}
-.nr .chip{display:none}.nr .src{display:none}.nr .ttl{font-size:8.5px;-webkit-line-clamp:3}.nr .flag{font-size:10px}
+.tile.t0 .ttl{font-size:14px;-webkit-line-clamp:3}.tile.t0 .chip{font-size:9px}.tile.t0 .cov{font-size:11px}.tile.t0 .src{font-size:9px}.tile.t0 .flag{font-size:18px}.tile.t0 .fresh{font-size:9.5px}
+.tile.t1 .ttl{font-size:12px;-webkit-line-clamp:3}.tile.t1 .cov{font-size:10px}.tile.t1 .flag{font-size:15px}
+.tile.t2 .ttl{font-size:11px;-webkit-line-clamp:2}.tile.t2 .cov{font-size:9.5px}.tile.t2 .flag{font-size:13px}
+.tile.t3 .ttl{font-size:10px;-webkit-line-clamp:2}.tile.t3 .flag{font-size:12px}
+.tile.t4 .ttl{font-size:9.5px;-webkit-line-clamp:1}.tile.t4 .src{display:none}.tile.t4 .flag{font-size:11px}
+.tile.t5 .ttl{font-size:9px;-webkit-line-clamp:1}.tile.t5 .src{display:none}.tile.t5 .chip{display:none}.tile.t5 .flag{font-size:10px}
+.tile.narrow .chip{display:none}.tile.narrow .src{display:none}.tile.narrow .ttl{-webkit-line-clamp:2}
+
+@media (min-width:1024px){
+  #tiles-wrap{padding:5px;gap:4px}
+  .rg{gap:4px}
+  .tile.t0 .ttl{font-size:17px}.tile.t0 .flag{font-size:22px}.tile.t0 .chip{font-size:10px}.tile.t0 .cov{font-size:13px}
+  .tile.t1 .ttl{font-size:14px}.tile.t2 .ttl{font-size:12.5px}.tile.t3 .ttl{font-size:11px}
+  .ti{padding:8px 11px 10px}
+}
+
+#empty{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--txt2);font-size:13px;text-align:center;padding:40px 20px}
+#empty.show{display:flex}
+#empty .big{font-size:32px}
 
 #ov{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0);pointer-events:none;transition:background .25s}
 #ov.open{background:rgba(0,0,0,.62);pointer-events:auto}
-#bs{position:fixed;bottom:0;left:0;right:0;z-index:101;background:#1a1a22;border-radius:16px 16px 0 0;max-height:80vh;transform:translateY(100%);transition:transform .32s cubic-bezier(.34,1.05,.64,1);overflow:hidden;display:flex;flex-direction:column}
-#bs.open{transform:translateY(0)}
+#bs{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:560px;z-index:101;background:#16161d;border-radius:16px 16px 0 0;max-height:86vh;transition:transform .32s cubic-bezier(.34,1.05,.64,1);overflow:hidden;display:flex;flex-direction:column}
+#bs.open{transform:translateX(-50%) translateY(0)}
 #bsdrag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:10px auto 0;flex-shrink:0}
-#bshead{padding:10px 44px 12px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:flex-start;gap:10px;flex-shrink:0}
-#bsflag{font-size:28px;line-height:1}
+#bshero{position:relative;height:0;flex-shrink:0;overflow:hidden;transition:height .3s}
+#bshero.show{height:150px}
+#bsheroimg{width:100%;height:100%;object-fit:cover;object-position:center 25%;display:block}
+#bshero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,#16161d 2%,transparent 60%)}
+#bshead{padding:12px 44px 12px 16px;display:flex;align-items:flex-start;gap:10px;flex-shrink:0}
+#bsflag{font-size:28px;line-height:1;flex-shrink:0}
 #bsmeta{flex:1;min-width:0}
-#bschip{font-size:8.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt2);margin-bottom:2px}
-#bstitle{font-size:15.5px;font-weight:800;line-height:1.25;color:#fff}
-#bspct{font-size:18px;font-weight:900;color:var(--acc);font-variant-numeric:tabular-nums;flex-shrink:0;margin-top:2px}
-#bsbody{overflow-y:auto;flex:1;padding:12px 16px 20px}
-#bssrc{display:flex;align-items:center;gap:6px;font-size:9.5px;color:var(--txt2);margin-bottom:10px}
-#bsdot{width:5px;height:5px;border-radius:50%;background:var(--acc2);flex-shrink:0}
-#bsart{font-size:13.5px;line-height:1.65;color:rgba(255,255,255,.82)}
-#bscta{display:block;margin:14px 0 0;padding:13px 16px;border-radius:8px;background:var(--acc);color:#fff;font-size:13px;font-weight:700;text-align:center;border:none;cursor:pointer;width:100%;-webkit-appearance:none}
-#bsclose{position:absolute;top:12px;right:12px;background:rgba(255,255,255,.08);border:none;width:30px;height:30px;border-radius:50%;color:var(--txt2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#bschip{font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--txt2);margin-bottom:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#bscov{color:#ff9f43;font-weight:900}
+#bstitle{font-size:16px;font-weight:800;line-height:1.28;color:#fff}
+#bsbody{overflow-y:auto;flex:1;padding:4px 16px 22px}
+#bsbody::-webkit-scrollbar{display:none}
+#bsart{font-size:14px;line-height:1.65;color:rgba(255,255,255,.84);margin-bottom:12px}
+#bsimpact{font-size:12.5px;font-weight:700;padding:9px 12px;border-radius:8px;background:rgba(255,255,255,.05);border-left:3px solid var(--acc2);margin-bottom:14px;line-height:1.4;display:none}
+#bsimpact.show{display:block}
+#bsrel{margin-bottom:14px;display:none}
+#bsrel.show{display:block}
+.bsrel-h{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt2);margin-bottom:8px}
+.bsrel-i{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:flex-start}
+.bsrel-i:last-child{border-bottom:none}
+.bsrel-f{font-size:14px;flex-shrink:0;line-height:1.3}
+.bsrel-t{font-size:12px;color:rgba(255,255,255,.72);line-height:1.4}
+#bscta{display:block;padding:13px 16px;border-radius:9px;background:var(--acc);color:#fff;font-size:13px;font-weight:700;text-align:center;text-decoration:none;cursor:pointer;-webkit-appearance:none;border:none;width:100%}
+#bssrc{font-size:9.5px;color:var(--txt2);text-align:center;margin-top:9px}
+#bsclose{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);border:none;width:30px;height:30px;border-radius:50%;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3}
 
-#hist-ov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0);pointer-events:none;transition:background .28s}
-#hist-ov.open{background:rgba(0,0,0,.75);pointer-events:auto}
-#hist{position:fixed;bottom:0;left:0;right:0;z-index:201;background:#0f0f16;border-radius:18px 18px 0 0;max-height:80vh;transform:translateY(100%);transition:transform .36s cubic-bezier(.34,1.05,.64,1);display:flex;flex-direction:column;overflow:hidden}
-#hist.open{transform:translateY(0)}
-#hist-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin:10px auto 0;flex-shrink:0}
-#hist-close{position:absolute;top:11px;right:12px;background:rgba(255,255,255,.07);border:none;width:28px;height:28px;border-radius:50%;color:rgba(255,255,255,.45);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-#hist-head{padding:10px 44px 10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.05)}
-#hist-hflag{font-size:22px;line-height:1;flex-shrink:0}
-#hist-hmeta{flex:1;min-width:0}
-#hist-hname{font-size:13px;font-weight:800;color:#fff;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#hist-hsub{font-size:9px;color:var(--txt2);text-transform:uppercase;letter-spacing:.07em;margin-top:2px}
-#hist-hpct{font-size:21px;font-weight:900;color:var(--hc,var(--acc));font-variant-numeric:tabular-nums;flex-shrink:0}
-#hist-cv{flex-shrink:0;height:142px;width:100%;display:block}
-#hist-scroll{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;padding:0 14px 20px}
-#hist-scroll::-webkit-scrollbar{display:none}
-.he-section{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt2);padding:11px 0 7px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:2px}
-.he{display:flex;align-items:flex-start;gap:9px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-.he:last-child{border-bottom:none}
-.he-dot{width:7px;height:7px;border-radius:50%;background:var(--hc,var(--acc));flex-shrink:0;margin-top:3px;box-shadow:0 0 8px var(--hc,var(--acc))}
-.he-time{font-size:10px;font-weight:700;color:var(--hc,var(--acc));font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0;min-width:34px}
-.he-txt{font-size:12px;color:rgba(255,255,255,.76);line-height:1.45}
-
-#hint{flex-shrink:0;height:20px;display:flex;align-items:center;justify-content:center;font-size:8px;color:rgba(136,136,160,.3);letter-spacing:.07em;border-top:1px solid rgba(255,255,255,.03);opacity:0;transition:opacity 1.5s}
+#hint{flex-shrink:0;height:20px;display:flex;align-items:center;justify-content:center;font-size:8px;color:rgba(136,136,160,.34);letter-spacing:.06em;border-top:1px solid rgba(255,255,255,.03);opacity:0;transition:opacity 1.5s}
 #hint.vis{opacity:1}
 </style>
 </head>
 <body>
 
 <div id="hdr">
-  <div id="hdr-logo">🌊 FALA</div>
+  <div id="hdr-logo">🌊 Flusso</div>
   <div id="hdr-live"><div id="live-dot"></div><span id="ltxt">ładowanie…</span></div>
 </div>
 <div id="tfilter">
-  <button class="tf-btn active">1H</button><button class="tf-btn">4H</button><button class="tf-btn">12H</button><button class="tf-btn">24H</button><button class="tf-btn">7D</button>
+  <button class="tf-btn" data-w="1">1H</button><button class="tf-btn" data-w="4">4H</button><button class="tf-btn active" data-w="12">12H</button><button class="tf-btn" data-w="24">24H</button><button class="tf-btn" data-w="168">7D</button>
+  <span class="tf-count" id="tfcount"></span>
 </div>
 
-<div id="tiles-wrap">
-
-  <div class="rg r1" id="rg0" style="--rh:255px">
-    <div class="tile" style="--w:847;--tc:#FF4400" data-id="spacex">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="chip">Kosmos</span><span class="vel v2">▲▲</span><span class="pct">+<span class="lp" data-b="847">847</span>%</span></div><div class="flag">🚀</div><div class="ttl">SpaceX Starship — złapanie boostera w locie</div><div class="src">YouTube · Kosmos</div></div>
-    </div>
-    <div class="tile" style="--w:634;--tc:#C4323A" data-id="obajtek">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="chip live">LIVE</span><span class="vel v3">▲▲▲</span><span class="pct">+<span class="lp" data-b="634">634</span>%</span></div><div class="flag">🏙️</div><div class="ttl">Obajtek — powrót na YouTube z politycznym manifestem</div><div class="src">YouTube · PL</div></div>
-    </div>
-  </div>
-
-  <div class="rg r2" id="rg1" style="--rh:185px">
-    <div class="tile" style="--w:521;--tc:#0055A4" data-id="france">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="chip live">MECZ</span><span class="vel v3">▲▲▲</span><span class="pct">+<span class="lp" data-b="521">521</span>%</span></div><div class="flag">⚽</div><div class="ttl">Francja vs Maroko — mundial na żywo</div><div class="src">Sport · Mundial 2026</div></div>
-    </div>
-    <div class="tile" style="--w:389;--tc:#00A0E9" data-id="pfizer">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="chip">Finanse</span><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="389">389</span>%</span></div><div class="flag">💊</div><div class="ttl">Pfizer blokuje 2,3 mld PLN dla Polski</div><div class="src">Rzeczpospolita</div></div>
-    </div>
-    <div class="tile nr" style="--w:178;--tc:#76B900" data-id="nvidia">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="178">178</span>%</span></div><div class="flag">🎮</div><div class="ttl">Nvidia RTX 6090</div></div>
-    </div>
-  </div>
-
-  <div class="rg r3" id="rg2" style="--rh:140px">
-    <div class="tile" style="--w:445;--tc:#F7931A" data-id="bitcoin">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="chip athl">ATH</span><span class="vel v3">▲▲▲</span><span class="pct">+<span class="lp" data-b="445">445</span>%</span></div><div class="flag">₿</div><div class="ttl">Bitcoin przekroczył $120 000 — nowy rekord wszechczasów</div><div class="src">CoinDesk · Crypto</div></div>
-    </div>
-    <div class="tile" style="--w:188;--tc:#009B3A" data-id="neymar">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="chip">Sport</span><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="188">188</span>%</span></div><div class="flag">⚽</div><div class="ttl">Neymar wraca do PSG — koniec kariery w Arabii?</div><div class="src">L’Équipe</div></div>
-    </div>
-    <div class="tile nr" style="--w:98;--tc:#EB2D4B" data-id="tusk">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="vel v0">→</span><span class="pct">+<span class="lp" data-b="98">98</span>%</span></div><div class="flag">🏙️</div><div class="ttl">Tusk: nowy budżet 2027</div></div>
-    </div>
-  </div>
-
-  <div class="rg r4" id="rg3" style="--rh:112px">
-    <div class="tile" style="--w:267;--tc:#FFD700" data-id="ukraina">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="chip live">LIVE</span><span class="vel v2">▲▲</span><span class="pct">+<span class="lp" data-b="267">267</span>%</span></div><div class="flag">🇺🇦</div><div class="ttl">Nocny atak dronów na Kijów</div></div>
-    </div>
-    <div class="tile" style="--w:298;--tc:#CC0000" data-id="tesla">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="chip">Tech</span><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="298">298</span>%</span></div><div class="flag">🚗</div><div class="ttl">Tesla Cybertruck 2.0 — 100k zamówień</div></div>
-    </div>
-    <div class="tile" style="--w:223;--tc:#1DB954" data-id="spotify">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="chip">Muzyka</span><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="223">223</span>%</span></div><div class="flag">🎵</div><div class="ttl">Spotify AI DJ 2.0 — twój głos</div></div>
-    </div>
-  </div>
-
-  <div class="rg r5" id="rg4" style="--rh:90px">
-    <div class="tile" style="--w:312;--tc:#7B68EE" data-id="fed">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="chip">Macro</span><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="312">312</span>%</span></div><div class="flag">🏦</div><div class="ttl">Fed utrzymuje stopy — Powell przemawia</div></div>
-    </div>
-    <div class="tile nr" style="--w:156;--tc:#2196F3" data-id="klimat">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="vel v2">▲▲</span><span class="pct">+<span class="lp" data-b="156">156</span>%</span></div><div class="flag">🌊</div><div class="ttl">Powódź Czech — alarm PL</div></div>
-    </div>
-    <div class="tile nr" style="--w:134;--tc:#1428A0" data-id="samsung">
-      <img class="tc" alt=""><div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="vel v0">→</span><span class="pct">+<span class="lp" data-b="134">134</span>%</span></div><div class="flag">📱</div><div class="ttl">Samsung S27 Ultra</div></div>
-    </div>
-  </div>
-
-  <div class="rg r6" id="rg5" style="--rh:66px">
-    <div class="tile" style="--w:66;--tc:#EB2D4B" data-id="wybory">
-      <div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="pct">+<span class="lp" data-b="66">66</span>%</span></div><div class="flag">🗾️</div><div class="ttl">Wybory 2026 — sondaż</div></div>
-    </div>
-    <div class="tile" style="--w:88;--tc:#A0A0B0" data-id="apple">
-      <div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="pct">+<span class="lp" data-b="88">88</span>%</span></div><div class="flag">🥽</div><div class="ttl">Apple Vision Pro 2</div></div>
-    </div>
-    <div class="tile" style="--w:59;--tc:#8B5CF6" data-id="ai">
-      <div class="bar"></div>
-      <div class="ti"><div class="ttop"><span class="pct">+<span class="lp" data-b="59">59</span>%</span></div><div class="flag">🤖</div><div class="ttl">Claude vs GPT-5</div></div>
-    </div>
-  </div>
-
+<div id="scroller">
+  <div id="tiles-wrap"></div>
 </div>
+<div id="empty"><div class="big">🕓</div><div id="emptytxt">Brak tematów w tym oknie czasowym.</div></div>
 
-<div id="hint">↑ przesuń kafelek w górę · historia trendu</div>
+<div id="hint">dotknij kafelek · pełny opis i źródło</div>
 
 <div id="ov"><div id="bs">
   <div id="bsdrag"></div><button id="bsclose">✕</button>
-  <div id="bshead"><div id="bsflag">🚀</div><div id="bsmeta"><div id="bschip"></div><div id="bstitle"></div></div><div id="bspct"></div></div>
-  <div id="bsbody"><div id="bssrc"><div id="bsdot"></div><span id="bssrctxt"></span></div><div id="bsart"></div><button id="bscta">Otwórz</button></div>
-</div></div>
-
-<div id="hist-ov"><div id="hist">
-  <div id="hist-drag"></div><button id="hist-close">✕</button>
-  <div id="hist-head">
-    <div id="hist-hflag"></div>
-    <div id="hist-hmeta"><div id="hist-hname"></div><div id="hist-hsub">Ostatnie 8 godzin</div></div>
-    <div id="hist-hpct"></div>
-  </div>
-  <canvas id="hist-cv"></canvas>
-  <div id="hist-scroll">
-    <div class="he-section">Kluczowe momenty</div>
-    <div id="hist-evlist"></div>
+  <div id="bshero"><img id="bsheroimg" alt=""></div>
+  <div id="bshead"><div id="bsflag">📰</div><div id="bsmeta"><div id="bschip"></div><div id="bstitle"></div></div></div>
+  <div id="bsbody">
+    <div id="bsart"></div>
+    <div id="bsimpact"></div>
+    <div id="bsrel"><div class="bsrel-h">Powiązane wątki</div><div id="bsrellist"></div></div>
+    <a id="bscta" target="_blank" rel="noopener">Otwórz źródło</a>
+    <div id="bssrc"></div>
   </div>
 </div></div>
 
 <script>
-const DATA={
-  spacex:{trend:847,flag:'🚀',chip:'Kosmos',src:'YouTube · Kosmos',title:'SpaceX Starship — złapanie boostera w locie',art:'SpaceX po raz pierwszy w historii złapał Starship Super Heavy w ramiona wieży mechanicznej — Mechazilla. Nagranie zebrało 47 mln wyświetleń w 6 godzin. Musk: „Kluczowy krok ku Marsowi.” Kolejny start za 3 tygodnie.',cta:'Otwórz film na YouTube',
-    hist:[8,18,32,72,210,480,720,847],
-    events:[{t:'15:22',text:'Nagranie lądowania trafia na YouTube'},{t:'16:05',text:'Musk tweetuje: „To dopiero początek Marsa”'},{t:'17:30',text:'Trending #1 w Polsce i 34 krajach'},{t:'18:47',text:'47 mln wyświetleń — absolutny rekord SpaceX'}]},
-  obajtek:{trend:634,flag:'🏙️',chip:'Polityka',src:'YouTube · PL',title:'Obajtek — powrót na YouTube z politycznym manifestem',art:'Daniel Obajtek opublikował godzinny wywiad na YouTube o powrocie do polityki i atakach na rodzinę. Film zebrał 2,4 mln wyświetleń w ciągu doby — rekord polskiego YouTube w segmencie politycznym.',cta:'Oglądaj wywiad',
-    hist:[38,85,175,320,440,545,598,634],
-    events:[{t:'13:00',text:'Film opublikowany na kanale Obajtka'},{t:'14:15',text:'Udostępnienia przez prawicowe portale'},{t:'16:30',text:'Tusk odpowiada na Twitterze'},{t:'19:22',text:'2,4 mln wyświetleń — rekord PL YouTube'}]},
-  france:{trend:521,flag:'⚽',chip:'Sport',src:'Sport · Mundial 2026',title:'Francja vs Maroko — półfinał MŚ 2026 na żywo',art:'Francja mierzy się z Marokiem w półfinale MŚ 2026 w Nowym Jorku. 82 000 kibiców na stadionie. Mbappé vs Hakimi — starcie dekady. Twitter/X notuje 3,2 mln tweetów na minutę. Mecz trwa.',cta:'Śledź transmisję na żywo',
-    hist:[12,18,26,42,82,240,430,521],
-    events:[{t:'18:00',text:'Sędzia gwiżdże — mecz się rozpoczyna'},{t:'18:34',text:'Mbappé — pierwsza bramka dla Francji!'},{t:'19:11',text:'Hakimi wyrownuje dla Maroka (1:1)'},{t:'20:02',text:'Francja prowadzi 2:1 w 82. minucie'}]},
-  pfizer:{trend:389,flag:'💊',chip:'Finanse',src:'Rzeczpospolita',title:'Pfizer odmawia wypłaty — 2,3 mld PLN w sporze z Polską',art:'Pfizer grozi arbitrażem i odmawia wypłaty odszkodowania za szczepionki COVID. Rząd: firma zawiększyła ceny o 340% vs inne kraje UE. Sprawa może trafić do Trybunału w Hadze. W grę wchodzi 2,3 mld PLN podatników.',cta:'Przeczytaj analizę',
-    hist:[18,30,52,105,195,290,350,389],
-    events:[{t:'09:15',text:'Ministerstwo ogłasza spór z Pfizerem'},{t:'11:30',text:'Pfizer zapowiada arbitraż międzynarodowy'},{t:'14:45',text:'Rząd: „Pieniądze należą się podatnikom”'},{t:'17:00',text:'Analiza Rzeczpospolitej — artykuł viral'}]},
-  nvidia:{trend:178,flag:'🎮',chip:'Tech',src:'The Verge',title:'Nvidia GeForce RTX 6090 — premiera z architekturą Blackwell Ultra',art:'Nvidia ogłosiła RTX 6090 z 32 GB GDDR7 i 3× wydajnością RTX 4090 w AI. Cena: 1 999 USD. Dostępność: sierpień 2026. Jensen Huang: „GPU dla budowniczych nowego świata.”',cta:'Zobacz specyfikację',
-    hist:[35,48,68,90,115,140,162,178],
-    events:[{t:'17:00',text:'Jensen Huang na scenie w Tajpej'},{t:'17:32',text:'RTX 6090 oficjalnie ogłoszona'},{t:'18:10',text:'Pre-order: 50 000 kart w 40 minut'},{t:'19:55',text:'The Verge: „Pokoleniowy skok wydajności”'}]},
-  bitcoin:{trend:445,flag:'₿',chip:'Crypto',src:'CoinDesk',title:'Bitcoin przekroczył $120 000 — nowy rekord wszechczasów',art:'Bitcoin osiągnął nowy rekord wszechczasów: $120 700 USD. Wzrost podyktowany masowymi zakupami ETF przez BlackRock i Fidelity. Altcoiny podążają: ETH +22%, SOL +34%. Analitycy mówią o supercyklu.',cta:'Śledź rynek crypto',
-    hist:[72,88,108,148,212,322,408,445],
-    events:[{t:'04:22',text:'BTC przebija $110 000 nocą'},{t:'07:45',text:'BlackRock kupuje 8 200 BTC jedną transakcją'},{t:'10:30',text:'Nowy ATH: $118 500'},{t:'14:17',text:'$120 700 — rekord wszechczasów'}]},
-  neymar:{trend:188,flag:'⚽',chip:'Sport',src:"L'Équipe",title:'Neymar Jr wraca do PSG — koniec saudyjskiej przygody',art:'Al-Hilal i PSG osiągnęły porozumienie ws. transferu Neymara Jr. Brazylijczyk wróci do Paryża po 3 latach. Kontrakt: 2 lata, 60 mln EUR/rok. Ogłoszenie oficjalne jutro rano.',cta:'Czytaj o transferze',
-    hist:[16,28,52,88,128,152,170,188],
-    events:[{t:'10:00',text:"L'Équipe: pierwsze doniesienia o negocjacjach"},{t:'12:30',text:'Agent Neymara potwierdza rozmowy'},{t:'15:20',text:'PSG tweetuje: „Wkrótce…”'},{t:'18:45',text:'Umowa podpisana — ogłoszenie jutro'}]},
-  tusk:{trend:98,flag:'🏙️',chip:'Polska',src:'TVN24',title:'Tusk w Sejmie: przełomowy budżet na 2027 rok',art:'Premier Donald Tusk przedstawił projekt budżetu na 2027. Rekordowe wydatki na obronność (5,2% PKB) i inwestycje. Opozycja zapowiada wniosek o wotum nieufności. Głosowanie w przyszłym tygodniu.',cta:'Czytaj exposé',
-    hist:[55,62,70,78,84,90,95,98],
-    events:[{t:'10:00',text:'Tusk wchodzi na mównicę Sejmu'},{t:'11:20',text:'Ogłoszenie: 5,2% PKB na obronność'},{t:'13:45',text:'Opozycja: wniosek o wotum nieufności'},{t:'16:00',text:'Głosowanie zaplanowane na przyszły tydzień'}]},
-  ukraina:{trend:267,flag:'🇺🇦',chip:'Świat',src:'Reuters',title:'Nocny atak dronów na Kijów — obrona zestrzelıła 34 z 47',art:'Siły zbrojne Ukrainy zestrzelıły 34 z 47 dronów szahid w nocnym ataku na Kijów. Zniszczenia w dzielnicy Darnytsia — uszkodzone budynki mieszkalne. 3 ofiary cywilne. Syreny powietrzne przez 6 godzin.',cta:'Czytaj raport Reuters',
-    hist:[22,45,82,132,182,225,252,267],
-    events:[{t:'02:15',text:'Syreny przeciwlotnicze w Kijowie'},{t:'02:48',text:'Obrona: 34/47 dronów zestrzelonych'},{t:'03:30',text:'Zniszczenia w dzielnicy Darnytsia'},{t:'06:00',text:'Ukraina składa raport do ONZ'}]},
-  tesla:{trend:298,flag:'🚗',chip:'Tech',src:'Tesla Press',title:'Tesla Cybertruck 2.0 — 100 000 zamówień w 48 godzinach',art:'Tesla Cybertruck generacja 2 zebrał 100 000 zamówień w ciągu 48 godzin. Nowy model: zasięg 800 km, FSD v14, autonomiczne ładowanie. Cena startowa: 72 900 USD. Dostawy: Q1 2027.',cta:'Złóż zamówienie',
-    hist:[38,62,95,148,198,248,278,298],
-    events:[{t:'16:00',text:'Musk: „Prezentacja za godzinę” na X'},{t:'17:08',text:'Cybertruck 2.0 wjeżdża na scenę'},{t:'18:30',text:'100 000 zamówień w 48h — rekord'},{t:'20:15',text:'Akcje Tesla +8% w after-hours'}]},
-  spotify:{trend:223,flag:'🎵',chip:'Muzyka',src:'Spotify Blog',title:'Spotify ogłasza AI DJ 2.0 — twój głos jako gospodarz playlisty',art:'Spotify uruchamia AI DJ 2.0 z możliwością klonowania głosu ulubionego artysty jako narratora playlisty. Technologia oparta na partnerstwie z Anthropic. Dostępna od 15 lipca dla 30 krajów, w tym Polski.',cta:'Wypróbuj teraz',
-    hist:[48,65,88,120,152,182,208,223],
-    events:[{t:'09:00',text:'Blog Spotify: ogłoszenie AI DJ 2.0'},{t:'11:00',text:'TechCrunch: pierwsze recenzje'},{t:'14:30',text:'Dostępność w Polsce od 15 lipca'},{t:'17:45',text:'HackerNews: 1 400 komentarzy'}]},
-  fed:{trend:312,flag:'🏦',chip:'Macro',src:'Bloomberg',title:'Fed utrzymuje stopy — Powell: cięcia dopiero przy 2% inflacji',art:'Rezerwa Federalna utrzymała stopy na poziomie 5,25–5,50%. Powell zaznaczył, że decyzja o cięciach zostanie podjęta dopiero gdy inflacja trwale zejdzie do 2%. Rynki wyceniają pierwsze cięcie na wrzesień.',cta:'Przeczytaj raport Fed',
-    hist:[22,38,62,110,175,242,285,312],
-    events:[{t:'14:00',text:'Fed ogłasza: stopy bez zmian'},{t:'14:30',text:'Powell zaczyna konferencję prasową'},{t:'15:00',text:'„Cięcia dopiero przy trwałym 2% inflacji”'},{t:'15:30',text:'S&P 500 spada 1,8% po komentarzu'}]},
-  klimat:{trend:156,flag:'🌊',chip:'Klimat',src:'IMGW',title:'Powódź w Czechach — alarm III stopnia dla rzek południa Polski',art:'IMGW ogłosił alarm III stopnia po rekordowych opadach w Sudetach. Zbiornik Nysa może nie wytrzymać naporu. Ewakuacja 12 000 mieszkańców w Raciborzu i Głubczycach. Rząd ogłosił stan klęski żywiołowej.',cta:'Sprawdź ostrzeżenia IMGW',
-    hist:[15,25,44,72,108,130,146,156],
-    events:[{t:'06:00',text:'IMGW: alarm III stopnia dla Sudetów'},{t:'08:30',text:'Ewakuacja Raciborza — 12 000 osób'},{t:'11:00',text:'Rząd ogłasza stan klęski żywiołowej'},{t:'16:00',text:'Zbiornik Nysa: poziom krytyczny'}]},
-  samsung:{trend:134,flag:'📱',chip:'Tech',src:'Samsung',title:'Samsung Galaxy S27 Ultra — tytanowa rama, AI kamera 200 MP',art:'Samsung Galaxy S27 Ultra z 200 MP obiektywem AI, tytanową ramą i chipem Exynos 2600. Bateria 6000 mAh, ładowanie 100W. Cena: 6 499 PLN. Premiera globalna 12 sierpnia. Samsung obiecuje 7 lat aktualizacji.',cta:'Zobacz specyfikację',
-    hist:[28,40,58,78,100,115,126,134],
-    events:[{t:'10:00',text:'Samsung Unpacked na żywo w Berlinie'},{t:'10:45',text:'S27 Ultra oficjalnie zaprezentowany'},{t:'12:00',text:'Cena w Polsce: 6 499 PLN'},{t:'15:30',text:'Pre-order otwarty na samsung.com/pl'}]},
-  wybory:{trend:66,flag:'🗾️',chip:'Polska',src:'Onet',title:'Wybory 2026 — sondaż IBRiS: KO przed PiS',art:'IBRiS dla Onetu: KO 31%, PiS 28%, TD 11%, Lewica 9%, Konfederacja 8%. PiS traci 4 pkt po aferze z finansowaniem partii.',cta:'Czytaj sondaż',
-    hist:[22,28,35,44,52,58,62,66],
-    events:[{t:'08:00',text:'IBRiS publikuje sondaż'},{t:'10:00',text:'KO: „To potwierdza trend wzrostowy”'},{t:'12:30',text:'PiS: „Błędy metodologiczne sondażu”'},{t:'15:00',text:'Onet: analiza na tle historycznych wahań'}]},
-  apple:{trend:88,flag:'🥽',chip:'Tech',src:'Apple WWDC',title:'Apple Vision Pro 2 — cena 2799 USD, premiera we wrześniu',art:'Apple Vision Pro 2 z chipem M4 Ultra, o 30% lżejśzy, cena 2 799 USD (vs 3 499 USD oryginału). Premiera: 22 września 2026. Nowe funkcje: spatial SharePlay i Apple Intelligence w AR.',cta:'Sprawdź szczegóły',
-    hist:[12,18,28,42,58,70,80,88],
-    events:[{t:'18:00',text:'Apple WWDC: ogłoszenie Vision Pro 2'},{t:'19:15',text:'Cena: 2 799 USD — 30% taniej'},{t:'20:00',text:'Rezerwacje otwarte na apple.com'},{t:'21:00',text:'Reddit: „Wreszcie w zasięgu”'}]},
-  ai:{trend:59,flag:'🤖',chip:'AI',src:'LMSYS',title:'Claude vs GPT-5 — najnowsze wyniki Chatbot Arena',art:'LMSYS Chatbot Arena: Claude 5 Opus wyprzedza GPT-5 w kodowaniu i matematyce. GPT-5 wciąż prowadzi w creative writing. Wątek na HackerNews zebrał 2 800 komentarzy w 24h.',cta:'Zobacz ranking',
-    hist:[10,15,22,32,42,50,55,59],
-    events:[{t:'11:00',text:'LMSYS: nowe wyniki Chatbot Arena'},{t:'13:30',text:'Claude 5 Opus #1 w kodowaniu i matematyce'},{t:'15:00',text:'HackerNews: 2 800 komentarzy w 24h'},{t:'18:00',text:'OpenAI odpowiada na Twitterze'}]}
-};
+'use strict';
+const DOSE_ORDER={morning:0,afternoon:1,evening:2};
+const DOSE_LABEL={morning:'PORANEK',afternoon:'POPOŁUDNIE',evening:'WIECZÓR'};
+let ALL=[];
+let ARCHIVE=null;
+let NOW=0;      // kotwica filtra czasu = najnowszy added_at w danych (siatka zawsze pełna, też na starszym pliku)
+let NOWREAL=0;  // realny zegar — tylko do etykiety "X temu" (uczciwie pokaże wiek danych)
+let CURWIN=12;
+let bestDoseName='morning';
 
-function loadWikiImages(){
-  const WIKI={
-    spacex:  {lang:'en',page:'SpaceX'},
-    obajtek: {lang:'pl',page:'Daniel_Obajtek'},
-    france:  {lang:'en',page:'France_national_football_team'},
-    pfizer:  {lang:'en',page:'Pfizer'},
-    nvidia:  {lang:'en',page:'Nvidia'},
-    bitcoin: {lang:'en',page:'Bitcoin'},
-    neymar:  {lang:'en',page:'Neymar'},
-    tusk:    {lang:'en',page:'Donald_Tusk'},
-    ukraina: {lang:'en',page:'Russian_invasion_of_Ukraine'},
-    tesla:   {lang:'en',page:'Tesla,_Inc.'},
-    spotify: {lang:'en',page:'Spotify'},
-    fed:     {lang:'en',page:'Federal_Reserve'},
-    klimat:  {lang:'en',page:'Flood'},
-    samsung: {lang:'en',page:'Samsung_Electronics'},
-  };
-  let n=0;
-  Object.entries(WIKI).forEach(([id,{lang,page}])=>{
-    const tile=document.querySelector(`[data-id="${id}"]`);
-    const img=tile?.querySelector('.tc');
-    if(!img)return;
-    const cb='_wc'+(n++);
-    const t=setTimeout(()=>{delete window[cb];},8000);
-    window[cb]=function(d){
-      clearTimeout(t);delete window[cb];
-      const p=Object.values(d?.query?.pages||{})[0];
-      if(!p?.thumbnail?.source)return;
-      img.onload=()=>img.classList.add('vis');
-      img.onerror=()=>{};
-      img.src=p.thumbnail.source;
-    };
-    const s=document.createElement('script');
-    s.onerror=()=>{clearTimeout(t);delete window[cb];};
-    s.src=`https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(page)}&prop=pageimages&piprop=thumbnail&pithumbsize=400&format=json&callback=${cb}`;
-    document.head.appendChild(s);
+function parseTs(s){
+  if(!s)return null;
+  const m=String(s).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+  if(!m)return null;
+  return new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]).getTime();
+}
+function freshTxt(ts){
+  if(!ts)return '';
+  const d=Math.max(0,NOWREAL-ts),min=Math.round(d/60000);
+  if(min<1)return 'przed chwilą';
+  if(min<60)return min+' min temu';
+  const h=Math.round(min/60);
+  if(h<24)return h+' godz temu';
+  const dd=Math.round(h/24);
+  return dd+(dd===1?' dzień temu':' dni temu');
+}
+function hueFrom(str){let h=0;str=str||'';for(let i=0;i<str.length;i++)h=(h*31+str.charCodeAt(i))>>>0;return h%360;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+function pickNewestDose(data){
+  let best=null,bestKey=null;
+  for(const k of ['morning','afternoon','evening']){
+    const dz=data[k]; if(!dz||!dz.items||!dz.items.length)continue;
+    const key=(dz.date||'')+'#'+DOSE_ORDER[k];
+    if(best===null||key>bestKey){best=dz;bestKey=key;bestDoseName=k;}
+  }
+  return best;
+}
+
+function flatten(dose){
+  const out=[];
+  (dose.items||[]).forEach(it=>{
+    const rel=(it.subItems||[]).filter(s=>s&&s.text);
+    out.push({
+      flag:it.flag||'📰', text:it.text||'', article:it.article||'', impact:it.impact||'',
+      source_name:it.source_name||'', source_url:it.source_url||'',
+      image_url:it.image_url||'', ts:parseTs(it.added_at),
+      coverage:(typeof it.coverage==='number'?it.coverage:0),
+      rel:rel.map(s=>({flag:s.flag||'•',text:s.text||''}))
+    });
+  });
+  return out;
+}
+
+function weightOf(item,idx,n){
+  if(item.coverage&&item.coverage>0)return item.coverage;
+  return n-idx;
+}
+
+function layoutProfile(){
+  const pc=window.matchMedia('(min-width:1024px)').matches;
+  if(pc)return{per:[3,4,5,6,6,7],hs:[300,220,168,138,118,104],tail:{per:7,h:96}};
+  return{per:[2,3,3,3,4,4],hs:[248,182,142,114,92,74],tail:{per:4,h:70}};
+}
+
+function render(){
+  const wrap=document.getElementById('tiles-wrap');
+  const empty=document.getElementById('empty');
+  const pool=(CURWIN>=168&&ARCHIVE)?ALL.concat(ARCHIVE):ALL;
+  const cutoff=NOW-CURWIN*3600000;
+  let items=pool.filter(it=>{
+    if(it.ts==null)return CURWIN>=24;
+    return it.ts>=cutoff;
+  });
+  items.forEach((it,i)=>it._srcIdx=i);
+  const n=items.length;
+  items.sort((a,b)=>{
+    const wa=a.coverage||0, wb=b.coverage||0;
+    if(wb!==wa)return wb-wa;
+    return a._srcIdx-b._srcIdx;
+  });
+  items.forEach((it,i)=>it._w=weightOf(it,i,n));
+
+  document.getElementById('tfcount').textContent=n?(n+' tematów'):'';
+  if(!n){wrap.innerHTML='';empty.classList.add('show');return;}
+  empty.classList.remove('show');
+
+  const prof=layoutProfile();
+  wrap.innerHTML='';
+  let i=0,row=0;
+  const rows=[];
+  while(i<items.length){
+    const per=row<prof.per.length?prof.per[row]:prof.tail.per;
+    rows.push({items:items.slice(i,i+per),h:row<prof.hs.length?prof.hs[row]:prof.tail.h,tier:Math.min(row,5)});
+    i+=per;row++;
+  }
+  rows.forEach((r,ri)=>{
+    const rg=document.createElement('div');
+    rg.className='rg';rg.style.setProperty('--rh',r.h+'px');
+    const maxW=Math.max.apply(null,r.items.map(x=>x._w))||1;
+    r.items.forEach(it=>{
+      const tile=document.createElement('div');
+      const rel=it._w/maxW;
+      tile.className='tile t'+r.tier+(rel<0.34?' narrow':'');
+      const hue=hueFrom(it.source_name||it.text);
+      tile.style.setProperty('--tc','hsl('+hue+',64%,46%)');
+      tile.style.setProperty('--w',it._w.toFixed(2));
+      const covHtml=it.coverage>0?'<span class="cov">🔥 '+it.coverage+'</span>':'';
+      const chip=it.source_name?'<span class="chip">'+esc(it.source_name)+'</span>':'';
+      const fresh=freshTxt(it.ts);
+      tile.innerHTML=
+        '<img class="tc" alt="">'+
+        '<div class="bar"></div>'+
+        '<div class="ti">'+
+          '<div class="ttop">'+chip+covHtml+(fresh?'<span class="fresh">'+fresh+'</span>':'')+'</div>'+
+          '<div class="flag">'+esc(it.flag)+'</div>'+
+          '<div class="ttl">'+esc(it.text)+'</div>'+
+          (it.source_name?'<div class="src">'+esc(it.source_name)+'</div>':'')+
+        '</div>';
+      tile.addEventListener('click',function(){openSheet(it);});
+      rg.appendChild(tile);
+      if(it.image_url){
+        const img=tile.querySelector('.tc');
+        img.onload=function(){img.classList.add('vis');};
+        img.onerror=function(){};
+        img.src=it.image_url;
+      }
+    });
+    wrap.appendChild(rg);
+    requestAnimationFrame(function(){setTimeout(function(){
+      rg.classList.add('grown');
+      Array.prototype.forEach.call(rg.children,function(t,ti){setTimeout(function(){
+        t.classList.add('grown');
+        const ti2=t.querySelector('.ti');if(ti2)ti2.classList.add('vis');
+      },ti*45);});
+    },ri*70);});
   });
 }
 
-function drawHistChart(cv,data,color,prog){const dpr=window.devicePixelRatio||1,cw=cv.offsetWidth,ch=cv.offsetHeight;if(!cw||!ch)return;cv.width=cw*dpr;cv.height=ch*dpr;const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);const w=cw,h=ch,pL=16,pR=16,pT=14,pB=30;const aw=w-pL-pR,ah=h-pT-pB,n=data.length,max=Math.max(...data);const slW=aw/n,bw=slW*.52;const ep=prog===undefined?1:1-Math.pow(1-Math.min(1,prog),3);ctx.strokeStyle='rgba(255,255,255,.055)';ctx.lineWidth=.5;[.33,.67,1].forEach(f=>{const y=pT+ah*(1-f);ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(w-pR,y);ctx.stroke();});const ag=ctx.createLinearGradient(0,pT,0,pT+ah);ag.addColorStop(0,color+'40');ag.addColorStop(1,color+'06');ctx.fillStyle=ag;ctx.beginPath();ctx.moveTo(pL,pT+ah);data.forEach((v,i)=>{ctx.lineTo(pL+i*slW+slW*.5,pT+ah*(1-v/max*ep));});ctx.lineTo(pL+aw,pT+ah);ctx.closePath();ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();data.forEach((v,i)=>{const x=pL+i*slW+slW*.5,y=pT+ah*(1-v/max*ep);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();data.forEach((v,i)=>{const bh=(v/max)*ah*ep,x=pL+i*slW+(slW-bw)/2,y=pT+ah-bh;const isLast=i===n-1;const bg=ctx.createLinearGradient(x,y,x,y+bh);bg.addColorStop(0,isLast?color:color+'cc');bg.addColorStop(1,color+'20');ctx.fillStyle=bg;ctx.fillRect(x,y,bw,bh);const d=new Date(Date.now()-(n-1-i)*3600000);ctx.fillStyle=isLast?color:'rgba(136,136,160,.48)';ctx.font=`${isLast?700:400} ${Math.max(7,Math.min(10,slW*.42))}px -apple-system,sans-serif`;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(d.getHours().toString().padStart(2,'0'),pL+i*slW+slW*.5,pT+ah+6);});if(ep>.05){const lx=pL+(n-1)*slW+slW*.5,ly=pT+ah*(1-data[n-1]/max*ep);const gl=ctx.createRadialGradient(lx,ly,0,lx,ly,14);gl.addColorStop(0,color+'50');gl.addColorStop(1,'transparent');ctx.fillStyle=gl;ctx.fillRect(lx-15,ly-15,30,30);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(lx,ly,3.8,0,6.28);ctx.fill();ctx.fillStyle=color;ctx.beginPath();ctx.arc(lx,ly,2.2,0,6.28);ctx.fill();}}
+function openSheet(it){
+  const hero=document.getElementById('bshero'),heroImg=document.getElementById('bsheroimg');
+  if(it.image_url){heroImg.onerror=function(){hero.classList.remove('show');};heroImg.onload=function(){hero.classList.add('show');};heroImg.src=it.image_url;}
+  else{hero.classList.remove('show');heroImg.removeAttribute('src');}
+  document.getElementById('bsflag').textContent=it.flag||'📰';
+  const cov=it.coverage>0?'<span id="bscov">🔥 '+it.coverage+' źródeł</span>':'';
+  const fresh=freshTxt(it.ts);
+  const parts=[esc(it.source_name||DOSE_LABEL[bestDoseName]||''),cov,fresh?esc(fresh):''].filter(Boolean);
+  document.getElementById('bschip').innerHTML=parts.join('<span style="opacity:.4">·</span>');
+  document.getElementById('bstitle').textContent=it.text||'';
+  document.getElementById('bsart').textContent=it.article||'Brak rozszerzonego opisu.';
+  const imp=document.getElementById('bsimpact');
+  if(it.impact){imp.textContent=it.impact;imp.classList.add('show');
+    const up=/↑|wzrost|\+/.test(it.impact),down=/↓|spad|\-/.test(it.impact);
+    imp.style.borderLeftColor=(down&&!up)?'#ff453a':(up?'#30d158':'#8888a0');
+  }else imp.classList.remove('show');
+  const rel=document.getElementById('bsrel');
+  if(it.rel&&it.rel.length){
+    document.getElementById('bsrellist').innerHTML=it.rel.map(function(r){return '<div class="bsrel-i"><div class="bsrel-f">'+esc(r.flag)+'</div><div class="bsrel-t">'+esc(r.text)+'</div></div>';}).join('');
+    rel.classList.add('show');
+  }else rel.classList.remove('show');
+  const cta=document.getElementById('bscta');
+  if(it.source_url){cta.href=it.source_url;cta.style.display='block';document.getElementById('bssrc').textContent=it.source_name||'';}
+  else{cta.style.display='none';document.getElementById('bssrc').textContent='';}
+  document.getElementById('ov').classList.add('open');
+  document.getElementById('bs').classList.add('open');
+}
+function closeSheet(){document.getElementById('ov').classList.remove('open');document.getElementById('bs').classList.remove('open');}
+document.getElementById('ov').addEventListener('click',function(e){if(e.target===document.getElementById('ov'))closeSheet();});
+document.getElementById('bsclose').addEventListener('click',closeSheet);
 
-let _haf=null;
-function animHistChart(cv,data,color){let p=0;if(_haf)cancelAnimationFrame(_haf);function step(){p=Math.min(1,p+.055);drawHistChart(cv,data,color,p);if(p<1)_haf=requestAnimationFrame(step);else _haf=null;}_haf=requestAnimationFrame(step);}
-
-function openHist(id){const d=DATA[id];if(!d||!d.hist)return;const tile=document.querySelector(`[data-id="${id}"]`);const tc=tile?tile.style.getPropertyValue('--tc').trim()||'#ff2d55':'#ff2d55';const histEl=document.getElementById('hist');histEl.style.setProperty('--hc',tc);document.getElementById('hist-hflag').textContent=d.flag;const shortTitle=d.title.split('—')[0].split(' — ')[0].trim();document.getElementById('hist-hname').textContent=shortTitle;document.getElementById('hist-hpct').textContent='+'+d.trend+'%';document.getElementById('hist-evlist').innerHTML=d.events.map(ev=>`<div class="he"><div class="he-dot"></div><div class="he-time">${ev.t}</div><div class="he-txt">${ev.text}</div></div>`).join('');document.getElementById('hist-ov').classList.add('open');histEl.classList.add('open');const cv=document.getElementById('hist-cv');setTimeout(()=>animHistChart(cv,d.hist,tc),90);}
-function closeHist(){document.getElementById('hist-ov').classList.remove('open');document.getElementById('hist').classList.remove('open');}
-
-const ROWS=[
-  {rg:'rg0',tiles:['spacex','obajtek']},
-  {rg:'rg1',tiles:['france','pfizer','nvidia']},
-  {rg:'rg2',tiles:['bitcoin','neymar','tusk']},
-  {rg:'rg3',tiles:['ukraina','tesla','spotify']},
-  {rg:'rg4',tiles:['fed','klimat','samsung']},
-  {rg:'rg5',tiles:['wybory','apple','ai']},
-];
-ROWS.forEach((row,ri)=>{const t0=680+ri*110;
-  setTimeout(()=>{document.getElementById(row.rg).classList.add('grown');row.tiles.forEach((id,ti)=>setTimeout(()=>{const el=document.querySelector(`[data-id="${id}"]`);if(el)el.classList.add('grown');},ti*65));},t0);
-  setTimeout(()=>{row.tiles.forEach(id=>{const tile=document.querySelector(`[data-id="${id}"]`);if(!tile)return;const ti=tile.querySelector('.ti');if(ti)ti.classList.add('vis');});},t0+960);
+document.querySelectorAll('.tf-btn').forEach(function(btn){
+  btn.addEventListener('click',async function(){
+    document.querySelectorAll('.tf-btn').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    CURWIN=+btn.dataset.w;
+    if(CURWIN>=168&&ARCHIVE===null){await loadArchive();}
+    render();
+    document.getElementById('scroller').scrollTop=0;
+  });
 });
 
-setTimeout(()=>{startLive();injectPulse();},2600);
-setTimeout(()=>{loadWikiImages();},400);
-setTimeout(()=>{const h=document.getElementById('hint');if(h)h.classList.add('vis');},3800);
+async function loadArchive(){
+  ARCHIVE=[];
+  try{
+    const idx=await (await fetch('archive/index.json?t='+Date.now(),{cache:'no-store'})).json();
+    const dates=(idx||[]).slice(-7);
+    const files=await Promise.all(dates.map(function(d){return fetch('archive/'+d+'.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}));
+    files.forEach(function(f){if(!f)return;['morning','afternoon','evening'].forEach(function(k){if(f[k]&&f[k].items)ARCHIVE.push.apply(ARCHIVE,flatten(f[k]));});});
+  }catch(e){ARCHIVE=[];}
+}
 
-function injectPulse(){const mx=847;let css='';Object.entries(DATA).forEach(([id,d])=>{const t=d.trend;const sc=(1+0.003+(t/mx)*0.012).toFixed(4);const dur=(5.4-(t/mx)*2.9).toFixed(2);const del=(Math.random()*2.5).toFixed(2);css+=`@keyframes pu_${id}{0%,100%{transform:scale(1)}50%{transform:scale(${sc})}}[data-id="${id}"]{animation:pu_${id} ${dur}s ${del}s ease-in-out infinite;}`;});const s=document.createElement('style');s.textContent=css;document.head.appendChild(s);}
+function startClock(){
+  const t=function(){const d=new Date();return 'LIVE · '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+  document.getElementById('ltxt').textContent=t();
+  setInterval(function(){document.getElementById('ltxt').textContent=t();},30000);
+}
 
-function startLive(){const clock=()=>{const d=new Date();return`LIVE · ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;};document.getElementById('ltxt').textContent=clock();setInterval(()=>{document.querySelectorAll('.lp').forEach(el=>{const b=+el.dataset.b;const nv=Math.max(1,b+Math.round((Math.random()-.35)*b*.016));el.textContent=nv;el.dataset.b=nv;});document.getElementById('ltxt').textContent=clock();},3500);}
-
-const ov=document.getElementById('ov'),bs=document.getElementById('bs');
-document.querySelectorAll('.tile').forEach(tile=>{
-  let _sy=0,_sx=0,_st=0,_swiped=false;
-  tile.addEventListener('touchstart',e=>{const t=e.touches[0];_sy=t.clientY;_sx=t.clientX;_st=Date.now();_swiped=false;},{passive:true});
-  tile.addEventListener('touchmove',e=>{const t=e.touches[0],dy=t.clientY-_sy,dx=Math.abs(t.clientX-_sx);if(dy<-18&&dx<Math.abs(dy)*.85)e.preventDefault();},{passive:false});
-  tile.addEventListener('touchend',e=>{const t=e.changedTouches[0];const dy=t.clientY-_sy,dx=Math.abs(t.clientX-_sx),dt=Date.now()-_st;if(dy<-40&&dx<Math.abs(dy)*.8&&dt<350){_swiped=true;e.preventDefault();openHist(tile.dataset.id);}},{passive:false});
-  tile.addEventListener('click',()=>{if(_swiped){_swiped=false;return;}const id=tile.dataset.id,d=DATA[id];if(!d)return;document.getElementById('bsflag').textContent=d.flag;document.getElementById('bschip').textContent=d.chip;document.getElementById('bstitle').textContent=d.title;document.getElementById('bspct').textContent='+'+d.trend+'%';document.getElementById('bssrctxt').textContent=d.src;document.getElementById('bsart').textContent=d.art;document.getElementById('bscta').textContent=d.cta;ov.classList.add('open');bs.classList.add('open');});
-});
-ov.addEventListener('click',e=>{if(e.target===ov)closeBS();});
-document.getElementById('bsclose').addEventListener('click',closeBS);
-function closeBS(){ov.classList.remove('open');bs.classList.remove('open');}
-document.getElementById('hist-ov').addEventListener('click',e=>{if(e.target===document.getElementById('hist-ov'))closeHist();});
-document.getElementById('hist-close').addEventListener('click',closeHist);
-
-document.querySelectorAll('.tf-btn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');});});
+(async function init(){
+  try{
+    const data=await (await fetch('briefs.json?t='+Date.now(),{cache:'no-store'})).json();
+    const dose=pickNewestDose(data);
+    if(!dose){throw new Error('brak dawki');}
+    ALL=flatten(dose);
+    NOWREAL=Date.now();
+    // kotwica filtra = najnowszy added_at w danych; gdy brak żadnego ts → realny zegar
+    const maxTs=Math.max.apply(null,[0].concat(ALL.map(function(x){return x.ts||0;})));
+    NOW=maxTs>0?maxTs:NOWREAL;
+    startClock();
+    render();
+    setTimeout(function(){document.getElementById('hint').classList.add('vis');},2200);
+    let rz;window.addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(render,250);});
+  }catch(e){
+    document.getElementById('ltxt').textContent='błąd danych';
+    document.getElementById('emptytxt').textContent='Nie udało się wczytać danych (briefs.json).';
+    document.getElementById('empty').classList.add('show');
+  }
+})();
 </script>
 </body>
 </html>
