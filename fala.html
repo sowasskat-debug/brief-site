@@ -30,8 +30,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font
 .tile{flex-grow:1;flex-shrink:1;flex-basis:0%;overflow:hidden;position:relative;border-radius:2px;cursor:pointer;background:var(--bg2);min-width:22px;transition:flex-grow .88s cubic-bezier(.34,1.06,.64,1),transform .12s ease;will-change:flex-grow}
 .tile.grown{flex-grow:var(--w)}
 .tile:active{transform:scale(.965)}
+.tile::before{content:'';position:absolute;inset:0;background:var(--tc,#ff2d55);opacity:.15;z-index:0}
 
-.tc{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;transition:opacity .7s;pointer-events:none;object-fit:cover;object-position:center 20%}
+.tc{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;transition:opacity .7s;pointer-events:none;object-fit:cover;object-position:center 20%;z-index:1}
 .tc.vis{opacity:1}
 .bar{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tc,#ff2d55);z-index:2}
 
@@ -297,21 +298,19 @@ function loadWikiImages(){
     fed:     {lang:'en',page:'Federal_Reserve'},
     klimat:  {lang:'en',page:'Flood'},
     samsung: {lang:'en',page:'Samsung_Electronics'},
-    wybory:  {lang:'pl',page:'Wybory_parlamentarne_w_Polsce_(2023)'},
-    apple:   {lang:'en',page:'Apple_Inc.'},
-    ai:      {lang:'en',page:'Artificial_intelligence'}
   };
   Object.entries(WIKI).forEach(([id,{lang,page}])=>{
-    fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(page)}`)
+    const tile=document.querySelector(`[data-id="${id}"]`);
+    const img=tile?.querySelector('.tc');
+    if(!img)return;
+    fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(page)}&prop=pageimages&piprop=thumbnail&pithumbsize=400&format=json&origin=*`,{mode:'cors'})
       .then(r=>r.json())
       .then(d=>{
-        if(!d.thumbnail?.source)return;
-        const tile=document.querySelector(`[data-id="${id}"]`);
-        const img=tile?.querySelector('.tc');
-        if(!img)return;
-        const src=d.thumbnail.source.replace(/\/\d+px-/,'/400px-');
+        const p=Object.values(d?.query?.pages||{})[0];
+        if(!p?.thumbnail?.source)return;
         img.onload=()=>img.classList.add('vis');
-        img.src=src;
+        img.onerror=()=>{};
+        img.src=p.thumbnail.source;
       })
       .catch(()=>{});
   });
