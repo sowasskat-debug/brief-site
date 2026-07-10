@@ -815,6 +815,16 @@ html, body {
 .mob-edge-grip:hover,
 .mob-edge-grip:active { background: var(--red); width: 7px; }
 
+@keyframes gripPulse {
+  0%   { width: 5px;  background: var(--rule); border-radius: 0 4px 4px 0; }
+  18%  { width: 28px; background: var(--red);  border-radius: 0 8px 8px 0; }
+  55%  { width: 28px; background: var(--red);  border-radius: 0 8px 8px 0; }
+  100% { width: 5px;  background: var(--rule); border-radius: 0 4px 4px 0; }
+}
+.mob-edge-grip.pulsing {
+  animation: gripPulse 1s cubic-bezier(.4,0,.2,1) forwards;
+}
+
 .mob-hidden { display: none !important; }
 
 } /* end @media mobile */
