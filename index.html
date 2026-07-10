@@ -879,9 +879,11 @@ function renderDose(dose, items) {
       }
     });
     mobActiveCat = null;
-    mobSwpBuildCats(items);
+    mobSwpBuildCats([...items, ...dtArchiveAllItems]);
+    if (!dtArchiveLoaded) loadMobileArchiveCounts();
   }
 
+  dtAllItems = items;
   renderDesktop(dose, items);
   updatePageMeta(dose, cfg, items);
   scrollArea.scrollTop = 0;
@@ -1831,6 +1833,35 @@ function mobSwpBuildCats(items) {
     const btn = document.getElementById('mobDoseBtn-' + d);
     if (btn) btn.classList.toggle('act', d === currentDose);
   });
+}
+
+async function loadMobileArchiveCounts() {
+  if (dtArchiveLoaded) return;
+  try {
+    if (!archiveDatesCache) {
+      const r = await fetch('./archive/index.json', { cache: 'no-store' });
+      archiveDatesCache = r.ok ? await r.json() : [];
+    }
+    if (!archiveDatesCache?.length) return;
+    dtArchiveLoaded = true;
+    dtArchiveAllItems = [];
+    const sorted = archiveDatesCache.slice().sort((a, b) => b.localeCompare(a));
+    for (const d of sorted) {
+      try {
+        if (!archiveDayCache[d]) {
+          const r = await fetch(`./archive/${d}.json`, { cache: 'no-store' });
+          if (r.ok) archiveDayCache[d] = await r.json();
+        }
+        if (archiveDayCache[d]) {
+          for (const dose of ['morning','afternoon','evening']) {
+            const dd = archiveDayCache[d][dose];
+            if (dd?.items) dd.items.forEach(it => dtArchiveAllItems.push({...it, _archiveDate: d, _dose: dose}));
+          }
+        }
+      } catch(e) {}
+    }
+    mobSwpBuildCats([...dtAllItems, ...dtArchiveAllItems]);
+  } catch(e) {}
 }
 
 function mobileFilterCat(cat) {
