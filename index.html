@@ -88,6 +88,13 @@
 
 <div class="scroll-area" id="scrollArea">
   <div id="ptr"><span class="ptr-arrow">↓ Odśwież</span></div>
+  <div class="meat-bar" id="meatBar">
+    <span class="meat-edge">Samo mięso</span>
+    <input type="range" id="meatSlider" class="meat-slider" min="0" max="40" step="1" value="40"
+           aria-label="Filtr jakości: od samego mięsa do wszystkiego" oninput="onMeatSlide(this.value)">
+    <span class="meat-edge">Wszystko</span>
+    <span class="meat-state" id="meatLabel">Wszystko</span>
+  </div>
   <div id="content"></div>
 </div>
 <div class="toast" id="toast"></div>
@@ -126,6 +133,13 @@
       <div class="dt-feed-header">
         <span class="dt-feed-title" id="dtFeedTitle">—</span>
         <span class="dt-feed-count" id="dtFeedCount">—</span>
+      </div>
+      <div class="meat-bar dt-meat-bar" id="dtMeatBar">
+        <span class="meat-edge">Samo mięso</span>
+        <input type="range" id="dtMeatSlider" class="meat-slider" min="0" max="40" step="1" value="40"
+               aria-label="Filtr jakości: od samego mięsa do wszystkiego" oninput="onMeatSlide(this.value)">
+        <span class="meat-edge">Wszystko</span>
+        <span class="meat-state" id="dtMeatLabel">Wszystko</span>
       </div>
       <div class="dt-feed-list" id="dtFeedList"></div>
     </div>
@@ -307,6 +321,44 @@ const SAMPLE = {
 
 let currentDose = getCurrentDose();
 let cache = {};
+
+// ═══ Przesuwak jakości ("samo mięso" ↔ "wszystko") ═══
+// Skala progu 0..MEAT_MAX. meatMin=0 → przepuszcza wszystko (suwak w prawo).
+// meatMin wysokie → tylko grube tematy (suwak w lewo).
+const MEAT_MAX = 40;
+let meatMin = 0;   // domyślnie: wszystko (bez zaskoczenia dla obecnych userów)
+
+// Ocena "grubości" newsa. Łączy dwa niezależne sygnały:
+//  - reach: ile RÓŻNYCH redakcji pisze o temacie wg Google News (liczy bot) — łapie grube 1-źródłowe newsy (RPP, KNF)
+//  - liczba źródeł w klastrze bota (×8) — łapie tematy o rzadkiej frazie, których reach zeruje (np. próba pocisku)
+// Bierzemy mocniejszy z dwóch, żeby każdy łatał dziurę drugiego.
+function meatScore(item) {
+  if (!item) return 0;
+  const src = (item.subItems && item.subItems.length ? item.subItems.length : 1);
+  const reach = (typeof item.reach === 'number' && item.reach > 0) ? item.reach : 0;
+  return Math.max(reach, src * 8);
+}
+
+// Filtruje listę wg progu suwaka. items[0] (top story) ZAWSZE zostaje — redakcyjny wybór bota.
+function filterByMeat(items) {
+  if (!items || !items.length || meatMin <= 0) return items;
+  return items.filter((it, i) => i === 0 || meatScore(it) >= meatMin);
+}
+
+// Suwak: lewo (value=0) = samo mięso (próg wysoki), prawo (value=MEAT_MAX) = wszystko (próg 0).
+function onMeatSlide(rawValue) {
+  const v = Math.max(0, Math.min(MEAT_MAX, Number(rawValue) || 0));
+  meatMin = MEAT_MAX - v;
+  // Synchronizuj oba suwaki (mobile + desktop) i podpis.
+  ['meatSlider','dtMeatSlider'].forEach(id => { const el = document.getElementById(id); if (el && Number(el.value) !== v) el.value = v; });
+  const label = meatMin <= 0 ? 'Wszystko'
+              : meatMin >= MEAT_MAX ? 'Samo mięso'
+              : meatMin >= MEAT_MAX/2 ? 'Grube tematy' : 'Ważniejsze';
+  ['meatLabel','dtMeatLabel'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = label; });
+  // Przerysuj bieżącą dawkę z cache (bez ponownego pobierania).
+  const items = cache[currentDose];
+  if (items && items.length) { renderDose(currentDose, items); renderDesktop(currentDose, items); }
+}
 let doseDates = {};   // data (YYYY-MM-DD) treści każdej dawki z briefs.json — do wykrycia „wczorajszego wydania"
 let lastScrollY = 0, tabsHidden = false;
 let suppressScrollHide = false;
@@ -780,6 +832,7 @@ function escAttr(s) {
 function renderDose(dose, items) {
   const cfg = DOSE_CFG[dose];
   if (!items || items.length === 0) return;
+  items = filterByMeat(items);
   const hero = items[0];
   const isHeroGroup = hero.subItems && hero.subItems.length > 0;
 
@@ -1549,6 +1602,7 @@ function dtRenderFeed(items) {
 
 function renderDesktop(dose, items) {
   if (!isDesktop()) return;
+  items = filterByMeat(items);
   dtItemsMap = {};
   dtAllItems = items;
   dtActiveFilter = null;
