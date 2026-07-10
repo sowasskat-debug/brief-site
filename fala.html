@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0f">
+<title>FALA — trendy teraz</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--bg2:#131318;--bg3:#1c1c24;--acc:#ff2d55;--acc2:#30d158;--txt:#f0f0f6;--txt2:#8888a0;--gap:3px}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column}
+
+#hdr{flex-shrink:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:var(--bg);border-bottom:1px solid rgba(255,255,255,.06)}
+#hdr-logo{font-size:21px;font-weight:900;letter-spacing:-.5px;color:var(--acc)}
+#hdr-live{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--txt2);text-transform:uppercase}
+#live-dot{width:6px;height:6px;border-radius:50%;background:var(--acc);animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+#tfilter{flex-shrink:0;display:flex;gap:5px;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.04);overflow-x:auto;-webkit-overflow-scrolling:touch}
+#tfilter::-webkit-scrollbar{display:none}
+.tf-btn{flex-shrink:0;padding:4px 11px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--bg3);color:var(--txt2);border:none;cursor:pointer;transition:all .2s}
+.tf-btn.active{background:var(--acc);color:#fff}
+
+#tiles-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:var(--gap);gap:var(--gap);display:flex;flex-direction:column;padding-bottom:12px}
+#tiles-wrap::-webkit-scrollbar{display:none}
+
+.rg{display:flex;flex-direction:row;gap:var(--gap);height:0;overflow:hidden;flex-shrink:0;transition:height .88s cubic-bezier(.34,1.06,.64,1)}
+.rg.grown{height:var(--rh)}
+
+.tile{flex-grow:1;flex-shrink:1;flex-basis:0%;overflow:hidden;position:relative;border-radius:2px;cursor:pointer;background:var(--bg2);min-width:22px;transition:flex-grow .88s cubic-bezier(.34,1.06,.64,1),transform .12s ease;will-change:flex-grow}
+.tile.grown{flex-grow:var(--w)}
+.tile:active{transform:scale(.965)}
+
+.tc{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;transition:opacity .5s;pointer-events:none}
+.tc.vis{opacity:1}
+.bar{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tc,#ff2d55)}
+
+.ti{position:absolute;bottom:0;left:0;right:0;padding:5px 7px 6px;opacity:0;transition:opacity .4s;display:flex;flex-direction:column;gap:1px}
+.ti.vis{opacity:1}
+.rg:not(.r6) .ti{background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.42) 52%,transparent 100%)}
+.rg.r6 .ti{top:0;background:none;justify-content:center;padding:2px 7px 2px 10px}
+.rg.r6 .tc{display:none}
+
+.ttop{display:flex;align-items:center;gap:3px;margin-bottom:1px}
+.chip{font-size:7.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 5px;border-radius:2px;background:rgba(255,255,255,.13);color:#fff;white-space:nowrap;flex-shrink:0}
+.chip.live{background:var(--acc);animation:blink .9s ease-in-out infinite}
+.chip.athl{background:#f7931a}
+.vel{font-size:8px;font-weight:900;white-space:nowrap;flex-shrink:0;letter-spacing:0}
+.v0{color:var(--txt2)}.v1{color:#ffd60a}.v2{color:#ff8800}.v3{color:var(--acc);animation:blink .7s ease-in-out infinite}
+.pct{font-size:9px;font-weight:800;color:var(--acc);font-variant-numeric:tabular-nums;white-space:nowrap;margin-left:auto;flex-shrink:0}
+.flag{font-size:12px;line-height:1;margin-bottom:1px}
+.ttl{font-size:10px;font-weight:700;line-height:1.28;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.src{font-size:7.5px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+
+.rg.r1 .ttl{font-size:13px;-webkit-line-clamp:3}.rg.r1 .chip{font-size:8.5px}.rg.r1 .pct{font-size:11px}.rg.r1 .src{font-size:8.5px}.rg.r1 .flag{font-size:16px}.rg.r1 .vel{font-size:10px}
+.rg.r2 .ttl{font-size:11.5px;-webkit-line-clamp:2}.rg.r2 .pct{font-size:10px}.rg.r2 .flag{font-size:14px}
+.rg.r3 .ttl{font-size:10.5px;-webkit-line-clamp:2}.rg.r3 .pct{font-size:9.5px}.rg.r3 .flag{font-size:13px}
+.rg.r4 .ttl{font-size:10px;-webkit-line-clamp:1}.rg.r4 .src{display:none}.rg.r4 .flag{font-size:12px}
+.rg.r5 .ttl{font-size:9px;-webkit-line-clamp:1}.rg.r5 .src{display:none}.rg.r5 .flag{font-size:11px}
+.rg.r6 .ttl{font-size:8.5px;-webkit-line-clamp:1}.rg.r6 .chip{display:none}.rg.r6 .src{display:none}.rg.r6 .flag{font-size:10px;margin-bottom:0}.rg.r6 .pct{font-size:8.5px}
+.nr .chip{display:none}.nr .src{display:none}.nr .ttl{font-size:8.5px;-webkit-line-clamp:3}.nr .flag{font-size:10px}
+
+#ov{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0);pointer-events:none;transition:background .25s}
+#ov.open{background:rgba(0,0,0,.62);pointer-events:auto}
+#bs{position:fixed;bottom:0;left:0;right:0;z-index:101;background:#1a1a22;border-radius:16px 16px 0 0;max-height:80vh;transform:translateY(100%);transition:transform .32s cubic-bezier(.34,1.05,.64,1);overflow:hidden;display:flex;flex-direction:column}
+#bs.open{transform:translateY(0)}
+#bsdrag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:10px auto 0;flex-shrink:0}
+#bshead{padding:10px 44px 12px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:flex-start;gap:10px;flex-shrink:0}
+#bsflag{font-size:28px;line-height:1}
+#bsmeta{flex:1;min-width:0}
+#bschip{font-size:8.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt2);margin-bottom:2px}
+#bstitle{font-size:15.5px;font-weight:800;line-height:1.25;color:#fff}
+#bspct{font-size:18px;font-weight:900;color:var(--acc);font-variant-numeric:tabular-nums;flex-shrink:0;margin-top:2px}
+#bsbody{overflow-y:auto;flex:1;padding:12px 16px 20px}
+#bssrc{display:flex;align-items:center;gap:6px;font-size:9.5px;color:var(--txt2);margin-bottom:10px}
+#bsdot{width:5px;height:5px;border-radius:50%;background:var(--acc2);flex-shrink:0}
+#bsart{font-size:13.5px;line-height:1.65;color:rgba(255,255,255,.82)}
+#bscta{display:block;margin:14px 0 0;padding:13px 16px;border-radius:8px;background:var(--acc);color:#fff;font-size:13px;font-weight:700;text-align:center;border:none;cursor:pointer;width:100%;-webkit-appearance:none}
+#bsclose{position:absolute;top:12px;right:12px;background:rgba(255,255,255,.08);border:none;width:30px;height:30px;border-radius:50%;color:var(--txt2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+#hist-ov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0);pointer-events:none;transition:background .28s}
+#hist-ov.open{background:rgba(0,0,0,.75);pointer-events:auto}
+#hist{position:fixed;bottom:0;left:0;right:0;z-index:201;background:#0f0f16;border-radius:18px 18px 0 0;max-height:80vh;transform:translateY(100%);transition:transform .36s cubic-bezier(.34,1.05,.64,1);display:flex;flex-direction:column;overflow:hidden}
+#hist.open{transform:translateY(0)}
+#hist-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin:10px auto 0;flex-shrink:0}
+#hist-close{position:absolute;top:11px;right:12px;background:rgba(255,255,255,.07);border:none;width:28px;height:28px;border-radius:50%;color:rgba(255,255,255,.45);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#hist-head{padding:10px 44px 10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.05)}
+#hist-hflag{font-size:22px;line-height:1;flex-shrink:0}
+#hist-hmeta{flex:1;min-width:0}
+#hist-hname{font-size:13px;font-weight:800;color:#fff;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hist-hsub{font-size:9px;color:var(--txt2);text-transform:uppercase;letter-spacing:.07em;margin-top:2px}
+#hist-hpct{font-size:21px;font-weight:900;color:var(--hc,var(--acc));font-variant-numeric:tabular-nums;flex-shrink:0}
+#hist-cv{flex-shrink:0;height:142px;width:100%;display:block}
+#hist-scroll{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;padding:0 14px 20px}
+#hist-scroll::-webkit-scrollbar{display:none}
+.he-section{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt2);padding:11px 0 7px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:2px}
+.he{display:flex;align-items:flex-start;gap:9px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.he:last-child{border-bottom:none}
+.he-dot{width:7px;height:7px;border-radius:50%;background:var(--hc,var(--acc));flex-shrink:0;margin-top:3px;box-shadow:0 0 8px var(--hc,var(--acc))}
+.he-time{font-size:10px;font-weight:700;color:var(--hc,var(--acc));font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0;min-width:34px}
+.he-txt{font-size:12px;color:rgba(255,255,255,.76);line-height:1.45}
+
+#hint{flex-shrink:0;height:20px;display:flex;align-items:center;justify-content:center;font-size:8px;color:rgba(136,136,160,.3);letter-spacing:.07em;border-top:1px solid rgba(255,255,255,.03);opacity:0;transition:opacity 1.5s}
+#hint.vis{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div id="hdr-logo">🌊 FALA</div>
+  <div id="hdr-live"><div id="live-dot"></div><span id="ltxt">ładowanie…</span></div>
+</div>
+<div id="tfilter">
+  <button class="tf-btn active">1H</button><button class="tf-btn">4H</button><button class="tf-btn">12H</button><button class="tf-btn">24H</button><button class="tf-btn">7D</button>
+</div>
+
+<div id="tiles-wrap">
+
+  <div class="rg r1" id="rg0" style="--rh:255px">
+    <div class="tile" style="--w:847;--tc:#FF4400" data-id="spacex">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="chip">Kosmos</span><span class="vel v2">▲▲</span><span class="pct">+<span class="lp" data-b="847">847</span>%</span></div><div class="flag">🚀</div><div class="ttl">SpaceX Starship — złapanie boostera w locie</div><div class="src">YouTube · Kosmos</div></div>
+    </div>
+    <div class="tile" style="--w:634;--tc:#C4323A" data-id="obajtek">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="chip live">LIVE</span><span class="vel v3">▲▲▲</span><span class="pct">+<span class="lp" data-b="634">634</span>%</span></div><div class="flag">🏙️</div><div class="ttl">Obajtek — powrót na YouTube z politycznym manifestem</div><div class="src">YouTube · PL</div></div>
+    </div>
+  </div>
+
+  <div class="rg r2" id="rg1" style="--rh:185px">
+    <div class="tile" style="--w:521;--tc:#0055A4" data-id="france">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="chip live">MECZ</span><span class="vel v3">▲▲▲</span><span class="pct">+<span class="lp" data-b="521">521</span>%</span></div><div class="flag">⚽</div><div class="ttl">Francja vs Maroko — mundial na żywo</div><div class="src">Sport · Mundial 2026</div></div>
+    </div>
+    <div class="tile" style="--w:389;--tc:#00A0E9" data-id="pfizer">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="chip">Finanse</span><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="389">389</span>%</span></div><div class="flag">💊</div><div class="ttl">Pfizer blokuje 2,3 mld PLN dla Polski</div><div class="src">Rzeczpospolita</div></div>
+    </div>
+    <div class="tile nr" style="--w:178;--tc:#76B900" data-id="nvidia">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="178">178</span>%</span></div><div class="flag">🎮</div><div class="ttl">Nvidia RTX 6090</div></div>
+    </div>
+  </div>
+
+  <div class="rg r3" id="rg2" style="--rh:140px">
+    <div class="tile" style="--w:445;--tc:#F7931A" data-id="bitcoin">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="chip athl">ATH</span><span class="vel v3">▲▲▲</span><span class="pct">+<span class="lp" data-b="445">445</span>%</span></div><div class="flag">₿</div><div class="ttl">Bitcoin przekroczył $120 000 — nowy rekord wszechczasów</div><div class="src">CoinDesk · Crypto</div></div>
+    </div>
+    <div class="tile" style="--w:188;--tc:#009B3A" data-id="neymar">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="chip">Sport</span><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="188">188</span>%</span></div><div class="flag">⚽</div><div class="ttl">Neymar wraca do PSG — koniec kariery w Arabii?</div><div class="src">L’Équipe</div></div>
+    </div>
+    <div class="tile nr" style="--w:98;--tc:#EB2D4B" data-id="tusk">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="vel v0">→</span><span class="pct">+<span class="lp" data-b="98">98</span>%</span></div><div class="flag">🏙️</div><div class="ttl">Tusk: nowy budżet 2027</div></div>
+    </div>
+  </div>
+
+  <div class="rg r4" id="rg3" style="--rh:112px">
+    <div class="tile" style="--w:267;--tc:#FFD700" data-id="ukraina">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="chip live">LIVE</span><span class="vel v2">▲▲</span><span class="pct">+<span class="lp" data-b="267">267</span>%</span></div><div class="flag">🇺🇦</div><div class="ttl">Nocny atak dronów na Kijów</div></div>
+    </div>
+    <div class="tile" style="--w:298;--tc:#CC0000" data-id="tesla">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="chip">Tech</span><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="298">298</span>%</span></div><div class="flag">🚗</div><div class="ttl">Tesla Cybertruck 2.0 — 100k zamówień</div></div>
+    </div>
+    <div class="tile" style="--w:223;--tc:#1DB954" data-id="spotify">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="chip">Muzyka</span><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="223">223</span>%</span></div><div class="flag">🎵</div><div class="ttl">Spotify AI DJ 2.0 — twój głos</div></div>
+    </div>
+  </div>
+
+  <div class="rg r5" id="rg4" style="--rh:90px">
+    <div class="tile" style="--w:312;--tc:#7B68EE" data-id="fed">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="chip">Macro</span><span class="vel v1">▲</span><span class="pct">+<span class="lp" data-b="312">312</span>%</span></div><div class="flag">🏦</div><div class="ttl">Fed utrzymuje stopy — Powell przemawia</div></div>
+    </div>
+    <div class="tile nr" style="--w:156;--tc:#2196F3" data-id="klimat">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="vel v2">▲▲</span><span class="pct">+<span class="lp" data-b="156">156</span>%</span></div><div class="flag">🌊</div><div class="ttl">Powódź Czech — alarm PL</div></div>
+    </div>
+    <div class="tile nr" style="--w:134;--tc:#1428A0" data-id="samsung">
+      <canvas class="tc"></canvas><div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="vel v0">→</span><span class="pct">+<span class="lp" data-b="134">134</span>%</span></div><div class="flag">📱</div><div class="ttl">Samsung S27 Ultra</div></div>
+    </div>
+  </div>
+
+  <div class="rg r6" id="rg5" style="--rh:66px">
+    <div class="tile" style="--w:66;--tc:#EB2D4B" data-id="wybory">
+      <div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="pct">+<span class="lp" data-b="66">66</span>%</span></div><div class="flag">🗾️</div><div class="ttl">Wybory 2026 — sondaż</div></div>
+    </div>
+    <div class="tile" style="--w:88;--tc:#A0A0B0" data-id="apple">
+      <div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="pct">+<span class="lp" data-b="88">88</span>%</span></div><div class="flag">🥽</div><div class="ttl">Apple Vision Pro 2</div></div>
+    </div>
+    <div class="tile" style="--w:59;--tc:#8B5CF6" data-id="ai">
+      <div class="bar"></div>
+      <div class="ti"><div class="ttop"><span class="pct">+<span class="lp" data-b="59">59</span>%</span></div><div class="flag">🤖</div><div class="ttl">Claude vs GPT-5</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="hint">↑ przesuń kafelek w górę · historia trendu</div>
+
+<div id="ov"><div id="bs">
+  <div id="bsdrag"></div><button id="bsclose">✕</button>
+  <div id="bshead"><div id="bsflag">🚀</div><div id="bsmeta"><div id="bschip"></div><div id="bstitle"></div></div><div id="bspct"></div></div>
+  <div id="bsbody"><div id="bssrc"><div id="bsdot"></div><span id="bssrctxt"></span></div><div id="bsart"></div><button id="bscta">Otwórz</button></div>
+</div></div>
+
+<div id="hist-ov"><div id="hist">
+  <div id="hist-drag"></div><button id="hist-close">✕</button>
+  <div id="hist-head">
+    <div id="hist-hflag"></div>
+    <div id="hist-hmeta"><div id="hist-hname"></div><div id="hist-hsub">Ostatnie 8 godzin</div></div>
+    <div id="hist-hpct"></div>
+  </div>
+  <canvas id="hist-cv"></canvas>
+  <div id="hist-scroll">
+    <div class="he-section">Kluczowe momenty</div>
+    <div id="hist-evlist"></div>
+  </div>
+</div></div>
+
+<script>
+const DATA={
+  spacex:{trend:847,flag:'🚀',chip:'Kosmos',src:'YouTube · Kosmos',title:'SpaceX Starship — złapanie boostera w locie',art:'SpaceX po raz pierwszy w historii złapał Starship Super Heavy w ramiona wieży mechanicznej — Mechazilla. Nagranie zebrało 47 mln wyświetleń w 6 godzin. Musk: „Kluczowy krok ku Marsowi.” Kolejny start za 3 tygodnie.',cta:'Otwórz film na YouTube',
+    hist:[8,18,32,72,210,480,720,847],
+    events:[{t:'15:22',text:'Nagranie lądowania trafia na YouTube'},{t:'16:05',text:'Musk tweetuje: „To dopiero początek Marsa”'},{t:'17:30',text:'Trending #1 w Polsce i 34 krajach'},{t:'18:47',text:'47 mln wyświetleń — absolutny rekord SpaceX'}]},
+  obajtek:{trend:634,flag:'🏙️',chip:'Polityka',src:'YouTube · PL',title:'Obajtek — powrót na YouTube z politycznym manifestem',art:'Daniel Obajtek opublikował godzinny wywiad na YouTube o powrocie do polityki i atakach na rodzinę. Film zebrał 2,4 mln wyświetleń w ciągu doby — rekord polskiego YouTube w segmencie politycznym.',cta:'Oglądaj wywiad',
+    hist:[38,85,175,320,440,545,598,634],
+    events:[{t:'13:00',text:'Film opublikowany na kanale Obajtka'},{t:'14:15',text:'Udostępnienia przez prawicowe portale'},{t:'16:30',text:'Tusk odpowiada na Twitterze'},{t:'19:22',text:'2,4 mln wyświetleń — rekord PL YouTube'}]},
+  france:{trend:521,flag:'⚽',chip:'Sport',src:'Sport · Mundial 2026',title:'Francja vs Maroko — półfinał MŚ 2026 na żywo',art:'Francja mierzy się z Marokiem w półfinale MŚ 2026 w Nowym Jorku. 82 000 kibiców na stadionie. Mbappé vs Hakimi — starcie dekady. Twitter/X notuje 3,2 mln tweetów na minutę. Mecz trwa.',cta:'Śledź transmisję na żywo',
+    hist:[12,18,26,42,82,240,430,521],
+    events:[{t:'18:00',text:'Sędzia gwiżdże — mecz się rozpoczyna'},{t:'18:34',text:'Mbappé — pierwsza bramka dla Francji!'},{t:'19:11',text:'Hakimi wyrównuje dla Maroka (1:1)'},{t:'20:02',text:'Francja prowadzi 2:1 w 82. minucie'}]},
+  pfizer:{trend:389,flag:'💊',chip:'Finanse',src:'Rzeczpospolita',title:'Pfizer odmawia wypłaty — 2,3 mld PLN w sporze z Polską',art:'Pfizer grozi arbitrażem i odmawia wypłaty odszkodowania za szczepionki COVID. Rząd: firma zawiększyła ceny o 340% vs inne kraje UE. Sprawa może trafić do Trybunału w Hadze. W grę wchodzi 2,3 mld PLN podatników.',cta:'Przeczytaj analizę',
+    hist:[18,30,52,105,195,290,350,389],
+    events:[{t:'09:15',text:'Ministerstwo ogłasza spór z Pfizerem'},{t:'11:30',text:'Pfizer zapowiada arbitraż międzynarodowy'},{t:'14:45',text:'Rząd: „Pieniądze należą się podatnikom”'},{t:'17:00',text:'Analiza Rzeczpospolitej — artykuł viral'}]},
+  nvidia:{trend:178,flag:'🎮',chip:'Tech',src:'The Verge',title:'Nvidia GeForce RTX 6090 — premiera z architekturą Blackwell Ultra',art:'Nvidia ogłosiła RTX 6090 z 32 GB GDDR7 i 3× wydajnością RTX 4090 w AI. Cena: 1 999 USD. Dostępność: sierpień 2026. Jensen Huang: „GPU dla budowniczych nowego świata.”',cta:'Zobacz specyfikację',
+    hist:[35,48,68,90,115,140,162,178],
+    events:[{t:'17:00',text:'Jensen Huang na scenie w Tajpej'},{t:'17:32',text:'RTX 6090 oficjalnie ogłoszona'},{t:'18:10',text:'Pre-order: 50 000 kart w 40 minut'},{t:'19:55',text:'The Verge: „Pokoleniowy skok wydajności”'}]},
+  bitcoin:{trend:445,flag:'₿',chip:'Crypto',src:'CoinDesk',title:'Bitcoin przekroczył $120 000 — nowy rekord wszechczasów',art:'Bitcoin osiągnął nowy rekord wszechczasów: $120 700 USD. Wzrost podyktowany masowymi zakupami ETF przez BlackRock i Fidelity. Altcoiny podążają: ETH +22%, SOL +34%. Analitycy mówią o supercyklu.',cta:'Śledź rynek crypto',
+    hist:[72,88,108,148,212,322,408,445],
+    events:[{t:'04:22',text:'BTC przebija $110 000 nocą'},{t:'07:45',text:'BlackRock kupuje 8 200 BTC jedną transakcją'},{t:'10:30',text:'Nowy ATH: $118 500'},{t:'14:17',text:'$120 700 — rekord wszechczasów'}]},
+  neymar:{trend:188,flag:'⚽',chip:'Sport',src:"L’Équipe",title:'Neymar Jr wraca do PSG — koniec saudyjskiej przygody',art:'Al-Hilal i PSG osiągnęły porozumienie ws. transferu Neymara Jr. Brazylijczyk wróci do Paryża po 3 latach. Kontrakt: 2 lata, 60 mln EUR/rok. Ogłoszenie oficjalne jutro rano.',cta:'Czytaj o transferze',
+    hist:[16,28,52,88,128,152,170,188],
+    events:[{t:'10:00',text:"L’Équipe: pierwsze doniesienia o negocjacjach"},{t:'12:30',text:'Agent Neymara potwierdza rozmowy'},{t:'15:20',text:'PSG tweetuje: „Wkrótce…”'},{t:'18:45',text:'Umowa podpisana — ogłoszenie jutro'}]},
+  tusk:{trend:98,flag:'🏙️',chip:'Polska',src:'TVN24',title:'Tusk w Sejmie: przełomowy budżet na 2027 rok',art:'Premier Donald Tusk przedstawił projekt budżetu na 2027. Rekordowe wydatki na obronność (5,2% PKB) i inwestycje. Opozycja zapowiada wniosek o wotum nieufności. Głosowanie w przyszłym tygodniu.',cta:'Czytaj exposé',
+    hist:[55,62,70,78,84,90,95,98],
+    events:[{t:'10:00',text:'Tusk wchodzi na mównicę Sejmu'},{t:'11:20',text:'Ogłoszenie: 5,2% PKB na obronność'},{t:'13:45',text:'Opozycja: wniosek o wotum nieufności'},{t:'16:00',text:'Głosowanie zaplanowane na przyszły tydzień'}]},
+  ukraina:{trend:267,flag:'🇺🇦',chip:'Świat',src:'Reuters',title:'Nocny atak dronów na Kijów — obrona zestrzełiła 34 z 47',art:'Siły zbrojne Ukrainy zestrzełiły 34 z 47 dronów szahid w nocnym ataku na Kijów. Zniszczenia w dzielnicy Darnytsia — uszkodzone budynki mieszkalne. 3 ofiary cywilne. Syreny powietrzne przez 6 godzin.',cta:'Czytaj raport Reuters',
+    hist:[22,45,82,132,182,225,252,267],
+    events:[{t:'02:15',text:'Syreny przeciwlotnicze w Kijowie'},{t:'02:48',text:'Obrona: 34/47 dronów zestrzelonych'},{t:'03:30',text:'Zniszczenia w dzielnicy Darnytsia'},{t:'06:00',text:'Ukraina składa raport do ONZ'}]},
+  tesla:{trend:298,flag:'🚗',chip:'Tech',src:'Tesla Press',title:'Tesla Cybertruck 2.0 — 100 000 zamówień w 48 godzinach',art:'Tesla Cybertruck generacja 2 zebrał 100 000 zamówień w ciągu 48 godzin. Nowy model: zasięg 800 km, FSD v14, autonomiczne ładowanie. Cena startowa: 72 900 USD. Dostawy: Q1 2027.',cta:'Złóż zamówienie',
+    hist:[38,62,95,148,198,248,278,298],
+    events:[{t:'16:00',text:'Musk: „Prezentacja za godzinę” na X'},{t:'17:08',text:'Cybertruck 2.0 wjeżdża na scenę'},{t:'18:30',text:'100 000 zamówień w 48h — rekord'},{t:'20:15',text:'Akcje Tesla +8% w after-hours'}]},
+  spotify:{trend:223,flag:'🎵',chip:'Muzyka',src:'Spotify Blog',title:'Spotify ogłasza AI DJ 2.0 — twój głos jako gospodarz playlisty',art:'Spotify uruchamia AI DJ 2.0 z możliwością klonowania głosu ulubionego artysty jako narratora playlisty. Technologia oparta na partnerstwie z Anthropic. Dostępna od 15 lipca dla 30 krajów, w tym Polski.',cta:'Wypróbuj teraz',
+    hist:[48,65,88,120,152,182,208,223],
+    events:[{t:'09:00',text:'Blog Spotify: ogłoszenie AI DJ 2.0'},{t:'11:00',text:'TechCrunch: pierwsze recenzje'},{t:'14:30',text:'Dostępność w Polsce od 15 lipca'},{t:'17:45',text:'HackerNews: 1 400 komentarzy'}]},
+  fed:{trend:312,flag:'🏦',chip:'Macro',src:'Bloomberg',title:'Fed utrzymuje stopy — Powell: cięcia dopiero przy 2% inflacji',art:'Rezerwa Federalna utrzymała stopy na poziomie 5,25–5,50%. Powell zaznaczył, że decyzja o cięciach zostanie podjęta dopiero gdy inflacja trwale zejdzie do 2%. Rynki wyceniają pierwsze cięcie na wrzesień.',cta:'Przeczytaj raport Fed',
+    hist:[22,38,62,110,175,242,285,312],
+    events:[{t:'14:00',text:'Fed ogłasza: stopy bez zmian'},{t:'14:30',text:'Powell zaczyna konferencję prasową'},{t:'15:00',text:'„Cięcia dopiero przy trwałym 2% inflacji”'},{t:'15:30',text:'S&P 500 spada 1,8% po komentarzu'}]},
+  klimat:{trend:156,flag:'🌊',chip:'Klimat',src:'IMGW',title:'Powódź w Czechach — alarm III stopnia dla rzek południa Polski',art:'IMGW ogłosił alarm III stopnia po rekordowych opadach w Sudetach. Zbiornik Nysa może nie wytrzymać naporu. Ewakuacja 12 000 mieszkańców w Raciborzu i Głubczycach. Rząd ogłosił stan klęski żywiołowej.',cta:'Sprawdź ostrzeżenia IMGW',
+    hist:[15,25,44,72,108,130,146,156],
+    events:[{t:'06:00',text:'IMGW: alarm III stopnia dla Sudetów'},{t:'08:30',text:'Ewakuacja Raciborza — 12 000 osób'},{t:'11:00',text:'Rząd ogłasza stan klęski żywiołowej'},{t:'16:00',text:'Zbiornik Nysa: poziom krytyczny'}]},
+  samsung:{trend:134,flag:'📱',chip:'Tech',src:'Samsung',title:'Samsung Galaxy S27 Ultra — tytanowa rama, AI kamera 200 MP',art:'Samsung Galaxy S27 Ultra z 200 MP obiektywem AI, tytanową ramą i chipem Exynos 2600. Bateria 6000 mAh, ładowanie 100W. Cena: 6 499 PLN. Premiera globalna 12 sierpnia. Samsung obiecuje 7 lat aktualizacji.',cta:'Zobacz specyfikację',
+    hist:[28,40,58,78,100,115,126,134],
+    events:[{t:'10:00',text:'Samsung Unpacked na żywo w Berlinie'},{t:'10:45',text:'S27 Ultra oficjalnie zaprezentowany'},{t:'12:00',text:'Cena w Polsce: 6 499 PLN'},{t:'15:30',text:'Pre-order otwarty na samsung.com/pl'}]},
+  wybory:{trend:66,flag:'🗾️',chip:'Polska',src:'Onet',title:'Wybory 2026 — sondaż IBRiS: KO przed PiS',art:'IBRiS dla Onetu: KO 31%, PiS 28%, TD 11%, Lewica 9%, Konfederacja 8%. PiS traci 4 pkt po aferze z finansowaniem partii.',cta:'Czytaj sondaż',
+    hist:[22,28,35,44,52,58,62,66],
+    events:[{t:'08:00',text:'IBRiS publikuje sondaż'},{t:'10:00',text:'KO: „To potwierdza trend wzrostowy”'},{t:'12:30',text:'PiS: „Błędy metodologiczne sondażu”'},{t:'15:00',text:'Onet: analiza na tle historycznych wahań'}]},
+  apple:{trend:88,flag:'🥽',chip:'Tech',src:'Apple WWDC',title:'Apple Vision Pro 2 — cena 2799 USD, premiera we wrześniu',art:'Apple Vision Pro 2 z chipem M4 Ultra, o 30% lżejśy, cena 2 799 USD (vs 3 499 USD oryginału). Premiera: 22 września 2026. Nowe funkcje: spatial SharePlay i Apple Intelligence w AR.',cta:'Sprawdź szczegóły',
+    hist:[12,18,28,42,58,70,80,88],
+    events:[{t:'18:00',text:'Apple WWDC: ogłoszenie Vision Pro 2'},{t:'19:15',text:'Cena: 2 799 USD — 30% taniej'},{t:'20:00',text:'Rezerwacje otwarte na apple.com'},{t:'21:00',text:'Reddit: „Wreszcie w zasięgu”'}]},
+  ai:{trend:59,flag:'🤖',chip:'AI',src:'LMSYS',title:'Claude vs GPT-5 — najnowsze wyniki Chatbot Arena',art:'LMSYS Chatbot Arena: Claude 5 Opus wyprzedza GPT-5 w kodowaniu i matematyce. GPT-5 wciąż prowadzi w creative writing. Wątek na HackerNews zebrał 2 800 komentarzy w 24h.',cta:'Zobacz ranking',
+    hist:[10,15,22,32,42,50,55,59],
+    events:[{t:'11:00',text:'LMSYS: nowe wyniki Chatbot Arena'},{t:'13:30',text:'Claude 5 Opus #1 w kodowaniu i matematyce'},{t:'15:00',text:'HackerNews: 2 800 komentarzy w 24h'},{t:'18:00',text:'OpenAI odpowiada na Twitterze'}]}
+};
+
+function drawSpaceX(c,w,h){const sk=c.createLinearGradient(0,0,0,h);sk.addColorStop(0,'#020814');sk.addColorStop(1,'#0a0a24');c.fillStyle=sk;c.fillRect(0,0,w,h);c.fillStyle='rgba(255,255,255,.7)';for(let i=0;i<80;i++){c.beginPath();c.arc(Math.random()*w,Math.random()*h*.78,Math.random()*1.1,0,6.28);c.fill();}const ex=c.createLinearGradient(w*.53,h*.5,w*.53,h);ex.addColorStop(0,'rgba(255,160,0,.88)');ex.addColorStop(.45,'rgba(255,50,0,.4)');ex.addColorStop(1,'transparent');c.fillStyle=ex;c.beginPath();c.moveTo(w*.46,h*.6);c.lineTo(w*.6,h*.6);c.lineTo(w*.88,h);c.lineTo(w*.18,h);c.closePath();c.fill();const core=c.createLinearGradient(w*.53,h*.58,w*.53,h*.78);core.addColorStop(0,'rgba(255,230,120,.9)');core.addColorStop(1,'transparent');c.fillStyle=core;c.beginPath();c.moveTo(w*.49,h*.58);c.lineTo(w*.58,h*.58);c.lineTo(w*.66,h*.78);c.lineTo(w*.4,h*.78);c.closePath();c.fill();c.fillStyle='#c8ccd6';c.fillRect(w*.46,h*.1,w*.12,h*.5);c.beginPath();c.moveTo(w*.46,h*.1);c.lineTo(w*.52,h*.0);c.lineTo(w*.58,h*.1);c.closePath();c.fill();c.beginPath();c.moveTo(w*.46,h*.54);c.lineTo(w*.3,h*.66);c.lineTo(w*.46,h*.61);c.closePath();c.fill();c.beginPath();c.moveTo(w*.58,h*.54);c.lineTo(w*.74,h*.66);c.lineTo(w*.58,h*.61);c.closePath();c.fill();}
+function drawObajtek(c,w,h){c.fillStyle='#0e0508';c.fillRect(0,0,w,h);const pw=c.createLinearGradient(0,0,0,h);pw.addColorStop(0,'rgba(196,50,58,.12)');pw.addColorStop(.6,'transparent');c.fillStyle=pw;c.fillRect(0,0,w,h);c.fillStyle='rgba(28,8,12,.95)';for(let i=0;i<6;i++) c.fillRect(w*(.06+i*.16),h*.26,w*.1,h*.57);c.beginPath();c.moveTo(0,h*.26);c.lineTo(w*.5,h*.03);c.lineTo(w,h*.26);c.fill();for(let i=0;i<8;i++){const fx=Math.random()*w,fy=Math.random()*h*.52,fg=c.createRadialGradient(fx,fy,0,fx,fy,w*.065);fg.addColorStop(0,'rgba(255,240,180,.48)');fg.addColorStop(1,'transparent');c.fillStyle=fg;c.fillRect(fx-w*.065,fy-w*.065,w*.13,w*.13);}c.fillStyle='rgba(196,50,58,.5)';c.beginPath();c.arc(w*.5,h*.52,w*.055,0,6.28);c.fill();c.fillRect(w*.474,h*.577,w*.052,h*.12);c.fillRect(w*.39,h*.698,w*.22,h*.016);}
+function drawFrance(c,w,h){c.fillStyle='#1a5c28';c.fillRect(0,0,w,h);for(let i=0;i<6;i++){c.fillStyle=i%2?'rgba(0,0,0,.07)':'transparent';c.fillRect(i*w/6,0,w/6,h);}c.strokeStyle='rgba(255,255,255,.28)';c.lineWidth=Math.max(1,w*.012);c.strokeRect(w*.05,h*.08,w*.9,h*.84);c.beginPath();c.moveTo(w*.5,h*.03);c.lineTo(w*.5,h*.97);c.stroke();c.beginPath();c.arc(w*.5,h*.5,Math.min(w,h)*.17,0,6.28);c.stroke();c.fillStyle='rgba(255,255,255,.5)';c.beginPath();c.arc(w*.5,h*.5,2.5,0,6.28);c.fill();const r=Math.max(2.5,w*.016);c.fillStyle='#003F9A';[[.2,.5],[.32,.28],[.32,.72],[.42,.38],[.42,.62],[.26,.42],[.26,.58],[.14,.36],[.14,.64]].forEach(([x,y])=>{c.beginPath();c.arc(x*w,y*h,r,0,6.28);c.fill();});c.fillStyle='#C1272D';[[.8,.5],[.68,.28],[.68,.72],[.58,.38],[.58,.62],[.74,.42],[.74,.58],[.86,.36],[.86,.64]].forEach(([x,y])=>{c.beginPath();c.arc(x*w,y*h,r,0,6.28);c.fill();});c.fillStyle='#fff';c.beginPath();c.arc(w*.52,h*.46,Math.max(2.5,w*.018),0,6.28);c.fill();}
+function drawPfizer(c,w,h){const bg=c.createLinearGradient(0,0,w,h);bg.addColorStop(0,'#001428');bg.addColorStop(1,'#002255');c.fillStyle=bg;c.fillRect(0,0,w,h);function hex(x,y,r,a){c.fillStyle=`rgba(0,160,233,${a})`;c.beginPath();for(let i=0;i<6;i++){const ang=i*Math.PI/3-Math.PI/6;i===0?c.moveTo(x+r*Math.cos(ang),y+r*Math.sin(ang)):c.lineTo(x+r*Math.cos(ang),y+r*Math.sin(ang));}c.closePath();c.fill();}hex(w*.22,h*.3,w*.14,.22);hex(w*.76,h*.54,w*.11,.17);hex(w*.52,h*.18,w*.09,.14);hex(w*.3,h*.74,w*.1,.13);c.strokeStyle='rgba(255,60,60,.55)';c.lineWidth=Math.max(2,h*.03);c.beginPath();c.arc(w*.5,h*.5,Math.min(w,h)*.2,0,6.28);c.stroke();c.beginPath();c.moveTo(w*.36,h*.64);c.lineTo(w*.64,h*.36);c.stroke();}
+function drawNvidia(c,w,h){c.fillStyle='#030800';c.fillRect(0,0,w,h);c.strokeStyle='rgba(118,185,0,.18)';c.lineWidth=1;for(let i=0;i<7;i++){const y1=h*(i/7),y2=h*((i+1)/7),mx=Math.random()*w;c.beginPath();c.moveTo(0,y1);c.lineTo(mx,y1);c.lineTo(mx,y2);c.lineTo(w,y2);c.stroke();}const cw=w*.42,ch=h*.38,cx0=(w-cw)/2,cy0=(h-ch)/2;c.fillStyle='rgba(15,40,0,.9)';c.fillRect(cx0,cy0,cw,ch);c.strokeStyle='rgba(118,185,0,.55)';c.lineWidth=2;c.strokeRect(cx0,cy0,cw,ch);const gl=c.createRadialGradient(w*.5,h*.5,0,w*.5,h*.5,w*.42);gl.addColorStop(0,'rgba(118,185,0,.18)');gl.addColorStop(1,'transparent');c.fillStyle=gl;c.fillRect(0,0,w,h);c.fillStyle='rgba(118,185,0,.75)';c.font=`bold ${Math.min(w*.13,h*.12)}px monospace`;c.textAlign='center';c.textBaseline='middle';c.fillText('RTX',w*.5,h*.5);}
+function drawBitcoin(c,w,h){const bg=c.createLinearGradient(0,0,w,h);bg.addColorStop(0,'#0d0600');bg.addColorStop(1,'#1a0c00');c.fillStyle=bg;c.fillRect(0,0,w,h);c.strokeStyle='rgba(247,147,26,.75)';c.lineWidth=Math.max(1.5,h*.015);c.lineJoin='round';c.lineCap='round';const pts=[[0,.85],[.1,.8],[.2,.75],[.3,.68],[.38,.72],[.44,.55],[.55,.5],[.65,.35],[.75,.25],[.85,.15],[1,.06]];c.beginPath();pts.forEach(([x,y],i)=>i===0?c.moveTo(x*w,y*h):c.lineTo(x*w,y*h));c.stroke();const fill=c.createLinearGradient(0,0,0,h);fill.addColorStop(0,'rgba(247,147,26,.18)');fill.addColorStop(1,'transparent');c.fillStyle=fill;c.beginPath();c.moveTo(0,h*.85);pts.forEach(([x,y])=>c.lineTo(x*w,y*h));c.lineTo(w,h);c.lineTo(0,h);c.closePath();c.fill();const glow=c.createRadialGradient(w*.5,h*.45,0,w*.5,h*.45,Math.min(w,h)*.42);glow.addColorStop(0,'rgba(247,147,26,.18)');glow.addColorStop(1,'transparent');c.fillStyle=glow;c.fillRect(0,0,w,h);c.fillStyle='rgba(247,147,26,.5)';c.font=`bold ${Math.min(w*.28,h*.3)}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText('₿',w*.5,h*.42);}
+function drawNeymar(c,w,h){c.fillStyle='#1a5c28';c.fillRect(0,0,w,h);for(let i=0;i<4;i++){c.fillStyle=i%2?'rgba(0,0,0,.07)':'transparent';c.fillRect(i*w/4,0,w/4,h);}c.strokeStyle='rgba(255,255,255,.25)';c.lineWidth=Math.max(1,w*.01);c.strokeRect(w*.1,h*.05,w*.8,h*.9);c.strokeRect(w*.3,h*.05,w*.4,h*.22);const px=w*.62,py=h*.6;c.fillStyle='#FFD700';c.beginPath();c.arc(px,py-h*.09,h*.055,0,6.28);c.fill();c.fillRect(px-h*.028,py-h*.07,h*.056,h*.13);c.strokeStyle='#009B3A';c.lineWidth=h*.042;c.lineCap='round';c.beginPath();c.moveTo(px,py+h*.06);c.lineTo(px-h*.05,py+h*.18);c.stroke();c.beginPath();c.moveTo(px,py+h*.06);c.lineTo(px+h*.06,py+h*.16);c.stroke();c.fillStyle='#fff';c.beginPath();c.arc(px-h*.1,py+h*.18,h*.034,0,6.28);c.fill();}
+function drawTusk(c,w,h){c.fillStyle='#0a060e';c.fillRect(0,0,w,h);const pw=c.createLinearGradient(0,0,0,h);pw.addColorStop(0,'rgba(235,45,75,.06)');pw.addColorStop(.5,'rgba(255,255,255,.03)');c.fillStyle=pw;c.fillRect(0,0,w,h);c.fillStyle='rgba(40,20,50,.88)';c.fillRect(w*.35,h*.55,w*.3,h*.38);c.fillRect(w*.42,h*.26,w*.16,h*.3);c.beginPath();c.arc(w*.5,h*.22,w*.09,0,6.28);c.fill();c.fillStyle='rgba(200,200,220,.38)';c.beginPath();c.arc(w*.5,h*.46,w*.02,0,6.28);c.fill();c.fillRect(w*.49,h*.48,w*.02,h*.07);}
+function drawUkraina(c,w,h){c.fillStyle='#060610';c.fillRect(0,0,w,h);c.fillStyle='rgba(10,20,50,.85)';[[0,.62,w*.12,.38],[w*.12,.72,w*.1,.28],[w*.22,.5,w*.08,.5],[w*.3,.65,w*.15,.35],[w*.45,.55,w*.12,.45],[w*.57,.62,w*.1,.38],[w*.67,.5,w*.1,.5],[w*.77,.7,w*.1,.3],[w*.87,.6,w*.13,.4]].forEach(([x,y,bw,bh])=>c.fillRect(x,y*h,bw,bh*h));const exp=c.createRadialGradient(w*.3,h*.38,0,w*.3,h*.38,w*.18);exp.addColorStop(0,'rgba(255,180,0,.85)');exp.addColorStop(.35,'rgba(255,80,0,.45)');exp.addColorStop(1,'transparent');c.fillStyle=exp;c.fillRect(0,0,w,h);c.fillStyle='rgba(255,255,255,.45)';for(let i=0;i<20;i++){c.beginPath();c.arc(Math.random()*w,Math.random()*h*.48,Math.random()*.8,0,6.28);c.fill();}c.fillStyle='rgba(0,91,187,.12)';c.fillRect(0,0,w,h*.5);c.fillStyle='rgba(255,215,0,.08)';c.fillRect(0,h*.5,w,h*.5);}
+function drawTesla(c,w,h){c.fillStyle='#030308';c.fillRect(0,0,w,h);const hl=c.createRadialGradient(w*.18,h*.5,0,w*.18,h*.5,w*.22);hl.addColorStop(0,'rgba(255,50,0,.55)');hl.addColorStop(1,'transparent');c.fillStyle=hl;c.fillRect(0,0,w*.45,h);const hr=c.createRadialGradient(w*.82,h*.5,0,w*.82,h*.5,w*.22);hr.addColorStop(0,'rgba(255,50,0,.55)');hr.addColorStop(1,'transparent');c.fillStyle=hr;c.fillRect(w*.55,0,w*.45,h);c.fillStyle='rgba(25,25,38,.88)';c.beginPath();c.moveTo(0,h*.72);c.lineTo(w*.08,h*.52);c.lineTo(w*.12,h*.28);c.lineTo(w*.2,h*.18);c.lineTo(w*.55,h*.16);c.lineTo(w*.75,h*.24);c.lineTo(w*.88,h*.36);c.lineTo(w*.95,h*.5);c.lineTo(w,h*.72);c.closePath();c.fill();c.fillStyle='rgba(18,18,28,.95)';c.beginPath();c.arc(w*.2,h*.73,h*.12,0,6.28);c.fill();c.beginPath();c.arc(w*.75,h*.73,h*.12,0,6.28);c.fill();c.strokeStyle='rgba(70,70,90,.5)';c.lineWidth=Math.max(1,h*.02);c.beginPath();c.arc(w*.2,h*.73,h*.08,0,6.28);c.stroke();c.beginPath();c.arc(w*.75,h*.73,h*.08,0,6.28);c.stroke();}
+function drawSpotify(c,w,h){const bg=c.createLinearGradient(0,0,w,h);bg.addColorStop(0,'#051a08');bg.addColorStop(1,'#0a2e0c');c.fillStyle=bg;c.fillRect(0,0,w,h);const gl=c.createRadialGradient(w*.5,h*.5,0,w*.5,h*.5,Math.min(w,h)*.42);gl.addColorStop(0,'rgba(29,185,84,.22)');gl.addColorStop(1,'transparent');c.fillStyle=gl;c.fillRect(0,0,w,h);c.strokeStyle='rgba(29,185,84,.28)';c.lineWidth=Math.max(1,Math.min(w,h)*.018);c.beginPath();c.arc(w*.5,h*.5,Math.min(w,h)*.36,0,6.28);c.stroke();const bars=12,bw=w*.5/bars,gap=bw*.35;c.fillStyle='rgba(29,185,84,.75)';for(let i=0;i<bars;i++){const x=w*.25+i*(bw+gap);const bh=h*(.15+Math.abs(Math.sin(i*.9))*.25);c.fillRect(x,h*.5-bh*.5,bw,bh);}}
+function drawFed(c,w,h){c.fillStyle='#060610';c.fillRect(0,0,w,h);c.fillStyle='rgba(80,80,150,.26)';for(let i=0;i<5;i++) c.fillRect(w*(.1+i*.18),h*.28,w*.1,h*.54);c.beginPath();c.moveTo(0,h*.28);c.lineTo(w*.5,h*.06);c.lineTo(w,h*.28);c.fill();c.strokeStyle='rgba(100,205,90,.55)';c.lineWidth=Math.max(1.5,h*.018);c.lineJoin='round';c.lineCap='round';c.beginPath();[[0,.72],[.13,.62],[.28,.67],[.44,.42],[.6,.48],[.76,.28],[.9,.32],[1,.22]].forEach(([x,y],i)=>i===0?c.moveTo(x*w,y*h):c.lineTo(x*w,y*h));c.stroke();c.fillStyle='rgba(210,180,60,.06)';c.font=`bold ${h*.6}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText('$',w*.5,h*.52);}
+function drawKlimat(c,w,h){c.fillStyle='#060c14';c.fillRect(0,0,w,h);c.fillStyle='rgba(30,50,80,.82)';c.beginPath();c.arc(w*.2,h*.22,w*.15,0,6.28);c.fill();c.beginPath();c.arc(w*.38,h*.16,w*.18,0,6.28);c.fill();c.beginPath();c.arc(w*.58,h*.2,w*.15,0,6.28);c.fill();c.beginPath();c.arc(w*.76,h*.18,w*.16,0,6.28);c.fill();c.beginPath();c.arc(w*.9,h*.22,w*.12,0,6.28);c.fill();c.strokeStyle='rgba(100,150,255,.38)';c.lineWidth=1;for(let i=0;i<22;i++){const rx=Math.random()*w,ry=Math.random()*h*.55;c.beginPath();c.moveTo(rx,ry);c.lineTo(rx-2.5,ry+11);c.stroke();}const water=c.createLinearGradient(0,h*.55,0,h);water.addColorStop(0,'rgba(30,80,200,.62)');water.addColorStop(1,'rgba(20,60,180,.92)');c.fillStyle=water;c.beginPath();c.moveTo(0,h*.62);for(let x=0;x<=w;x+=w/18) c.lineTo(x,h*.62+Math.sin(x*.05)*4);c.lineTo(w,h);c.lineTo(0,h);c.closePath();c.fill();}
+function drawSamsung(c,w,h){c.fillStyle='#050510';c.fillRect(0,0,w,h);for(let r=1;r<=3;r++){c.strokeStyle=`rgba(20,40,160,${.25/r})`;c.lineWidth=Math.max(1,Math.min(w,h)*.02*r);c.beginPath();c.arc(w*.5,h*.5,Math.min(w,h)*.15*r,0,6.28);c.stroke();}const pw=w*.24,ph=h*.68,px=(w-pw)/2,py=(h-ph)/2,rr=pw*.2;c.fillStyle='rgba(14,18,40,.9)';c.strokeStyle='rgba(20,40,200,.45)';c.lineWidth=Math.max(1.5,w*.02);c.beginPath();c.moveTo(px+rr,py);c.lineTo(px+pw-rr,py);c.quadraticCurveTo(px+pw,py,px+pw,py+rr);c.lineTo(px+pw,py+ph-rr);c.quadraticCurveTo(px+pw,py+ph,px+pw-rr,py+ph);c.lineTo(px+rr,py+ph);c.quadraticCurveTo(px,py+ph,px,py+ph-rr);c.lineTo(px,py+rr);c.quadraticCurveTo(px,py,px+rr,py);c.closePath();c.fill();c.stroke();const sg=c.createLinearGradient(px,py,px+pw,py+ph);sg.addColorStop(0,'rgba(20,40,180,.4)');sg.addColorStop(1,'rgba(80,30,180,.2)');c.fillStyle=sg;c.fillRect(px+pw*.1,py+ph*.06,pw*.8,ph*.88);}
+
+const DRAWS={spacex:drawSpaceX,obajtek:drawObajtek,france:drawFrance,pfizer:drawPfizer,nvidia:drawNvidia,bitcoin:drawBitcoin,neymar:drawNeymar,tusk:drawTusk,ukraina:drawUkraina,tesla:drawTesla,spotify:drawSpotify,fed:drawFed,klimat:drawKlimat,samsung:drawSamsung};
+
+function drawCanvas(id,canvas){const dpr=window.devicePixelRatio||1;canvas.width=canvas.offsetWidth*dpr;canvas.height=canvas.offsetHeight*dpr;const c=canvas.getContext('2d');c.scale(dpr,dpr);const w=canvas.offsetWidth,h=canvas.offsetHeight;if(!w||!h||!DRAWS[id])return;DRAWS[id](c,w,h);canvas.classList.add('vis');}
+
+function drawHistChart(cv,data,color,prog){const dpr=window.devicePixelRatio||1,cw=cv.offsetWidth,ch=cv.offsetHeight;if(!cw||!ch)return;cv.width=cw*dpr;cv.height=ch*dpr;const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);const w=cw,h=ch,pL=16,pR=16,pT=14,pB=30;const aw=w-pL-pR,ah=h-pT-pB,n=data.length,max=Math.max(...data);const slW=aw/n,bw=slW*.52;const ep=prog===undefined?1:1-Math.pow(1-Math.min(1,prog),3);ctx.strokeStyle='rgba(255,255,255,.055)';ctx.lineWidth=.5;[.33,.67,1].forEach(f=>{const y=pT+ah*(1-f);ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(w-pR,y);ctx.stroke();});const ag=ctx.createLinearGradient(0,pT,0,pT+ah);ag.addColorStop(0,color+'40');ag.addColorStop(1,color+'06');ctx.fillStyle=ag;ctx.beginPath();ctx.moveTo(pL,pT+ah);data.forEach((v,i)=>{ctx.lineTo(pL+i*slW+slW*.5,pT+ah*(1-v/max*ep));});ctx.lineTo(pL+aw,pT+ah);ctx.closePath();ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();data.forEach((v,i)=>{const x=pL+i*slW+slW*.5,y=pT+ah*(1-v/max*ep);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();data.forEach((v,i)=>{const bh=(v/max)*ah*ep,x=pL+i*slW+(slW-bw)/2,y=pT+ah-bh;const isLast=i===n-1;const bg=ctx.createLinearGradient(x,y,x,y+bh);bg.addColorStop(0,isLast?color:color+'cc');bg.addColorStop(1,color+'20');ctx.fillStyle=bg;ctx.fillRect(x,y,bw,bh);const d=new Date(Date.now()-(n-1-i)*3600000);ctx.fillStyle=isLast?color:'rgba(136,136,160,.48)';ctx.font=`${isLast?700:400} ${Math.max(7,Math.min(10,slW*.42))}px -apple-system,sans-serif`;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(d.getHours().toString().padStart(2,'0'),pL+i*slW+slW*.5,pT+ah+6);});if(ep>.05){const lx=pL+(n-1)*slW+slW*.5,ly=pT+ah*(1-data[n-1]/max*ep);const gl=ctx.createRadialGradient(lx,ly,0,lx,ly,14);gl.addColorStop(0,color+'50');gl.addColorStop(1,'transparent');ctx.fillStyle=gl;ctx.fillRect(lx-15,ly-15,30,30);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(lx,ly,3.8,0,6.28);ctx.fill();ctx.fillStyle=color;ctx.beginPath();ctx.arc(lx,ly,2.2,0,6.28);ctx.fill();}}
+
+let _haf=null;
+function animHistChart(cv,data,color){let p=0;if(_haf)cancelAnimationFrame(_haf);function step(){p=Math.min(1,p+.055);drawHistChart(cv,data,color,p);if(p<1)_haf=requestAnimationFrame(step);else _haf=null;}_haf=requestAnimationFrame(step);}
+
+function openHist(id){const d=DATA[id];if(!d||!d.hist)return;const tile=document.querySelector(`[data-id="${id}"]`);const tc=tile?tile.style.getPropertyValue('--tc').trim()||'#ff2d55':'#ff2d55';const histEl=document.getElementById('hist');histEl.style.setProperty('--hc',tc);document.getElementById('hist-hflag').textContent=d.flag;const shortTitle=d.title.split('—')[0].split(' — ')[0].trim();document.getElementById('hist-hname').textContent=shortTitle;document.getElementById('hist-hpct').textContent='+'+d.trend+'%';document.getElementById('hist-evlist').innerHTML=d.events.map(ev=>`<div class="he"><div class="he-dot"></div><div class="he-time">${ev.t}</div><div class="he-txt">${ev.text}</div></div>`).join('');document.getElementById('hist-ov').classList.add('open');histEl.classList.add('open');const cv=document.getElementById('hist-cv');setTimeout(()=>animHistChart(cv,d.hist,tc),90);}
+function closeHist(){document.getElementById('hist-ov').classList.remove('open');document.getElementById('hist').classList.remove('open');}
+
+const ROWS=[
+  {rg:'rg0',tiles:['spacex','obajtek'],cv:['spacex','obajtek']},
+  {rg:'rg1',tiles:['france','pfizer','nvidia'],cv:['france','pfizer','nvidia']},
+  {rg:'rg2',tiles:['bitcoin','neymar','tusk'],cv:['bitcoin','neymar','tusk']},
+  {rg:'rg3',tiles:['ukraina','tesla','spotify'],cv:['ukraina','tesla','spotify']},
+  {rg:'rg4',tiles:['fed','klimat','samsung'],cv:['fed','klimat','samsung']},
+  {rg:'rg5',tiles:['wybory','apple','ai'],cv:[]},
+];
+ROWS.forEach((row,ri)=>{const t0=680+ri*110;setTimeout(()=>{document.getElementById(row.rg).classList.add('grown');row.tiles.forEach((id,ti)=>setTimeout(()=>{const el=document.querySelector(`[data-id="${id}"]`);if(el)el.classList.add('grown');},ti*65));},t0);setTimeout(()=>{row.cv.forEach(id=>{const tile=document.querySelector(`[data-id="${id}"]`);if(!tile)return;const cv=tile.querySelector('.tc');if(cv&&tile.offsetWidth>0)drawCanvas(id,cv);});row.tiles.forEach(id=>{const tile=document.querySelector(`[data-id="${id}"]`);if(!tile)return;const ti=tile.querySelector('.ti');if(ti)ti.classList.add('vis');});},t0+960);});
+
+setTimeout(()=>{startLive();injectPulse();},2600);
+setTimeout(()=>{const h=document.getElementById('hint');if(h)h.classList.add('vis');},3800);
+
+function injectPulse(){const mx=847;let css='';Object.entries(DATA).forEach(([id,d])=>{const t=d.trend;const sc=(1+0.003+(t/mx)*0.012).toFixed(4);const dur=(5.4-(t/mx)*2.9).toFixed(2);const del=(Math.random()*2.5).toFixed(2);css+=`@keyframes pu_${id}{0%,100%{transform:scale(1)}50%{transform:scale(${sc})}}[data-id="${id}"]{animation:pu_${id} ${dur}s ${del}s ease-in-out infinite;}`;});const s=document.createElement('style');s.textContent=css;document.head.appendChild(s);}
+
+function startLive(){const clock=()=>{const d=new Date();return`LIVE · ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;};document.getElementById('ltxt').textContent=clock();setInterval(()=>{document.querySelectorAll('.lp').forEach(el=>{const b=+el.dataset.b;const nv=Math.max(1,b+Math.round((Math.random()-.35)*b*.016));el.textContent=nv;el.dataset.b=nv;});document.getElementById('ltxt').textContent=clock();},3500);}
+
+const ov=document.getElementById('ov'),bs=document.getElementById('bs');
+document.querySelectorAll('.tile').forEach(tile=>{
+  let _sy=0,_sx=0,_st=0,_swiped=false;
+  tile.addEventListener('touchstart',e=>{const t=e.touches[0];_sy=t.clientY;_sx=t.clientX;_st=Date.now();_swiped=false;},{passive:true});
+  tile.addEventListener('touchmove',e=>{const t=e.touches[0],dy=t.clientY-_sy,dx=Math.abs(t.clientX-_sx);if(dy<-18&&dx<Math.abs(dy)*.85)e.preventDefault();},{passive:false});
+  tile.addEventListener('touchend',e=>{const t=e.changedTouches[0];const dy=t.clientY-_sy,dx=Math.abs(t.clientX-_sx),dt=Date.now()-_st;if(dy<-40&&dx<Math.abs(dy)*.8&&dt<350){_swiped=true;e.preventDefault();openHist(tile.dataset.id);}},{passive:false});
+  tile.addEventListener('click',()=>{if(_swiped){_swiped=false;return;}const id=tile.dataset.id,d=DATA[id];if(!d)return;document.getElementById('bsflag').textContent=d.flag;document.getElementById('bschip').textContent=d.chip;document.getElementById('bstitle').textContent=d.title;document.getElementById('bspct').textContent='+'+d.trend+'%';document.getElementById('bssrctxt').textContent=d.src;document.getElementById('bsart').textContent=d.art;document.getElementById('bscta').textContent=d.cta;ov.classList.add('open');bs.classList.add('open');});
+});
+ov.addEventListener('click',e=>{if(e.target===ov)closeBS();});
+document.getElementById('bsclose').addEventListener('click',closeBS);
+function closeBS(){ov.classList.remove('open');bs.classList.remove('open');}
+document.getElementById('hist-ov').addEventListener('click',e=>{if(e.target===document.getElementById('hist-ov'))closeHist();});
+document.getElementById('hist-close').addEventListener('click',closeHist);
+
+document.querySelectorAll('.tf-btn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');});});
+</script>
+</body>
+</html>
