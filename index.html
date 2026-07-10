@@ -71,6 +71,21 @@
   </button>
 </div>
 
+<!-- ═══ MOBILE SWIPE PANEL ═══ -->
+<div class="mob-swp-ov" id="mobSwpOv" onclick="mobSwpClose()"></div>
+<div class="mob-swp-panel" id="mobSwpPanel">
+  <div class="mob-swp-head">
+    <div class="mob-swp-meta" id="mobSwpMeta">PORANNA</div>
+    <div class="mob-swp-title">Tematy</div>
+  </div>
+  <div id="mobSwpCats"></div>
+  <div class="mob-swp-sec">Dawka</div>
+  <button class="mob-swp-dose act" id="mobDoseBtn-morning"   onclick="switchDose('morning');mobSwpClose()">☀️ Poranna</button>
+  <button class="mob-swp-dose"     id="mobDoseBtn-afternoon" onclick="switchDose('afternoon');mobSwpClose()">🌤 Południowa</button>
+  <button class="mob-swp-dose"     id="mobDoseBtn-evening"   onclick="switchDose('evening');mobSwpClose()">🌛 Wieczorna</button>
+</div>
+<div class="mob-edge-grip" id="mobEdgeGrip" onclick="mobSwpOpen()" title="Tematy / dawka"></div>
+
 <div class="scroll-area" id="scrollArea">
   <div id="ptr"><span class="ptr-arrow">↓ Odśwież</span></div>
   <div id="content"></div>
@@ -295,6 +310,7 @@ let cache = {};
 let doseDates = {};   // data (YYYY-MM-DD) treści każdej dawki z briefs.json — do wykrycia „wczorajszego wydania"
 let lastScrollY = 0, tabsHidden = false;
 let suppressScrollHide = false;
+let mobActiveCat = null;
 
 const scrollArea = document.getElementById('scrollArea');
 scrollArea.addEventListener('scroll', function() {
@@ -842,6 +858,24 @@ function renderDose(dose, items) {
       <div class="section-rule-line"></div>
     </div>
     ${restBlocks}`;
+
+  // Tagowanie kart kategorią — potrzebne dla mobilnego panelu filtrów
+  {
+    const cEl = document.getElementById('content');
+    items.forEach(item => {
+      const cat = dtGetCategory(item);
+      ['group-','item-'].forEach(pfx => {
+        const el = cEl.querySelector(`#${pfx}${item.id}`);
+        if (el) el.dataset.category = cat;
+      });
+      const subEl = cEl.querySelector(`#subc-${item.id}`);
+      if (subEl) subEl.dataset.category = cat;
+      const expEl = cEl.querySelector(`#exp-${item.id}`);
+      if (expEl) expEl.dataset.category = cat;
+    });
+    mobActiveCat = null;
+    mobSwpBuildCats(items);
+  }
 
   renderDesktop(dose, items);
   updatePageMeta(dose, cfg, items);
@@ -1735,6 +1769,139 @@ async function liveTick() {
 // Ustal punkt odniesienia na starcie, żeby pierwszy tik nie ściągał całości bez potrzeby.
 probeBriefsTag().then(t => { if (t) lastBriefsTag = t; });
 setInterval(liveTick, LIVE_POLL_MS);
+
+// ═══ MOBILE SWIPE PANEL — funkcje ═══════════════════════════════════════════
+
+function mobSwpOpen() {
+  document.getElementById('mobSwpPanel').classList.add('open');
+  document.getElementById('mobSwpOv').classList.add('vis');
+}
+function mobSwpClose() {
+  const panel = document.getElementById('mobSwpPanel');
+  panel.classList.remove('open', 'dragging');
+  panel.style.transform = '';
+  const ov = document.getElementById('mobSwpOv');
+  ov.classList.remove('vis', 'dragging');
+  ov.style.background = '';
+}
+
+function mobSwpBuildCats(items) {
+  const counts = {};
+  items.forEach(it => {
+    const c = dtGetCategory(it);
+    counts[c] = (counts[c] || 0) + 1;
+  });
+  const order = ['Fed / Banki','Geopolityka','Polityka','Tech / AI','Surowce','Świat','Rynki'];
+  const catsEl = document.getElementById('mobSwpCats');
+  if (!catsEl) return;
+  catsEl.innerHTML =
+    `<button class="mob-swp-cat${!mobActiveCat || mobActiveCat === 'all' ? ' act' : ''}" data-cat="all" onclick="mobileFilterCat('all');mobSwpClose()">
+      <span class="mob-swp-cat-nm" style="font-style:normal">Wszystko</span>
+      <span class="mob-swp-cat-cnt">${items.length}</span>
+    </button>` +
+    order.filter(c => counts[c]).map(c =>
+      `<button class="mob-swp-cat${mobActiveCat === c ? ' act' : ''}" data-cat="${c}" onclick="mobileFilterCat('${c.replace(/'/g,"\\'")}');mobSwpClose()">
+        <span class="mob-swp-cat-dot" style="background:${DT_CAT_COLORS[c]}"></span>
+        <span class="mob-swp-cat-nm">${c}</span>
+        <span class="mob-swp-cat-cnt">${counts[c]}</span>
+      </button>`
+    ).join('');
+  const meta = document.getElementById('mobSwpMeta');
+  const doseLabels = { morning: 'PORANNA ☀️', afternoon: 'POŁUDNIOWA 🌤', evening: 'WIECZORNA 🌛' };
+  if (meta) meta.textContent = doseLabels[currentDose] || '';
+  ['morning','afternoon','evening'].forEach(d => {
+    const btn = document.getElementById('mobDoseBtn-' + d);
+    if (btn) btn.classList.toggle('act', d === currentDose);
+  });
+}
+
+function mobileFilterCat(cat) {
+  mobActiveCat = cat || 'all';
+  document.querySelectorAll('.mob-swp-cat').forEach(el => {
+    el.classList.toggle('act', el.dataset.cat === mobActiveCat);
+  });
+  const contentEl = document.getElementById('content');
+  contentEl.querySelectorAll('.hero-card, .news-item').forEach(el => {
+    el.classList.toggle('mob-hidden', !(mobActiveCat === 'all' || el.dataset.category === mobActiveCat));
+  });
+  contentEl.querySelectorAll('.sub-items-container').forEach(el => {
+    const parentId = el.id.replace('subc-', '');
+    const parent = contentEl.querySelector(`#group-${parentId}`);
+    el.classList.toggle('mob-hidden', !!parent && parent.classList.contains('mob-hidden'));
+  });
+  contentEl.querySelectorAll('.card-expand').forEach(el => {
+    const parentId = el.id.replace('exp-', '');
+    const parent = contentEl.querySelector(`#item-${parentId}`);
+    el.classList.toggle('mob-hidden', !!parent && parent.classList.contains('mob-hidden'));
+  });
+}
+
+// ═══ MOBILE SWIPE PANEL — gest touch/mouse ═══════════════════════════════════
+(function() {
+  const PW = 260;
+  let sx = 0, sy = 0, tracking = false, panelOpen = false, moved = false;
+
+  function getPanel() { return document.getElementById('mobSwpPanel'); }
+  function getOv()    { return document.getElementById('mobSwpOv'); }
+
+  function startTrack(x, y) {
+    const panel = getPanel();
+    panelOpen = panel.classList.contains('open');
+    if (!panelOpen && x > 44) return;
+    sx = x; sy = y; tracking = true; moved = false;
+  }
+
+  function moveTrack(x, y) {
+    if (!tracking) return;
+    const dx = x - sx, dy = y - sy;
+    if (!moved && Math.abs(dy) > Math.abs(dx) + 6) { tracking = false; return; }
+    moved = true;
+    const panel = getPanel(), ov = getOv();
+    panel.classList.add('dragging');
+    ov.style.display = 'block';
+    const t = panelOpen
+      ? Math.min(0, Math.max(-PW, dx))
+      : Math.max(-PW, Math.min(0, dx - PW));
+    panel.style.transform = `translateX(${t}px)`;
+    const pct = (t + PW) / PW;
+    ov.style.background = `rgba(0,0,0,${(pct * 0.45).toFixed(2)})`;
+  }
+
+  function endTrack(x) {
+    if (!tracking) return;
+    tracking = false;
+    if (!moved) return;
+    const dx = x - sx;
+    const panel = getPanel(), ov = getOv();
+    panel.classList.remove('dragging');
+    panel.style.transform = '';
+    ov.style.background = '';
+    ov.style.display = '';
+    if (!panelOpen) {
+      dx > PW * 0.28 ? mobSwpOpen() : mobSwpClose();
+    } else {
+      dx < -(PW * 0.28) ? mobSwpClose() : mobSwpOpen();
+    }
+  }
+
+  // Touch
+  document.addEventListener('touchstart', e => startTrack(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+  document.addEventListener('touchmove',  e => { if (tracking) moveTrack(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+  document.addEventListener('touchend',   e => endTrack(e.changedTouches[0].clientX));
+
+  // Mouse (do testowania na desktopie)
+  let mdown = false;
+  document.addEventListener('mousedown', e => {
+    const panel = getPanel();
+    if (!panel) return;
+    const isOnPanel = panel.contains(e.target) || e.target.id === 'mobEdgeGrip';
+    if (e.clientX <= 44 || panel.classList.contains('open') || isOnPanel) {
+      startTrack(e.clientX, e.clientY); mdown = true;
+    }
+  });
+  document.addEventListener('mousemove', e => { if (mdown) moveTrack(e.clientX, e.clientY); });
+  document.addEventListener('mouseup',   e => { if (mdown) { mdown = false; endTrack(e.clientX); } });
+})();
 
 // ══ ADMIN — long-press delete ══════════════════════════════════════════════
 // Aktywacja jednorazowa: otwórz brifup.com?admin=TWÓJ_PAT_GITHUB
