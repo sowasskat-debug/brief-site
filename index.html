@@ -1198,8 +1198,11 @@ loadDose(currentDose);
     const dy = e.changedTouches[0].clientY - touchStartY;
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     const idx = DOSES.indexOf(currentDose);
-    if (dx < 0 && idx < DOSES.length - 1) switchDose(DOSES[idx + 1]);
+    const peeking = document.getElementById('mobSwpPanel').classList.contains('peek');
+    if (dx < 0 && idx < DOSES.length - 1) { if (peeking) mobSwpClose(); switchDose(DOSES[idx + 1]); }
     else if (dx > 0 && idx > 0) switchDose(DOSES[idx - 1]);
+    else if (dx > 0 && idx === 0) { peeking ? mobSwpOpen() : mobSwpPeek(); }
+    else if (dx < 0 && peeking) mobSwpClose();
   }, { passive: true });
 })();
 
@@ -1878,15 +1881,27 @@ function mobSwpOpen() {
   const items = cache[currentDose];
   if (items) mobSwpBuildCats(items);
   mobSwpBuildArchive();
-  document.getElementById('mobSwpPanel').classList.add('open');
-  document.getElementById('mobSwpOv').classList.add('vis');
+  const panel = document.getElementById('mobSwpPanel');
+  panel.classList.remove('peek');
+  panel.classList.add('open');
+  const ov = document.getElementById('mobSwpOv');
+  ov.classList.remove('peek');
+  ov.classList.add('vis');
+}
+function mobSwpPeek() {
+  // Podgląd panelu (60% szerokości) — kontynuacja swipe'a dawek po dojściu do "porannej".
+  const items = cache[currentDose];
+  if (items) mobSwpBuildCats(items);
+  mobSwpBuildArchive();
+  document.getElementById('mobSwpPanel').classList.add('peek');
+  document.getElementById('mobSwpOv').classList.add('peek');
 }
 function mobSwpClose() {
   const panel = document.getElementById('mobSwpPanel');
-  panel.classList.remove('open', 'dragging');
+  panel.classList.remove('open', 'dragging', 'peek');
   panel.style.transform = '';
   const ov = document.getElementById('mobSwpOv');
-  ov.classList.remove('vis', 'dragging');
+  ov.classList.remove('vis', 'dragging', 'peek');
   ov.style.background = '';
 }
 

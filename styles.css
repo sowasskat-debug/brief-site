@@ -691,6 +691,10 @@ html, body {
   display: block;
   background: rgba(0,0,0,.45);
 }
+.mob-swp-ov.peek {
+  display: block;
+  background: rgba(0,0,0,.2);
+}
 
 .mob-swp-panel {
   position: fixed;
@@ -707,6 +711,7 @@ html, body {
   will-change: transform;
 }
 .mob-swp-panel.open    { transform: translateX(0); }
+.mob-swp-panel.peek    { transform: translateX(-40%); }
 .mob-swp-panel.dragging { transition: none; }
 
 .mob-swp-head {
