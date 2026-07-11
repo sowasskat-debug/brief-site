@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Brief — Bot Health</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #ffffff; --gray1: #f7f7f7; --gray2: #f0f0f0; --rule: #e2e2e2;
+  --muted: #999999; --text: #0a0a0a; --sub: #2a2a2a; --red: #cc0000;
+  --amber: #b45309; --blue: #1d4ed8; --green: #15803d;
+}
+html, body { min-height: 100%; font-family: 'Space Mono', monospace; background: var(--bg); color: var(--text); }
+
+.topbar {
+  position: sticky; top: 0; z-index: 10; background: #fff;
+  border-bottom: 3px solid #0a0a0a; height: 58px;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+}
+.logo { font-family: 'DM Serif Display', serif; font-size: 22px; font-style: italic; }
+.logo-dot { color: var(--red); font-style: normal; }
+.logo-sub { font-size: 7.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+.refresh-btn {
+  font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  border: 1px solid var(--rule); background: transparent; color: var(--muted);
+  padding: 7px 10px; border-radius: 2px; cursor: pointer;
+}
+.refresh-btn:active { border-color: var(--text); color: var(--text); }
+
+.wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
+
+.summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.stat { flex: 1 1 120px; background: var(--gray1); border-radius: 3px; padding: 10px 12px; }
+.stat-label { font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.stat-value { font-family: 'DM Serif Display', serif; font-size: 22px; }
+
+.legend { font-size: 9.5px; color: var(--muted); margin-bottom: 10px; line-height: 1.6; }
+.legend b { color: var(--sub); }
+
+.table-scroll { width: 100%; overflow-x: auto; }
+table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 10px; }
+thead th {
+  text-align: left; font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--muted); border-bottom: 2px solid var(--text); padding: 6px 6px;
+  background: #fff;
+}
+tbody td { border-bottom: 1px solid var(--rule); padding: 7px 6px; vertical-align: top; }
+tbody tr:hover { background: var(--gray1); }
+.ts { white-space: nowrap; font-weight: 700; }
+.zrodla { color: var(--muted); font-size: 8.5px; line-height: 1.5; }
+.funnel { display: flex; align-items: center; gap: 3px; }
+.fn-num { min-width: 20px; text-align: right; font-weight: 700; }
+.fn-arrow { color: var(--muted); font-size: 8px; }
+.fn-zero { color: var(--red); }
+.bar-wrap { width: 100%; height: 4px; background: var(--gray2); border-radius: 2px; margin-top: 3px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--blue); }
+.note { font-size: 9px; color: var(--muted); margin-top: 8px; }
+
+.empty { padding: 60px 16px; text-align: center; color: var(--muted); font-size: 11px; }
+.err { color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div><span class="logo">Brief<span class="logo-dot">.</span></span><br><span class="logo-sub">bot health — lejek flusso trends</span></div>
+  <button class="refresh-btn" onclick="load()">↻ odśwież</button>
+</div>
+
+<div class="wrap">
+  <div class="legend">
+    Diagnostyka lejka <b>CheckGoogleTrendsBatched</b> — czyste liczniki, bez DeepSeek. Kolumny: 6 źródeł →
+    <b>kandydaci</b> (po scaleniu) → <b>unikalne</b> hasła → <b>nowe</b> (jeszcze nieprzetworzone, limit 10/bieg) →
+    <b>fakty</b> (FindTrendFacts znalazł artykuł ≤24h) → <b>wybrane</b> przez DeepSeek → <b>opublikowane</b> na Flusso.
+    Najnowszy bieg na górze.
+  </div>
+
+  <div id="summary" class="summary"></div>
+
+  <div id="tableWrap"></div>
+</div>
+
+<script>
+const SRC_LABEL = {
+  google_trends: 'gt', trends24_x: 't24', wikipedia_pl: 'wiki',
+  hackernews: 'hn', github_trending: 'gh', wlasne_feedy: 'wf'
+};
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function zrodlaHtml(zrodla){
+  if (!zrodla) return '';
+  return Object.entries(zrodla).map(([k,v]) => `${SRC_LABEL[k]||k}:${v}`).join(' · ');
+}
+
+function funnelStep(label, value, max){
+  const v = value ?? 0;
+  const pct = max > 0 ? Math.round((v/max)*100) : 0;
+  const zero = v === 0 ? ' fn-zero' : '';
+  return `<div>
+    <div class="funnel"><span class="fn-num${zero}">${v}</span><span style="font-size:7.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-left:3px">${label}</span></div>
+    <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div>
+  </div>`;
+}
+
+function renderSummary(runs){
+  if (!runs.length) { document.getElementById('summary').innerHTML = ''; return; }
+  const last24 = runs.filter(r => {
+    const t = Date.parse(r.ts.replace(' ', 'T'));
+    return !isNaN(t) && (Date.now() - t) <= 24*3600*1000;
+  });
+  const sum = (arr, key) => arr.reduce((a,r) => a + (r[key]||0), 0);
+  const stats = [
+    ['biegów (24h)', last24.length],
+    ['kandydaci', sum(last24,'kandydaci_total')],
+    ['nowe hasła', sum(last24,'nowe_hasla')],
+    ['fakty znalezione', sum(last24,'fakty_znalezione')],
+    ['wybrane', sum(last24,'wybrane_deepseek')],
+    ['opublikowane', sum(last24,'opublikowane')],
+    ['kafle meczowe', sum(last24,'kafle_meczowe')],
+  ];
+  document.getElementById('summary').innerHTML = stats.map(([label,val]) =>
+    `<div class="stat"><div class="stat-label">${label}</div><div class="stat-value">${val}</div></div>`
+  ).join('');
+}
+
+function renderTable(runs){
+  const wrap = document.getElementById('tableWrap');
+  if (!runs.length) { wrap.innerHTML = '<div class="empty">Brak danych — jeszcze żaden bieg nie zapisał bot_health.json.</div>'; return; }
+
+  const rows = runs.map(r => {
+    const max = Math.max(r.kandydaci_total||0, 1);
+    return `<tr>
+      <td class="ts">${esc(r.ts)}<div class="zrodla">${zrodlaHtml(r.zrodla)}</div></td>
+      <td>${funnelStep('kandyd.', r.kandydaci_total, max)}</td>
+      <td>${funnelStep('unikaln.', r.unikalne_hasla, max)}</td>
+      <td>${funnelStep('nowe', r.nowe_hasla, max)}</td>
+      <td>${funnelStep('fakty', r.fakty_znalezione, max)}</td>
+      <td>${funnelStep('wybrane', r.wybrane_deepseek, max)}</td>
+      <td>${funnelStep('publik.', r.opublikowane, max)}</td>
+      <td>${funnelStep('mecze', r.kafle_meczowe, max)}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<div class="table-scroll"><table>
+    <thead><tr>
+      <th>Czas / źródła</th><th>Kandydaci</th><th>Unikalne</th><th>Nowe</th><th>Fakty</th><th>Wybrane</th><th>Opublik.</th><th>Mecze</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>
+  <div class="note">Pokazane ostatnie ${runs.length} biegów (bot trzyma max 200).</div>`;
+}
+
+async function load(){
+  document.getElementById('tableWrap').innerHTML = '<div class="empty">Ładowanie…</div>';
+  try {
+    const res = await fetch('bot_health.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const runs = data.runs || [];
+    renderSummary(runs);
+    renderTable(runs);
+  } catch (e) {
+    document.getElementById('summary').innerHTML = '';
+    document.getElementById('tableWrap').innerHTML = `<div class="empty err">Nie udało się wczytać bot_health.json (${esc(e.message)}). Plik pojawi się po pierwszym biegu bota po wdrożeniu tej zmiany.</div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>
