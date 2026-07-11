@@ -129,6 +129,7 @@
         <span class="dt-feed-title" id="dtFeedTitle">—</span>
         <span class="dt-feed-count" id="dtFeedCount">—</span>
       </div>
+      <div id="dtCatFillBarWrap"></div>
       <div class="dt-feed-list" id="dtFeedList"></div>
     </div>
     <div class="dt-detail" id="dtDetail">
@@ -384,6 +385,7 @@ function catFillBarHtml(cat) {
     barEl = null;
     setCatMeat(cat, min);
     if (mobActiveCat === cat) mobileFilterCat(cat);
+    if (dtActiveFilter === cat) dtRenderCatFilter(cat);
   });
 })();
 
@@ -1543,6 +1545,8 @@ function dtFilterCat(el) {
   document.querySelectorAll('#dtCategories .dt-index-item').forEach(e => e.classList.remove('active'));
   if (wasActive) {
     dtActiveFilter = null;
+    const wrapEl = document.getElementById('dtCatFillBarWrap');
+    if (wrapEl) wrapEl.innerHTML = '';
     renderDesktop(currentDose, cache[currentDose] || dtAllItems);   // wróć do widoku dawki (z filtrem suwaka)
   } else {
     dtActiveFilter = cat;
@@ -1561,13 +1565,17 @@ function dtRenderCatFilter(cat) {
   dtAllItems.filter(matchesCat).forEach(it => matching.push({ it, d: today }));
   dtArchiveAllItems.filter(matchesCat).forEach(it => matching.push({ it, d: it._archiveDate }));
 
+  const catMin = getCatMeat(cat);
   let survivors = matching;
-  if (meatMin > 0) {
-    survivors = matching.filter(x => meatScore(x.it) >= meatMin);
+  if (catMin > 0) {
+    survivors = matching.filter(x => meatScore(x.it) >= catMin);
     if (!survivors.length && matching.length) {
       survivors = matching.slice().sort((a,b) => meatScore(b.it) - meatScore(a.it)).slice(0,1);
     }
   }
+
+  const wrapEl = document.getElementById('dtCatFillBarWrap');
+  if (wrapEl) wrapEl.innerHTML = catFillBarHtml(cat);
 
   const byDate = {};
   survivors.forEach(x => { (byDate[x.d] = byDate[x.d] || []).push(x.it); });
@@ -1669,6 +1677,8 @@ function renderDesktop(dose, items) {
   dtItemsMap = {};
   dtAllItems = items;
   dtActiveFilter = null;
+  const dtBarWrap = document.getElementById('dtCatFillBarWrap');
+  if (dtBarWrap) dtBarWrap.innerHTML = '';
   items.forEach(it => {
     dtItemsMap[it.id] = it;
     (it.subItems||[]).forEach(sub => { dtItemsMap[sub.id] = sub; });
