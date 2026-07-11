@@ -707,11 +707,11 @@ html, body {
   flex-direction: column;
   overflow-y: auto;
   transform: translateX(-100%);
-  transition: transform .22s cubic-bezier(.25,.46,.45,.94);
+  transition: transform .22s cubic-bezier(.25,.46,.45,.94), width .22s cubic-bezier(.25,.46,.45,.94);
   will-change: transform;
 }
 .mob-swp-panel.open    { transform: translateX(0); }
-.mob-swp-panel.peek    { transform: translateX(-40%); }
+.mob-swp-panel.peek    { width: 162px; transform: translateX(0); }
 .mob-swp-panel.dragging { transition: none; }
 
 .mob-swp-head {
