@@ -90,13 +90,6 @@
 
 <div class="scroll-area" id="scrollArea">
   <div id="ptr"><span class="ptr-arrow">↓ Odśwież</span></div>
-  <div class="meat-bar" id="meatBar">
-    <span class="meat-edge">Samo mięso</span>
-    <input type="range" id="meatSlider" class="meat-slider" min="0" max="40" step="1" value="40"
-           aria-label="Filtr jakości: od samego mięsa do wszystkiego" oninput="onMeatSlide(this.value)">
-    <span class="meat-edge">Wszystko</span>
-    <span class="meat-state" id="meatLabel">Wszystko</span>
-  </div>
   <div id="content"></div>
 </div>
 <div class="toast" id="toast"></div>
@@ -135,13 +128,6 @@
       <div class="dt-feed-header">
         <span class="dt-feed-title" id="dtFeedTitle">—</span>
         <span class="dt-feed-count" id="dtFeedCount">—</span>
-      </div>
-      <div class="meat-bar dt-meat-bar" id="dtMeatBar">
-        <span class="meat-edge">Samo mięso</span>
-        <input type="range" id="dtMeatSlider" class="meat-slider" min="0" max="40" step="1" value="40"
-               aria-label="Filtr jakości: od samego mięsa do wszystkiego" oninput="onMeatSlide(this.value)">
-        <span class="meat-edge">Wszystko</span>
-        <span class="meat-state" id="dtMeatLabel">Wszystko</span>
       </div>
       <div class="dt-feed-list" id="dtFeedList"></div>
     </div>
@@ -347,26 +333,6 @@ function filterByMeat(items) {
   return items.filter((it, i) => i === 0 || meatScore(it) >= meatMin);
 }
 
-// Suwak: lewo (value=0) = samo mięso (próg wysoki), prawo (value=MEAT_MAX) = wszystko (próg 0).
-function onMeatSlide(rawValue) {
-  const v = Math.max(0, Math.min(MEAT_MAX, Number(rawValue) || 0));
-  meatMin = MEAT_MAX - v;
-  // Synchronizuj oba suwaki (mobile + desktop) i podpis.
-  ['meatSlider','dtMeatSlider'].forEach(id => { const el = document.getElementById(id); if (el && Number(el.value) !== v) el.value = v; });
-  const label = meatMin <= 0 ? 'Wszystko'
-              : meatMin >= MEAT_MAX ? 'Samo mięso'
-              : meatMin >= MEAT_MAX/2 ? 'Grube tematy' : 'Ważniejsze';
-  ['meatLabel','dtMeatLabel'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = label; });
-  // Przerysuj respektując aktywny temat: gdy temat wybrany, filtruj mięso WEWNĄTRZ tematu
-  // (np. "same mięso na Ukrainie"). W przeciwnym razie normalny widok dawki.
-  if (isDesktop()) {
-    if (dtActiveFilter) dtRenderCatFilter(dtActiveFilter);
-    else { const items = cache[currentDose]; if (items && items.length) renderDesktop(currentDose, items); }
-  } else {
-    if (mobActiveCat && mobActiveCat !== 'all') mobileFilterCat(mobActiveCat);
-    else { const items = cache[currentDose]; if (items && items.length) renderDose(currentDose, items); }
-  }
-}
 // ═══ Suwak jakości PER TEMAT (mobile) ═══
 // Każdy temat pamięta własny próg niezależnie (np. "samo mięso" na Tech, "wszystko" na Geopolityce).
 let catMeatMin = {};
