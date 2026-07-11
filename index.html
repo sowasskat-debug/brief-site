@@ -367,6 +367,60 @@ function onMeatSlide(rawValue) {
     else { const items = cache[currentDose]; if (items && items.length) renderDose(currentDose, items); }
   }
 }
+// ═══ Suwak jakości PER TEMAT (mobile) ═══
+// Każdy temat pamięta własny próg niezależnie (np. "samo mięso" na Tech, "wszystko" na Geopolityce).
+let catMeatMin = {};
+try { catMeatMin = JSON.parse(localStorage.getItem('brifup_cat_meat') || '{}'); } catch (e) { catMeatMin = {}; }
+function getCatMeat(cat) { return catMeatMin[cat] || 0; }
+function setCatMeat(cat, val) {
+  catMeatMin[cat] = val;
+  try { localStorage.setItem('brifup_cat_meat', JSON.stringify(catMeatMin)); } catch (e) {}
+}
+// Pasek z tłem-suwakiem pod nazwą tematu — wypełnienie = ile % przechodzi filtr (100% = wszystko).
+function catFillBarHtml(cat) {
+  const min = getCatMeat(cat);
+  const pct = Math.round(100 - (min / MEAT_MAX) * 100);
+  return `<div class="cat-fill-bar" id="catFillBar" data-cat="${cat.replace(/"/g,'&quot;')}">
+    <div class="cat-fill-bar-fill" id="catFillBarFill" style="width:${pct}%"></div>
+    <div class="cat-fill-bar-row">
+      <span class="cat-fill-bar-name">${cat}</span>
+      <span class="cat-fill-bar-pct" id="catFillBarPct">${pct}%</span>
+    </div>
+  </div>`;
+}
+// Przeciąganie palcem/myszą wprost po pasku tematu — zmienia próg NA ŻYWO, zapisuje przy puszczeniu.
+(function() {
+  let dragging = false, barEl = null;
+  function pctFromEvent(e, bar) {
+    const rect = bar.getBoundingClientRect();
+    return Math.max(0, Math.min(100, Math.round(((e.clientX - rect.left) / rect.width) * 100)));
+  }
+  function paint(pct) {
+    const fill = barEl.querySelector('.cat-fill-bar-fill');
+    const lbl = barEl.querySelector('.cat-fill-bar-pct');
+    if (fill) fill.style.width = pct + '%';
+    if (lbl) lbl.textContent = pct + '%';
+  }
+  document.addEventListener('pointerdown', e => {
+    const bar = e.target.closest('.cat-fill-bar');
+    if (!bar) return;
+    dragging = true; barEl = bar;
+    bar.setPointerCapture(e.pointerId);
+    paint(pctFromEvent(e, bar));
+  });
+  document.addEventListener('pointermove', e => { if (dragging && barEl) paint(pctFromEvent(e, barEl)); });
+  document.addEventListener('pointerup', e => {
+    if (!dragging || !barEl) return;
+    dragging = false;
+    const pct = pctFromEvent(e, barEl);
+    const min = Math.round(MEAT_MAX * (1 - pct / 100));
+    const cat = barEl.dataset.cat;
+    barEl = null;
+    setCatMeat(cat, min);
+    if (mobActiveCat === cat) mobileFilterCat(cat);
+  });
+})();
+
 let doseDates = {};   // data (YYYY-MM-DD) treści każdej dawki z briefs.json — do wykrycia „wczorajszego wydania"
 let lastScrollY = 0, tabsHidden = false;
 let suppressScrollHide = false;
@@ -2004,10 +2058,11 @@ function mobileFilterCat(cat) {
   (cache[currentDose] || []).filter(matchesCat).forEach(it => matching.push({ it, d: today }));
   (typeof dtArchiveAllItems !== 'undefined' ? dtArchiveAllItems : []).filter(matchesCat).forEach(it => matching.push({ it, d: it._archiveDate }));
 
-  // Suwak jakości WEWNĄTRZ tematu. Podłoga: nie pustoszej — przy "samo mięso" pokaż najgrubszy.
+  // Suwak jakości PER TEMAT (własny próg, zapamiętany). Podłoga: nie pustoszej — przy "samo mięso" pokaż najgrubszy.
+  const catMin = getCatMeat(c);
   let survivors = matching;
-  if (meatMin > 0) {
-    survivors = matching.filter(x => meatScore(x.it) >= meatMin);
+  if (catMin > 0) {
+    survivors = matching.filter(x => meatScore(x.it) >= catMin);
     if (!survivors.length && matching.length) {
       survivors = matching.slice().sort((a,b) => meatScore(b.it) - meatScore(a.it)).slice(0,1);
     }
@@ -2017,7 +2072,7 @@ function mobileFilterCat(cat) {
   survivors.forEach(x => { (byDate[x.d] = byDate[x.d] || []).push(x.it); });
   const dates = Object.keys(byDate).sort((a,b) => b.localeCompare(a));
 
-  let html = '';
+  let html = catFillBarHtml(c);
   let n = 0;
   dates.forEach(d => {
     const label = d === today

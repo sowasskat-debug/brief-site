@@ -896,6 +896,37 @@ html, body {
   text-transform: uppercase; color: var(--sub);
   min-width: 68px; text-align: right; white-space: nowrap;
 }
+/* Pasek jakości PER TEMAT (mobile) — tło = suwak, przeciąganie zmienia próg tego jednego tematu */
+.cat-fill-bar {
+  position: sticky; top: 0; z-index: 15;
+  height: 52px; overflow: hidden;
+  border-bottom: 2px solid var(--text);
+  background: var(--bg);
+  touch-action: pan-y;
+  cursor: ew-resize;
+  -webkit-user-select: none; user-select: none;
+}
+.cat-fill-bar-fill {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.075);
+  border-right: 2px solid rgba(0,0,0,.22);
+}
+[data-theme="dark"] .cat-fill-bar-fill {
+  background: rgba(255,255,255,.09);
+  border-right-color: rgba(255,255,255,.28);
+}
+.cat-fill-bar-row {
+  position: relative; z-index: 1; height: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+}
+.cat-fill-bar-name {
+  font-family: 'DM Serif Display', serif; font-style: italic; font-size: 18px; color: var(--text);
+}
+.cat-fill-bar-pct {
+  font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase;
+}
+
 /* Desktop: kompaktowy pasek w kolumnie feedu (nie rozciągnięty na całą szerokość) */
 .dt-meat-bar { display: none; }
 @media (min-width: 1024px) {
