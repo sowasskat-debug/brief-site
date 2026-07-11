@@ -54,6 +54,31 @@ fallback na pozycję w `items[]`.
 - `impactHtml(item)` — linia „Wpływ na rynek" z kolorowaniem ↑/↓.
 - `itemSlug`, `escAttr`, `NormalizujTekst`-brak (to bot).
 
+## Mobile: panel Tematy (swipe + peek) i suwak jakości PER TEMAT (2026-07-11)
+- **Zmiana dawki swipe'em** (`.scroll-area` touchstart/touchend, IIFE „Swipe między dawkami") — dojście do
+  granicy (np. `afternoon→morning`, potem jeszcze raz w tę samą stronę) **kontynuuje ten sam gest**: zamiast
+  nic nie robić, wysuwa panel `#mobSwpPanel` do **peeku** (klasa `.peek`, `width: min(60vw, 270px)` — 60%
+  **szerokości ekranu**, NIE sztywnego 270px panelu, inaczej na szerszych telefonach wygląda jak mniej niż 60%).
+  Kolejny swipe w tę stronę → pełne `open`; swipe w drugą stronę podczas peeku → `mobSwpClose()`.
+- **Stary gest** (przeciąganie `#mobEdgeGrip`, prawy/lewy skraj) działa równolegle, bez zmian.
+- **Suwak jakości PER TEMAT** (zastąpił globalny suwak „SAMO MIĘSO↔WSZYSTKO", usunięty 2026-07-11 z mobile
+  i desktopu — HTML/CSS/JS, `onMeatSlide`/`meatBar`/`dtMeatBar` skasowane). Każdy temat pamięta WŁASNY próg:
+  `catMeatMin` (obiekt `{kategoria: meatMin}`) w `localStorage['brifup_cat_meat']`, dzielony między mobile i
+  desktop. `getCatMeat(cat)`/`setCatMeat(cat,val)`.
+  - **UI = samo tło jest suwakiem** (`catFillBarHtml(cat)` → `.cat-fill-bar`): pasek pod nazwą tematu,
+    wypełnienie (`.cat-fill-bar-fill`, niebieski przezroczysty `rgba(29,78,216,.08)` — **NIE szary**, user
+    explicité to odrzucił) = % newsów które przechodzą (100% = wszystko). Sticky nad listą tematu.
+  - **Gest = przeciągnięcie WPROST po pasku** (pointer events, działa touch+mysz, delegacja na `document`
+    przez `.closest('.cat-fill-bar')` — przeżywa re-render przy każdym puszczeniu). Na mobile wpięte w
+    `mobileFilterCat`, na desktopie w `dtRenderCatFilter` + `#dtCatFillBarWrap` (w `.dt-feed`, nad `dtFeedList`).
+  - Podłoga: wąski temat nigdy nie pustoszeje — przy skrajnym filtrze pokazuje przynajmniej najgrubszy news.
+
+## ⚠️ Service Worker cache — BUMPOWAĆ PRZY KAŻDEJ zmianie CSS/JS
+`service-worker.js`: `CACHE_NAME = 'brifup-cache-vN'`. Użytkownicy dostają PWA z cache — jeśli nie zbumpujesz
+wersji, zmiany w `index.html`/`styles.css` są niewidoczne mimo poprawnego push (user zgłosił to 2026-07-11:
+"nic nie widzę" mimo że kod na produkcji był już poprawny — przyczyna: stary cache). Bumpuj **przy każdym
+commicie** dotykającym CSS/JS, nawet drobnym.
+
 ## OneSignal (push)
 SDK z `cdn.onesignal.com` — **bywa blokowany przez adblock/DNS** → stąd baner
 „Nie można załadować powiadomień". To po stronie przeglądarki usera, nie bug apki.
