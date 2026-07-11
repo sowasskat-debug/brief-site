@@ -20,6 +20,10 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 - `service-worker.js` — PWA cache + import OneSignal SDK.
 - `briefs.json` — bieżące dane (patrz niżej). `archive/*.json` — archiwum dzienne (jeden plik na dzień,
   ta sama struktura dawek; `archive/index.json` = lista dostępnych dat). `rejected.json` — ręcznie odrzucone (uczy filtr bota).
+- `trending.json` — **NOWY, osobny strumień "Flusso Trends"** (sport/rozrywka/świat/ciekawostki z Google Trends +
+  trends24.in). Pisany przez bota (`UpdateTrendingOnSite`), NIEZALEŻNY od `briefs.json`. Kształt: `{ "date", "items":[…] }`,
+  item = `flag, text, article, category, source_name, source_url, added_at, image_url, reach`. ⚠️ Front Flusso jeszcze
+  go NIE czyta (czyta `briefs.json`) — podpięcie to następny krok. Patrz `financialnewsbot/CLAUDE.md` sekcja "Flusso Trends".
   - **`rejected.json` = warstwa PRZYKŁADÓW (few-shot):** bot czyta **tylko ostatnie 40 wpisów** jako REGUŁA 0, więc świeże odrzucenia wypierają stare. Dobre do „naucz filtr TEGO konkretnego newsa". **Trwałe kategorie** (np. „odrzucaj promo bankowe", „fixingi CB bez wpływu na EUR/PLN") NIE tu — idą do stałej `WSPOLNE_ODRZUCENIA` w bocie (repo `financialnewsbot`), inaczej po ~40 nowych odrzuceniach wzorzec wypadnie z okna. Kształt wpisu: `{ "text", "flag", "reason"? }` (pole `reason` opcjonalne — bot dokleja je jako „[powód: …]").
 - `manifest.json`, ikony, `og-image.png`, `CNAME`, `robots.txt`, `sitemap.xml`.
 
@@ -30,8 +34,10 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 BriefItem (klucze małą literą): `text`, `flag`, `article`, `impact`, `source_name`,
 `source_url`, `rssLink`, `added_at`, `image_url`, `subItems` (klaster = tablica BriefItem).
 Pozycja `items[0]` = **top story** (bot ją tam ustawia).
-**`coverage` (int) jeszcze nie istnieje** — planowane pole na liczbę niezależnych źródeł per temat,
-patrz `financialnewsbot/CLAUDE.md` sekcja "Konsument: Flusso". Do tego czasu `fala.html` ma fallback.
+**Sygnał "ile źródeł" = pole `reach`** (int, opcjonalne) — liczba różnych redakcji piszących o temacie
+(`GoogleNewsReachPL` w bocie). ⚠️ NAZYWA SIĘ `reach`, NIE `coverage` — Flusso musi czytać `it.reach`
+(historyczny błąd: front czytał nieistniejące `coverage`, naprawione 2026-07-11). Gdy brak → `fala.html` ma
+fallback na pozycję w `items[]`.
 
 ## Architektura JS (kluczowe funkcje w index.html)
 - **Ładowanie:** `loadDose(dose)` → `fetchFromBriefsJson` (z cache-busterem `?_=ts`)
@@ -54,15 +60,23 @@ SDK z `cdn.onesignal.com` — **bywa blokowany przez adblock/DNS** → stąd ban
 App ID w `index.html`. Klik w push prowadzi na `brifup.com` (ustawiane w bocie).
 
 ## Flusso (`fala.html`) — osobna strona-mozaika
+⚠️ **Przeniesione do OSOBNEGO repo `sowasskat-debug/flusso` + domeny `flusso.brifup.com`** (2026-07-11).
+Tam plik nazywa się `index.html`, ma `CNAME` z `flusso.brifup.com`, i czyta dane **cross-origin z `brifup.com`**
+(zmienna `DATA_ORIGIN='https://brifup.com/'` — `briefs.json` + `archive/`). GitHub Pages ustawia
+`Access-Control-Allow-Origin: *` na statycznych plikach, więc cross-origin fetch działa. DNS w **GoDaddy**
+(nie Cloudflare — domena wskazuje wprost na GitHub Pages): TXT-challenge weryfikacji + CNAME `flusso`→`sowasskat-debug.github.io`
+(propagacja w trakcie na 2026-07-11). **Kopia `brief-site/fala.html` działa równolegle** na `brifup.com/fala.html`
+podczas przejścia — TE DWA PLIKI trzeba trzymać zsynchronizowane, dopóki subdomena nie przejmie ruchu.
+Opis niżej dotyczy obu (ten sam kod).
+
 Kod w jednym pliku (inline `<style>`/`<script>`), zero zależności zewnętrznych poza
 zdjęciami z `image_url`. Zbudowany tak, żeby działał na *obecnym* `briefs.json` bez czekania
 na zmiany w bocie — celowo osobny od `index.html`, nie współdzieli CSS/JS.
 - **Dane:** `pickNewestDose()` wybiera najświeższą z morning/afternoon/evening po `date`+kolejności
   dawki. `flatten()` spłaszcza `items[]`; `subItems` trafiają jako `rel` (powiązane wątki w bottom sheet).
-- **Wielkość kafla:** `weightOf()` — używa `coverage` **jeśli jest** w danych, inaczej fallback na
-  pozycję w `items[]` (bot i tak układa top story na górze, więc ranking działa jako proxy). Gdy bot
-  zacznie zapisywać `coverage`, strona **sama** zacznie skalować się realną liczbą źródeł — zero zmian
-  po stronie frontu.
+- **Wielkość kafla:** `weightOf()` — używa pola `reach` (**czytane z `it.reach`**, patrz "Kształt danych"
+  wyżej — NIE `coverage`!) jeśli jest w danych, inaczej fallback na pozycję w `items[]` (bot układa top story
+  na górze, więc ranking działa jako proxy). Bot już zapisuje `reach`, więc realne skalowanie działa.
 - **Filtr czasu (1H/4H/12H/24H/7D):** filtruje po `added_at`. Kotwica „teraz" (`NOW`) = **najnowszy
   `added_at` w danych**, nie zegar systemowy — dzięki temu siatka jest zawsze pełna, nawet gdy
   `briefs.json` jest stary (np. bot chwilowo nie działa). Osobna zmienna `NOWREAL` (prawdziwy zegar)
