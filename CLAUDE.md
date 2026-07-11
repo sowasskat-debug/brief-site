@@ -14,9 +14,12 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 ## Pliki
 - `index.html` — cała apka: HTML + **inline CSS-in-<style>? nie** (CSS w `styles.css`) + **inline JS**. Duży (~114 KB).
 - `styles.css` — style (mobile + desktop). Motyw jasny/ciemny przez `:root[data-theme=...]`.
+- `fala.html` — **"Flusso"**, osobna strona-mozaika trend-style. Czyta ten sam `briefs.json`,
+  ale własny, niezależny render (nie dotyka `index.html`/`styles.css`). Patrz sekcja niżej.
 - `admin.html` — panel admina (osobny, token GitHub w sessionStorage).
 - `service-worker.js` — PWA cache + import OneSignal SDK.
-- `briefs.json` — bieżące dane (patrz niżej). `archive/*.json` — archiwum dzienne. `rejected.json` — ręcznie odrzucone (uczy filtr bota).
+- `briefs.json` — bieżące dane (patrz niżej). `archive/*.json` — archiwum dzienne (jeden plik na dzień,
+  ta sama struktura dawek; `archive/index.json` = lista dostępnych dat). `rejected.json` — ręcznie odrzucone (uczy filtr bota).
   - **`rejected.json` = warstwa PRZYKŁADÓW (few-shot):** bot czyta **tylko ostatnie 40 wpisów** jako REGUŁA 0, więc świeże odrzucenia wypierają stare. Dobre do „naucz filtr TEGO konkretnego newsa". **Trwałe kategorie** (np. „odrzucaj promo bankowe", „fixingi CB bez wpływu na EUR/PLN") NIE tu — idą do stałej `WSPOLNE_ODRZUCENIA` w bocie (repo `financialnewsbot`), inaczej po ~40 nowych odrzuceniach wzorzec wypadnie z okna. Kształt wpisu: `{ "text", "flag", "reason"? }` (pole `reason` opcjonalne — bot dokleja je jako „[powód: …]").
 - `manifest.json`, ikony, `og-image.png`, `CNAME`, `robots.txt`, `sitemap.xml`.
 
@@ -25,8 +28,10 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 { "morning"|"afternoon"|"evening"|"poczekalnia": { "date":"YYYY-MM-DD", "items":[ BriefItem ] } }
 ```
 BriefItem (klucze małą literą): `text`, `flag`, `article`, `impact`, `source_name`,
-`source_url`, `rssLink`, `added_at`, `subItems` (klaster = tablica BriefItem).
+`source_url`, `rssLink`, `added_at`, `image_url`, `subItems` (klaster = tablica BriefItem).
 Pozycja `items[0]` = **top story** (bot ją tam ustawia).
+**`coverage` (int) jeszcze nie istnieje** — planowane pole na liczbę niezależnych źródeł per temat,
+patrz `financialnewsbot/CLAUDE.md` sekcja "Konsument: Flusso". Do tego czasu `fala.html` ma fallback.
 
 ## Architektura JS (kluczowe funkcje w index.html)
 - **Ładowanie:** `loadDose(dose)` → `fetchFromBriefsJson` (z cache-busterem `?_=ts`)
@@ -48,12 +53,49 @@ SDK z `cdn.onesignal.com` — **bywa blokowany przez adblock/DNS** → stąd ban
 „Nie można załadować powiadomień". To po stronie przeglądarki usera, nie bug apki.
 App ID w `index.html`. Klik w push prowadzi na `brifup.com` (ustawiane w bocie).
 
+## Flusso (`fala.html`) — osobna strona-mozaika
+Kod w jednym pliku (inline `<style>`/`<script>`), zero zależności zewnętrznych poza
+zdjęciami z `image_url`. Zbudowany tak, żeby działał na *obecnym* `briefs.json` bez czekania
+na zmiany w bocie — celowo osobny od `index.html`, nie współdzieli CSS/JS.
+- **Dane:** `pickNewestDose()` wybiera najświeższą z morning/afternoon/evening po `date`+kolejności
+  dawki. `flatten()` spłaszcza `items[]`; `subItems` trafiają jako `rel` (powiązane wątki w bottom sheet).
+- **Wielkość kafla:** `weightOf()` — używa `coverage` **jeśli jest** w danych, inaczej fallback na
+  pozycję w `items[]` (bot i tak układa top story na górze, więc ranking działa jako proxy). Gdy bot
+  zacznie zapisywać `coverage`, strona **sama** zacznie skalować się realną liczbą źródeł — zero zmian
+  po stronie frontu.
+- **Filtr czasu (1H/4H/12H/24H/7D):** filtruje po `added_at`. Kotwica „teraz" (`NOW`) = **najnowszy
+  `added_at` w danych**, nie zegar systemowy — dzięki temu siatka jest zawsze pełna, nawet gdy
+  `briefs.json` jest stary (np. bot chwilowo nie działa). Osobna zmienna `NOWREAL` (prawdziwy zegar)
+  służy tylko do etykiety „X min/godz/dni temu" — ta ma być uczciwa, nie podkręcona.
+  `7D` doładowuje leniwie `archive/index.json` + ostatnie 7 plików przy pierwszym kliknięciu.
+- **Sygnał na kaflu:** `🔥 N źródeł` (gdy `coverage>0`) + świeżość. **Świadomie NIE ma fejkowego
+  „+847%"** — jeśli nie mamy prawdziwego tempa wzrostu, nie udajemy że mamy. Fake-trend to co było
+  w oryginalnej makiecie sprzed przejścia na `briefs.json`.
+- **Zdjęcia:** bezpośrednio z `image_url` (bot je już pobiera przy `EnrichItem`) — **nie Wikipedia**.
+  Wcześniejsza wersja makiety próbowała ciągnąć zdjęcia z Wikipedia API (najpierw REST, potem
+  MediaWiki+JSONP) — zarzucone przy przejściu na dane bota, bo `image_url` jest prostsze i pewniejsze.
+  Fallback gdy brak/błąd zdjęcia: kolorowy tint z `.tile::before` (hash koloru z `source_name`/`text`).
+- **Bottom sheet:** pełny `article` + `impact` (kolor paska ↑/↓ z prostego regexu) + `subItems` jako
+  „powiązane wątki" + link do `source_url`.
+- **Layout PC vs mobile:** `layoutProfile()` — mobile 2→4 kafli/rząd, PC 3→7. Kontener zawsze
+  `max-width: 1600px` (spójne z desktopowym `.dt-app` w `index.html`).
+- **Plan rozwoju (świadomie odłożone):**
+  1. Pole `coverage` w bocie (blokuje realne skalowanie kafli, patrz wyżej).
+  2. Prawdziwy sygnał „co ludzie klikają/szukają" (nie tylko „ile się pisze") — rozważane:
+     **Wikipedia Pageviews API** (darmowe, bez klucza, godzinowe, realne liczby odsłon — najlepszy
+     kandydat), Reddit `.json` endpoints (nieoficjalne, darmowe), Hacker News Firebase API
+     (oficjalne, wąska nisza tech). Google Trends odrzucone — brak oficjalnego API, tylko płatne
+     pośredniki albo kruche scrapery (pytrends).
+  3. Nazwa „Flusso" robocza — może się zmienić.
+
 ## Testowanie UI lokalnie
 ```
 python3 -m http.server 8099   # w katalogu repo
 # Playwright (chromium): /opt/pw-browsers/chromium-1194/chrome-linux/chrome
 ```
 Wtedy można wyrenderować widok mobile/desktop i zrobić zrzut do weryfikacji zmian.
+Dla `fala.html` (czysty ES2017+, bez transpilacji): sanity-check składni JS przez
+`node --check` na wyciągniętym `<script>` przed wdrożeniem.
 
 ## Konwencje
 - Estetyka: minimalistyczna, „gazetowa". Fonty DM Serif Display + Space Mono. Akcent czerwony (`--red`). UI po polsku. Motyw jasny/ciemny (theme-aware).
