@@ -908,12 +908,12 @@ html, body {
 }
 .cat-fill-bar-fill {
   position: absolute; inset: 0;
-  background: rgba(0,0,0,.075);
-  border-right: 2px solid rgba(0,0,0,.22);
+  background: rgba(29,78,216,.08);
+  border-right: 2px solid rgba(29,78,216,.30);
 }
 [data-theme="dark"] .cat-fill-bar-fill {
-  background: rgba(255,255,255,.09);
-  border-right-color: rgba(255,255,255,.28);
+  background: rgba(59,130,246,.14);
+  border-right-color: rgba(59,130,246,.4);
 }
 .cat-fill-bar-row {
   position: relative; z-index: 1; height: 100%;
