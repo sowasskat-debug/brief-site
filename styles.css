@@ -711,7 +711,7 @@ html, body {
   will-change: transform;
 }
 .mob-swp-panel.open    { transform: translateX(0); }
-.mob-swp-panel.peek    { width: 162px; transform: translateX(0); }
+.mob-swp-panel.peek    { width: min(60vw, 270px); transform: translateX(0); }
 .mob-swp-panel.dragging { transition: none; }
 
 .mob-swp-head {
