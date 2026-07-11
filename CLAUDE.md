@@ -25,6 +25,12 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
   item = `flag, text, article, category, source_name, source_url, added_at, image_url, reach`. ⚠️ Front Flusso jeszcze
   go NIE czyta (czyta `briefs.json`) — podpięcie to następny krok. Patrz `financialnewsbot/CLAUDE.md` sekcja "Flusso Trends".
   - **`rejected.json` = warstwa PRZYKŁADÓW (few-shot):** bot czyta **tylko ostatnie 40 wpisów** jako REGUŁA 0, więc świeże odrzucenia wypierają stare. Dobre do „naucz filtr TEGO konkretnego newsa". **Trwałe kategorie** (np. „odrzucaj promo bankowe", „fixingi CB bez wpływu na EUR/PLN") NIE tu — idą do stałej `WSPOLNE_ODRZUCENIA` w bocie (repo `financialnewsbot`), inaczej po ~40 nowych odrzuceniach wzorzec wypadnie z okna. Kształt wpisu: `{ "text", "flag", "reason"? }` (pole `reason` opcjonalne — bot dokleja je jako „[powód: …]").
+- `bot_health.json` — **diagnostyczny lejek** Flusso Trends (dodane 2026-07-11, bez DeepSeek): czyste liczniki
+  per bieg (6 źródeł → kandydaci → unikalne → nowe → fakty → wybrane przez DeepSeek → opublikowane → kafle
+  meczowe), pisane przez bota (`ZapiszHealthNaSite`) w `finally` — więc powstaje NAWET gdy bieg urwał się
+  wcześnie. Trzyma ostatnie 200 biegów. Czytane przez `bot-health.html` (tabela + paski lejka, publiczny
+  odczyt bez auth jak `briefs.json`/`trending.json`) — narzędzie diagnostyczne dla właściciela, NIE dotyczy
+  Flusso ani Briefu. Patrz `financialnewsbot/CLAUDE.md` sekcja "Diagnostyczny lejek".
 - `manifest.json`, ikony, `og-image.png`, `CNAME`, `robots.txt`, `sitemap.xml`.
 
 ## Kształt danych (`briefs.json`)
