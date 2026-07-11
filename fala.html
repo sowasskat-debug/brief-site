@@ -183,7 +183,7 @@ function flatten(dose){
       flag:it.flag||'📰', text:it.text||'', article:it.article||'', impact:it.impact||'',
       source_name:it.source_name||'', source_url:it.source_url||'',
       image_url:it.image_url||'', ts:parseTs(it.added_at),
-      coverage:(typeof it.coverage==='number'?it.coverage:0),
+      coverage:(typeof it.reach==='number'?it.reach:0), // bot zapisuje pole jako "reach", nie "coverage"
       rel:rel.map(s=>({flag:s.flag||'•',text:s.text||''}))
     });
   });
