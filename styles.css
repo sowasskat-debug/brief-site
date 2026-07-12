@@ -417,7 +417,7 @@ html, body {
 /* ══ DESKTOP LAYOUT (≥1024px) ══════════════════════════════════════════════ */
 @media (max-width: 1023px) { .dt-app { display: none !important; } }
 @media (min-width: 1024px) {
-  body { overflow: hidden; background: #f5f3ef; }
+  body { overflow: hidden; background: #ffffff; }
   [data-theme="dark"] body { background: #0f0f0f; }
   .topbar, .dose-tabs, .scroll-area, .install-banner { display: none !important; }
   .dt-app { display: flex !important; }
@@ -429,7 +429,7 @@ html, body {
   max-width: 1600px;
   margin: 0 auto;
   font-family: 'Inter', sans-serif;
-  background: #f5f3ef;
+  background: #ffffff;
   color: var(--text);
   border-left: 1px solid #dbd8d2;
   border-right: 1px solid #dbd8d2;
@@ -439,7 +439,7 @@ html, body {
 /* header */
 .dt-header {
   height: 56px; flex-shrink: 0;
-  background: #f5f3ef; border-bottom: 1px solid #dbd8d2;
+  background: #ffffff; border-bottom: 1px solid #dbd8d2;
   display: flex; align-items: center; padding: 0 28px; gap: 18px;
 }
 [data-theme="dark"] .dt-header { background: #0f0f0f; border-bottom-color: #2a2a2a; }
