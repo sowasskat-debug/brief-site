@@ -1507,7 +1507,10 @@ async function dtRenderArchiveSidebar() {
             for (const dose of ['morning','afternoon','evening']) {
               const doseData = archiveDayCache[d][dose];
               if (doseData?.items) {
-                doseData.items.forEach(it => dtArchiveAllItems.push({...it, _archiveDate: d, _dose: dose}));
+                doseData.items.forEach(it => dtArchiveAllItems.push({
+                  ...it, id: it.id || 'a-' + uid(), _archiveDate: d, _dose: dose,
+                  subItems: (it.subItems || []).map(s => ({ ...s, id: s.id || 'a-' + uid() }))
+                }));
               }
             }
           }
@@ -1597,6 +1600,10 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
     byDate[d].forEach(item => {
       globalIdx++;
       const num = String(globalIdx).padStart(3,'0');
+      // Zarejestruj w mapie, żeby dtPickItem znalazł wpis (renderDesktop resetuje dtItemsMap,
+      // więc archiwalne wpisy trzeba ponownie wpiąć przy każdym renderze cross-day).
+      dtItemsMap[item.id] = item;
+      (item.subItems||[]).forEach(s => { dtItemsMap[s.id] = s; });
       const isGroup = item.subItems?.length > 0;
       if (isGroup) {
         const subsHtml = item.subItems.map(sub =>
