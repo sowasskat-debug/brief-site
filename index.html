@@ -684,6 +684,56 @@ function impactHtml(item) {
   </div>`;
 }
 
+// ══ Wątek tematyczny (timeline) — czyta threads.json (bot), 0 tokenów per klik ══
+let THREADS = null;
+let THREAD_BY_TEXT = new Map();
+function normThreadKey(s){ return (s||'').toLowerCase().replace(/\s+/g,' ').trim(); }
+async function loadThreads(){
+  try {
+    const r = await fetch(`./threads.json?_=${Date.now()}`, { cache:'no-store' });
+    if (!r.ok) return;
+    THREADS = await r.json();
+    const map = new Map();
+    (THREADS.threads||[]).forEach(t => {
+      if (!t.nodes || t.nodes.length < 2) return;              // wątek = min. 2 etapy
+      t.nodes.forEach(n => { if (n && n.text) map.set(normThreadKey(n.text), t); });
+    });
+    THREAD_BY_TEXT = map;
+  } catch(_){}
+}
+function threadForItem(item){
+  return (item && item.text) ? (THREAD_BY_TEXT.get(normThreadKey(item.text)) || null) : null;
+}
+function watekDoseChip(node){
+  const m = { morning:['☀','wch-m'], afternoon:['◑','wch-a'], evening:['☽','wch-e'] }[node.dose] || ['·','wch-x'];
+  const time = (node.added_at||'').split(' ')[1] || '';
+  return `<span class="watek-dose ${m[1]}">${m[0]}${time?' '+time:''}</span>`;
+}
+function watekHtml(item){
+  const t = threadForItem(item);
+  if (!t) return '';
+  const curKey = normThreadKey(item.text);
+  const rows = t.nodes.map(node => {
+    const cur = normThreadKey(node.text) === curKey;
+    return `<div class="watek-node${cur?' watek-cur':''}">
+      <span class="watek-dot"></span>
+      <div class="watek-metaline">${watekDoseChip(node)}${node.relacja?`<span class="watek-rel">${node.relacja}</span>`:''}${cur?'<span class="watek-rel">· ten news</span>':''}</div>
+      <div class="watek-head">${node.text}</div>
+    </div>`;
+  }).join('');
+  return `<div class="watek-wrap">
+    <button class="watek-btn" onclick="event.stopPropagation();toggleWatek(this)">🧵 Wątek tematu · ${t.nodes.length} etapów<span class="watek-caret">▾</span></button>
+    <div class="watek-timeline" hidden><div class="watek-spine"></div>${rows}</div>
+  </div>`;
+}
+function toggleWatek(btn){
+  const tl = btn.parentNode.querySelector('.watek-timeline');
+  const willOpen = tl.hidden;
+  tl.hidden = !willOpen;
+  btn.classList.toggle('open', willOpen);
+}
+loadThreads();
+
 function expandBlock(item) {
   const slug = itemSlug(item.text);
   const shareUrl = `https://brifup.com/#${currentDose}/${slug}`;
@@ -704,6 +754,7 @@ function expandBlock(item) {
       ${imgHtml}
       <div class="expand-article">${item.article}</div>
       ${impactHtml(item)}
+      ${watekHtml(item)}
       <div class="expand-divider"></div>
       <div class="expand-source-row">
         <div class="expand-source-left">
@@ -900,6 +951,7 @@ function expandBlockArchive(item, dateStr, dose) {
       ${imgHtml}
       <div class="expand-article">${item.article}</div>
       ${impactHtml(item)}
+      ${watekHtml(item)}
       <div class="expand-divider"></div>
       <div class="expand-source-row">
         <div class="expand-source-left">
@@ -1835,6 +1887,7 @@ function dtShowDetail(item) {
         ? `<div class="dt-detail-body">${item.article}</div>`
         : `<div class="dt-detail-no-article">Brak rozszerzonego artykułu dla tego wpisu.</div>`}
       ${impactHtml(item)}
+      ${watekHtml(item)}
       <div class="dt-source-row">
         <div>
           <div class="dt-source-label">ŹRÓDŁO</div>
