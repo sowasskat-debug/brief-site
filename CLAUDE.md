@@ -101,6 +101,22 @@ fallback na pozycję w `items[]`.
     **`filterByCatMeat(items)`** — każdy news oceniany progiem SWOJEJ kategorii (`dtGetCategory`), `items[0]` (top
     story) zawsze zostaje, podłoga per-temat (najgrubszy news zostaje) — spójne z widokiem tematu.
 
+## Podświetlenie NOWYCH artykułów od ostatniej wizyty (2026-07-14)
+Bez żadnych napisów „NOWE" — sam **chwilowy błysk** artykułów, które pojawiły się od poprzedniego wejścia
+(user: „na chwilę dosłownie podświetla się artykuły które są nowe").
+- **Baseline** = `localStorage['brifup_last_seen']` (ms, najnowszy widziany `added_at`). Ustalany RAZ na starcie
+  sesji (`sessionNewThreshold`, IIFE) — nie rusza się przy zmianie dawki, żeby wszystkie dawki mierzyć względem
+  tego samego momentu wejścia. **Pierwsza wizyta** (brak zapisu) → `Infinity` = nic nie błyska (nie zalewamy
+  nowego usera całym feedem).
+- **`markNewItems(items)`** — dla itemów z `itemTimestamp(it) > sessionNewThreshold` dokłada klasę `.is-new` na
+  element (`_flashedItems` Set pilnuje, żeby ten sam item nie błysnął ponownie przy re-renderze/live-update).
+  Prefiks id dobierany jak w renderze: desktop `dti-`, mobile klaster `group-`, mobile pojedynczy `item-`.
+  Po `animationend` klasa jest zdejmowana. Wołane w `renderDose` (mobile) i `dtRenderFeed` (desktop).
+  Na końcu przesuwa `brifup_last_seen` do `maxTs` — następna wizyta liczy się od najnowszego już zobaczonego.
+- **CSS** (`styles.css`): `.is-new::after` — nakładka `inset:0` `rgba(29,78,216,.16)` (dark `rgba(96,165,250,.22)`),
+  `pointer-events:none`, `@keyframes brifNewFade` 2.6s → opacity 1→0. Nakładka, nie tło elementu — nie rusza
+  czytelności tekstu. Klasy: `.news-item`/`.hero-card` (mobile) + `.dt-item` (desktop).
+
 ## ⚠️ Service Worker cache — BUMPOWAĆ PRZY KAŻDEJ zmianie CSS/JS
 `service-worker.js`: `CACHE_NAME = 'brifup-cache-vN'`. Użytkownicy dostają PWA z cache — jeśli nie zbumpujesz
 wersji, zmiany w `index.html`/`styles.css` są niewidoczne mimo poprawnego push (user zgłosił to 2026-07-11:

@@ -580,6 +580,36 @@ function sortNewestFirst(items) {
   return (items || []).slice().sort((a, b) => itemTimestamp(b) - itemTimestamp(a));
 }
 
+// ═══ Podświetlenie NOWYCH artykułów (od ostatniej wizyty) — bez napisów, sam chwilowy błysk ═══
+// Próg "nowości" USTALONY na starcie sesji (nie rusza się przy zmianie dawki), żeby wszystkie dawki
+// porównywać do tego samego momentu wejścia. Pierwsza wizyta (brak zapisu) → Infinity = nic nie błyska.
+const sessionNewThreshold = (function () {
+  const raw = localStorage.getItem('brifup_last_seen');
+  return raw === null ? Infinity : (parseFloat(raw) || 0);
+})();
+const _flashedItems = new Set(); // żeby ten sam item nie błyskał ponownie przy re-renderze / live-update
+function markNewItems(items) {
+  if (!items || !items.length) return;
+  const desktop = (typeof isDesktop === 'function') && isDesktop();
+  let maxTs = 0;
+  items.forEach(it => {
+    const ts = itemTimestamp(it);
+    if (ts > maxTs) maxTs = ts;
+    if (ts > sessionNewThreshold && !_flashedItems.has(it.id)) {
+      const prefix = desktop ? 'dti-' : (it.subItems && it.subItems.length ? 'group-' : 'item-');
+      const el = document.getElementById(prefix + it.id);
+      if (el) {
+        _flashedItems.add(it.id);
+        el.classList.add('is-new');
+        el.addEventListener('animationend', () => el.classList.remove('is-new'), { once: true });
+      }
+    }
+  });
+  // Przesuń zapisany baseline do przodu (na następną wizytę). NIE ruszamy sessionNewThreshold w tej sesji.
+  const prev = parseFloat(localStorage.getItem('brifup_last_seen') || '0') || 0;
+  if (maxTs > prev) { try { localStorage.setItem('brifup_last_seen', String(maxTs)); } catch (e) {} }
+}
+
 function itemSlug(text) {
   let h = 5381;
   for (let i = 0; i < Math.min(text.length, 80); i++) {
@@ -991,6 +1021,7 @@ function renderDose(dose, items) {
         if (expEl) expEl.dataset.category = cat;
       }
     });
+    markNewItems(items); // chwilowy błysk nowych artykułów (od ostatniej wizyty)
     mobActiveCat = null;
     mobSwpBuildCats(items);
     mobSwpBuildArchive();
@@ -1706,6 +1737,7 @@ function dtRenderFeed(items) {
   });
   const feedList = document.getElementById('dtFeedList');
   if (feedList) feedList.innerHTML = html;
+  markNewItems(items); // chwilowy błysk nowych artykułów (od ostatniej wizyty)
 }
 
 function renderDesktop(dose, items) {

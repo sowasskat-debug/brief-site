@@ -894,6 +894,19 @@ html, body {
 [data-theme="dark"] .cat-level-bar { background: rgba(255,255,255,.05); }
 [data-theme="dark"] .cat-level-fill { background: rgba(96,165,250,.42); }
 
+/* Chwilowy BŁYSK nowych artykułów (od ostatniej wizyty) — bez napisów, nakładka ::after która gaśnie
+   (nie rusza tła elementu ani czytelności tekstu). Klasa .is-new zdejmowana po animacji przez JS. */
+.news-item.is-new, .hero-card.is-new, .dt-item.is-new { position: relative; }
+.news-item.is-new::after, .hero-card.is-new::after, .dt-item.is-new::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: rgba(29,78,216,.16); pointer-events: none;
+  animation: brifNewFade 2.6s ease-out forwards;
+}
+@keyframes brifNewFade { from { opacity: 1; } to { opacity: 0; } }
+[data-theme="dark"] .news-item.is-new::after,
+[data-theme="dark"] .hero-card.is-new::after,
+[data-theme="dark"] .dt-item.is-new::after { background: rgba(96,165,250,.22); }
+
 @media (min-width: 1024px) {
   /* Ukryj mobilny panel/gest na desktopie — inaczej nieostylowany ląduje w rogu */
   .mob-swp-ov, .mob-swp-panel, .mob-edge-grip { display: none !important; }
