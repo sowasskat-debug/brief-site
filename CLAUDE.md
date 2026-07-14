@@ -71,9 +71,11 @@ fallback na pozycję w `items[]`.
   i desktopu — HTML/CSS/JS, `onMeatSlide`/`meatBar`/`dtMeatBar` skasowane). Każdy temat pamięta WŁASNY próg:
   `catMeatMin` (obiekt `{kategoria: meatMin}`) w `localStorage['brifup_cat_meat']`, dzielony między mobile i
   desktop. `getCatMeat(cat)`/`setCatMeat(cat,val)`.
-  - **UI = samo tło jest suwakiem** (`catFillBarHtml(cat)` → `.cat-fill-bar`): pasek pod nazwą tematu,
-    wypełnienie (`.cat-fill-bar-fill`, niebieski przezroczysty `rgba(29,78,216,.08)` — **NIE szary**, user
-    explicité to odrzucił) = % newsów które przechodzą (100% = wszystko). Sticky nad listą tematu.
+  - **UI = wariant B (od 2026-07-14): cienka linia na DOLE wiersza** (`catFillBarHtml(cat)` → `.cat-fill-bar`):
+    nazwa tematu + `%` (niebieski, bold) w wierszu, a pod spodem 3px pasek — niebieskie wypełnienie
+    (`.cat-fill-bar-fill`) do pct% na szarym tracku (`.cat-fill-bar::after`). Sticky nad listą tematu.
+    Wcześniej było wariant „E" (całe tło wiersza jako fill) — user wybrał B jako lżejszy. **Zmiana była CZYSTO CSS**
+    (`styles.css` `.cat-fill-bar*`) — markup i gest przeciągania bez zmian.
   - **Gest = przeciągnięcie WPROST po pasku** (pointer events, działa touch+mysz, delegacja na `document`
     przez `.closest('.cat-fill-bar')` — przeżywa re-render przy każdym puszczeniu). Na mobile wpięte w
     `mobileFilterCat`, na desktopie w `dtRenderCatFilter` + `#dtCatFillBarWrap` (w `.dt-feed`, nad `dtFeedList`).

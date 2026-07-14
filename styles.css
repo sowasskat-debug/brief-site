@@ -852,27 +852,27 @@ html, body {
   text-transform: uppercase; color: var(--red);
 }
 
-/* Pasek jakości PER TEMAT (mobile) — tło = suwak, przeciąganie zmienia próg tego jednego tematu */
+/* Pasek jakości PER TEMAT — wariant B: cienka linia na DOLE wiersza (przeciąganie zmienia próg tematu) */
 .cat-fill-bar {
   position: sticky; top: 0; z-index: 15;
-  height: 52px; overflow: hidden;
-  border-bottom: 2px solid var(--text);
+  height: 50px;
   background: var(--bg);
   touch-action: pan-y;
   cursor: ew-resize;
   -webkit-user-select: none; user-select: none;
 }
-.cat-fill-bar-fill {
-  position: absolute; inset: 0;
-  background: rgba(29,78,216,.08);
-  border-right: 2px solid rgba(29,78,216,.30);
+.cat-fill-bar::after {   /* szary track na całej szerokości dolnej krawędzi */
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: rgba(0,0,0,.09);
 }
-[data-theme="dark"] .cat-fill-bar-fill {
-  background: rgba(59,130,246,.14);
-  border-right-color: rgba(59,130,246,.4);
+.cat-fill-bar-fill {     /* niebieskie wypełnienie do pct% — samo dno wiersza */
+  position: absolute; left: 0; bottom: 0; height: 3px;
+  background: rgba(29,78,216,.65); z-index: 1;
 }
+[data-theme="dark"] .cat-fill-bar::after { background: rgba(255,255,255,.12); }
+[data-theme="dark"] .cat-fill-bar-fill { background: rgba(96,165,250,.8); }
 .cat-fill-bar-row {
-  position: relative; z-index: 1; height: 100%;
+  position: relative; z-index: 2; height: 100%;
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 16px;
 }
@@ -880,8 +880,9 @@ html, body {
   font-family: 'DM Serif Display', serif; font-style: italic; font-size: 18px; color: var(--text);
 }
 .cat-fill-bar-pct {
-  font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase;
+  font-size: 11px; font-weight: 700; letter-spacing: .5px; color: #1d4ed8;
 }
+[data-theme="dark"] .cat-fill-bar-pct { color: #60a5fa; }
 
 @media (min-width: 1024px) {
   /* Ukryj mobilny panel/gest na desktopie — inaczej nieostylowany ląduje w rogu */
