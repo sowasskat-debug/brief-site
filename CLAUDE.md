@@ -60,6 +60,19 @@ fallback na pozycję w `items[]`.
 - `impactHtml(item)` — linia „Wpływ na rynek" z kolorowaniem ↑/↓.
 - `itemSlug`, `escAttr`, `NormalizujTekst`-brak (to bot).
 
+## Wątek tematyczny — oś czasu (timeline) pod „Wpływ na rynek" (2026-07-14)
+- **`watekHtml(item)`** — przycisk „🧵 Wątek tematu · N etapów" pod `impactHtml`, rozwija **pionową oś** (wariant A):
+  kropki na osi, bieżący news = grubsza czerwona kropka + „TEN NEWS", chipy dawek (☀amber/◑blue/☽violet)+godziny,
+  relacje przyczyna/skutek czerwonym mono, nagłówki DM Serif. Wpięte w **3 miejsca**: `expandBlock` (mobile ×2) +
+  `dtShowDetail` (desktop). CSS klasy `.watek-*` w styles.css (zmienne `--rule/--bg/--red/--muted`, fonty z @import).
+- **Dane:** `loadThreads()` fetchuje **`threads.json`** raz przy starcie → mapa `THREAD_BY_TEXT` (match po znorm. tekście
+  węzła; tylko wątki ≥2 węzły). Przycisk pojawia się TYLKO gdy post należy do wątku. **0 tokenów per klik** (gotowiec z bota).
+- `threads.json` pisze bot (`BuildThreadsOnSite`, tryb `BUILD_THREADS`/normalny bieg) — kształt `{date, generated_at,
+  threads:[{id,title,memo,nodes:[{text,added_at,dose,flag,source_url,relacja}]}], seen:[...]}`.
+- **Uwaga:** `let`-zmienne (THREADS, THREAD_BY_TEXT) NIE są na `window` (eval w preview ich nie widzi — testuj przez funkcje).
+- **Podgląd lokalny:** sandbox BLOKUJE serwowanie z `~/Documents` (http.server --directory tam → 404). Kopiuj pliki do
+  scratchpada i serwuj stamtąd. Bump `CACHE_NAME` (SW) przy każdej zmianie — inaczej desktop/mobile trzymają starą wersję (cache).
+
 ## Mobile: panel Tematy (swipe + peek) i suwak jakości PER TEMAT (2026-07-11)
 - **Zmiana dawki swipe'em** (`.scroll-area` touchstart/touchend, IIFE „Swipe między dawkami") — dojście do
   granicy (np. `afternoon→morning`, potem jeszcze raz w tę samą stronę) **kontynuuje ten sam gest**: zamiast
