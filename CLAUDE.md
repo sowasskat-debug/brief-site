@@ -78,6 +78,12 @@ fallback na pozycję w `items[]`.
     przez `.closest('.cat-fill-bar')` — przeżywa re-render przy każdym puszczeniu). Na mobile wpięte w
     `mobileFilterCat`, na desktopie w `dtRenderCatFilter` + `#dtCatFillBarWrap` (w `.dt-feed`, nad `dtFeedList`).
   - Podłoga: wąski temat nigdy nie pustoszeje — przy skrajnym filtrze pokazuje przynajmniej najgrubszy news.
+  - ⚠️ **Próg działa też na GŁÓWNYM feedzie (naprawione 2026-07-14):** wcześniej `catMeatMin` filtrował TYLKO widok
+    pojedynczego tematu (`mobileFilterCat`/`dtRenderCatFilter`); główny feed go ignorował, bo `renderDose` wołał
+    martwą globalną `filterByMeat` (`meatMin=0` od usunięcia globalnego suwaka), a `dtRenderFeed` nie filtrował wcale.
+    User zgłosił: „ustawiam 50% a na porannej dawce nic się nie zmienia". Teraz oba główne feedy wołają
+    **`filterByCatMeat(items)`** — każdy news oceniany progiem SWOJEJ kategorii (`dtGetCategory`), `items[0]` (top
+    story) zawsze zostaje, podłoga per-temat (najgrubszy news zostaje) — spójne z widokiem tematu.
 
 ## ⚠️ Service Worker cache — BUMPOWAĆ PRZY KAŻDEJ zmianie CSS/JS
 `service-worker.js`: `CACHE_NAME = 'brifup-cache-vN'`. Użytkownicy dostają PWA z cache — jeśli nie zbumpujesz

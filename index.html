@@ -334,6 +334,27 @@ function filterByMeat(items) {
   return items.filter((it, i) => i === 0 || meatScore(it) >= meatMin);
 }
 
+// Filtruje GŁÓWNY feed wg progu jakości PER TEMAT — każdy news oceniany progiem SWOJEJ kategorii (dtGetCategory).
+// Wcześniej próg per-temat działał TYLKO w widoku pojedynczego tematu; główny feed go ignorował (używał martwej
+// globalnej meatMin=0). items[0] (top story) zawsze zostaje. Podłoga: temat obecny w dawce nie znika całkiem —
+// przy skrajnym filtrze zostaje jego najgrubszy news (spójne z widokiem tematu, dtRenderCatFilter/mobileFilterCat).
+function filterByCatMeat(items) {
+  if (!items || items.length <= 1) return items;
+  if (!Object.values(catMeatMin).some(v => v > 0)) return items; // żaden próg nieaktywny → nic nie filtruj
+  const keep = new Set([0]);
+  const byCat = {};
+  items.forEach((it, i) => { const c = dtGetCategory(it); (byCat[c] = byCat[c] || []).push(i); });
+  Object.keys(byCat).forEach(c => {
+    const min = getCatMeat(c);
+    const idxs = byCat[c];
+    if (min <= 0) { idxs.forEach(i => keep.add(i)); return; }
+    const passing = idxs.filter(i => meatScore(items[i]) >= min);
+    if (passing.length) passing.forEach(i => keep.add(i));
+    else keep.add(idxs.slice().sort((a, b) => meatScore(items[b]) - meatScore(items[a]))[0]); // podłoga
+  });
+  return items.filter((it, i) => keep.has(i));
+}
+
 // ═══ Suwak jakości PER TEMAT (mobile) ═══
 // Każdy temat pamięta własny próg niezależnie (np. "samo mięso" na Tech, "wszystko" na Geopolityce).
 let catMeatMin = {};
@@ -862,7 +883,7 @@ function escAttr(s) {
 function renderDose(dose, items) {
   const cfg = DOSE_CFG[dose];
   if (!items || items.length === 0) return;
-  items = filterByMeat(items);
+  items = filterByCatMeat(items);
   const hero = items[0];
   const isHeroGroup = hero.subItems && hero.subItems.length > 0;
 
@@ -1639,6 +1660,7 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
 }
 
 function dtRenderFeed(items) {
+  items = filterByCatMeat(items);
   let html = '';
   items.forEach((item, i) => {
     const num = String(i+1).padStart(3,'0');
