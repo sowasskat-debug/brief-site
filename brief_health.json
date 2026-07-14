@@ -1,1 +1,1 @@
-{"runs":[{"ts":"2026-07-14 12:09:06","prefiltr_sprawdzone":6,"prefiltr_odrzucone":0,"wybrane":5,"opublikowane":4,"do_poczekalni":2,"poczekalnia_utknelo":7,"enrich_bramka_pominela":7,"poczekalnia_duplikat":0}]}
+{"runs":[{"ts":"2026-07-14 12:33:55","pick_bramka_pominela":5,"prefiltr_sprawdzone":5},{"ts":"2026-07-14 12:09:06","prefiltr_sprawdzone":6,"prefiltr_odrzucone":0,"wybrane":5,"opublikowane":4,"do_poczekalni":2,"poczekalnia_utknelo":7,"enrich_bramka_pominela":7,"poczekalnia_duplikat":0}]}
