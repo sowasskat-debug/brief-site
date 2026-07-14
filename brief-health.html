@@ -358,7 +358,8 @@ async function loadFunnel(){
   const base=last24.length?last24:runs.slice(0,20);
   const sum=k=>base.reduce((a,r)=>a+(r[k]||0),0);
   const spr=sum('prefiltr_sprawdzone'), odr=sum('prefiltr_odrzucone'), wyb=sum('wybrane'),
-        opub=sum('opublikowane'), pocz=sum('do_poczekalni'), utk=sum('poczekalnia_utknelo');
+        opub=sum('opublikowane'), pocz=sum('do_poczekalni'), utk=sum('poczekalnia_utknelo'),
+        bramka=sum('enrich_bramka_pominela'), poczDup=sum('poczekalnia_duplikat');
   box('funnelSummary').innerHTML=[
     statTile('sprawdzone', fmt(spr), 'pre-filtr', 'accent-blue'),
     statTile('prefiltr odrzucił', fmt(odr), spr?Math.round(odr/spr*100)+'%':'', 'accent-red'),
@@ -366,6 +367,8 @@ async function loadFunnel(){
     statTile('opublikowane', fmt(opub), 'z opisem', 'accent-green'),
     statTile('do poczekalni', fmt(pocz), 'brak opisu', 'accent-amber'),
     statTile('utknęło', fmt(utk), 'porzucone (limit prób)', utk?'accent-red':''),
+    statTile('bramka odsiała', fmt(bramka), 'drogich WriteArticle ↓', bramka?'accent-green':''),
+    statTile('poczek. duplikat', fmt(poczDup), 'porzucone (już w briefie)', poczDup?'accent-green':''),
   ].join('');
   const maxF=Math.max(1,spr,wyb,opub);
   box('funnelBars').innerHTML=[
