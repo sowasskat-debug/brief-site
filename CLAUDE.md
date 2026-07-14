@@ -76,6 +76,12 @@ fallback na pozycję w `items[]`.
     (`.cat-fill-bar-fill`) do pct% na szarym tracku (`.cat-fill-bar::after`). Sticky nad listą tematu.
     Wcześniej było wariant „E" (całe tło wiersza jako fill) — user wybrał B jako lżejszy. **Zmiana była CZYSTO CSS**
     (`styles.css` `.cat-fill-bar*`) — markup i gest przeciągania bez zmian.
+  - **Read-only wskaźnik poziomu pod KAŻDYM tematem na LIŚCIE (2026-07-14):** `catLevelBarHtml(cat)` → `.cat-level-bar`
+    (osobna klasa niż interaktywny `.cat-fill-bar`, `pointer-events:none`, żeby gest przeciągania go nie łapał i
+    tapnięcie w temat działało). Cienki 2px pasek na dole wiersza (miękkie niebieskie wypełnienie do pct%), wstrzykiwany
+    w `dtRenderSidebar`/`dtRenderSidebarCounts` (desktop `.dt-index-item`) i `mobSwpBuildCats` (mobile `.mob-swp-cat`).
+    **Regulacja NADAL tylko w widoku tematu** (sticky `.cat-fill-bar`); lista to sam podgląd. Po zmianie progu
+    `refreshCatLevelBars(cat)` aktualizuje paski na listach na żywo. User chciał „pod każdym tematem, tylko wizualnie".
   - **Gest = przeciągnięcie WPROST po pasku** (pointer events, działa touch+mysz, delegacja na `document`
     przez `.closest('.cat-fill-bar')` — przeżywa re-render przy każdym puszczeniu). Na mobile wpięte w
     `mobileFilterCat`, na desktopie w `dtRenderCatFilter` + `#dtCatFillBarWrap` (w `.dt-feed`, nad `dtFeedList`).

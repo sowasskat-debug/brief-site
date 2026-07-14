@@ -376,6 +376,20 @@ function catFillBarHtml(cat) {
     </div>
   </div>`;
 }
+// READ-ONLY pasek poziomu progu pod nazwą tematu na LIŚCIE tematów (wariant B — sam wskaźnik %).
+// Osobna klasa (.cat-level-bar) niż interaktywny suwak (.cat-fill-bar), żeby gest przeciągania go NIE łapał
+// i tapnięcie w temat działało normalnie. Regulacja progu zostaje w widoku tematu (sticky .cat-fill-bar).
+function catLevelBarHtml(cat) {
+  const pct = Math.round(100 - (getCatMeat(cat) / MEAT_MAX) * 100);
+  return `<div class="cat-level-bar" data-cat="${String(cat).replace(/"/g,'&quot;')}"><div class="cat-level-fill" style="width:${pct}%"></div></div>`;
+}
+// Odśwież read-only paski poziomu na listach po zmianie progu (żeby lista pokazywała aktualny %).
+function refreshCatLevelBars(cat) {
+  const pct = Math.round(100 - (getCatMeat(cat) / MEAT_MAX) * 100);
+  document.querySelectorAll('.cat-level-bar').forEach(bar => {
+    if (bar.dataset.cat === cat) { const f = bar.querySelector('.cat-level-fill'); if (f) f.style.width = pct + '%'; }
+  });
+}
 // Przeciąganie palcem/myszą wprost po pasku tematu — zmienia próg NA ŻYWO, zapisuje przy puszczeniu.
 (function() {
   let dragging = false, barEl = null;
@@ -405,6 +419,7 @@ function catFillBarHtml(cat) {
     const cat = barEl.dataset.cat;
     barEl = null;
     setCatMeat(cat, min);
+    refreshCatLevelBars(cat);
     if (mobActiveCat === cat) mobileFilterCat(cat);
     if (dtActiveFilter === cat) dtRenderCatFilter(cat);
   });
@@ -1485,6 +1500,7 @@ function dtRenderSidebar(items) {
           ${catMarker(c, 'dt-index-dot', 'dt-index-flag')}
           <span class="dt-index-label">${c}</span>
           <span class="dt-index-n">${counts[c]}</span>
+          ${catLevelBarHtml(c)}
         </div>`
       ).join('');
   }
@@ -1558,6 +1574,7 @@ function dtRenderSidebarCounts() {
         ${catMarker(c, 'dt-index-dot', 'dt-index-flag')}
         <span class="dt-index-label">${c}</span>
         <span class="dt-index-n">${counts[c]}</span>
+        ${catLevelBarHtml(c)}
       </div>`
     ).join('');
 }
@@ -1999,6 +2016,7 @@ function mobSwpBuildCats(items) {
         ${catMarker(c, 'mob-swp-cat-dot', 'mob-swp-cat-flag')}
         <span class="mob-swp-cat-nm">${c}</span>
         <span class="mob-swp-cat-cnt">${counts[c]}</span>
+        ${catLevelBarHtml(c)}
       </button>`
     ).join('');
   const meta = document.getElementById('mobSwpMeta');
