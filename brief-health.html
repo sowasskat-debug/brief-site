@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brief — Panel diagnostyczny</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #ffffff; --gray1: #f7f7f7; --gray2: #efefef; --rule: #e2e2e2;
+  --muted: #999999; --text: #0a0a0a; --sub: #2a2a2a; --red: #cc0000;
+  --amber: #b45309; --blue: #1d4ed8; --green: #15803d; --purple: #7c3aed; --teal: #0d9488;
+}
+html, body { min-height: 100%; font-family: 'Space Mono', monospace; background: var(--bg); color: var(--text); }
+
+.topbar {
+  position: sticky; top: 0; z-index: 10; background: #fff;
+  border-bottom: 3px solid #0a0a0a; min-height: 58px;
+  display: flex; align-items: center; justify-content: space-between; padding: 8px 16px;
+}
+.logo { font-family: 'DM Serif Display', serif; font-size: 22px; font-style: italic; }
+.logo-dot { color: var(--red); font-style: normal; }
+.logo-sub { font-size: 7.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+.refresh-btn {
+  font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  border: 1px solid var(--rule); background: transparent; color: var(--muted);
+  padding: 8px 11px; border-radius: 2px; cursor: pointer;
+}
+.refresh-btn:active { border-color: var(--text); color: var(--text); }
+
+.wrap { max-width: 1040px; margin: 0 auto; padding: 16px; }
+
+section { margin-bottom: 30px; }
+.sec-head { display: flex; align-items: baseline; gap: 8px; border-bottom: 2px solid var(--text); padding-bottom: 6px; margin-bottom: 12px; }
+.sec-title { font-family: 'DM Serif Display', serif; font-size: 19px; }
+.sec-note { font-size: 8.5px; color: var(--muted); letter-spacing: .5px; }
+
+.summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.stat { flex: 1 1 110px; background: var(--gray1); border-radius: 3px; padding: 10px 12px; border-left: 3px solid var(--rule); }
+.stat.accent-blue { border-left-color: var(--blue); }
+.stat.accent-red { border-left-color: var(--red); }
+.stat.accent-green { border-left-color: var(--green); }
+.stat.accent-amber { border-left-color: var(--amber); }
+.stat.accent-purple { border-left-color: var(--purple); }
+.stat-label { font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.stat-value { font-family: 'DM Serif Display', serif; font-size: 22px; line-height: 1.1; }
+.stat-sub { font-size: 8.5px; color: var(--muted); margin-top: 3px; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+@media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; gap: 18px; } }
+
+.block-title { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--sub); margin-bottom: 8px; }
+
+.barrow { display: grid; grid-template-columns: 120px 1fr 66px; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 10px; }
+.barrow .lbl { color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barrow .track { height: 12px; background: var(--gray2); border-radius: 2px; overflow: hidden; }
+.barrow .fill { height: 100%; background: var(--blue); border-radius: 2px; }
+.barrow .val { text-align: right; font-weight: 700; font-size: 9.5px; }
+.barrow .val small { color: var(--muted); font-weight: 400; }
+
+.f-sel { background: var(--red); }
+.f-art { background: var(--amber); }
+.f-aux { background: var(--purple); }
+.f-flusso { background: var(--teal); }
+.f-cat { background: var(--blue); }
+.f-src { background: var(--green); }
+
+.table-scroll { width: 100%; overflow-x: auto; }
+table { width: 100%; min-width: 520px; border-collapse: collapse; font-size: 10px; }
+thead th { text-align: left; font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--text); padding: 6px 6px; background: #fff; }
+tbody td { border-bottom: 1px solid var(--rule); padding: 7px 6px; vertical-align: top; }
+tbody tr:hover { background: var(--gray1); }
+td.num { text-align: right; font-weight: 700; white-space: nowrap; }
+.ts { white-space: nowrap; font-weight: 700; }
+
+.chip { display: inline-block; font-size: 8px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 2px 6px; border-radius: 10px; background: var(--gray2); color: var(--sub); }
+
+.reason { color: var(--muted); font-size: 9px; }
+.note { font-size: 9px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+.note b { color: var(--sub); }
+.empty { padding: 22px 16px; text-align: center; color: var(--muted); font-size: 10.5px; background: var(--gray1); border-radius: 3px; }
+.err { color: var(--red); }
+.pill-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div><span class="logo">Brief<span class="logo-dot">.</span></span><br><span class="logo-sub">panel diagnostyczny — brifup</span></div>
+  <button class="refresh-btn" onclick="loadAll()">↻ odśwież</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== KOSZT / TOKENY ===== -->
+  <section>
+    <div class="sec-head"><span class="sec-title">💸 Koszt / tokeny DeepSeek</span><span class="sec-note">z deepseek_usage.json · ostatnie 24h</span></div>
+    <div id="costSummary" class="summary"></div>
+    <div class="grid2">
+      <div><div class="block-title">Tokeny per etap (input + output)</div><div id="stageBars"></div></div>
+      <div><div class="block-title">Koszt szacunkowy per etap ($)</div><div id="costBars"></div></div>
+    </div>
+    <div class="block-title" style="margin-top:16px">Ostatnie biegi</div>
+    <div id="costTable"></div>
+    <div class="note" id="costNote"></div>
+  </section>
+
+  <!-- ===== ZAWARTOŚĆ ===== -->
+  <section>
+    <div class="sec-head"><span class="sec-title">📊 Zawartość Briefu</span><span class="sec-note">z briefs.json · dawki morning/afternoon/evening</span></div>
+    <div id="contentSummary" class="summary"></div>
+    <div class="grid2">
+      <div>
+        <div class="block-title">Ile źródeł znaleziono pod postem (reach)</div>
+        <div id="reachBars"></div>
+        <div class="block-title" style="margin-top:16px">Rozmiar klastrów</div>
+        <div id="clusterBars"></div>
+      </div>
+      <div>
+        <div class="block-title">Podział na tematy</div>
+        <div id="catBars"></div>
+        <div class="block-title" style="margin-top:16px">Top źródła (redakcje)</div>
+        <div id="srcBars"></div>
+      </div>
+    </div>
+    <div class="block-title" style="margin-top:16px">Najlepiej potwierdzone posty (najwyższy reach)</div>
+    <div id="topReach"></div>
+  </section>
+
+  <!-- ===== POCZEKALNIA ===== -->
+  <section>
+    <div class="sec-head"><span class="sec-title">⏳ Poczekalnia</span><span class="sec-note">newsy które przeszły selekcję, ale czekają na dawkę</span></div>
+    <div id="poczSummary" class="summary"></div>
+    <div class="grid2">
+      <div><div class="block-title">Próby wzbogacenia (co utknęło)</div><div id="poczEnrich"></div></div>
+      <div><div class="block-title">Tematy w poczekalni</div><div id="poczCat"></div></div>
+    </div>
+    <div class="block-title" style="margin-top:16px">Co teraz czeka</div>
+    <div id="poczList"></div>
+  </section>
+
+  <!-- ===== ODRZUCENIA ===== -->
+  <section>
+    <div class="sec-head"><span class="sec-title">🚫 Odrzucenia</span><span class="sec-note">z rejected.json · warstwa few-shot (ostatnie 40 uczą filtr)</span></div>
+    <div id="rejSummary" class="summary"></div>
+    <div id="rejTable"></div>
+    <div class="note"><b>Uwaga:</b> to ręczne/nauczone przykłady odrzuceń. Dokładny licznik „ile selekcja odrzuciła w każdym biegu" (kandydaci → pre-filtr → DeepSeek → przeszło) wymaga funnela w bocie — mogę go dodać (jak lejek Flusso w bot-health.html), wtedy pojawi się tu realna skuteczność filtra per bieg.</div>
+  </section>
+
+</div>
+
+<script>
+// ── ceny DeepSeek (USD za 1M tokenów) — szacunek, realny rachunek w panelu DeepSeek ──
+const PRICE_IN = 0.27, PRICE_OUT = 1.10;
+
+// etykiety i grupowanie etapów
+const STAGE_LABEL = {
+  'brief-selekcja':'Brief · selekcja', 'brief-enrich-article':'Brief · artykuł (opis)',
+  'brief-enrich-query':'Brief · zapytanie', 'brief-enrich-pick':'Brief · dopasowanie',
+  'brief-klaster':'Brief · klastrowanie', 'brief-topstory':'Brief · top-story',
+  'brief-retro':'Brief · retro-merge', 'flusso-selekcja':'Flusso · selekcja', 'flusso-article':'Flusso · artykuł'
+};
+const STAGE_CLASS = { 'brief-selekcja':'f-sel','brief-enrich-article':'f-art','brief-enrich-query':'f-aux',
+  'brief-enrich-pick':'f-aux','brief-klaster':'f-aux','brief-topstory':'f-aux','brief-retro':'f-aux',
+  'flusso-selekcja':'f-flusso','flusso-article':'f-flusso' };
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmt(n){ return (n||0).toLocaleString('pl-PL'); }
+function usd(n){ return '$' + (n||0).toFixed(2); }
+
+// ── klasyfikator tematów — TA SAMA logika co index.html (dtGetCategory) ──
+function catOf(text){
+  const t=(text||'').toLowerCase();
+  if(/\bfed(u|zie|em|owi)?\b|\bboe\b|\brpp\b|ebc\b|ecb\b|boj\b|nbp\b|monetarn|inflacj|stopa proc|stóp proc|stopy proc|obniżk\w* stóp|podwyżk\w* stóp|oprocentow|rrr\b|bank centraln|rezerw federal|polityk pieniężn|powell|lagarde|projekcj\w* inflac/.test(t)) return 'Fed / Banki';
+  if(/(ukrain|ukraiń|kijów|kijowie|zełensk|zelensk)[\s\S]*(wojn|front|ofensyw|atak|dron|ostrzał|rosyjsk|\brosj|okup|walk|żołnier|pocisk|rakiet|obron|natarci|kontrofensyw|strat|zabit|rani|bombard|sankcj|zawieszenie broni|rozejm)|(wojn|front|ofensyw|dron|ostrzał|okup|bombard)[\s\S]*(ukrain|ukraiń|kijów|zełensk)|donbas|bachmut|zaporoż|chersoń|charków|charkiw|pokrowsk|kupiańsk|siewierodonieck|mariupol|budanow|\bzsu\b|obwód kursk|\bkursk/.test(t)) return 'Wojna Ukraina';
+  if(/iran|irań|teheran|ajatollah|chamenei|chomeini|ormuz|hormuz|hezbol|\bhuti\b|houthi|natanz|isfahan|fordow|\birgc\b|gwardia rewolucyjn|korpus straż/.test(t)) return 'Wojna Iran';
+  if(/geopolit|wojn|armi|rosyjsk|\brosj|\bchin|chińsk|izrael|palestyn|konflikt zbrojn|dron|rakiet|moskw|kreml|żołnier|eliminowan|pentagon|putin|oblężen|ofensyw|batalion|brygad|ostrzał|bombardow|inwazj|okupac|rozejm|zawieszenie broni|wywiad wojsk|cia\b|fsb\b|zbrojn|zbrojeniow\w*|zbrojeniów|wojskow\w*|wojsk\w*|\bpgz\b|\bmon\b|patriot(ów|y|a|ami|ach)?\b|amunicj\w*|uderzeń precyz|obronn|marynark|okręt|pocisk|cieśnin|suez|damaszk|syri|libi|jemen|wagnera|africa corps|straty bojow|wycofan wojsk|eskalac|deeskalac|taliba|generał|sabotaż|nord stream|sudan\b|kongo\b/.test(t)) return 'Geopolityka';
+  if(/\bai\b|sztuczn intel|chip|nvidia|intel\b|apple\b|google\b|microsoft|openai|technolog|startup|meta\b|amazon\b|spacex|deepseek|anthropic|gemini|llm\b|blockchain|krypto|bitcoin|ethereum|sam altman|elon musk|model językow|robot|satelit|starlink|tesla\b|alibaba/.test(t)) return 'Tech / AI';
+  if(/\brop[ay]\b|ropa naft|gaz ziemn|gaz\b|złot[ao]\b|metal|surowc|opec|brent|barrel|węgiel|miedź|kaw[aęy]\b|soja\b|pszenica|kukurydza|zboż|żywność|paliw|energetyk|energia\b|jądrowa|atomow|lng\b|skroplony gaz/.test(t)) return 'Surowce';
+  if(/sejm|senat\b|sejmik|samorząd|wojewód|\bgmin|ratusz\b|radni|radny|marszałek|prezydent miasta|rada ministrów|ministerstw\w*|\bmf\b|\bmz\b|\bnfz\b|\buokik\b|\bcba\b|\bkpo\b|budżet państw|izba lekarsk|deregulacj|rząd\w*\s+(planuj|zapowiad|przyj[męą]|ogłas|ogłos|bierze|przyspiesz|przeznacz|szykuj|zamierz|wprowadz|chce)|premier polsk|\bpis\b|prawo i sprawiedliw|platform obywatelsk|koalicja obywatelsk|konfederacj|nowa lewica|\bpsl\b|polska ?2050|polski ład|tusk\w*|kaczyńsk|nawrock|hołowni|kosiniak|sikorsk|żurek|bodnar|błaszczak|morawieck|mentzen|zandberg|ziobro|romanowsk|trybunał konstytucyjn|\bkrs\b|prokuratura krajow|\bknf\b|\bzus\b|\bpip\b|poseł|posłank|posłów|posła\b/.test(t)) return 'Polityka lokalna';
+  if(/trump|biden|harris\b|obama|macron|scholz|\bmerz\b|orbán|orban|le pen|meloni|starmer|sunak|erdogan|\bkongres\b|izba reprezentant|biały dom|white house|unia europejsk|komisja europejsk|parlament europejsk|bruksel|nato\b|administracj|cła\b|ceł\b|taryf|departament stanu|sekretarz stanu|wybor|ustaw\b|ustawa|weto\b|opozycj|parlament|trybunał|prokurat|kampania wybor|kandydow|partyjn|polityczn|sąd\b|wyrok|skazuj|uniewinni/.test(t)) return 'Polityka';
+  if(/policj|narkotyk|przemyt|aresztowan|zatrzyman|konfiskat|morderst|zabójst|przestępst|\bfifa\b|piłka nożn|igrzysk|olimpiad|wulkan|erupcj|trzęsienie ziemi|powódź|tsunami|huragan|tornado|epidemi|pandemi|szczepionk|chorob|wirus\b|festiwal|katastrofa|wypadek\b|blackout|bez prądu|zasilani\w*|ewakuacj\w*|syren\w* alarm|fala upał|cristiano|messi|lebron|watykan|papież|mdma\b|kokain|heroiny|heroina|fentanyl|nfl\b|nba\b|formula 1|formula one/.test(t)) return 'Świat';
+  return 'Rynki';
+}
+
+function barRow(label, val, max, cls, sub){
+  const pct = max>0 ? Math.max(2, Math.round(val/max*100)) : 0;
+  return `<div class="barrow"><span class="lbl">${esc(label)}</span>
+    <span class="track"><span class="fill ${cls||''}" style="width:${pct}%"></span></span>
+    <span class="val">${typeof val==='number'&&val%1!==0?val.toFixed(2):fmt(val)}${sub?`<small> ${esc(sub)}</small>`:''}</span></div>`;
+}
+function statTile(label, value, sub, accent){
+  return `<div class="stat ${accent||''}"><div class="stat-label">${esc(label)}</div><div class="stat-value">${value}</div>${sub?`<div class="stat-sub">${esc(sub)}</div>`:''}</div>`;
+}
+function leaves(dose){ const out=[]; (dose?.items||[]).forEach(it=>{ const s=it.subItems&&it.subItems.length?it.subItems:[it]; s.forEach(x=>out.push(x)); }); return out; }
+
+// ══════════ 1. KOSZT / TOKENY ══════════
+async function loadCost(){
+  const box=id=>document.getElementById(id);
+  let data;
+  try{ const r=await fetch('deepseek_usage.json?_='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); data=await r.json(); }
+  catch(e){
+    box('costSummary').innerHTML=''; box('stageBars').innerHTML=''; box('costBars').innerHTML='';
+    box('costTable').innerHTML=`<div class="empty">Brak <b>deepseek_usage.json</b> — pojawi się po pierwszym biegu bota po wdrożeniu licznika (~w ciągu godziny). Reszta panelu działa już teraz.</div>`;
+    return;
+  }
+  const runs=(data.runs||[]);
+  const last24=runs.filter(r=>{ const t=Date.parse((r.ts||'').replace(' ','T')); return !isNaN(t)&&(Date.now()-t)<=24*3600*1000; });
+  const base=last24.length?last24:runs.slice(0,20);
+  // agregacja per etap
+  const agg={}; let tin=0,tout=0,tcalls=0;
+  base.forEach(r=>{ const s=r.stages||{}; Object.keys(s).forEach(k=>{ const v=s[k]||{}; agg[k]=agg[k]||{calls:0,in:0,out:0}; agg[k].calls+=v.calls||0; agg[k].in+=v.in||0; agg[k].out+=v.out||0; tin+=v.in||0; tout+=v.out||0; tcalls+=v.calls||0; }); });
+  const cost = k => ((agg[k].in*PRICE_IN + agg[k].out*PRICE_OUT)/1e6);
+  const totalCost = (tin*PRICE_IN + tout*PRICE_OUT)/1e6;
+  const briefIn = Object.keys(agg).filter(k=>k.startsWith('brief')).reduce((a,k)=>a+agg[k].in,0);
+  const briefOut = Object.keys(agg).filter(k=>k.startsWith('brief')).reduce((a,k)=>a+agg[k].out,0);
+  const flIn = Object.keys(agg).filter(k=>k.startsWith('flusso')).reduce((a,k)=>a+agg[k].in,0);
+  const flOut = Object.keys(agg).filter(k=>k.startsWith('flusso')).reduce((a,k)=>a+agg[k].out,0);
+  const briefCost=(briefIn*PRICE_IN+briefOut*PRICE_OUT)/1e6, flCost=(flIn*PRICE_IN+flOut*PRICE_OUT)/1e6;
+
+  box('costSummary').innerHTML=[
+    statTile('koszt (24h)', usd(totalCost), 'szac.', 'accent-red'),
+    statTile('tokeny', fmt(tin+tout), `in ${fmt(tin)} · out ${fmt(tout)}`, 'accent-blue'),
+    statTile('wywołań', fmt(tcalls), `${base.length} biegów`),
+    statTile('Brief', usd(briefCost), totalCost?Math.round(briefCost/totalCost*100)+'% kosztu':'', 'accent-amber'),
+    statTile('Flusso', usd(flCost), totalCost?Math.round(flCost/totalCost*100)+'% kosztu':'', 'accent-green'),
+  ].join('');
+
+  const keys=Object.keys(agg).sort((a,b)=>(agg[b].in+agg[b].out)-(agg[a].in+agg[a].out));
+  const maxTok=Math.max(1,...keys.map(k=>agg[k].in+agg[k].out));
+  box('stageBars').innerHTML = keys.map(k=>barRow(STAGE_LABEL[k]||k, agg[k].in+agg[k].out, maxTok, STAGE_CLASS[k], `${fmt(agg[k].calls)}×`)).join('') || '<div class="empty">—</div>';
+  const maxCost=Math.max(0.0001,...keys.map(cost));
+  box('costBars').innerHTML = keys.map(k=>barRow(STAGE_LABEL[k]||k, cost(k), maxCost, STAGE_CLASS[k], '$')).join('') || '<div class="empty">—</div>';
+
+  box('costTable').innerHTML=`<div class="table-scroll"><table>
+    <thead><tr><th>Czas (UTC)</th><th>Wywołań</th><th>Input</th><th>Output</th><th>Koszt szac.</th></tr></thead>
+    <tbody>${runs.slice(0,30).map(r=>{ const c=((r.total_in||0)*PRICE_IN+(r.total_out||0)*PRICE_OUT)/1e6;
+      return `<tr><td class="ts">${esc(r.ts)}</td><td class="num">${fmt(r.total_calls)}</td><td class="num">${fmt(r.total_in)}</td><td class="num">${fmt(r.total_out)}</td><td class="num">${usd(c)}</td></tr>`; }).join('')}</tbody>
+  </table></div>`;
+  box('costNote').innerHTML=`Ceny szacunkowe: input <b>$${PRICE_IN}/M</b>, output <b>$${PRICE_OUT}/M</b> — realny rachunek w panelu DeepSeek. Output jest ~4× droższy, dlatego etap „artykuł" waży więcej niż sama liczba tokenów. Pokazane ostatnie ${runs.length} biegów (max 200).`;
+}
+
+// ══════════ 2. ZAWARTOŚĆ + 3. POCZEKALNIA ══════════
+async function loadContent(){
+  const box=id=>document.getElementById(id);
+  let d;
+  try{ const r=await fetch('briefs.json?_='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); d=await r.json(); }
+  catch(e){ box('contentSummary').innerHTML=`<div class="empty err">Nie udało się wczytać briefs.json (${esc(e.message)}).</div>`; return; }
+
+  const published=['morning','afternoon','evening'];
+  let all=[], clusters=0, singles=0; const clusterSizes={};
+  const perDose={};
+  published.forEach(dk=>{ const dv=d[dk]; if(!dv) return; const lv=leaves(dv); perDose[dk]=(dv.items||[]).length;
+    (dv.items||[]).forEach(it=>{ const sz=(it.subItems&&it.subItems.length)||0; if(sz>0){clusters++; clusterSizes[sz>=4?'4+':String(sz)]=(clusterSizes[sz>=4?'4+':String(sz)]||0)+1;} else singles++; });
+    all=all.concat(lv);
+  });
+
+  // reach
+  const reaches=all.map(x=>x.reach).filter(v=>typeof v==='number');
+  const avgReach = reaches.length? (reaches.reduce((a,b)=>a+b,0)/reaches.length):0;
+  const maxReach = reaches.length? Math.max(...reaches):0;
+  const buckets={'1':0,'2–3':0,'4–6':0,'7–10':0,'11+':0};
+  all.forEach(x=>{ const v=x.reach; if(typeof v!=='number'){return;} v<=1?buckets['1']++:v<=3?buckets['2–3']++:v<=6?buckets['4–6']++:v<=10?buckets['7–10']++:buckets['11+']++; });
+
+  box('contentSummary').innerHTML=[
+    statTile('artykułów', fmt(all.length), `${clusters} klastrów · ${singles} pojedyn.`, 'accent-blue'),
+    statTile('śr. reach', avgReach?avgReach.toFixed(1):'—', 'źródeł/post', 'accent-green'),
+    statTile('max reach', maxReach||'—', 'najlepiej potwierdzony', 'accent-amber'),
+    statTile('morning', perDose.morning||0),
+    statTile('afternoon', perDose.afternoon||0),
+    statTile('evening', perDose.evening||0),
+  ].join('');
+
+  const maxB=Math.max(1,...Object.values(buckets));
+  box('reachBars').innerHTML=Object.entries(buckets).map(([k,v])=>barRow(k+' źródeł', v, maxB, 'f-cat')).join('');
+  const maxC=Math.max(1,...Object.values(clusterSizes));
+  box('clusterBars').innerHTML=Object.keys(clusterSizes).length? Object.entries(clusterSizes).sort().map(([k,v])=>barRow(k+' podwpisów', v, maxC, 'f-aux')).join('') : '<div class="empty">brak klastrów</div>';
+
+  // kategorie
+  const cats={}; all.forEach(x=>{ const c=catOf(x.text); cats[c]=(cats[c]||0)+1; });
+  const catKeys=Object.keys(cats).sort((a,b)=>cats[b]-cats[a]); const maxCat=Math.max(1,...Object.values(cats));
+  box('catBars').innerHTML=catKeys.map(k=>barRow(k, cats[k], maxCat, 'f-cat')).join('');
+
+  // źródła
+  const srcs={}; all.forEach(x=>{ const s=x.source_name||'(brak)'; srcs[s]=(srcs[s]||0)+1; });
+  const srcKeys=Object.keys(srcs).sort((a,b)=>srcs[b]-srcs[a]).slice(0,10); const maxSrc=Math.max(1,...srcKeys.map(k=>srcs[k]));
+  box('srcBars').innerHTML=srcKeys.map(k=>barRow(k, srcs[k], maxSrc, 'f-src')).join('');
+
+  // top reach
+  const top=all.filter(x=>typeof x.reach==='number').sort((a,b)=>b.reach-a.reach).slice(0,10);
+  box('topReach').innerHTML=top.length?`<div class="table-scroll"><table><thead><tr><th>Reach</th><th>Temat</th><th>Nagłówek</th><th>Źródło</th></tr></thead>
+    <tbody>${top.map(x=>`<tr><td class="num">${x.reach}</td><td><span class="chip">${esc(catOf(x.text))}</span></td><td>${esc((x.text||'').slice(0,90))}</td><td class="reason">${esc(x.source_name||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">brak danych reach</div>';
+
+  // ── POCZEKALNIA ──
+  const pv=d['poczekalnia']; const p=pv?leaves(pv):[];
+  const enriched=p.filter(x=>x.article&&String(x.article).trim().length>0).length;
+  const notEnriched=p.length-enriched;
+  const attempts={}; p.forEach(x=>{ const a=x.enrich_attempts||0; const k=a>=3?'3+':String(a); attempts[k]=(attempts[k]||0)+1; });
+  box('poczSummary').innerHTML=[
+    statTile('czeka', fmt(p.length), pv?.date?('data '+pv.date):'', 'accent-purple'),
+    statTile('wzbogacone', fmt(enriched), 'mają opis'),
+    statTile('bez opisu', fmt(notEnriched), 'czekają na enrichment', notEnriched? 'accent-red':''),
+  ].join('');
+  const maxA=Math.max(1,...Object.values(attempts));
+  box('poczEnrich').innerHTML=Object.keys(attempts).length? Object.entries(attempts).sort().map(([k,v])=>barRow(k+' prób', v, maxA, k==='3+'?'f-art':'f-aux')).join('') : '<div class="empty">pusto</div>';
+  const pcats={}; p.forEach(x=>{ const c=catOf(x.text); pcats[c]=(pcats[c]||0)+1; });
+  const pcatKeys=Object.keys(pcats).sort((a,b)=>pcats[b]-pcats[a]); const maxPcat=Math.max(1,...Object.values(pcats),1);
+  box('poczCat').innerHTML=pcatKeys.length?pcatKeys.map(k=>barRow(k,pcats[k],maxPcat,'f-cat')).join(''):'<div class="empty">pusto</div>';
+  box('poczList').innerHTML=p.length?`<div class="table-scroll"><table><thead><tr><th>Status</th><th>Temat</th><th>Nagłówek</th><th>Prób</th></tr></thead>
+    <tbody>${p.slice(0,25).map(x=>{ const en=x.article&&String(x.article).trim(); return `<tr><td><span class="chip" style="background:${en?'#dcfce7':'#fee2e2'};color:${en?'#15803d':'#cc0000'}">${en?'opis':'brak opisu'}</span></td><td>${esc(catOf(x.text))}</td><td>${esc((x.text||'').slice(0,85))}</td><td class="num">${x.enrich_attempts||0}</td></tr>`; }).join('')}</tbody></table></div>`:'<div class="empty">poczekalnia pusta</div>';
+}
+
+// ══════════ 4. ODRZUCENIA ══════════
+async function loadRejected(){
+  const box=id=>document.getElementById(id);
+  let r;
+  try{ const res=await fetch('rejected.json?_='+Date.now(),{cache:'no-store'}); if(!res.ok) throw new Error('HTTP '+res.status); r=await res.json(); }
+  catch(e){ box('rejSummary').innerHTML=`<div class="empty err">Nie udało się wczytać rejected.json (${esc(e.message)}).</div>`; return; }
+  const arr=Array.isArray(r)?r:[];
+  const withReason=arr.filter(x=>x.reason&&String(x.reason).trim()).length;
+  const recent=arr.slice(-40);
+  box('rejSummary').innerHTML=[
+    statTile('odrzuceń łącznie', fmt(arr.length), 'w rejected.json', 'accent-red'),
+    statTile('z powodem', fmt(withReason), 'ma pole reason'),
+    statTile('aktywne (uczą)', fmt(recent.length), 'ostatnie 40 = REGUŁA 0', 'accent-amber'),
+  ].join('');
+  const show=arr.slice(-25).reverse();
+  box('rejTable').innerHTML=`<div class="table-scroll"><table><thead><tr><th>Data</th><th>Flaga</th><th>Nagłówek</th><th>Powód</th></tr></thead>
+    <tbody>${show.map(x=>`<tr><td class="ts">${esc(x.date||'—')}</td><td>${esc(x.flag||'')}</td><td>${esc((x.text||'').slice(0,80))}</td><td class="reason">${esc(x.reason||'—')}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function loadAll(){ loadCost(); loadContent(); loadRejected(); }
+loadAll();
+</script>
+</body>
+</html>
