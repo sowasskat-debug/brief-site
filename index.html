@@ -311,86 +311,81 @@ const SAMPLE = {
 let currentDose = getCurrentDose();
 let cache = {};
 
-// ═══ Przesuwak jakości ("samo mięso" ↔ "wszystko") ═══
-// Skala progu 0..MEAT_MAX. meatMin=0 → przepuszcza wszystko (suwak w prawo).
-// meatMin wysokie → tylko grube tematy (suwak w lewo).
-const MEAT_MAX = 40;
-let meatMin = 0;   // domyślnie: wszystko (bez zaskoczenia dla obecnych userów)
+// ═══ Suwak jakości PER TEMAT — PERCENTYL (pokaż top X% newsów DANEGO tematu) ═══
+// Zamiast progu ABSOLUTNEGO (niesprawiedliwy: "Wojna Iran" ma reach 30-40, "Tech" 5-15 → ten sam próg kosił
+// Tech, a Iran zostawiał w całości), suwak = "pokaż top X% newsów TEGO tematu" wg meatScore. Auto-normalizuje
+// się: każdy temat skaluje się względem SIEBIE. catMeatPct[cat] = 0..100 (100 = wszystko, mniej = mniej).
 
-// Ocena "grubości" newsa. Łączy dwa niezależne sygnały:
-//  - reach: ile RÓŻNYCH redakcji pisze o temacie wg Google News (liczy bot) — łapie grube 1-źródłowe newsy (RPP, KNF)
-//  - liczba źródeł w klastrze bota (×8) — łapie tematy o rzadkiej frazie, których reach zeruje (np. próba pocisku)
-// Bierzemy mocniejszy z dwóch, żeby każdy łatał dziurę drugiego.
+// Ocena "grubości/ważności" newsa. Percentyl per-temat sprawia, że liczy się RANKING w obrębie tematu, nie skala
+// absolutna — więc sygnały można bezpiecznie mieszać:
+//  - reach: ile RÓŻNYCH redakcji pisze o temacie (bot) — baza,
+//  - klaster: ile źródeł bot skleił w temat (korroboracja rzadkich fraz, których reach się zeruje),
+//  - impact: news z linią "Wpływ na rynek" dostaje bonus — liczy się TYLKO gdy jest, więc w "Świat"/"Polityka
+//    lokalna" (impact rzadki, 8-9% wpisów) prawie nie działa, a w Iran/Surowce/Fed (37-71%) wypycha
+//    market-moverów w górę. Zero konfiguracji per-temat — dane same się dobierają.
 function meatScore(item) {
   if (!item) return 0;
-  const src = (item.subItems && item.subItems.length ? item.subItems.length : 1);
+  const cluster = (item.subItems && item.subItems.length ? item.subItems.length : 1);
   const reach = (typeof item.reach === 'number' && item.reach > 0) ? item.reach : 0;
-  return Math.max(reach, src * 8);
+  const hasImpact = !!(item.impact && String(item.impact).trim());
+  return reach + (cluster > 1 ? cluster * 6 : 0) + (hasImpact ? 12 : 0);
 }
 
-// Filtruje listę wg progu suwaka. items[0] (top story) ZAWSZE zostaje — redakcyjny wybór bota.
-function filterByMeat(items) {
-  if (!items || !items.length || meatMin <= 0) return items;
-  return items.filter((it, i) => i === 0 || meatScore(it) >= meatMin);
+let catMeatPct = {};
+try { catMeatPct = JSON.parse(localStorage.getItem('brifup_cat_pct') || '{}'); } catch (e) { catMeatPct = {}; }
+function getCatPct(cat) { const v = catMeatPct[cat]; return (typeof v === 'number') ? v : 100; }
+function setCatPct(cat, pct) {
+  catMeatPct[cat] = pct;
+  try { localStorage.setItem('brifup_cat_pct', JSON.stringify(catMeatPct)); } catch (e) {}
 }
 
-// Filtruje GŁÓWNY feed wg progu jakości PER TEMAT — każdy news oceniany progiem SWOJEJ kategorii (dtGetCategory).
-// Wcześniej próg per-temat działał TYLKO w widoku pojedynczego tematu; główny feed go ignorował (używał martwej
-// globalnej meatMin=0). items[0] (top story) zawsze zostaje. Podłoga: temat obecny w dawce nie znika całkiem —
-// przy skrajnym filtrze zostaje jego najgrubszy news (spójne z widokiem tematu, dtRenderCatFilter/mobileFilterCat).
+// Zostaw top ceil(pct% * N) pozycji wg score (min 1 = podłoga: temat nigdy nie pustoszeje).
+function topPctByScore(arr, pct, scoreOf) {
+  if (pct >= 100) return arr.slice();
+  const n = Math.max(1, Math.ceil(arr.length * pct / 100));
+  return arr.slice().sort((a, b) => scoreOf(b) - scoreOf(a)).slice(0, n);
+}
+
+// Filtruje GŁÓWNY feed percentylem PER TEMAT — każdy news oceniany w obrębie SWOJEJ kategorii (dtGetCategory).
+// items[0] (top story) zawsze zostaje.
 function filterByCatMeat(items) {
   if (!items || items.length <= 1) return items;
-  if (!Object.values(catMeatMin).some(v => v > 0)) return items; // żaden próg nieaktywny → nic nie filtruj
+  if (!Object.keys(catMeatPct).some(c => getCatPct(c) < 100)) return items; // wszystko na 100% → nie filtruj
   const keep = new Set([0]);
   const byCat = {};
   items.forEach((it, i) => { const c = dtGetCategory(it); (byCat[c] = byCat[c] || []).push(i); });
   Object.keys(byCat).forEach(c => {
-    const min = getCatMeat(c);
+    const pct = getCatPct(c);
     const idxs = byCat[c];
-    if (min <= 0) { idxs.forEach(i => keep.add(i)); return; }
-    const passing = idxs.filter(i => meatScore(items[i]) >= min);
-    if (passing.length) passing.forEach(i => keep.add(i));
-    else keep.add(idxs.slice().sort((a, b) => meatScore(items[b]) - meatScore(items[a]))[0]); // podłoga
+    if (pct >= 100) { idxs.forEach(i => keep.add(i)); return; }
+    topPctByScore(idxs, pct, i => meatScore(items[i])).forEach(i => keep.add(i));
   });
   return items.filter((it, i) => keep.has(i));
 }
 
-// ═══ Suwak jakości PER TEMAT (mobile) ═══
-// Każdy temat pamięta własny próg niezależnie (np. "samo mięso" na Tech, "wszystko" na Geopolityce).
-let catMeatMin = {};
-try { catMeatMin = JSON.parse(localStorage.getItem('brifup_cat_meat') || '{}'); } catch (e) { catMeatMin = {}; }
-function getCatMeat(cat) { return catMeatMin[cat] || 0; }
-function setCatMeat(cat, val) {
-  catMeatMin[cat] = val;
-  try { localStorage.setItem('brifup_cat_meat', JSON.stringify(catMeatMin)); } catch (e) {}
-}
-// Pasek z tłem-suwakiem pod nazwą tematu — wypełnienie = ile % przechodzi filtr (100% = wszystko).
+// Pasek-suwak pod nazwą tematu — wypełnienie = % newsów tematu które przechodzą (100% = wszystko).
 function catFillBarHtml(cat) {
-  const min = getCatMeat(cat);
-  const pct = Math.round(100 - (min / MEAT_MAX) * 100);
-  return `<div class="cat-fill-bar" id="catFillBar" data-cat="${cat.replace(/"/g,'&quot;')}">
-    <div class="cat-fill-bar-fill" id="catFillBarFill" style="width:${pct}%"></div>
+  const pct = getCatPct(cat);
+  return `<div class="cat-fill-bar" data-cat="${cat.replace(/"/g,'&quot;')}">
+    <div class="cat-fill-bar-fill" style="width:${pct}%"></div>
     <div class="cat-fill-bar-row">
       <span class="cat-fill-bar-name">${cat}</span>
-      <span class="cat-fill-bar-pct" id="catFillBarPct">${pct}%</span>
+      <span class="cat-fill-bar-pct">${pct}%</span>
     </div>
   </div>`;
 }
-// READ-ONLY pasek poziomu progu pod nazwą tematu na LIŚCIE tematów (wariant B — sam wskaźnik %).
-// Osobna klasa (.cat-level-bar) niż interaktywny suwak (.cat-fill-bar), żeby gest przeciągania go NIE łapał
-// i tapnięcie w temat działało normalnie. Regulacja progu zostaje w widoku tematu (sticky .cat-fill-bar).
+// READ-ONLY pasek poziomu pod nazwą tematu na LIŚCIE (osobna klasa .cat-level-bar, pointer-events:none — nie łapie gestu).
 function catLevelBarHtml(cat) {
-  const pct = Math.round(100 - (getCatMeat(cat) / MEAT_MAX) * 100);
+  const pct = getCatPct(cat);
   return `<div class="cat-level-bar" data-cat="${String(cat).replace(/"/g,'&quot;')}"><div class="cat-level-fill" style="width:${pct}%"></div></div>`;
 }
-// Odśwież read-only paski poziomu na listach po zmianie progu (żeby lista pokazywała aktualny %).
 function refreshCatLevelBars(cat) {
-  const pct = Math.round(100 - (getCatMeat(cat) / MEAT_MAX) * 100);
+  const pct = getCatPct(cat);
   document.querySelectorAll('.cat-level-bar').forEach(bar => {
     if (bar.dataset.cat === cat) { const f = bar.querySelector('.cat-level-fill'); if (f) f.style.width = pct + '%'; }
   });
 }
-// Przeciąganie palcem/myszą wprost po pasku tematu — zmienia próg NA ŻYWO, zapisuje przy puszczeniu.
+// Przeciąganie palcem/myszą wprost po pasku tematu — zmienia % NA ŻYWO, zapisuje przy puszczeniu.
 (function() {
   let dragging = false, barEl = null;
   function pctFromEvent(e, bar) {
@@ -415,10 +410,9 @@ function refreshCatLevelBars(cat) {
     if (!dragging || !barEl) return;
     dragging = false;
     const pct = pctFromEvent(e, barEl);
-    const min = Math.round(MEAT_MAX * (1 - pct / 100));
     const cat = barEl.dataset.cat;
     barEl = null;
-    setCatMeat(cat, min);
+    setCatPct(cat, pct);
     refreshCatLevelBars(cat);
     if (mobActiveCat === cat) mobileFilterCat(cat);
     if (dtActiveFilter === cat) dtRenderCatFilter(cat);
@@ -1597,8 +1591,8 @@ function dtFilterCat(el) {
   dtShowEmpty();
 }
 
-// Cross-day widok tematu na PC + filtr jakości (suwak). meatMin>0 → tylko "mięso" tego tematu.
-// Podłoga: wąski temat nigdy nie pustoszeje — przy "samo mięso" pokazuje przynajmniej najgrubszy item.
+// Cross-day widok tematu na PC + filtr jakości = percentyl (top X% tego tematu wg meatScore).
+// Podłoga: wąski temat nigdy nie pustoszeje — przy "samo mięso" pokazuje przynajmniej najgrubszy item (min 1).
 function dtRenderCatFilter(cat) {
   const matchesCat = it => it.subItems?.length > 0 ? it.subItems.some(sub => dtGetCategory(sub) === cat) : dtGetCategory(it) === cat;
   const today = new Date().toISOString().slice(0,10);
@@ -1606,13 +1600,10 @@ function dtRenderCatFilter(cat) {
   dtAllItems.filter(matchesCat).forEach(it => matching.push({ it, d: today }));
   dtArchiveAllItems.filter(matchesCat).forEach(it => matching.push({ it, d: it._archiveDate }));
 
-  const catMin = getCatMeat(cat);
+  const pct = getCatPct(cat);
   let survivors = matching;
-  if (catMin > 0) {
-    survivors = matching.filter(x => meatScore(x.it) >= catMin);
-    if (!survivors.length && matching.length) {
-      survivors = matching.slice().sort((a,b) => meatScore(b.it) - meatScore(a.it)).slice(0,1);
-    }
+  if (pct < 100) {
+    survivors = topPctByScore(matching, pct, x => meatScore(x.it));
   }
 
   const wrapEl = document.getElementById('dtCatFillBarWrap');
@@ -1719,7 +1710,8 @@ function dtRenderFeed(items) {
 
 function renderDesktop(dose, items) {
   if (!isDesktop()) return;
-  items = filterByMeat(items);
+  // NIE filtrujemy tutaj — dtAllItems ma być PEŁNE (liczniki tematów + widoki tematów).
+  // Percentyl per-temat aplikuje dopiero dtRenderFeed (główny feed) i widoki tematów.
   dtItemsMap = {};
   dtAllItems = items;
   dtActiveFilter = null;
@@ -2081,14 +2073,11 @@ function mobileFilterCat(cat) {
   (cache[currentDose] || []).filter(matchesCat).forEach(it => matching.push({ it, d: today }));
   (typeof dtArchiveAllItems !== 'undefined' ? dtArchiveAllItems : []).filter(matchesCat).forEach(it => matching.push({ it, d: it._archiveDate }));
 
-  // Suwak jakości PER TEMAT (własny próg, zapamiętany). Podłoga: nie pustoszej — przy "samo mięso" pokaż najgrubszy.
-  const catMin = getCatMeat(c);
+  // Suwak jakości PER TEMAT = percentyl (top X% tematu wg meatScore). Podłoga: min 1 (nie pustoszej).
+  const pct = getCatPct(c);
   let survivors = matching;
-  if (catMin > 0) {
-    survivors = matching.filter(x => meatScore(x.it) >= catMin);
-    if (!survivors.length && matching.length) {
-      survivors = matching.slice().sort((a,b) => meatScore(b.it) - meatScore(a.it)).slice(0,1);
-    }
+  if (pct < 100) {
+    survivors = topPctByScore(matching, pct, x => meatScore(x.it));
   }
 
   const byDate = {};

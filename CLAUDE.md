@@ -70,7 +70,15 @@ fallback na pozycję w `items[]`.
 - **Suwak jakości PER TEMAT** (zastąpił globalny suwak „SAMO MIĘSO↔WSZYSTKO", usunięty 2026-07-11 z mobile
   i desktopu — HTML/CSS/JS, `onMeatSlide`/`meatBar`/`dtMeatBar` skasowane). Każdy temat pamięta WŁASNY próg:
   `catMeatMin` (obiekt `{kategoria: meatMin}`) w `localStorage['brifup_cat_meat']`, dzielony między mobile i
-  desktop. `getCatMeat(cat)`/`setCatMeat(cat,val)`.
+  desktop. `getCatPct(cat)`/`setCatPct(cat,pct)` (klucz `localStorage['brifup_cat_pct']`).
+  - ⚠️ **PERCENTYL per-temat, nie próg absolutny (2026-07-14):** wcześniej suwak = absolutny próg `meatScore`
+    (skala 0-40, `MEAT_MAX`) — niesprawiedliwy: „Wojna Iran" ma reach 30-40, „Tech" 5-15, więc ten sam próg kosił
+    Tech a Iran zostawiał w całości (user to zgłosił). Teraz suwak = **„pokaż top X% newsów TEGO tematu"** wg
+    `meatScore` (`topPctByScore`, min 1 = podłoga). Auto-normalizuje się względem każdego tematu osobno.
+  - **`meatScore` = `reach + (klaster>1 ? klaster*6 : 0) + (ma impact ? 12 : 0)`.** Impact (linia „Wpływ na rynek")
+    liczy się TYLKO gdy jest — a że jest rzadki w „Świat"/„Polityka lokalna" (8-9% wpisów) a częsty w Iran/Surowce/
+    Fed (37-71%, zmierzone), bonus sam się dobiera do tematu, BEZ konfiguracji per-kategoria. Percentyl sprawia,
+    że liczy się RANKING w temacie, nie skala absolutna — dlatego sygnały można mieszać.
   - **UI = wariant B (od 2026-07-14): cienka linia na DOLE wiersza** (`catFillBarHtml(cat)` → `.cat-fill-bar`):
     nazwa tematu + `%` (niebieski, bold) w wierszu, a pod spodem 3px pasek — niebieskie wypełnienie
     (`.cat-fill-bar-fill`) do pct% na szarym tracku (`.cat-fill-bar::after`). Sticky nad listą tematu.
