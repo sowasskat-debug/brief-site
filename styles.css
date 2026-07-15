@@ -283,7 +283,7 @@ html, body {
 /* ══ EXPAND PANEL ══ */
 .card-expand {
   display: none;
-  background: var(--gray1);
+  background: var(--bg);
   border-bottom: 1px solid var(--rule);
   border-left: 3px solid var(--red);
   padding: 18px 18px 20px 15px;
@@ -316,7 +316,7 @@ html, body {
 .impact-box {
   margin-top: 8px; padding: 6px 10px;
   border-left: 2px solid var(--amber);
-  background: rgba(0,0,0,.025); border-radius: 0 4px 4px 0;
+  background: var(--gray1); border-radius: 0 4px 4px 0;
 }
 [data-theme="dark"] .impact-box { background: rgba(255,255,255,.04); }
 .impact-label {
