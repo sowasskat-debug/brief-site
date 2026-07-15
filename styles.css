@@ -186,6 +186,21 @@ html, body {
 .kicker-afternoon { color: var(--blue); }
 .kicker-evening   { color: var(--violet); }
 
+.hero-topbadge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--red); color: #fff;
+  font-family: 'Space Mono', monospace;
+  font-size: 7.5px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 2px;
+}
+.hero-kicker-dose {
+  font-family: 'Space Mono', monospace;
+  font-size: 7.5px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted);
+}
+
 .hero-title {
   font-family: 'DM Serif Display', serif;
   font-size: 23px; font-weight: 400; line-height: 1.22;
@@ -537,6 +552,11 @@ html, body {
 .src-badge { font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
 .src-check { color: #16a34a; font-weight: 700; }
 [data-theme="dark"] .src-check { color: #22c55e; }
+/* Wiersz meta pod nagłówkiem (mobile feed): mini-kategoria + sygnał źródeł */
+.news-cat-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
+.news-cat-name { font-family: 'Space Mono', monospace; font-size: 7.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.news-cat-sep { color: var(--rule); font-size: 9px; line-height: 1; }
+.news-cat-src { font-family: 'Space Mono', monospace; font-size: 7.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
 /* Telefon: badge w prawym górnym rogu kafelka (naprzeciw flagi), poza układem tekstu */
 .card-corner { position: absolute; top: 10px; right: 30px; }
 .dt-detail-headline { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--text); line-height: 1.3; margin-bottom: 8px; }

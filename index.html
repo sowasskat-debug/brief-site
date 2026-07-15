@@ -672,6 +672,17 @@ function srcBadge(item) {
   return n >= 2 ? `<span class="src-badge"><span class="src-check">✓</span>${n} ${zrodloPl(n)}</span>` : '';
 }
 
+// Wiersz meta pod nagłówkiem (mobile feed): mini-kategoria + sygnał źródeł.
+// Źródła: preferuje pole reach (ile redakcji pisze o temacie), fallback na confirmCount (klaster).
+function catMetaRow(item) {
+  const cat = dtGetCategory(item);
+  const n = (typeof item.reach === 'number' && item.reach >= 2) ? item.reach : confirmCount(item);
+  const src = n >= 2
+    ? `<span class="news-cat-sep">·</span><span class="news-cat-src"><span class="src-check">✓</span>${n} ${zrodloPl(n)}</span>`
+    : '';
+  return `<div class="news-cat-row"><span class="news-flag">${item.flag||'📰'}</span><span class="news-cat-name">${cat}</span>${src}</div>`;
+}
+
 // Linia "Wpływ na rynek": koloruje strzałki ↑ (zielony) / ↓ (czerwony)
 function impactHtml(item) {
   if (!item.impact) return '';
@@ -986,7 +997,8 @@ function renderDose(dose, items) {
       ${srcBadge(hero) ? `<div class="card-corner">${srcBadge(hero)}</div>` : ''}
       <div class="hero-kicker">
         <span class="hero-flag">${hero.flag||'📰'}</span>
-        <span class="hero-kicker-label ${cfg.kickerClass}">${cfg.kicker}</span>
+        <span class="hero-topbadge">★ Top Story</span>
+        <span class="hero-kicker-dose">${cfg.label}</span>
       </div>
       <div class="hero-title">${hero.text}</div>
       <div class="hero-footer">
@@ -1001,7 +1013,8 @@ function renderDose(dose, items) {
     <div class="hero-card" id="item-${hero.id}" data-text="${escAttr(hero.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${hero.id}')">
       <div class="hero-kicker">
         <span class="hero-flag">${hero.flag||'📰'}</span>
-        <span class="hero-kicker-label ${cfg.kickerClass}">${cfg.kicker}</span>
+        <span class="hero-topbadge">★ Top Story</span>
+        <span class="hero-kicker-dose">${cfg.label}</span>
       </div>
       <div class="hero-title">${hero.text}</div>
       ${hero.added_at ? `<div class="item-time">${formatAddedAt(hero)}</div>` : ''}
@@ -1020,7 +1033,7 @@ function renderDose(dose, items) {
           ${srcBadge(item) ? `<div class="card-corner">${srcBadge(item)}</div>` : ''}
           <div class="news-num">0${i+2}</div>
           <div class="news-body">
-            <span class="news-flag">${item.flag||'📰'}</span>
+            ${catMetaRow(item)}
             <div class="news-title">${item.text}</div>
           </div>
           <div class="news-arrow">›</div>
@@ -1033,7 +1046,7 @@ function renderDose(dose, items) {
         <div class="news-item" id="item-${item.id}" data-text="${escAttr(item.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${item.id}')">
           <div class="news-num">0${i+2}</div>
           <div class="news-body">
-            <span class="news-flag">${item.flag||'📰'}</span>
+            ${catMetaRow(item)}
             <div class="news-title">${item.text}</div>
             ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}
           </div>
