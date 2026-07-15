@@ -135,6 +135,15 @@ Bez żadnych napisów „NOWE" — sam **chwilowy błysk** artykułów, które p
 wersji, zmiany w `index.html`/`styles.css` są niewidoczne mimo poprawnego push (user zgłosił to 2026-07-11:
 "nic nie widzę" mimo że kod na produkcji był już poprawny — przyczyna: stary cache). Bumpuj **przy każdym
 commicie** dotykającym CSS/JS, nawet drobnym.
+- ⚠️ **Bump CACHE_NAME to NIE wszystko — cache HTTP też (2026-07-16):** telefon dostał NOWY `index.html`
+  (pobierany z `cache:'reload'`) + STARY `styles.css` = rozjechany render (flaga sklejona z kategorią, brak
+  wersalików/badge'a). Przyczyna: SW pobierał CSS/JS zwykłym `fetch(request)` (gałąź „pozostałe statyczne"),
+  który respektuje cache przeglądarki/Cloudflare (GitHub Pages daje `styles.css` max-age) → stary plik mimo
+  bumpa CACHE_NAME (to był cache HTTP, nie SW). **Fix:** CSS/JS pobierane z `{cache:'reload'}` (jak `index.html`),
+  regex `wymusSwiezyCssJs` w fetch-handlerze. Teraz zmiana stylów jest widoczna od razu, bez czekania aż wygaśnie
+  cache HTTP. Zasada: bump CACHE_NAME dalej rób (warstwa offline/precache), ale realną świeżość daje `cache:'reload'`.
+- **Po deployu telefon z już zainstalowanym starym SW potrzebuje ~2 odświeżeń:** 1. instaluje nowy SW
+  (skipWaiting+clients.claim), 2. nowy SW serwuje świeży CSS. Pierwszy load po zmianie bywa jeszcze stary.
 
 ## OneSignal (push)
 SDK z `cdn.onesignal.com` — **bywa blokowany przez adblock/DNS** → stąd baner
