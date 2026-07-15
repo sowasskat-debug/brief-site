@@ -915,22 +915,21 @@ html, body {
 /* ══ Wątek tematyczny (timeline, wariant A — oś pionowa) ══ */
 .watek-wrap { margin-top: 10px; }
 .watek-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
-  font-family: 'Space Mono', monospace; font-size: 12px; color: var(--red); background: none;
-  border: 1px solid var(--rule); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+  font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .5px; color: var(--red); background: none;
+  border: 1px solid var(--rule); border-radius: 2px; padding: 8px 12px; cursor: pointer; }
 .watek-btn .watek-caret { font-size: 11px; transition: transform .2s ease; }
 .watek-btn.open .watek-caret { transform: rotate(180deg); }
-.watek-timeline { position: relative; margin-top: 10px; padding-left: 22px; }
-.watek-spine { position: absolute; left: 5px; top: 6px; bottom: 6px; width: 2px; background: var(--rule); }
-.watek-node { position: relative; margin-bottom: 14px; }
+.watek-timeline { position: relative; margin-top: 12px; padding-left: 24px; }
+.watek-spine { position: absolute; left: 4px; top: 6px; bottom: 6px; width: 1px; background: var(--rule); }
+.watek-node { position: relative; margin-bottom: 16px; }
 .watek-node:last-child { margin-bottom: 2px; }
-.watek-dot { position: absolute; left: -21px; top: 3px; width: 9px; height: 9px; border-radius: 50%;
-  background: var(--bg); border: 2px solid var(--red); box-sizing: border-box; }
-.watek-cur .watek-dot { left: -23px; top: 1px; width: 13px; height: 13px; background: var(--red); box-shadow: 0 0 0 1.5px var(--red); }
-.watek-metaline { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
-.watek-dose { font-size: 10px; letter-spacing: .5px; padding: 1px 6px; border-radius: 10px; }
-.wch-m { color: #854f0b; background: #faeeda; }
-.wch-a { color: #185fa5; background: #e6f1fb; }
-.wch-e { color: #3c3489; background: #eeedfe; }
-.wch-x { color: #5f5e5a; background: #f1efe8; }
-.watek-rel { color: var(--red); text-transform: uppercase; letter-spacing: .5px; }
-.watek-head { font-family: 'DM Serif Display', serif; font-size: 15px; line-height: 1.2; color: var(--text); margin-top: 1px; }
+.watek-dot { position: absolute; left: -23px; top: 4px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--bg); border: 1.5px solid var(--muted); box-sizing: border-box; }
+.watek-cur .watek-dot { left: -25px; top: 2px; width: 11px; height: 11px; background: var(--bg); border: 2px solid var(--red); }
+.watek-metaline { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .5px; color: var(--muted);
+  display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-bottom: 3px; }
+.watek-when { font-variant-numeric: tabular-nums; }
+.watek-sep { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: .5; flex: none; }
+.watek-rel { text-transform: uppercase; letter-spacing: .5px; }
+.watek-cur .watek-metaline { color: var(--red); }
+.watek-head { font-family: 'DM Serif Display', serif; font-size: 15px; line-height: 1.22; color: var(--text); margin-top: 1px; }
