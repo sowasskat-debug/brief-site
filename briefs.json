@@ -174,59 +174,6 @@
         "reach": null
       },
       {
-        "flag": "🇨🇳",
-        "text": "Słabszy wzrost PKB Chin w II kwartale",
-        "article": null,
-        "impact": null,
-        "source_name": null,
-        "source_url": null,
-        "added_at": null,
-        "image_url": null,
-        "subItems": [
-          {
-            "flag": "🇨🇳",
-            "text": "Chiny raportują wzrost PKB na poziomie 4,3% w drugim kwartale.",
-            "article": "Wzrost PKB w II kwartale wyniósł 4,3%, co jest niższe od prognoz (4,5%). Dane handlowe za czerwiec były silne: eksport +27% r/r, import +36% r/r, głównie za sprawą drożejących surowców i importu chipów z Korei ( +85%) i Tajwanu (+41,1%) dla sektora AI. Nadwyżka handlowa w I półroczu sięgnęła 576 mld USD, a w samym czerwcu 126 mld USD (w tym 33 mld USD z UE). Pomimo słabnącej konsumpcji wewnętrznej i kryzysu na rynku nieruchomości, silny eksport (wspierany przez przyspieszone zamówienia z USA w obawie przed cłami) ma wspierać drugie półrocze. Premier Li Qiang zapowiedział bardziej zdecydowane działania stymulujące gospodarkę.",
-            "impact": "↑ CNH, ↑ AUD, ↓ USD, ↑ MSCI China",
-            "source_name": "Interia Biznes",
-            "source_url": "https://biznes.interia.pl/polityka/news-chiny-chwala-sie-wynikami-ekonomisci-gasza-entuzjazm-i-wskaz,nId,23514082",
-            "added_at": "2026-07-15 05:31",
-            "image_url": "https://i.iplsc.com/-/000HST3FSO12ABM8-C461.jpg",
-            "subItems": null,
-            "enrich_attempts": 0,
-            "reach": 29
-          },
-          {
-            "flag": "🇨🇳",
-            "text": "Chiny: PKB w II kwartale wzrósł o 4,3%",
-            "article": "Wzrost PKB Chin w II kwartale wyniósł 4,3% r/r, poniżej oczekiwań na poziomie 4,5% i dolnej granicy oficjalnego celu (5%). To najsłabsze tempo od IV kwartału 2022 r. W ujęciu kwartalnym PKB wzrósł o 0,9% (vs 1,3% w I kwartale). Produkcja przemysłowa w czerwcu przyspieszyła do 5,3% r/r (prognoza 4,5%), a sprzedaż detaliczna wzrosła o 1,0% (prognoza -0,1%), ale inwestycje w środki trwałe spadły o 5,7% w I półroczu (prognoza -4,9%), a inwestycje w nieruchomości o 18% r/r. Słabe dane zwiększają presję na rząd, by na lipcowym posiedzeniu Biura Politycznego ogłosił dodatkowe stymulusy fiskalne i infrastrukturalne.",
-            "impact": "↓ CNY, ↓ Indeks CSI 300, ↑ Ropa naftowa (oczekiwanie stymulusu)",
-            "source_name": "pb.pl",
-            "source_url": "https://www.pb.pl/wzrost-pkb-chin-rozczarowal-gospodarka-zwolnila-bardziej-od-prognoz-rosnie-presja-na-nowe-dzialania-wladz-1264264",
-            "added_at": "2026-07-15 06:31",
-            "image_url": "https://images.pb.pl/filtered/38e76380-2fbc-43ba-93eb-fddc57ac204f/2b5e3217-35cb-5efb-b16e-406b4c8815c2_og_1200_630.jpg",
-            "subItems": null,
-            "enrich_attempts": 0,
-            "reach": 29
-          },
-          {
-            "flag": "🇨🇳",
-            "text": "PKB Chin w drugim kwartale wyniósł 4,3%",
-            "article": "Wzrost PKB Chin w drugim kwartale spowolnił do 4,3% wobec 5% w pierwszym kwartale, poniżej rocznego celu Pekinu wynoszącego 4,5-5%. Był to najniższy kwartalny wzrost od końca 2022 r., czyli od czasu wyjścia Chin z restrykcji COVID-19. Spowolnienie wynika ze słabego popytu krajowego oraz wpływu wojny w Iranie na ceny ropy, co przeważyło nad silnym eksportem. Eksport w czerwcu wzrósł o 27% r/r, napędzany globalnym popytem na półprzewodniki do AI oraz pojazdy elektryczne (miesięczny eksport aut przekroczył 1 mln po raz pierwszy). Jednocześnie ceny nowych domów spadły o 0,1% w czerwcu, a sprzedaż detaliczna wzrosła o 1% po spadku o 0,6% w maju. Analitycy ostrzegają, że przedłużający się konflikt w Iranie będzie coraz bardziej obciążać chińską gospodarkę.",
-            "impact": "↓ Chiny / indeksy azjatyckie, ↑ Ropa naftowa, ↓ USD/CNY, ↓ Surowce przemysłowe",
-            "source_name": "BBC",
-            "source_url": "https://www.bbc.co.uk/news/articles/cd959x4edy8o?at_medium=RSS&at_campaign=rss",
-            "added_at": "2026-07-15 07:32",
-            "image_url": "https://ichef.bbci.co.uk/ace/branded_news/1200/cpsprodpb/c8de/live/7e6a3480-7f40-11f1-ba68-9b76167cb04b.jpg",
-            "subItems": null,
-            "enrich_attempts": 0,
-            "reach": 28
-          }
-        ],
-        "enrich_attempts": 0,
-        "reach": null
-      },
-      {
         "flag": "🇵🇱",
         "text": "Wielki wzrost wycen porodów i bat na szpitale, które unikają znieczuleń",
         "article": "NFZ przeznaczy dodatkowe 9,25 mld zł rocznie na wzrost płac w ochronie zdrowia od 1 lipca 2025 r., z czego 1,2 mld zł trafi na nowe taryfy świadczeń. Największy wzrost dotyczy położnictwa – wycena porodu naturalnego wzrośnie o 47% z ok. 5 tys. zł do prawie 9 tys. zł. Szpitale dostaną też więcej za znieczulenie zewnątrzoponowe (z 1,1 tys. zł do ok. 2 tys. zł) oraz premie za zwiększenie udziału znieczuleń. Blisko 600 mln zł z puli trafi do szpitali powiatowych. Zmiany obejmują też m.in. leczenie psychiatryczne dzieci, choroby piersi, choroby układu oddechowego i ryczałty diagnostyczne w onkologii.",
