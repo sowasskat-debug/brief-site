@@ -137,6 +137,12 @@ html, body {
   margin-top: var(--top-h);
   height: calc(100vh - var(--top-h));
 }
+/* Deep-link „otwórz ten news": scrollIntoView({block:'start'}) inaczej wsuwa nagłówek POD stały pasek+zakładki
+   (viewport y=0). scroll-margin-top odsuwa cel tak, by nagłówek wylądował TUŻ POD zakładkami, a ekran zaczynał
+   się od udostępnionego artykułu (zgłoszenie 2026-07-16). */
+#scrollArea [id^="item-"], #scrollArea [id^="group-"], #scrollArea .hero-card {
+  scroll-margin-top: calc(var(--top-h) + var(--tab-h) + 6px);
+}
 
 /* ══ EDITION BAR ══ */
 .edition-bar {
