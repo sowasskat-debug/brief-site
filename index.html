@@ -1570,12 +1570,18 @@ const DT_CAT_COLORS = {
   'Wojna na Ukrainie':'#eab308','Wojna w Iranie':'#b91c1c','Polityka lokalna':'#db2777'
 };
 // Tematy z flagą zamiast kolorowej kropki w sidebarze/panelu.
-const DT_CAT_FLAG = { 'Wojna w Iranie':'🇮🇷','Wojna na Ukrainie':'🇺🇦','Polityka lokalna':'🇵🇱' };
-// Zwraca znacznik tematu: flagę (jeśli jest) albo kolorową kropkę. dotClass/flagClass zależne od kontekstu (desktop vs mobile).
+const DT_CAT_FLAG = { 'Wojna w Iranie':'🇮🇷','Wojna na Ukrainie':'🇺🇦' };
+// „Polityka lokalna" — kropka po LEWEJ (jak reszta), a flaga 🇵🇱 po PRAWEJ (życzenie właściciela 2026-07-16).
+const DT_CAT_RIGHT_FLAG = { 'Polityka lokalna':'🇵🇱' };
+// Zwraca znacznik tematu po LEWEJ: flagę (jeśli jest) albo kolorową kropkę. dotClass/flagClass zależne od kontekstu (desktop vs mobile).
 function catMarker(c, dotClass, flagClass) {
   return DT_CAT_FLAG[c]
     ? `<span class="${flagClass}">${DT_CAT_FLAG[c]}</span>`
     : `<div class="${dotClass}" style="background:${DT_CAT_COLORS[c]||'#888'}"></div>`;
+}
+// Flaga po PRAWEJ stronie wiersza (na razie tylko Polityka lokalna). Pusty string gdy brak.
+function catRightFlag(c, cls) {
+  return DT_CAT_RIGHT_FLAG[c] ? `<span class="${cls}">${DT_CAT_RIGHT_FLAG[c]}</span>` : '';
 }
 // Kolejność tematów w sidebarze i panelu (wspólna). Wojny i polityka lokalna na górze — najważniejsze.
 // Kolejność tematów. Wojny (grupa „KONFLIKTY") świadomie NA DOLE listy (życzenie właściciela 2026-07-16).
@@ -1603,6 +1609,7 @@ function dtRenderSidebar(items) {
         `<div class="dt-index-item" onclick="dtFilterCat(this)">
           ${catMarker(c, 'dt-index-dot', 'dt-index-flag')}
           <span class="dt-index-label">${c}</span>
+          ${catRightFlag(c, 'dt-index-rflag')}
           <span class="dt-index-n">${counts[c]}</span>
           ${catLevelBarHtml(c)}
         </div>`
@@ -1679,6 +1686,7 @@ function dtRenderSidebarCounts() {
       `<div class="dt-index-item${activeFilter===c?' active':''}" onclick="dtFilterCat(this)">
         ${catMarker(c, 'dt-index-dot', 'dt-index-flag')}
         <span class="dt-index-label">${c}</span>
+        ${catRightFlag(c, 'dt-index-rflag')}
         <span class="dt-index-n">${counts[c]}</span>
         ${catLevelBarHtml(c)}
       </div>`
@@ -2122,6 +2130,7 @@ function mobSwpBuildCats(items) {
       `<button class="mob-swp-cat${mobActiveCat === c ? ' act' : ''}" data-cat="${c}" onclick="mobileFilterCat('${c.replace(/'/g,"\\'")}');mobSwpClose()">
         ${catMarker(c, 'mob-swp-cat-dot', 'mob-swp-cat-flag')}
         <span class="mob-swp-cat-nm">${c}</span>
+        ${catRightFlag(c, 'mob-swp-cat-rflag')}
         <span class="mob-swp-cat-cnt">${counts[c]}</span>
         ${catLevelBarHtml(c)}
       </button>`
