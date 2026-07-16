@@ -901,7 +901,7 @@ async function showArchiveDay(dateStr, highlightSlug) {
         }
         if (!el) return;
         setTimeout(() => {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
           el.classList.add('deep-link-highlight');
           setTimeout(() => el.classList.remove('deep-link-highlight'), 2000);
         }, 160);
@@ -1299,7 +1299,7 @@ loadDose(currentDose);
       setTimeout(() => {
         const el = document.getElementById('dts-' + found.id) || document.getElementById('dti-' + found.id);
         if (!el) return;
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         el.classList.add('deep-link-highlight');
         setTimeout(() => el.classList.remove('deep-link-highlight'), 2000);
       }, 120);
@@ -1326,7 +1326,7 @@ loadDose(currentDose);
       }
       if (!el) return;
       setTimeout(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         el.classList.add('deep-link-highlight');
         setTimeout(() => el.classList.remove('deep-link-highlight'), 2000);
       }, 160);
