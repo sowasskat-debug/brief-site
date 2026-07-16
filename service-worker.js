@@ -5,7 +5,7 @@
 
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
 
-const CACHE_NAME = 'brifup-cache-v32';
+const CACHE_NAME = 'brifup-cache-v33';
 // UWAGA: index.html NIE jest tu precache'owany — patrz komentarz przy jego fetch-handlerze niżej.
 const STATIC_ASSETS = [
   './manifest.json',
@@ -50,21 +50,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // index.html — zawsze z sieci, z pominięciem cache przeglądarki (GitHub Pages daje HTML max-age=600,
-  // przez co inaczej widać starą wersję nawet przy network-first). cache:'reload' wymusza świeży pobór.
-  // Udaną odpowiedź NA BIEŻĄCO zapisujemy jako fallback (cache.put) — dzięki temu w razie zerwania
-  // sieci telefon dostanie "ostatnią znaną dobrą wersję", a nie zamrożony stan sprzed pierwszej
-  // instalacji PWA (to było źródło sytuacji, w której telefon utykał na starej, zepsutej wersji
-  // na całe tygodnie, mimo że komputer zawsze widział najnowszą).
-  if (url.endsWith('/') || url.includes('index.html') || !url.includes('.')) {
+  // index.html (app-shell) — STALE-WHILE-REVALIDATE, ale TYLKO dla realnych NAWIGACJI (wejście/odświeżenie
+  // strony). Serwujemy natychmiast z cache (szybkie ładowanie, koniec czekania na sieć), a w tle pobieramy
+  // świeży i podmieniamy cache na następny raz.
+  // ⚠️ Świeżość/wersję pilnuje OSOBNO `checkAppShellUpdate` w index.html: przy każdym wejściu i powrocie do
+  // apki pobiera index.html SIECIĄ (żądanie NIE-nawigacyjne, `fetch('./index.html',{cache:'reload'})` →
+  // NIE trafia w tę gałąź, tylko w network-first niżej, która AKTUALIZUJE ten sam cache pod './index.html'),
+  // porównuje ETag i gdy się zmienił — przeładowuje raz. Dzięki temu:
+  //   1. zwykłe ładowanie = błyskawiczne (z cache),
+  //   2. po deployu bezpiecznik pobiera świeżą powłokę siecią → wpisuje do cache → reload serwuje już NOWĄ,
+  //   3. apka NIE MOŻE utknąć na starej wersji — bezpiecznik łapie zmianę w ciągu jednego powrotu do apki
+  //      (to była trauma „zamrożenia na starej, zepsutej wersji na tygodnie"; tu detekcja + reload zostają).
+  if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request, { cache: 'reload' })
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return response;
-        })
-        .catch(() => caches.match('./index.html'))
+      caches.open(CACHE_NAME).then(async (cache) => {
+        const cached = await cache.match('./index.html');
+        const siec = fetch(event.request, { cache: 'reload' })
+          .then((response) => { cache.put('./index.html', response.clone()); return response; })
+          .catch(() => cached);
+        return cached || siec;   // jest cache → oddaj OD RAZU (sieć odświeża w tle); brak (1. wizyta) → czekaj na sieć
+      })
     );
     return;
   }

@@ -150,6 +150,16 @@ commicie** dotykającym CSS/JS, nawet drobnym.
   cache HTTP. Zasada: bump CACHE_NAME dalej rób (warstwa offline/precache), ale realną świeżość daje `cache:'reload'`.
 - **Po deployu telefon z już zainstalowanym starym SW potrzebuje ~2 odświeżeń:** 1. instaluje nowy SW
   (skipWaiting+clients.claim), 2. nowy SW serwuje świeży CSS. Pierwszy load po zmianie bywa jeszcze stary.
+- ⚠️ **App-shell `index.html` = STALE-WHILE-REVALIDATE dla NAWIGACJI (2026-07-16, zgłoszenie „apka wolno się ładuje"):**
+  fetch-handler dla `event.request.mode === 'navigate'` oddaje `index.html` NATYCHMIAST z cache (szybkie ładowanie),
+  a świeży pobiera w tle. Wersję/świeżość pilnuje dalej `checkAppShellUpdate` (index.html) — pobiera index.html
+  SIECIĄ żądaniem NIE-nawigacyjnym (`fetch('./index.html',{cache:'reload'})` → trafia w gałąź network-first
+  „pozostałe statyczne", która AKTUALIZUJE cache pod `./index.html`), porównuje ETag i przy zmianie robi `reloadOnce`
+  → reload serwuje już nową powłokę z cache. **Bezpiecznik zachowany:** apka NIE MOŻE utknąć na starej wersji
+  (detekcja+reload łapią zmianę w ciągu jednego powrotu). **Fail-safe:** gdyby `navigate`/klucze cache się nie zgadzały,
+  degraduje do starego network-first (brak przyspieszenia, ale bez zepsucia). ⚠️ Nie dało się w pełni przetestować w
+  sandboxie (SW nie rejestruje się — `importScripts` OneSignal CDN zablokowany egress; na produkcji działa) — zweryfikować
+  realny czas ładowania na urządzeniu.
 
 ## OneSignal (push)
 SDK z `cdn.onesignal.com` — **bywa blokowany przez adblock/DNS** → stąd baner
