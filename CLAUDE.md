@@ -114,6 +114,11 @@ fallback na pozycję w `items[]`.
     **`filterByCatMeat(items)`** — każdy news oceniany progiem SWOJEJ kategorii (`dtGetCategory`), `items[0]` (top
     story) zawsze zostaje, podłoga per-temat (najgrubszy news zostaje) — spójne z widokiem tematu.
 
+## Kategorie: grupa „KONFLIKTY" + rename wojen (2026-07-16)
+- **Rename** (życzenie właściciela): `Wojna Ukraina` → **`Wojna na Ukrainie`**, `Wojna Iran` → **`Wojna w Iranie`**. Zmienione WSZĘDZIE gdzie nazwa jest kluczem: zwroty `dtGetCategory`, `DT_CAT_COLORS`, `DT_CAT_FLAG`, `DT_CAT_ORDER`. (Uwaga: progi per-temat w localStorage `catMeatMin`/`catMeatPct` były kluczowane starą nazwą → po rename wracają do domyślnych dla przemianowanej kategorii; świadomie bez migracji, drobiazg.)
+- **Kolejność:** obie wojny przeniesione na **DÓŁ** `DT_CAT_ORDER` (były na górze).
+- **Grupa „⚔ KONFLIKTY"** — nagłówek sekcji nad wojnami (wariant A: czysto wizualny, NIE osobny filtr). `KONFLIKTY_CATS = ['Wojna na Ukrainie','Wojna w Iranie']` + helper `konfliktyHeaderHtml(c, obecne, cssClass)` — zwraca nagłówek tylko przed PIERWSZĄ obecną kategorią-konfliktem. Wpięte w **3 renderery**: `dtRenderSidebar`, `dtRenderSidebarCounts` (desktop, klasa `.dt-index-group`) i `mobSwpBuildCats` (mobile, klasa `.mob-swp-group`). CSS obu klas w `styles.css` (czerwony mono nagłówek + górna kreska). Zweryfikowane renderem realnej strony (desktop + mobile, liczniki żywe).
+
 ## Podświetlenie NOWYCH artykułów od ostatniej wizyty (2026-07-14)
 Bez żadnych napisów „NOWE" — sam **chwilowy błysk** artykułów, które pojawiły się od poprzedniego wejścia
 (user: „na chwilę dosłownie podświetla się artykuły które są nowe").
