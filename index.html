@@ -1975,9 +1975,15 @@ function syncDoseToTime() {
   if (powinnaByc !== currentDose) {
     delete cache[powinnaByc];      // świeże dane dla nowej dawki
     switchDose(powinnaByc);        // przełącza taby + ładuje właściwą dawkę
+  } else if (cache[currentDose]) {
+    // Ta sama dawka i mamy już dane → odśwież W MIEJSCU (jak live-poll): pobierz świeży briefs.json,
+    // porównaj podpis i podmień TYLKO gdy coś się zmieniło. Bez tego każdy powrót do apki kasował dane
+    // i przeładowywał dawkę od zera (stary DOM → skeleton → świeże = migotanie „stare artykuły, potem nowe",
+    // nawet gdy nic się nie zmieniło). Teraz: nic się nie zmieniło → brak re-renderu (zero migotania);
+    // zmieniło się → jedna płynna podmiana z zachowaniem scrolla.
+    pollLiveUpdates();
   } else {
-    delete cache[currentDose];
-    loadDose(currentDose, true);   // ta sama dawka → tylko odśwież dane
+    loadDose(currentDose, true);   // brak danych w pamięci → pełne załadowanie ze skeletonem
   }
 }
 document.addEventListener('visibilitychange', () => {
