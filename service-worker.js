@@ -5,7 +5,7 @@
 
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
 
-const CACHE_NAME = 'brifup-cache-v26';
+const CACHE_NAME = 'brifup-cache-v28';
 // UWAGA: index.html NIE jest tu precache'owany — patrz komentarz przy jego fetch-handlerze niżej.
 const STATIC_ASSETS = [
   './manifest.json',
@@ -69,9 +69,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Pozostałe pliki statyczne — network first, cache fallback
+  // Pozostałe pliki statyczne — network first, cache fallback.
+  // ⚠️ CSS/JS pobieramy z cache:'reload' (tak jak index.html wyżej) — inaczej zwykły fetch bierze STARĄ
+  // wersję z cache przeglądarki/Cloudflare (GitHub Pages daje styles.css max-age), więc po zmianie stylów
+  // telefon dostaje NOWY index.html + STARY styles.css = rozjechany render (flaga sklejona z kategorią,
+  // brak wersalików i czerwonego badge'a — zgłoszone 2026-07-16). Bump CACHE_NAME nie wystarczał, bo
+  // problemem był cache HTTP, nie cache SW. cache:'reload' wymusza świeży pobór, z cache fallbackiem offline.
+  const wymusSwiezyCssJs = /\.(css|js)(\?|$)/i.test(event.request.url);
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, wymusSwiezyCssJs ? { cache: 'reload' } : undefined)
       .then((response) => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
