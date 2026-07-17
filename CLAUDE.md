@@ -86,6 +86,10 @@ fallback na pozycję w `items[]`.
   na live-tick). CSS `.watek-badge` (czerwony mono chip, wariant dark).
 - **Sagi wielodniowe (2026-07-17):** bot trzyma węzły do 7 dni (cap 20/wątek) — `watekWhen` dokleja przedrostek daty
   „16.07" dla węzłów z innego dnia niż dziś. Patrz `financialnewsbot/CLAUDE.md` sekcja „Wątki".
+- **Widok „Wątki dnia" (2026-07-17):** przycisk 🧵 w topbarze → overlay `#watkiOverlay` (klasy `.archive-overlay` +
+  własne `.watki-*`): lista sag ≥2 węzły sortowana po świeżości ostatniego etapu (tytuł serif + memo kursywą +
+  licznik), tap rozwija oś (`.watek-timeline`), klik w węzeł = deep link `#dawka/slug` (węzły z poprzednich dni →
+  `#archive/data/dawka/slug`). Render z już wczytanego THREADS — 0 dodatkowych fetchy.
 - `threads.json` pisze bot (`BuildThreadsOnSite`, tryb `BUILD_THREADS`/normalny bieg) — kształt `{date, generated_at,
   threads:[{id,title,memo,nodes:[{text,added_at,dose,flag,source_url,relacja}]}], seen:[...]}`.
 - **Uwaga:** `let`-zmienne (THREADS, THREAD_BY_TEXT) NIE są na `window` (eval w preview ich nie widzi — testuj przez funkcje).

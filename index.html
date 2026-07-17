@@ -54,6 +54,7 @@
   </div>
   <div class="topbar-right">
     <div class="live-pill"><div class="live-dot"></div><div class="live-text">Live</div></div>
+    <button class="archive-btn" id="watkiBtn" onclick="openWatki()" title="Wątki dnia" aria-label="Wątki dnia">🧵</button>
     <button class="archive-btn" id="archiveBtn" onclick="openArchive()" title="Archiwum" aria-label="Archiwum">🗄</button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tryb ciemny" aria-label="Przełącz tryb ciemny">🌙</button>
     <button class="bell-btn inactive" id="bellBtn" onclick="togglePush()" title="Powiadomienia push" aria-label="Powiadomienia push">🔔</button>
@@ -68,6 +69,16 @@
     <button class="archive-close" onclick="closeArchive()">✕</button>
   </div>
   <div class="archive-body" id="archiveBody"></div>
+</div>
+
+<!-- Wątki dnia (2026-07-17): lista aktywnych sag z threads.json — tytuł+memo+ostatni etap,
+     rozwijana oś czasu (te same klasy .watek-*), klik w węzeł = deep link do artykułu. -->
+<div class="archive-overlay" id="watkiOverlay">
+  <div class="archive-header">
+    <div class="archive-title">🧵 Wątki dnia</div>
+    <button class="archive-close" onclick="closeWatki()">✕</button>
+  </div>
+  <div class="archive-body" id="watkiBody"></div>
 </div>
 
 <div class="dose-tabs" id="doseTabs">
@@ -589,6 +600,48 @@ function watekWhen(node){
 function watekBadgeHtml(item){
   const t = threadForItem(item);
   return t ? `<span class="watek-badge">🧵 ${t.nodes.length}</span>` : '';
+}
+
+// ══ Widok „Wątki dnia" — lista aktywnych sag (2026-07-17) ══
+function openWatki(){ renderWatkiOverlay(); document.getElementById('watkiOverlay').classList.add('show'); }
+function closeWatki(){ document.getElementById('watkiOverlay').classList.remove('show'); }
+function watekNodeLink(node){
+  // Węzeł z dziś → #dawka/slug; z poprzednich dni → #archive/data/dawka/slug (sagi wielodniowe).
+  const d = (node.added_at||'').slice(0,10);
+  const dzis = new Date().toISOString().slice(0,10);
+  const slug = itemSlug(node.text);
+  return (!d || d === dzis) ? `#${node.dose||'morning'}/${slug}` : `#archive/${d}/${node.dose||'morning'}/${slug}`;
+}
+function toggleWatekSaga(id){
+  const el = document.getElementById(id);
+  if (el) el.hidden = !el.hidden;
+}
+function renderWatkiOverlay(){
+  const body = document.getElementById('watkiBody');
+  const sagi = (THREADS && THREADS.threads ? THREADS.threads : [])
+    .filter(t => t.nodes && t.nodes.length >= 2)
+    .map(t => ({ t, last: t.nodes.reduce((m,n) => (n.added_at||'') > m ? n.added_at : m, '') }))
+    .sort((a,b) => (b.last||'').localeCompare(a.last||''));
+  if (!sagi.length){
+    body.innerHTML = '<div class="watki-pusto">Brak aktywnych wątków — pojawią się, gdy kilka newsów złoży się w jedną historię.</div>';
+    return;
+  }
+  body.innerHTML = sagi.map(({t, last}, i) => {
+    const rows = t.nodes.map(node => `
+      <div class="watek-node">
+        <span class="watek-dot"></span>
+        <div class="watek-metaline">${watekWhen(node)}${node.relacja?`<span class="watek-sep"></span><span class="watek-rel">${escHtml(node.relacja)}</span>`:''}</div>
+        <a class="watek-head watki-link" href="${escAttr(watekNodeLink(node))}" onclick="closeWatki()">${escHtml(node.text)}</a>
+      </div>`).join('');
+    return `<div class="watki-saga">
+      <button class="watki-saga-head" onclick="toggleWatekSaga('saga-${i}')">
+        <span class="watki-saga-title">${escHtml(t.title||'Wątek')}</span>
+        <span class="watki-saga-n">🧵 ${t.nodes.length} etapów · ost. ${escHtml((last||'').slice(5,16))}</span>
+      </button>
+      ${t.memo ? `<div class="watki-memo">${escHtml(t.memo)}</div>` : ''}
+      <div class="watek-timeline" id="saga-${i}" hidden><div class="watek-spine"></div>${rows}</div>
+    </div>`;
+  }).join('');
 }
 function watekHtml(item){
   const t = threadForItem(item);
