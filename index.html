@@ -467,6 +467,8 @@ function formatDoseDate(iso) {
   return new Date(p[0], p[1]-1, p[2]).toLocaleDateString('pl-PL', { day:'numeric', month:'short' });
 }
 function uid() { return Math.random().toString(36).slice(2,9); }
+// String w inline-JS (onclick='...'): escapuje \ ' " i nowe linie — SAMO escAttr nie chroni apostrofu,
+// a apostrof w tytule (np. „Trump's…") rozrywał JS w onclick przycisku Udostępnij. Używać ZAWSZE w parze: escAttr(esc(...)).
 function esc(s='') { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,' '); }
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -637,9 +639,7 @@ async function shareItem(url, title) {
   }
 }
 
-function escAttr(s) {
-  return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-}
+// (usunięto zdublowaną, słabszą definicję escAttr — obowiązuje pełna wersja niżej, escapująca też < >)
 
 // Nazwa źródła do wyświetlenia. Gdy bot nie zapisał source_name, ale jest odnośnik (source_url
 // lub rssLink), pokaż domenę zamiast "—" — skoro jest link "Czytaj", źródło nie jest nieznane.
@@ -681,13 +681,13 @@ function catMetaRow(item) {
   const src = n >= 2
     ? `<span class="news-cat-sep">·</span><span class="news-cat-src"><span class="src-check">✓</span>${n} ${zrodloPl(n)}</span>`
     : '';
-  return `<div class="news-cat-row"><span class="news-flag">${item.flag||'📰'}</span><span class="news-cat-name">${cat}</span>${src}</div>`;
+  return `<div class="news-cat-row"><span class="news-flag">${escHtml(item.flag||'📰')}</span><span class="news-cat-name">${cat}</span>${src}</div>`;
 }
 
 // Linia "Wpływ na rynek": koloruje strzałki ↑ (zielony) / ↓ (czerwony)
 function impactHtml(item) {
   if (!item.impact) return '';
-  const colored = item.impact
+  const colored = escHtml(item.impact)
     .replace(/↑/g, '<span class="imp-up">↑</span>')
     .replace(/↓/g, '<span class="imp-down">↓</span>');
   return `<div class="impact-box">
@@ -728,12 +728,12 @@ function watekHtml(item){
   const rows = t.nodes.map(node => {
     const cur = normThreadKey(node.text) === curKey;
     const sep = '<span class="watek-sep"></span>';
-    const rel = node.relacja ? `${sep}<span class="watek-rel">${node.relacja}</span>` : '';
+    const rel = node.relacja ? `${sep}<span class="watek-rel">${escHtml(node.relacja)}</span>` : '';
     const ten = cur ? `${sep}<span class="watek-rel">ten news</span>` : '';
     return `<div class="watek-node${cur?' watek-cur':''}">
       <span class="watek-dot"></span>
       <div class="watek-metaline">${watekWhen(node)}${rel}${ten}</div>
-      <div class="watek-head">${node.text}</div>
+      <div class="watek-head">${escHtml(node.text)}</div>
     </div>`;
   }).join('');
   return `<div class="watek-wrap">
@@ -753,7 +753,7 @@ function expandBlock(item) {
   const slug = itemSlug(item.text);
   const shareUrl = `https://brifup.com/#${currentDose}/${slug}`;
   const shareBtn = `<button class="expand-share-btn"
-    onclick="event.stopPropagation();shareItem('${escAttr(shareUrl)}','${escAttr(item.text)}')"
+    onclick="event.stopPropagation();shareItem('${escAttr(esc(shareUrl))}','${escAttr(esc(item.text))}')"
     ><span class="expand-share-icon">↑</span>Udostępnij</button>`;
 
   if (item.article) {
@@ -767,7 +767,7 @@ function expandBlock(item) {
       : '';
     return `
       ${imgHtml}
-      <div class="expand-article">${item.article}</div>
+      <div class="expand-article">${escHtml(item.article)}</div>
       ${impactHtml(item)}
       ${watekHtml(item)}
       <div class="expand-divider"></div>
@@ -775,7 +775,7 @@ function expandBlock(item) {
         <div class="expand-source-left">
           <span class="expand-source-tag">Źródło</span>
           <span class="expand-sep">/</span>
-          <span class="expand-source-name">${displaySource(item)}</span>
+          <span class="expand-source-name">${escHtml(displaySource(item))}</span>
         </div>
         <div class="expand-actions">${shareBtn}${readBtn}</div>
       </div>`;
@@ -789,8 +789,8 @@ function renderSubItems(subItems) {
   if (!subItems || subItems.length === 0) return '';
   return subItems.map(sub => `
     <div class="sub-item" id="item-${sub.id}" role="button" tabindex="0" aria-expanded="false" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
-      <span class="sub-item-flag">${sub.flag||'📰'}</span>
-      <div class="sub-item-text">${sub.text}${sub.added_at ? `<div class="item-time">${formatAddedAt(sub)}</div>` : ''}</div>
+      <span class="sub-item-flag">${escHtml(sub.flag||'📰')}</span>
+      <div class="sub-item-text">${escHtml(sub.text)}${sub.added_at ? `<div class="item-time">${formatAddedAt(sub)}</div>` : ''}</div>
       <div class="sub-item-arrow">›</div>
     </div>
     <div class="card-expand" id="exp-${sub.id}">${expandBlock(sub)}</div>
@@ -919,7 +919,7 @@ function renderArchiveItem(item, idx, dateStr, dose) {
     return `
       <div class="news-item" id="group-${item.id}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${item.id}')">
         <div class="news-num">${String(idx + 1).padStart(2, '0')}</div>
-        <div class="news-body"><span class="news-flag">${item.flag || '📰'}</span><div class="news-title">${item.text}</div></div>
+        <div class="news-body"><span class="news-flag">${escHtml(item.flag || '📰')}</span><div class="news-title">${escHtml(item.text)}</div></div>
         <div class="news-arrow">›</div>
       </div>
       <div class="sub-items-container" id="subc-${item.id}">${renderArchiveSubItems(item.subItems, dateStr, dose)}</div>`;
@@ -928,8 +928,8 @@ function renderArchiveItem(item, idx, dateStr, dose) {
     <div class="news-item" id="item-${item.id}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${item.id}')">
       <div class="news-num">${String(idx + 1).padStart(2, '0')}</div>
       <div class="news-body">
-        <span class="news-flag">${item.flag || '📰'}</span>
-        <div class="news-title">${item.text}</div>
+        <span class="news-flag">${escHtml(item.flag || '📰')}</span>
+        <div class="news-title">${escHtml(item.text)}</div>
         ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}
       </div>
       <div class="news-arrow">›</div>
@@ -940,8 +940,8 @@ function renderArchiveSubItems(subItems, dateStr, dose) {
   if (!subItems || !subItems.length) return '';
   return subItems.map(sub => `
     <div class="sub-item" id="item-${sub.id}" role="button" tabindex="0" aria-expanded="false" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
-      <span class="sub-item-flag">${sub.flag || '📰'}</span>
-      <div class="sub-item-text">${sub.text}${sub.added_at ? `<div class="item-time">${formatAddedAt(sub)}</div>` : ''}</div>
+      <span class="sub-item-flag">${escHtml(sub.flag || '📰')}</span>
+      <div class="sub-item-text">${escHtml(sub.text)}${sub.added_at ? `<div class="item-time">${formatAddedAt(sub)}</div>` : ''}</div>
       <div class="sub-item-arrow">›</div>
     </div>
     <div class="card-expand" id="exp-${sub.id}">${expandBlockArchive(sub, dateStr, dose)}</div>`).join('');
@@ -953,7 +953,7 @@ function expandBlockArchive(item, dateStr, dose) {
     const slug = itemSlug(item.text);
     const shareUrl = `https://brifup.com/#archive/${dateStr}/${dose}/${slug}`;
     return `<button class="expand-share-btn"
-      onclick="event.stopPropagation();shareItem('${escAttr(shareUrl)}','${escAttr(item.text)}')"
+      onclick="event.stopPropagation();shareItem('${escAttr(esc(shareUrl))}','${escAttr(esc(item.text))}')"
       ><span class="expand-share-icon">↑</span>Udostępnij</button>`;
   })() : '';
   if (item.article) {
@@ -964,7 +964,7 @@ function expandBlockArchive(item, dateStr, dose) {
       : '';
     return `
       ${imgHtml}
-      <div class="expand-article">${item.article}</div>
+      <div class="expand-article">${escHtml(item.article)}</div>
       ${impactHtml(item)}
       ${watekHtml(item)}
       <div class="expand-divider"></div>
@@ -972,7 +972,7 @@ function expandBlockArchive(item, dateStr, dose) {
         <div class="expand-source-left">
           <span class="expand-source-tag">Źródło</span>
           <span class="expand-sep">/</span>
-          <span class="expand-source-name">${displaySource(item)}</span>
+          <span class="expand-source-name">${escHtml(displaySource(item))}</span>
         </div>
         <div class="expand-actions">${shareBtn}${readBtn}</div>
       </div>`;
@@ -985,6 +985,10 @@ function expandBlockArchive(item, dateStr, dose) {
 function escAttr(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+// Escapowanie TREŚCI wstawianej do innerHTML (nagłówki/artykuły/źródła z briefs.json — dane scrapowane
+// z RSS, więc mogą zawierać tagi). Te same podmiany co escAttr; osobna nazwa, żeby w rendererach było
+// widać intencję: escHtml = treść elementu, escAttr = wartość atrybutu, esc = string w inline-JS (onclick).
+function escHtml(s) { return escAttr(s); }
 
 function renderDose(dose, items) {
   const cfg = DOSE_CFG[dose];
@@ -997,11 +1001,11 @@ function renderDose(dose, items) {
     <div class="hero-card" id="group-${hero.id}" data-text="${escAttr(hero.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${hero.id}')">
       ${srcBadge(hero) ? `<div class="card-corner">${srcBadge(hero)}</div>` : ''}
       <div class="hero-kicker">
-        <span class="hero-flag">${hero.flag||'📰'}</span>
+        <span class="hero-flag">${escHtml(hero.flag||'📰')}</span>
         <span class="hero-topbadge">★ Top Story</span>
         <span class="hero-kicker-dose">${cfg.label}</span>
       </div>
-      <div class="hero-title">${hero.text}</div>
+      <div class="hero-title">${escHtml(hero.text)}</div>
       <div class="hero-footer">
         <span class="hero-source">${hero.subItems.length} powiązane newsy</span>
         <span class="hero-arrow">›</span>
@@ -1013,14 +1017,14 @@ function renderDose(dose, items) {
     : `
     <div class="hero-card" id="item-${hero.id}" data-text="${escAttr(hero.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${hero.id}')">
       <div class="hero-kicker">
-        <span class="hero-flag">${hero.flag||'📰'}</span>
+        <span class="hero-flag">${escHtml(hero.flag||'📰')}</span>
         <span class="hero-topbadge">★ Top Story</span>
         <span class="hero-kicker-dose">${cfg.label}</span>
       </div>
-      <div class="hero-title">${hero.text}</div>
+      <div class="hero-title">${escHtml(hero.text)}</div>
       ${hero.added_at ? `<div class="item-time">${formatAddedAt(hero)}</div>` : ''}
       <div class="hero-footer">
-        <span class="hero-source">${hero.source_name || 'Czytaj pełny artykuł'}</span>
+        <span class="hero-source">${escHtml(hero.source_name || 'Czytaj pełny artykuł')}</span>
         <span class="hero-arrow">›</span>
       </div>
     </div>
@@ -1035,7 +1039,7 @@ function renderDose(dose, items) {
           <div class="news-num">0${i+2}</div>
           <div class="news-body">
             ${catMetaRow(item)}
-            <div class="news-title">${item.text}</div>
+            <div class="news-title">${escHtml(item.text)}</div>
           </div>
           <div class="news-arrow">›</div>
         </div>
@@ -1048,7 +1052,7 @@ function renderDose(dose, items) {
           <div class="news-num">0${i+2}</div>
           <div class="news-body">
             ${catMetaRow(item)}
-            <div class="news-title">${item.text}</div>
+            <div class="news-title">${escHtml(item.text)}</div>
             ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}
           </div>
           <div class="news-arrow">›</div>
@@ -1781,15 +1785,15 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
       if (isGroup) {
         const subsHtml = item.subItems.map(sub =>
           `<div class="dt-sub-item" id="dts-${sub.id}" onclick="event.stopPropagation();dtPickItem('${sub.id}')">
-            <span class="dt-sub-flag">${sub.flag||'📰'}</span>
-            <div class="dt-sub-text">${sub.text}</div>
+            <span class="dt-sub-flag">${escHtml(sub.flag||'📰')}</span>
+            <div class="dt-sub-text">${escHtml(sub.text)}</div>
           </div>`
         ).join('');
         html += `<div class="dt-item group-header" id="dti-${item.id}" onclick="dtToggleGroup('${item.id}')">
           <div class="dt-item-num">${num}</div>
-          <div class="dt-item-flag">${item.flag||'📰'}</div>
+          <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
           <div class="dt-item-body">
-            <div class="dt-item-headline">${item.text}</div>
+            <div class="dt-item-headline">${escHtml(item.text)}</div>
             <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`}</div>
           </div>
         </div>
@@ -1798,10 +1802,10 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
         const t = formatAddedAt(item);
         html += `<div class="dt-item" id="dti-${item.id}" onclick="dtPickItem('${item.id}')">
           <div class="dt-item-num">${num}</div>
-          <div class="dt-item-flag">${item.flag||'📰'}</div>
+          <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
           <div class="dt-item-body">
-            <div class="dt-item-headline">${item.text}</div>
-            ${(t||item.source_name)?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${item.source_name}</span>`:''}</div>`:''}
+            <div class="dt-item-headline">${escHtml(item.text)}</div>
+            ${(t||item.source_name)?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${escHtml(item.source_name)}</span>`:''}</div>`:''}
           </div>
         </div>`;
       }
@@ -1821,16 +1825,16 @@ function dtRenderFeed(items) {
     if (isGroup) {
       const subsHtml = item.subItems.map(sub =>
         `<div class="dt-sub-item" id="dts-${sub.id}" onclick="event.stopPropagation();dtPickItem('${sub.id}')">
-          <span class="dt-sub-flag">${sub.flag||'📰'}</span>
-          <div class="dt-sub-text">${sub.text}</div>
+          <span class="dt-sub-flag">${escHtml(sub.flag||'📰')}</span>
+          <div class="dt-sub-text">${escHtml(sub.text)}</div>
         </div>`
       ).join('');
       html += `<div class="dt-item group-header${isTop?' top-item':''}" id="dti-${item.id}" onclick="dtToggleGroup('${item.id}')">
         <div class="dt-item-num">${num}</div>
-        <div class="dt-item-flag">${item.flag||'📰'}</div>
+        <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
         <div class="dt-item-body">
           ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
-          <div class="dt-item-headline">${item.text}</div>
+          <div class="dt-item-headline">${escHtml(item.text)}</div>
           <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`}</div>
         </div>
       </div>
@@ -1839,11 +1843,11 @@ function dtRenderFeed(items) {
       const t = formatAddedAt(item);
       html += `<div class="dt-item${isTop?' top-item':''}" id="dti-${item.id}" onclick="dtPickItem('${item.id}')">
         <div class="dt-item-num">${num}</div>
-        <div class="dt-item-flag">${item.flag||'📰'}</div>
+        <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
         <div class="dt-item-body">
           ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
-          <div class="dt-item-headline">${item.text}</div>
-          ${(t||item.source_name)?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${item.source_name}</span>`:''}</div>`:''}
+          <div class="dt-item-headline">${escHtml(item.text)}</div>
+          ${(t||item.source_name)?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${escHtml(item.source_name)}</span>`:''}</div>`:''}
         </div>
       </div>`;
     }
@@ -1928,7 +1932,7 @@ function dtShowDetail(item) {
   const shareUrl = (item._archiveDate && item._dose)
     ? `https://brifup.com/#archive/${item._archiveDate}/${item._dose}/${shareSlug}`
     : `https://brifup.com/#${currentDose}/${shareSlug}`;
-  const shareBtn = `<button class="dt-share-btn" onclick="shareItem('${escAttr(shareUrl)}','${escAttr(item.text)}')"><span class="dt-share-icon">↑</span>Udostępnij</button>`;
+  const shareBtn = `<button class="dt-share-btn" onclick="shareItem('${escAttr(esc(shareUrl))}','${escAttr(esc(item.text))}')"><span class="dt-share-icon">↑</span>Udostępnij</button>`;
   const allItems = cache[currentDose] || [];
   const related = [];
   for (const it of allItems) {
@@ -1940,26 +1944,26 @@ function dtShowDetail(item) {
   }
   det.innerHTML = `
     <div class="dt-detail-content">
-      <div class="dt-detail-flag">${item.flag||'📰'}</div>
+      <div class="dt-detail-flag">${escHtml(item.flag||'📰')}</div>
       <div class="dt-detail-badges"><span class="dt-detail-badge">${cat.toUpperCase()}</span>${srcBadge(item)}</div>
-      <div class="dt-detail-headline">${item.text}</div>
+      <div class="dt-detail-headline">${escHtml(item.text)}</div>
       <div class="dt-detail-time">${time||'—'}</div>
       ${item.article
-        ? `<div class="dt-detail-body">${item.article}</div>`
+        ? `<div class="dt-detail-body">${escHtml(item.article)}</div>`
         : `<div class="dt-detail-no-article">Brak rozszerzonego artykułu dla tego wpisu.</div>`}
       ${impactHtml(item)}
       ${watekHtml(item)}
       <div class="dt-source-row">
         <div>
           <div class="dt-source-label">ŹRÓDŁO</div>
-          <div class="dt-source-name">${displaySource(item)}</div>
+          <div class="dt-source-name">${escHtml(displaySource(item))}</div>
         </div>
         <div class="dt-detail-actions">${shareBtn}${readBtn}</div>
       </div>
     </div>
     ${related.length ? `<div class="dt-related">
       <div class="dt-related-title">Inne wpisy</div>
-      ${related.map(r=>`<div class="dt-related-item" onclick="dtPickItem('${r.id}')"><span>${r.flag||'📰'}</span><span>${r.text.length>80?r.text.slice(0,80)+'…':r.text}</span></div>`).join('')}
+      ${related.map(r=>`<div class="dt-related-item" onclick="dtPickItem('${r.id}')"><span>${escHtml(r.flag||'📰')}</span><span>${escHtml(r.text.length>80?r.text.slice(0,80)+'…':r.text)}</span></div>`).join('')}
     </div>` : ''}`;
 }
 
@@ -2184,8 +2188,8 @@ function mobCatCardHtml(item, num) {
         ${srcBadge(item) ? `<div class="card-corner">${srcBadge(item)}</div>` : ''}
         <div class="news-num">${num}</div>
         <div class="news-body">
-          <span class="news-flag">${item.flag||'📰'}</span>
-          <div class="news-title">${item.text}</div>
+          <span class="news-flag">${escHtml(item.flag||'📰')}</span>
+          <div class="news-title">${escHtml(item.text)}</div>
         </div>
         <div class="news-arrow">›</div>
       </div>
@@ -2195,8 +2199,8 @@ function mobCatCardHtml(item, num) {
     <div class="news-item" id="item-${item.id}" data-text="${escAttr(item.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${item.id}')">
       <div class="news-num">${num}</div>
       <div class="news-body">
-        <span class="news-flag">${item.flag||'📰'}</span>
-        <div class="news-title">${item.text}</div>
+        <span class="news-flag">${escHtml(item.flag||'📰')}</span>
+        <div class="news-title">${escHtml(item.text)}</div>
       </div>
       ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}
       <div class="news-arrow">›</div>
@@ -2367,32 +2371,29 @@ function mobGripPulse() {
   function utf8ToB64(str) { return btoa(unescape(encodeURIComponent(str))); }
   function b64ToUtf8(b64) { return decodeURIComponent(escape(atob(b64.replace(/\n/g, '')))); }
 
-  // jednorazowa aktywacja przez URL — token wygasa po 14 dniach, żeby nie siedzieć
-  // w localStorage w nieskończoność (localStorage, w przeciwieństwie do sessionStorage,
-  // przeżywa zamknięcie przeglądarki i jest czytelny dla każdego wstrzykniętego skryptu).
-  const ADMIN_PAT_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+  // Aktywacja przez URL (?admin=TOKEN). Token trzymany w sessionStorage — ginie z zamknięciem
+  // przeglądarki i NIE przeżywa restartu (2026-07-17: przeniesione z localStorage; trwały token
+  // czytelny dla każdego wstrzykniętego skryptu to zbyt duże ryzyko dla PAT-a z prawem zapisu
+  // do repo — wygoda 14 dni nie była tego warta). Ponowna aktywacja = wejście z linku ?admin=.
   const urlPat = new URLSearchParams(location.search).get('admin');
   if (urlPat) {
-    localStorage.setItem('brifAdminPat', JSON.stringify({ pat: urlPat, exp: Date.now() + ADMIN_PAT_TTL_MS }));
+    sessionStorage.setItem('brifAdminPat', urlPat);
     history.replaceState(null, '', location.pathname + location.hash);
+  }
+  // Migracja: stary trwały zapis w localStorage (goły string albo {pat,exp}) — przenieś raz do
+  // bieżącej sesji i USUŃ trwałą kopię, żeby nie została na urządzeniu.
+  {
+    const stary = localStorage.getItem('brifAdminPat');
+    if (stary) {
+      let pat = stary;
+      try { const p = JSON.parse(stary); if (p && typeof p === 'object') pat = (Date.now() <= p.exp) ? p.pat : null; } catch {}
+      if (pat && !sessionStorage.getItem('brifAdminPat')) sessionStorage.setItem('brifAdminPat', pat);
+      localStorage.removeItem('brifAdminPat');
+    }
   }
 
   function getAdminPat() {
-    const raw = localStorage.getItem('brifAdminPat');
-    if (!raw) return null;
-    let parsed;
-    try { parsed = JSON.parse(raw); } catch { parsed = null; }
-    // wsteczna zgodność ze starym formatem (goły string bez wygaśnięcia) — potraktuj jako
-    // aktywowany teraz, żeby dostał świeże 14 dni zamiast zostać martwym na zawsze
-    if (!parsed || typeof parsed !== 'object') {
-      localStorage.setItem('brifAdminPat', JSON.stringify({ pat: raw, exp: Date.now() + ADMIN_PAT_TTL_MS }));
-      return raw;
-    }
-    if (Date.now() > parsed.exp) {
-      localStorage.removeItem('brifAdminPat');
-      return null;
-    }
-    return parsed.pat;
+    return sessionStorage.getItem('brifAdminPat') || null;
   }
 
   // usuwa przycisk × z aktualnie aktywnego elementu
