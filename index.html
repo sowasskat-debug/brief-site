@@ -539,7 +539,7 @@ function catMetaRow(item) {
   const src = n >= 2
     ? `<span class="news-cat-sep">·</span><span class="news-cat-src"><span class="src-check">✓</span>${n} ${zrodloPl(n)}</span>`
     : '';
-  return `<div class="news-cat-row"><span class="news-flag">${escHtml(item.flag||'📰')}</span><span class="news-cat-name">${cat}</span>${src}</div>`;
+  return `<div class="news-cat-row"><span class="news-flag">${escHtml(item.flag||'📰')}</span><span class="news-cat-name">${cat}</span>${src}${watekBadgeHtml(item)}</div>`;
 }
 
 // Linia "Wpływ na rynek": koloruje strzałki ↑ (zielony) / ↓ (czerwony)
@@ -577,7 +577,18 @@ function threadForItem(item){
 function watekWhen(node){
   const glyph = { morning:'☀', afternoon:'◑', evening:'☽' }[node.dose] || '·';
   const time = (node.added_at||'').split(' ')[1] || '';
-  return `<span class="watek-when">${glyph}${time?' '+time:''}</span>`;
+  // Sagi wielodniowe (2026-07-17): węzeł z innego dnia niż dziś dostaje przedrostek daty "16.07" —
+  // bot trzyma teraz węzły do 7 dni, oś pokazuje ciągłość sagi, nie tylko dzisiejsze etapy.
+  const d = (node.added_at||'').slice(0,10);
+  const dzis = new Date().toISOString().slice(0,10);
+  const dayLbl = (d && d !== dzis) ? `${d.slice(8,10)}.${d.slice(5,7)} ` : '';
+  return `<span class="watek-when">${dayLbl}${glyph}${time?' '+time:''}</span>`;
+}
+// Badge "🧵 N" na kaflu w feedzie (mobile róg-meta + desktop meta) — wątki były niewidoczne z listy,
+// przycisk pojawiał się dopiero PO otwarciu artykułu. Pusty string, dopóki threads.json się nie dociągnie.
+function watekBadgeHtml(item){
+  const t = threadForItem(item);
+  return t ? `<span class="watek-badge">🧵 ${t.nodes.length}</span>` : '';
 }
 function watekHtml(item){
   const t = threadForItem(item);
@@ -605,7 +616,11 @@ function toggleWatek(btn){
   tl.hidden = !willOpen;
   btn.classList.toggle('open', willOpen);
 }
-loadThreads();
+loadThreads().then(() => {
+  // threads.json dociąga się równolegle z pierwszym renderem — po załadowaniu odśwież widoki,
+  // żeby badge 🧵 pojawił się bez czekania na kolejny live-tick.
+  try { if (typeof currentDose !== 'undefined' && cache[currentDose]) renderDose(currentDose, cache[currentDose]); } catch(_){}
+});
 
 function expandBlock(item) {
   const slug = itemSlug(item.text);
@@ -1667,7 +1682,7 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
           <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
           <div class="dt-item-body">
             <div class="dt-item-headline">${escHtml(item.text)}</div>
-            <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`}</div>
+            <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`} ${watekBadgeHtml(item)}</div>
           </div>
         </div>
         <div class="dt-group-subs" id="dtg-${item.id}" style="display:none">${subsHtml}</div>`;
@@ -1678,7 +1693,7 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
           <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
           <div class="dt-item-body">
             <div class="dt-item-headline">${escHtml(item.text)}</div>
-            ${(t||item.source_name)?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${escHtml(item.source_name)}</span>`:''}</div>`:''}
+            ${(t||item.source_name||threadForItem(item))?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${escHtml(item.source_name)}</span>`:''} ${watekBadgeHtml(item)}</div>`:''}
           </div>
         </div>`;
       }
@@ -1708,7 +1723,7 @@ function dtRenderFeed(items) {
         <div class="dt-item-body">
           ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
           <div class="dt-item-headline">${escHtml(item.text)}</div>
-          <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`}</div>
+          <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`} ${watekBadgeHtml(item)}</div>
         </div>
       </div>
       <div class="dt-group-subs" id="dtg-${item.id}" style="display:none">${subsHtml}</div>`;
@@ -1720,7 +1735,7 @@ function dtRenderFeed(items) {
         <div class="dt-item-body">
           ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
           <div class="dt-item-headline">${escHtml(item.text)}</div>
-          ${(t||item.source_name)?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${escHtml(item.source_name)}</span>`:''}</div>`:''}
+          ${(t||item.source_name||threadForItem(item))?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${escHtml(item.source_name)}</span>`:''} ${watekBadgeHtml(item)}</div>`:''}
         </div>
       </div>`;
     }

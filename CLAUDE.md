@@ -80,6 +80,12 @@ fallback na pozycję w `items[]`.
   `dtShowDetail` (desktop). CSS klasy `.watek-*` w styles.css (zmienne `--rule/--bg/--red/--muted`, fonty z @import).
 - **Dane:** `loadThreads()` fetchuje **`threads.json`** raz przy starcie → mapa `THREAD_BY_TEXT` (match po znorm. tekście
   węzła; tylko wątki ≥2 węzły). Przycisk pojawia się TYLKO gdy post należy do wątku. **0 tokenów per klik** (gotowiec z bota).
+- **Badge `🧵 N` na kaflach (2026-07-17):** `watekBadgeHtml(item)` w `catMetaRow` (mobile) i wszystkich 3 szablonach
+  `dt-item-meta` (desktop; warunek meta rozszerzony o `threadForItem`) — wątki widać z LISTY, nie dopiero po otwarciu
+  artykułu. Po dociągnięciu threads.json `loadThreads().then(...)` robi re-render bieżącej dawki (badge bez czekania
+  na live-tick). CSS `.watek-badge` (czerwony mono chip, wariant dark).
+- **Sagi wielodniowe (2026-07-17):** bot trzyma węzły do 7 dni (cap 20/wątek) — `watekWhen` dokleja przedrostek daty
+  „16.07" dla węzłów z innego dnia niż dziś. Patrz `financialnewsbot/CLAUDE.md` sekcja „Wątki".
 - `threads.json` pisze bot (`BuildThreadsOnSite`, tryb `BUILD_THREADS`/normalny bieg) — kształt `{date, generated_at,
   threads:[{id,title,memo,nodes:[{text,added_at,dose,flag,source_url,relacja}]}], seen:[...]}`.
 - **Uwaga:** `let`-zmienne (THREADS, THREAD_BY_TEXT) NIE są na `window` (eval w preview ich nie widzi — testuj przez funkcje).

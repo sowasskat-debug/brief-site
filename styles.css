@@ -967,3 +967,9 @@ html, body {
 .watek-rel { text-transform: uppercase; letter-spacing: .5px; }
 .watek-cur .watek-metaline { color: var(--red); }
 .watek-head { font-family: 'DM Serif Display', serif; font-size: 15px; line-height: 1.22; color: var(--text); margin-top: 1px; }
+
+
+/* Badge wątku na kaflu (mobile catMetaRow + desktop dt-item-meta) — 2026-07-17 */
+.watek-badge{font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.5px;color:#b91c1c;
+  border:1px solid rgba(185,28,28,.35);border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap}
+[data-theme="dark"] .watek-badge{color:#f87171;border-color:rgba(248,113,113,.4)}
