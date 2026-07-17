@@ -5,7 +5,7 @@
 
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
 
-const CACHE_NAME = 'brifup-cache-v40';
+const CACHE_NAME = 'brifup-cache-v41';
 // UWAGA: index.html NIE jest tu precache'owany — patrz komentarz przy jego fetch-handlerze niżej.
 const STATIC_ASSETS = [
   './manifest.json',
@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
   // To newsy: po cichu pokazana stara treść jest groźniejsza niż krótki błąd — a front i tak ma
   // własny łańcuch zapasowy (Supabase, potem dane przykładowe), który przy fallbacku z tego SW
   // nigdy się nie uruchamiał, bo "udany" (choć nieaktualny) wynik z cache maskował awarię sieci.
-  if (url.includes('briefs.json') || url.includes('/archive/') || url.includes('rejected.json')) {
+  if (url.includes('briefs.json') || url.includes('/archive/') || url.includes('rejected.json') || url.includes('lejek.json')) {
     event.respondWith(fetch(event.request));
     return;
   }

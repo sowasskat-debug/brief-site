@@ -25,6 +25,12 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
   item = `flag, text, article, category, source_name, source_url, added_at, image_url, reach`. ⚠️ Front Flusso jeszcze
   go NIE czyta (czyta `briefs.json`) — podpięcie to następny krok. Patrz `financialnewsbot/CLAUDE.md` sekcja "Flusso Trends".
   - **`rejected.json` = warstwa PRZYKŁADÓW (few-shot):** bot czyta **tylko ostatnie 40 wpisów** jako REGUŁA 0, więc świeże odrzucenia wypierają stare. Dobre do „naucz filtr TEGO konkretnego newsa". **Trwałe kategorie** (np. „odrzucaj promo bankowe", „fixingi CB bez wpływu na EUR/PLN") NIE tu — idą do stałej `WSPOLNE_ODRZUCENIA` w bocie (repo `financialnewsbot`), inaczej po ~40 nowych odrzuceniach wzorzec wypadnie z okna. Kształt wpisu: `{ "text", "flag", "reason"? }` (pole `reason` opcjonalne — bot dokleja je jako „[powód: …]").
+- `lejek.json` + `lejek.html` — **dziennik lejka per-nagłówek** (2026-07-17): bot zapisuje KAŻDEGO kandydata
+  z każdego RSS + jego los (`odrzucony`/`telegram`/`main`/`poczekalnia`/`duplikat`/`powtorka`/`bramka`/`utknal`),
+  wpis = `{ts, feed, tytul, link, status, tekst_pl, powod}`, retencja 3 dni / max 1500. `lejek.html` (publiczna,
+  diagnostyczna, wariant „redakcyjna tabela") grupuje po biegu→feedzie, badge'e losów, filtry+szukajka, u góry
+  pasek ZDROWIA FEEDÓW (kiedy feed ostatnio dał kandydatów; >4h żółty, >12h czerwony — od razu widać martwe RSS).
+  Patrz `financialnewsbot/CLAUDE.md` sekcja „Dziennik lejka".
 - `bot_health.json` — **diagnostyczny lejek** Flusso Trends (dodane 2026-07-11, bez DeepSeek): czyste liczniki
   per bieg (6 źródeł → kandydaci → unikalne → nowe → fakty → wybrane przez DeepSeek → opublikowane → kafle
   meczowe), pisane przez bota (`ZapiszHealthNaSite`) w `finally` — więc powstaje NAWET gdy bieg urwał się
