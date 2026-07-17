@@ -5,7 +5,7 @@
 
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
 
-const CACHE_NAME = 'brifup-cache-v39';
+const CACHE_NAME = 'brifup-cache-v40';
 // UWAGA: index.html NIE jest tu precache'owany — patrz komentarz przy jego fetch-handlerze niżej.
 const STATIC_ASSETS = [
   './manifest.json',
@@ -34,9 +34,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
 
+  // Nie-GET (HEAD z sond wersji, ewentualne POST-y) — czysta sieć; cache.put dla nie-GET rzuca.
+  if (event.request.method !== 'GET') { event.respondWith(fetch(event.request)); return; }
+
   // Zewnętrzne API — nie przechwytuj
   if (url.includes('api.anthropic.com') || url.includes('rss2json') ||
-      url.includes('supabase') || url.includes('onesignal') ||
+      url.includes('onesignal') ||
       url.includes('fonts.googleapis') || url.includes('fonts.gstatic')) {
     return;
   }

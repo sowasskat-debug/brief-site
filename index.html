@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="facebook-domain-verification" content="4dne6p3y8rodeh6ypa9u5pj04n29pg" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap">
 <title>BrifUp</title>
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,10 +35,17 @@
   // Domyślnie jasny (dzienny) motyw na pierwszej wizycie — nie dziedziczymy trybu ciemnego z ustawień systemu.
   var t=localStorage.getItem('brifup_theme')||'light';
   document.documentElement.setAttribute('data-theme',t);
+  // Pasek systemowy w kolorze motywu (meta theme-color było na stałe białe — w dark mode raziło).
+  var m=document.querySelector('meta[name="theme-color"]');
+  if(m) m.setAttribute('content', t==='dark' ? '#0f0f0f' : '#ffffff');
 })();
 </script>
 </head>
 <body>
+<noscript><div style="max-width:640px;margin:40px auto;padding:0 20px;font-family:Georgia,serif;text-align:center">
+  <h1>Brif.up</h1><p>Najważniejsze informacje ze świata finansów, geopolityki i technologii — trzy razy dziennie.</p>
+  <p>Ta aplikacja wymaga włączonego JavaScriptu.</p>
+</div></noscript>
 
 <div class="topbar">
   <div>
@@ -44,10 +54,10 @@
   </div>
   <div class="topbar-right">
     <div class="live-pill"><div class="live-dot"></div><div class="live-text">Live</div></div>
-    <button class="archive-btn" id="archiveBtn" onclick="openArchive()" title="Archiwum">🗄</button>
-    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tryb ciemny">🌙</button>
-    <button class="bell-btn inactive" id="bellBtn" onclick="togglePush()" title="Powiadomienia push">🔔</button>
-    <button class="refresh-btn" id="refreshBtn" onclick="refresh()">↻</button>
+    <button class="archive-btn" id="archiveBtn" onclick="openArchive()" title="Archiwum" aria-label="Archiwum">🗄</button>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tryb ciemny" aria-label="Przełącz tryb ciemny">🌙</button>
+    <button class="bell-btn inactive" id="bellBtn" onclick="togglePush()" title="Powiadomienia push" aria-label="Powiadomienia push">🔔</button>
+    <button class="refresh-btn" id="refreshBtn" onclick="refresh()" title="Odśwież" aria-label="Odśwież">↻</button>
   </div>
 </div>
 
@@ -117,7 +127,7 @@
       <div class="dt-live"><div class="dt-live-dot"></div>LIVE</div>
       <button class="theme-btn" onclick="toggleTheme()" id="dtThemeBtn">🌙</button>
       <button class="bell-btn inactive" id="dtBellBtn" onclick="togglePush()">🔔</button>
-      <button class="refresh-btn" onclick="refresh()">↻</button>
+      <button class="refresh-btn" onclick="refresh()" title="Odśwież" aria-label="Odśwież">↻</button>
     </div>
   </div>
   <div class="dt-body">
@@ -143,8 +153,6 @@
 </div>
 
 <script>
-const SUPABASE_URL  = 'TWOJ_SUPABASE_URL';
-const SUPABASE_ANON = 'TWOJ_SUPABASE_ANON_KEY';
 
 const DOSE_CFG = {
   morning:   { edition:'Morning Edition',  kicker:'Top Story · Poranna',    kickerClass:'kicker-morning',   time:'09:00', label:'Poranna' },
@@ -152,160 +160,21 @@ const DOSE_CFG = {
   evening:   { edition:'Evening Edition',  kicker:'Top Story · Wieczorna',   kickerClass:'kicker-evening',   time:'17:00', label:'Wieczorna' },
 };
 
+// Awaryjne dane przykładowe — używane WYŁĄCZNIE gdy briefs.json jest nieosiągalny (ostatni fallback
+// w loadDose). Celowo minimalne: poprzednia wersja miała ~20 pełnych artykułów (~30 KB) wliczanych
+// w KAŻDE pobranie strony, choć w praktyce nigdy nie widocznych (2026-07-17).
 const SAMPLE = {
   morning: [
-    { flag:'🇸🇦', text:'Arabia Saudyjska i Kuwejt popierają porozumienie USA-Iran ws. nawigacji w Cieśninie Ormuz.', source_name:'Reuters', source_url:'#',
-      article:'Arabia Saudyjska i Kuwejt oficjalnie poparły projekt porozumienia między Stanami Zjednoczonymi a Iranem, który ma zagwarantować swobodny przepływ statków handlowych przez Cieśninę Ormuz. Ministrowie spraw zagranicznych obu krajów wydali wspólne oświadczenie po rozmowach w Rijadzie, podkreślając że stabilność szlaków morskich jest absolutnie kluczowa dla regionalnej gospodarki i globalnego eksportu ropy naftowej. Według dyplomatów bliskowschodnich porozumienie miałoby wejść w życie po podpisaniu przez USA i Iran wstępnego protokołu i zakładałoby rozmieszczenie obserwatorów morskich ONZ w kluczowych punktach cieśniny. Arabia Saudyjska wyraziła gotowość pośredniczenia w kolejnych rundach rozmów, co jest znaczącym krokiem biorąc pod uwagę historyczne napięcia saudyjsko-irańskie. Kuwejt, jako kraj bezpośrednio graniczący z wodami Zatoki Perskiej, od miesięcy lobbował za dyplomatycznym rozwiązaniem kryzysu nawigacyjnego. Analitycy rynku ropy oceniają, że normalizacja tranzytu przez Ormuz mogłaby obniżyć ceny surowca o 5-8 dolarów za baryłkę w ciągu kilku tygodni.' },
-    { flag:'🇪🇺', text:'Prezes Bundesbanku Nagel ostrzega przed drugą rundą inflacji w strefie euro.', source_name:'Bloomberg', source_url:'#',
-      article:'Joachim Nagel, prezes Bundesbanku i członek Rady Prezesów Europejskiego Banku Centralnego, wydał w środę poważne ostrzeżenie przed ryzykiem drugiej rundy inflacji w strefie euro. W przemówieniu we Frankfurcie Nagel podkreślił, że choć inflacja ogółem spada, inflacja bazowa pozostaje niepokojąco wysoka i wynosi wciąż ponad 2,8 proc. Prezes Bundesbanku wskazał na trzy główne ryzyka: rosnące płace w sektorze usług, niepewność dostaw ropy naftowej przez Ormuz oraz efekty drugiej rundy wynikające z indeksacji umów długoterminowych. Nagel zaznaczył, że obecna polityka EBC pozostaje neutralna i nie przesądza o kierunku kolejnych ruchów stóp, jednak bank musi zachować czujność. Jego komentarze zostały odebrane przez rynki jako jastrzębie, co spowodowało wzrost rentowności dwuletnich obligacji niemieckich o 8 punktów bazowych. Euro umocniło się do 1,092 wobec dolara bezpośrednio po publikacji wypowiedzi.' },
-    { flag:'🇺🇸', text:'USA i Iran finalizują wstępne rozmowy w Dosze przed podpisaniem porozumienia nuklearnego.', source_name:'AP News', source_url:'#',
-      article:'Dyplomaci Stanów Zjednoczonych i Iranu zakończyli drugą rundę rozmów wstępnych w Dosze, które mają utorować drogę do szerszego porozumienia nuklearnego. Według źródeł zbliżonych do negocjacji Qatar pełni rolę niezbędnego bufora umożliwiającego komunikację między stronami, które nie mają bezpośrednich stosunków dyplomatycznych. Głównym przedmiotem sporu pozostaje kwestia stopnia wzbogacania uranu: Iran domaga się prawa do wzbogacania do poziomu 20 proc. na własne potrzeby medyczne i energetyczne, podczas gdy USA nalegają na limit 3,67 proc. zgodny z oryginalnym porozumieniem JCPOA z 2015 roku. Strony osiągnęły wstępne porozumienie w kwestii harmonogramu znoszenia sankcji oraz mechanizmu weryfikacji przez MAEA. Kolejna runda rozmów zaplanowana jest na przyszły tydzień. Izrael wyraził zaniepokojenie tempem negocjacji, obawiając się że pośpiech może prowadzić do niewystarczających gwarancji bezpieczeństwa.' },
-    { flag:'🚢', text:'Incydent morski u wybrzeży Jemenu — UKMTO wydaje alert dla żeglugi na Morzu Czerwonym.', source_name:'BBC News', source_url:'#',
-      article:'Brytyjskie Centrum Zarządzania Handlem Morskim UKMTO wydało alert bezpieczeństwa po zgłoszeniu incydentu 14 mil morskich od południowego wybrzeża Jemenu. Statek handlowy pływający pod banderą Panamy poinformował o wykryciu niezidentyfikowanego obiektu podwodnego na kursie kolizyjnym, co zmusiło załogę do nagłej zmiany kursu i awaryjnego zwiększenia prędkości. Żaden członek załogi nie został ranny, a statek kontynuuje rejs do portu docelowego. To już trzeci podobny incydent w ciągu ostatnich siedmiu dni na tym odcinku Morza Czerwonego i Zatoki Adeńskiej. Siły koalicji morskiej Operation Prosperity Guardian wysłały okręt patrolowy w rejon incydentu. Huci dotychczas nie przyznali się do odpowiedzialności za zdarzenie, jednak eksperci wskazują na charakterystyczny modus operandi grupy.' },
-    { flag:'📊', text:'Chiny kupują waluty obce za rekordowe 92,6 mld juanów — Bank Ludowy broni kursu renminbi.', source_name:'Financial Times', source_url:'#',
-      article:'Państwowa Administracja Dewizowa Chin opublikowała dane pokazujące, że w maju Bank Ludowy Chin przeprowadził netto zakupy walut obcych na rekordowym poziomie 92,6 miliarda juanów, co odpowiada około 12,8 miliarda dolarów. Jest to najwyższy miesięczny poziom interwencji walutowej od co najmniej trzech lat i wyraźny sygnał, że Pekin aktywnie broni kursu renminbi przed dalszą deprecjacją wobec dolara. Kurs USD/CNY oscylował w okolicach 7,26, bliżej dolnej granicy dopuszczalnego pasma wahań wyznaczonego przez bank centralny. Analitycy z Goldman Sachs oceniają, że skala interwencji odzwierciedla obawy władz przed negatywnym wpływem słabej waluty na nastroje konsumentów i zaufanie inwestorów zagranicznych. Dane zbiegły się w czasie z rozczarowującymi wynikami chińskiego eksportu za maj, który wzrósł zaledwie o 1,2 proc. rok do roku wobec oczekiwanych 2,8 proc.' },
-    { flag:'⚓', text:'Miny morskie w Ormuz: Lloyd\'s of London podnosi składki o 15 proc., alternatywne trasy drożeją.', source_name:'Deutsche Welle', source_url:'#',
-      article:'Wiodące towarzystwa ubezpieczeniowe skupione wokół Lloyd\'s of London ogłosiły kolejną podwyżkę składek ubezpieczeniowych dla statków przepływających przez Cieśninę Ormuz — tym razem o 15 procent w stosunku do poprzedniego miesiąca. Łącznie od początku roku koszty ubezpieczenia tranzytu przez Ormuz wzrosły o ponad 65 procent. Eksperci wojskowomorscy szacują, że w wodach cieśniny i przyległych akwenach może znajdować się od 12 do 18 nieoznakowanych min morskich. Największe firmy żeglugowe, w tym Maersk i MSC, potwierdziły że utrzymują alternatywne trasy przez Przylądek Dobrej Nadziei mimo że wydłużają czas dostaw o 10-14 dni i znacząco zwiększają koszty paliwa. Niemieckie Stowarzyszenie Armatorów szacuje, że dotychczasowe zakłócenia żeglugi kosztowały europejski handel co najmniej 2,3 miliarda euro w samym pierwszym kwartale roku.' },
-    { flag:'🇮🇹', text:'Włochy notują nadwyżkę handlową z UE na poziomie 316 mln euro — eksport maszyn i żywności winduje wyniki.', source_name:'Reuters', source_url:'#',
-      article:'Włoski Narodowy Instytut Statystyczny ISTAT opublikował dane wskazujące, że w kwietniu Włochy osiągnęły nadwyżkę handlową w relacjach z Unią Europejską na poziomie 316 milionów euro. To wynik powyżej oczekiwań analityków, którzy prognozowali nadwyżkę w okolicach 200 milionów euro. Głównym motorem wzrostu był eksport maszyn przemysłowych, który zwiększył się o 7,2 proc. rok do roku, oraz produktów spożywczych i napojów, które zanotowały wzrost o 9,4 proc. Eksport odzieży i wyrobów luksusowych natomiast lekko rozczarował, rosnąc o zaledwie 2,1 proc. wskutek osłabionego popytu z Chin. Ekonomiści zwracają uwagę, że mimo solidnych wyników eksportowych włoska gospodarka pozostaje pod presją wysokich kosztów energii, które w przemyśle są o 28 proc. wyższe niż przed kryzysem energetycznym z 2022 roku. Oczekuje się, że Banca d\'Italia w swoim kwartalnym raporcie obniży prognozę wzrostu PKB na cały rok.' },
+    { flag:'📡', text:'Nie udało się pobrać porannej dawki — sprawdź połączenie i odśwież.', source_name:'Brif.up', source_url:'#',
+      article:'To dane zastępcze: aplikacja nie mogła pobrać pliku z newsami (brak sieci albo chwilowa awaria hostingu). Pociągnij w dół albo użyj przycisku odświeżania — realna treść wróci, gdy tylko połączenie zadziała.' },
   ],
   afternoon: [
-    { flag:'🤝', text:'Trump i Zełenski rozmawiają o zakończeniu wojny i uzgadniają spotkanie na szczycie G7 we Włoszech.', source_name:'AP News', source_url:'#',
-      article:'Prezydenci Donald Trump i Wołodymyr Zełenski odbyli w środę blisko 90-minutową rozmowę telefoniczną poświęconą możliwym ścieżkom zakończenia konfliktu zbrojnego w Ukrainie, co potwierdziły rzeczniczki obu Białych Domów. Trump po raz pierwszy publicznie zaproponował konkretne ramy czasowe dla negocjacji pokojowych, sugerując że wstępne zawieszenie broni mogłoby zostać osiągnięte w ciągu 90 dni przy odpowiednim zaangażowaniu dyplomatycznym. Zełenski wyraził gotowość do rozmów, jednak podkreślił, że Ukraina nie zaakceptuje żadnego porozumienia wymagającego rezygnacji z integralności terytorialnej lub suwerenności. Obaj przywódcy uzgodnili bezpośrednie spotkanie na marginesie szczytu G7 we włoskiej Apulii. Kijów oczekuje konkretnych gwarancji bezpieczeństwa, w tym zobowiązań NATO lub wielostronnych gwarancji ze strony mocarstw zachodnich jako warunku wstępnego jakichkolwiek formalnych negocjacji z Moskwą. Kreml na razie nie skomentował doniesień o rozmowie.' },
-    { flag:'🇮🇳', text:'Indie i USA finalizują umowę handlową z cięciami ceł w technologii, farmacji i rolnictwie.', source_name:'Reuters', source_url:'#',
-      article:'Negocjatorzy handlowi Indii i Stanów Zjednoczonych są na finiszu rozmów dotyczących kompleksowej tymczasowej umowy handlowej, której podpisanie może nastąpić podczas planowanej wizyty premiera Narendry Modiego w Waszyngtonie w przyszłym miesiącu. Zgodnie z informacjami z kręgów rządowych obu krajów porozumienie miałoby obejmować obniżki ceł na indyjskie wyroby farmaceutyczne eksportowane do USA nawet o 40 procent oraz redukcję indyjskich taryf na amerykańskie dobra technologiczne i półprzewodniki o 25-30 procent. Sektor rolniczy pozostaje najtrudniejszym do uzgodnienia elementem negocjacji: USA naciskają na większy dostęp dla amerykańskiej soi i kukurydzy, co spotyka się z oporem ze strony indyjskich lobbystów rolniczych. Administracja Bidena postrzega umowę jako strategiczny element zacieśniania więzi z Indiami w obliczu chińskiej ekspansji gospodarczej w regionie Indopacyfiku. Waszyngton liczy, że porozumienie przyczyni się do przekierowania łańcuchów dostaw z Chin do Indii.' },
-    { flag:'🛢️', text:'OPEC+ zwołuje nadzwyczajne spotkanie po spadku Brent poniżej 70 USD — Arabia Saudyjska naciska na cięcia.', source_name:'Bloomberg', source_url:'#',
-      article:'Organizacja Krajów Eksportujących Ropę Naftową i jej sojusznicy skupieni w formule OPEC+ zdecydowali o zwołaniu nadzwyczajnego wirtualnego posiedzenia na przyszły tydzień w związku ze spadkiem cen ropy Brent poniżej 70 dolarów za baryłkę po raz pierwszy od ponad roku. Cena surowca znalazła się pod presją rozczarowujących danych o popycie z Chin oraz rosnących zapasów w USA. Arabia Saudyjska, główny eksporter kartelu, sygnalizuje gotowość do pogłębienia obowiązujących cięć produkcji o dodatkowe 500 tysięcy baryłek dziennie. Rosja wykazuje mniejszy entuzjazm dla nowych redukcji, gdyż jej bieżące cięcia są częściowo nieuznawane przez rynki ze względu na podejrzenia o niestosowanie się do uzgodnionych limitów. Irak i Kazachstan, które historycznie przekraczały swoje limity produkcyjne, zostały wezwane do przedstawienia planów wyrównawczych. Analitycy oceniają, że dodatkowe cięcia mogłyby ustabilizować ceny w przedziale 72-75 dolarów.' },
-    { flag:'🇮🇶', text:'Irak i Liban z nadzieją na porozumienie USA-Iran — Bagdad gotowy przyjąć rolę stałego mediatora.', source_name:'Al Jazeera', source_url:'#',
-      article:'Rządy Iraku i Libanu wydały odrębne oświadczenia wyrażające pozytywną ocenę doniesień o zbliżającym się porozumieniu między Stanami Zjednoczonymi a Iranem. Premier Iraku Mohammed al-Sudani zaproponował nawet, że Bagdad jest gotowy przyjąć rolę stałego centrum dialogu bliskowschodniego i zaoferował iracką ziemię jako miejsce przyszłych bezpośrednich rozmów USA-Iran. Liban, którego gospodarka od lat jest zakładnikiem napięć regionalnych, postrzega ewentualne porozumienie jako szansę na odcięcie Hezbollahu od irańskich dostaw broni i finansowania. Analitycy zwracają jednak uwagę na paradoks: stabilizacja Iranu może jednocześnie wzmocnić polityczną pozycję proirańskich partii politycznych w obu krajach. Izrael wyraził poważne zastrzeżenia wobec zbyt pochopnego zawierania porozumień z Teheranem, które mogłyby nie zawierać wystarczających gwarancji dotyczących irańskiego programu rakietowego i działalności proxy w regionie.' },
-    { flag:'📈', text:'Fed utrzymuje stopy: rynki wyceniają 72 proc. szans na obniżkę w lipcu po konferencji Powella.', source_name:'Financial Times', source_url:'#',
-      article:'Federalny Komitet Otwartego Rynku Stanów Zjednoczonych jednogłośnie utrzymał stopy procentowe w docelowym przedziale 5,25-5,50 proc., co było zgodne z oczekiwaniami wszystkich 47 ekonomistów ankietowanych przez Reuters. Największe zainteresowanie wzbudziła konferencja prasowa przewodniczącego Jerome Powella, podczas której wyraźnie zmienił ton w porównaniu z poprzednim posiedzeniem. Powell przyznał, że ostatnie dane o inflacji są zachęcające i wskazał, że bank centralny potrzebuje już tylko jednego lub dwóch kolejnych raportów potwierdzających spadający trend przed podjęciem decyzji o obniżce. Rynki kontraktów terminowych wyceniły prawdopodobieństwo obniżki na posiedzeniu w lipcu na 72 procent, wzrost z 45 procent notowanych przed konferencją. Indeks S&P 500 wzrósł o 1,3 procent, a rentowność 10-letnich obligacji skarbowych USA spadła o 12 punktów bazowych do poziomu 4,18 proc. Dolar osłabił się wobec euro i funta.' },
-    { flag:'🇮🇳', text:'Indie i Wielka Brytania na ostatniej prostej negocjacji FTA — kwestia whisky i wiz kluczowym impasem.', source_name:'BBC News', source_url:'#',
-      article:'Negocjatorzy Indii i Wielkiej Brytanii weszli w decydującą fazę rozmów nad wieloletnią dwustronną umową o wolnym handlu (FTA), która jest jednym z priorytetów handlowych rządu Rishi Sunaka od jego objęcia urzędu w 2022 roku. Kluczowym nierozwiązanym problemem pozostaje kwestia ceł na szkocką whisky, którą Indie obciążają 150-procentową taryfą, a Londyn domaga się jej stopniowej redukcji do 75, a docelowo 40 procent. Po indyjskiej stronie największy opór budzą żądania liberalizacji wiz dla brytyjskich specjalistów oraz ochrona lokalnego przemysłu motoryzacyjnego przed tańszymi brytyjskimi samochodami. Obie strony deklarują, że finalizacja umowy jest możliwa przed sierpniową przerwą parlamentarną, jednak wewnętrzni krytycy w obu krajach ostrzegają, że presja czasowa może prowadzić do niedoskonałych kompromisów. Szacuje się, że pełne FTA mogłoby zwiększyć dwustronną wymianę handlową z obecnych 36 miliardów funtów do 50 miliardów funtów rocznie do 2030 roku.' },
-    { flag:'🌍', text:'G7 uzgadnia pakiet sankcji wobec Rosji wartości 50 mld USD z nowym mechanizmem egzekwowania.', source_name:'AP News', source_url:'#',
-      article:'Przywódcy grupy G7 ogłosili osiągnięcie porozumienia w sprawie bezprecedensowego pakietu sankcji wymierzonych w rosyjską gospodarkę, których łączna szacowana wartość oddziaływania ma wynieść 50 miliardów dolarów. Pakiet obejmuje cztery główne elementy: rozszerzenie embarga naftowego na rosyjskie produkty rafineryjne, zamrożenie kolejnych 15 miliardów dolarów aktywów rosyjskich oligarchów i instytucji powiązanych z Kremlem, nowe ograniczenia dla banków z siedzibą w krajach trzecich obsługujących rosyjski handel zagraniczny oraz zakaz eksportu do Rosji zaawansowanych technologii produkcji półprzewodników. Po raz pierwszy G7 uzgodniła też wspólny mechanizm egzekwowania sankcji, który ma zapobiegać ich obchodzeniu przez kraje trzecie. Rosja zapowiedział odwetowe działania gospodarcze, w tym możliwe zamrożenie aktywów zachodnich firm wciąż działających na rosyjskim rynku.' },
+    { flag:'📡', text:'Nie udało się pobrać południowej dawki — sprawdź połączenie i odśwież.', source_name:'Brif.up', source_url:'#',
+      article:'To dane zastępcze: aplikacja nie mogła pobrać pliku z newsami (brak sieci albo chwilowa awaria hostingu). Pociągnij w dół albo użyj przycisku odświeżania — realna treść wróci, gdy tylko połączenie zadziała.' },
   ],
   evening: [
-    {
-      flag: '⚔️', text: 'Chaos wokół rozejmu: Trump ogłasza pokój, Izrael kontynuuje ataki na Liban.',
-      subItems: [
-        {
-           flag: '🇺🇸', text: 'Trump: Izrael i Hezbollah uzgodniły pokój. Reuters: nie widać jego oznak.',
-           source_name: 'Reuters',
-           article: 'Donald Trump wywołał potężne zamieszanie na arenie międzynarodowej, ogłaszając na swojej platformie społecznościowej, że Izrael i Hezbollah zawarły kompleksowe porozumienie pokojowe, które natychmiast weszło w życie. Według kandydata na prezydenta USA, to jego zakulisowe działania doprowadziły do deeskalacji. Jednakże dziennikarze agencji Reuters przebywający na miejscu stanowczo zaprzeczyli tym doniesieniom, raportując, że na granicy libańsko-izraelskiej nie widać żadnych oznak wstrzymania ognia. Walki artyleryjskie i naloty trwają z niesłabnącą siłą. Przedstawiciele Białego Domu odmówili komentarza do wpisów Trumpa, nazywając je "niebezpieczną dezinformacją polityczną". Sztab republikański utrzymuje natomiast, że umowa jest na stole, ale jest sabotowana przez obecną administrację.'
-        },
-        {
-           flag: '🇱🇧', text: 'Izrael nie ustępuje: Wypowiedzi Netanjahu, ofiary i groźby zrównania Libanu z ziemią.',
-           source_name: 'AFP',
-           article: 'Mimo doniesień o rzekomym pokoju, rzeczywistość na Bliskim Wschodzie staje się coraz bardziej brutalna. Francuska agencja prasowa AFP poinformowała o kolejnym zmasowanym ataku izraelskiego lotnictwa na Liban, w wyniku którego zginęło co najmniej 16 osób, w tym cywile. Premier Benjamin Netanjahu uciął wszelkie spekulacje pokojowe, oświadczając, że "izraelskie siły zbrojne pozostaną w Libanie tak długo, jak to konieczne". Sytuację zaognił dodatkowo izraelski minister obrony, który w publicznej wypowiedzi stwierdził szokująco, że "cały Liban musi spłonąć", aby wyeliminować infrastrukturę terrorystów. Te radykalne stanowiska wywołały natychmiastowe potępienie ze strony społeczności międzynarodowej, w tym czołowych dyplomatów Unii Europejskiej.'
-        },
-        {
-           flag: '🇮🇷', text: 'MSZ Iranu Araghci: "Ludobójcza sekta śmierci w Tel Awiwie stanowi zagrożenie dla ludzkości".',
-           source_name: 'Al Jazeera',
-           article: 'Minister spraw zagranicznych Iranu, Abbas Araghchi, wystosował jedno z najostrzejszych oświadczeń dyplomatycznych w najnowszej historii bliskowschodniego konfliktu. Podczas konferencji w Teheranie nazwał izraelski rząd "ludobójczą sektą śmierci urzędującą w Tel Awiwie". Araghchi argumentował, że brutalne działania militarne Izraela w Libanie oraz kontynuacja walk na innych frontach stanowią bezpośrednie, egzystencjalne zagrożenie dla całej ludzkości. Irański dyplomata wezwał Organizację Narodów Zjednoczonych do nałożenia miażdżących sankcji gospodarczych i militarnej izolacji Izraela. Wystąpienie to wskazuje na całkowite zamrożenie jakichkolwiek prób łagodzenia napięć dyplomatycznych w regionie.'
-        }
-      ]
-    },
-    {
-      flag: '🚢', text: 'Zabezpieczenie Cieśniny Ormuz i astronomiczne koszty działań Pentagonu.',
-      subItems: [
-        {
-           flag: '🇺🇸', text: 'Pentagon: wojna w Iranie kosztowała już 80 mld $. Zabezpieczymy żeglugę w Ormuz.',
-           source_name: 'The Wall Street Journal',
-           article: 'Rzecznik Departamentu Obrony Stanów Zjednoczonych przedstawił przed komisją Kongresu zaktualizowany raport dotyczący kosztów amerykańskiego zaangażowania militarnego na Bliskim Wschodzie. Wynika z niego, że operacje związane z szeroko pojętym zapobieganiem konfliktom w Iranie oraz zabezpieczaniem kluczowych szlaków logistycznych kosztowały już amerykańskich podatników zawrotną kwotę 80 miliardów dolarów. Mimo tych astronomicznych wydatków, Pentagon stanowczo potwierdził, że Marynarka Wojenna USA pozostanie w pełnej gotowości bojowej. Zapewnienie bezpieczeństwa międzynarodowej żeglugi w Cieśninie Ormuz pozostaje dla Waszyngtonu priorytetem o strategicznym znaczeniu dla stabilności globalnych cen energii.'
-        },
-        {
-           flag: '🇮🇷', text: 'Statki zwolnione z opłat, ale zobowiązane do informowania o tranzycie 48h wcześniej.',
-           source_name: 'Lloyd\'s List',
-           article: 'Nowy, rygorystyczny reżim nawigacyjny w rejonie Cieśniny Ormuz zaczyna funkcjonować w praktyce. Jak informują międzynarodowe agencje żeglugowe, statki handlowe zostały tymczasowo zwolnione z wnoszenia dodatkowych opłat tranzytowych przez okres najbliższych 60 dni w geście "dobrej woli". Warunkiem koniecznym do bezproblemowego przepłynięcia jest jednak bezwzględne przesłanie oficjalnej prośby o zgodę z dokładnie 48-godzinnym wyprzedzeniem. System wydaje się powoli normować ruch morski — według oficjalnych rejestrów, w ciągu zaledwie jednej doby przez ten newralgiczny szlak wodny bezpiecznie przepłynęło 25 wielkogabarytowych jednostek. Branża logistyczna ostrożnie liczy na trwałe unormowanie sytuacji u wybrzeży Półwyspu Arabskiego.'
-        }
-      ]
-    },
-    {
-      flag: '🏛', text: 'Strategiczne rezerwy państwowe: NBP i Rosja intensywnie gromadzą złoto.',
-      subItems: [
-        {
-           flag: '🇵🇱', text: 'NBP: zasoby złota rosną do 613,9 tony. Polska w czołówce państw z rezerwami kruszcu.',
-           source_name: 'Narodowy Bank Polski',
-           article: 'Narodowy Bank Polski kontynuuje niezwykle agresywną strategię dywersyfikacji narodowych rezerw finansowych. Zgodnie z oficjalnym komunikatem instytucji, zasoby fizycznego złota zgromadzone przez NBP wzrosły do imponującego poziomu 613,9 tony. Jest to świadome działanie zarządu banku centralnego, mające na celu zabezpieczenie długoterminowej siły polskiego złotego w dobie bezprecedensowej niepewności geopolitycznej w Europie. Masowe zakupy kruszcu realizowane systematycznie w ostatnich miesiącach windują Polskę do absolutnej czołówki państw pod względem wielkości posiadanych rezerw metali szlachetnych, co stanowi mocny sygnał stabilności dla rynków finansowych i zagranicznych agencji ratingowych.'
-        },
-        {
-           flag: '🇷🇺', text: 'Rosja posiada obecnie gigantyczne rezerwy wynoszące 2292,3 tony złota.',
-           source_name: 'Bloomberg',
-           article: 'Federalna Służba Statystyki Państwowej w Moskwie potwierdziła najnowsze dane dotyczące rezerw surowcowych Federacji Rosyjskiej. Według ujawnionych raportów, zasoby złota należące do rosyjskiego banku centralnego wynoszą obecnie gigantyczne 2292,3 tony, co czyni z Rosji jednego z największych posiadaczy tego kruszcu na planecie. Rezerwy te pełnią kluczową rolę w rosyjskiej strategii przetrwania w warunkach drastycznych, zachodnich sankcji gospodarczych i odcięcia od międzynarodowego systemu rozliczeń SWIFT. Kreml konsekwentnie wykorzystuje kruszec jako zabezpieczenie handlu na rynkach azjatyckich, skutecznie omijając finansową blokadę narzuconą przez państwa zrzeszone w grupie G7.'
-        }
-      ]
-    },
-    {
-      flag: '🇵🇱', text: 'Koszty życia w Polsce: Obowiązkowe ceny mieszkań i droższe paliwa.',
-      subItems: [
-        {
-           flag: '🏠', text: 'Sejm nakazuje developerom publikację cen nieruchomości na dane.gov.pl.',
-           source_name: 'Business Insider Polska',
-           article: 'Sejm Rzeczypospolitej Polskiej przegłosował przełomową nowelizację, która ma ukrócić spekulacje na rozgrzanym rynku nieruchomości. Nowe przepisy wprowadzają bezwzględny obowiązek prawny dla wszystkich firm deweloperskich, polegający na systematycznym publikowaniu ostatecznych, transakcyjnych cen każdego sprzedanego mieszkania. Wszystkie dane będą musiały bezwzględnie trafiać bezpośrednio na otwarty, rządowy portal dane.gov.pl, co stworzy weryfikowalny rejestr rynkowy dla każdego obywatela. Ministerstwo Rozwoju argumentuje, że ten bezprecedensowy krok pozwoli złamać asymetrię informacyjną i położy kres procederowi sztucznego zawyżania stawek w cennikach ofertowych, z którym borykają się od miesięcy młode rodziny.'
-        },
-        {
-           flag: '⛽', text: 'Ceny paliw rosną. Powrót podatku VAT podniesie stawki na stacjach.',
-           source_name: 'Autokult',
-           article: 'Polscy kierowcy muszą przygotować się na uderzenie po kieszeniach na stacjach benzynowych w kluczowym momencie przedwakacyjnych wyjazdów. Najnowsze analityczne prognozy rynkowe wskazują, że średnie ceny detaliczne do 22 czerwca ukształtują się na wysokim poziomie 5,94 zł za litr popularnej benzyny Pb95 oraz 6,12 zł za litr oleju napędowego (ON). Sytuację drastycznie pogarsza oficjalne potwierdzenie, że rządowa tarcza antyinflacyjna nie zostanie wydłużona, co oznacza nieunikniony i bardzo szybki powrót standardowej, 23-procentowej stawki podatku VAT na paliwa silnikowe. Eksperci z branży logistycznej alarmują, że gwałtowny skok kosztów transportu natychmiast przełoży się na wzrost cen produktów w sklepach detalicznych.'
-        }
-      ]
-    },
-    {
-      flag: '🇮🇹', text: 'Dyplomatyczny kryzys: Włochy odwołują wizytę w USA po kpinach Trumpa.',
-      subItems: [
-        {
-           flag: '🇮🇹', text: 'Trump wyśmiewa Premier Meloni, MSZ Włoch odwołuje zaplanowaną wizytę.',
-           source_name: 'Corriere della Sera',
-           article: 'Rozłam pomiędzy dwojgiem kluczowych polityków konserwatywnych na świecie przerodził się w oficjalny kryzys państwowy. Włoskie Ministerstwo Spraw Zagranicznych podjęło radykalną, niespotykaną w stosunkach z sojusznikami decyzję o anulowaniu dawno zaplanowanej delegacji rządowej do Stanów Zjednoczonych. Krok ten jest bezpośrednią reakcją władz w Rzymie na wywiad telewizyjny Donalda Trumpa, w którym z kpiną wyśmiewał on premier Giorgię Meloni, twierdząc, że "błagała" go o wspólne zdjęcie na szczycie G7. Włoski rząd potraktował tę arogancką retorykę jako niedopuszczalne pogwałcenie protokołu dyplomatycznego i znieważenie godności państwa włoskiego, zamrażając strategiczne dwustronne relacje w kluczowym dla NATO momencie.'
-        },
-        {
-           flag: '🇺🇸', text: 'Trump twardo o swojej dyplomacji: "Nie zawarłem porozumienia z desperacji".',
-           source_name: 'Fox News',
-           article: 'W obliczu zmasowanej, rosnącej krytyki dotyczącej jego polityki zagranicznej oraz zarzutów o dążenie do niekorzystnych dla sojuszników kompromisów, Donald Trump wydał kategoryczne oświadczenie obronne. Kandydat na prezydenta USA stanowczo odrzucił narrację politycznych przeciwników, jakoby jego inicjatywy mediacyjne na arenie międzynarodowej wynikały z jakiejkolwiek słabości. "Nigdy nie zawarłem Porozumienia z desperacji i nie zamierzam tego robić" — oświadczył, broniąc swojej strategii opartej wyłącznie na twardych, bezwzględnych kalkulacjach biznesowych i prymacie interesów amerykańskich. Zapewnił swoich lojalnych wyborców, że to obecna administracja w Waszyngtonie kompromituje wizerunek Stanów Zjednoczonych uległością.'
-        }
-      ]
-    },
-    {
-      flag: '🇺🇦', text: 'Trwa potężny atak ukraińskich dronów na obwód moskiewski.',
-      source_name: 'The Guardian',
-      article: 'Władze Federacji Rosyjskiej mierzą się obecnie z najpoważniejszym atakiem na terytorium stolicy od początku trwania zbrojnego konfliktu. Siły zbrojne Ukrainy przypuściły zmasowane, niespodziewane uderzenie przy użyciu dziesiątek nowoczesnych bezzałogowców dalekiego zasięgu, biorąc na cel strategiczną infrastrukturę przemysłową w samej Moskwie oraz gęsto zaludnionym obwodzie moskiewskim. Niezależne agencje prasowe donoszą o głośnych eksplozjach, pożarach w zakładach zbrojeniowych oraz ogólnej panice wśród cywilnych mieszkańców. Rosyjskie systemy obrony przeciwlotniczej pracują na najwyższych obrotach, próbując przechwycić nadlatujące roje dronów. Ze względów bezpieczeństwa narodowego wstrzymano całkowicie cywilny ruch lotniczy na wszystkich głównych moskiewskich lotniskach, co paraliżuje transport.'
-    },
-    {
-      flag: '🇨🇳', text: 'Chiny wstrzymują eksport indu, kluczowego pierwiastka dla elektroniki.',
-      source_name: 'Financial Times',
-      article: 'Rząd w Pekinie wytoczył najpotężniejsze jak dotąd działo w narastającej, globalnej wojnie technologicznej ze Stanami Zjednoczonymi. Chińskie Ministerstwo Handlu niespodziewanie ogłosiło całkowite i bezwzględne wstrzymanie eksportu indu — niezwykle rzadkiego pierwiastka chemicznego. Chiny posiadają niemal absolutny, światowy monopol na ten surowiec, kontrolując zdecydowaną większość jego wydobycia i rafinacji. Pierwiastek ten jest absolutnie niezastąpiony w masowej produkcji nowoczesnych ekranów dotykowych OLED, paneli fotowoltaicznych oraz wysokowydajnych półprzewodników. Ta odwetowa decyzja wywoła natychmiastowy paraliż w zachodnich łańcuchach dostaw dla branży high-tech, prowadząc do drastycznych braków na rynkach i potężnego wzrostu cen elektroniki użytkowej konsumenckiej na całym świecie.'
-    },
-    {
-      flag: '🇩🇪', text: 'Zarząd Volkswagena ocenia stan firmy jako "krytyczny". Czekają nas cięcia.',
-      source_name: 'Handelsblatt',
-      article: 'Doszło do bezprecedensowego wstrząsu w najważniejszej gałęzi potężnego, niemieckiego przemysłu motoryzacyjnego. Zarząd Volkswagen AG, największego producenta samochodów w całej Europie, zwołał w trybie pilnym zamknięte spotkanie kryzysowe z inwestorami oraz wpływową radą zakładową. Podczas dramatycznej prezentacji oficjalnie i bez owijania w bawełnę oceniono obecny stan finansowy oraz operacyjny całego koncernu jako "krytyczny", wprost wskazując na realne zagrożenie dla bytu przedsiębiorstwa. Katastrofalne załamanie wyników sprzedaży na rynku chińskim, bolesne opóźnienia technologiczne w oprogramowaniu modeli z rodziny ID oraz niebotyczne koszty produkcji w krajowych fabrykach doprowadziły rentowność na skraj głębokiego załamania. Prezes firmy poinformował, że nie ma wyjścia i musi wdrożyć brutalny, radykalny program restrukturyzacji, który prawdopodobnie obejmie masowe zwolnienia.'
-    },
-    {
-      flag: '🤖', text: 'Polski rząd sfinansuje aż 50% kosztów projektów związanych ze sztuczną inteligencją.',
-      source_name: 'Puls Biznesu',
-      article: 'Polski rząd oficjalnie ogłosił niezwykle ambitny, miliardowy program bezpośredniego wsparcia dla rodzimej, innowacyjnej branży nowych technologii. Zgodnie z zapowiedziami płynącymi z Ministerstwa Cyfryzacji, uruchomiony zostanie wkrótce specjalny, potężny fundusz celowy, który będzie bezpowrotnie finansował aż do 50% całkowitych kosztów operacyjnych, wdrożeniowych i badawczych dla krajowych projektów związanych z implementacją i rozwojem algorytmów Sztucznej Inteligencji (AI). Program ma nadrzędny cel: natychmiastowe zahamowanie drenażu najlepszych mózgów z polskich uniwersytetów i przyciągnięcie z powrotem innowacyjnych start-upów, które dotychczas szukały hojnego kapitału w Dolinie Krzemowej. Dofinansowaniem mają zostać objęte nie tylko gigantyczne korporacje, ale również zwinne małe i średnie przedsiębiorstwa automatyzujące swoje codzienne procesy produkcyjne.'
-    },
-    {
-      flag: '🇪🇺', text: 'Lider niemieckiej opozycji Friedrich Merz odrzuca nową propozycję budżetu UE.',
-      source_name: 'Der Spiegel',
-      article: 'Friedrich Merz, wiodący lider potężnej niemieckiej opozycyjnej partii CDU, wytoczył najcięższe działa przeciwko brukselskim planom solidarności finansowej w ramach Unii. Podczas burzliwej, zaciętej debaty w gmachu Bundestagu kategorycznie odrzucił najnowszą, forsowaną propozycję wieloletnich ram budżetowych Unii Europejskiej. Lider chadeków bez wahania nazwał unijny projekt finansowy "całkowicie nie do przyjęcia, skandalicznym i szkodliwym" z punktu widzenia portfela przeciętnego niemieckiego podatnika. Merz stanowczo sprzeciwia się jakimkolwiek dalszym mechanizmom bezpowrotnego uwspólnotowienia europejskiego długu oraz żądaniom drastycznego, niesprawiedliwego zwiększenia składek członkowskich ze strony Berlina. Stanowisko to jednoznacznie zwiastuje zablokowanie negocjacji w Radzie, jeżeli CDU zgodnie z prognozami zwycięży w nadchodzących wkrótce wyborach parlamentarnych u naszych zachodnich sąsiadów.'
-    },
-    {
-      flag: '🇨🇭', text: 'Szwajcarska Agrola zamyka wszystkie stacje tankowania ekologicznego wodoru.',
-      source_name: 'Neue Zürcher Zeitung',
-      article: 'To wyjątkowo czarny i pesymistyczny dzień dla głównych europejskich wizjonerów i lobbystów zeroemisyjnego, całkowicie ekologicznego transportu ciężkiego w Europie. Szwajcarski, narodowy potentat energetyczny, renomowana firma Agrola, wydał szokujący opinię publiczną komunikat o trwałym i natychmiastowym zamknięciu całej swojej sieci innowacyjnych stacji tankowania wodoru. Zarząd spółki w oficjalnym stanowisku w ogóle nie ukrywa, że ta drastyczna decyzja została podyktowana druzgocącym i strukturalnym brakiem jakiejkolwiek rentowności całego wodorowego przedsięwzięcia na rynku. Rozbudowa niezwykle wymagającej infrastruktury pod ciśnieniem okazała się biznesową studnią bez dna z powodu astronomicznych kosztów serwisu, a realny popyt na to paliwo praktycznie nie istnieje wobec gwałtownego rozwoju pojazdów w pełni elektrycznych (BEV).'
-    },
-    {
-      flag: '🌱', text: 'Sukces rolnictwa w UE: Polska zajmuje 1. miejsce w wymianie pokoleniowej.',
-      source_name: 'Rzeczpospolita',
-      article: 'Polska administracja rządowa może oficjalnie odtrąbić gigantyczny, poparty twardymi danymi sukces na trudnej arenie rolniczej Unii Europejskiej. Najnowsze, niezwykle szczegółowe dane zaprezentowane przez unijny urząd Eurostat jednoznacznie potwierdzają, że Polska zajęła zaszczytne, bezapelacyjne pierwsze miejsce w całej wspólnocie pod względem dynamiki i skuteczności wymiany pokoleniowej w wielkoskalowym sektorze rolniczym. Dzięki potężnym, celowym zastrzykom gotówki z unijnych programów bezzwrotnego wsparcia finansowego, dziesiątki tysięcy innowacyjnych, świetnie wykształconych menedżerów przejęło gospodarstwa. Wdrażają oni na wsiach rewolucyjne rozwiązania, takie jak rolnictwo precyzyjne oparte na danych i automatyzację maszyn. Uchroniło to polską prowincję przed losem Europy Zachodniej, gdzie wsie wyludniają się z braku następców do ciężkiej pracy.'
-    },
-    {
-      flag: '🏄', text: 'Nadchodzi weekend w Warszawie. W sobotę tradycyjne plenerowe Wianki nad Wisłą.',
-      source_name: 'Onet Wiadomości',
-      article: 'Szykuje się wspaniały, niezwykle intensywny kulturalnie weekend w sercu największego miasta Polski. Władze stolicy oficjalnie zapowiedziały, że już w tę najbliższą sobotę na zrewitalizowanych bulwarach wiślanych w Warszawie odbędzie się ogromna, plenerowa edycja tradycyjnej, słowiańskiej imprezy, czyli "Wianków nad Wisłą". To prestiżowe, wyczekiwane wydarzenie, które czerpie pełnymi garściami ze starych, ludowych obchodów Nocy Kupały, co roku przyciąga bezpośrednio nad rzekę setki tysięcy młodych uczestników i całych rodzin z różnych zakątków kraju. Stołeczny ratusz sfinansował bezpłatne koncerty największych gwiazd polskiej estrady, fenomenalne pokazy świetlno-pirotechniczne oraz symboliczne, nastrojowe puszczanie ukwieconych wianków z szybkim nurtem rzeki w centrum metropolii. Wiąże się to ze znacznymi utrudnieniami logistycznymi w ruchu ulicznym w okolicy Starego Miasta.'
-    }
+    { flag:'📡', text:'Nie udało się pobrać wieczornej dawki — sprawdź połączenie i odśwież.', source_name:'Brif.up', source_url:'#',
+      article:'To dane zastępcze: aplikacja nie mogła pobrać pliku z newsami (brak sieci albo chwilowa awaria hostingu). Pociągnij w dół albo użyj przycisku odświeżania — realna treść wróci, gdy tylko połączenie zadziała.' },
   ],
 };
 
@@ -494,16 +363,6 @@ async function fetchFromBriefsJson(dose) {
   } catch(e) { return null; }
 }
 
-async function fetchFromSupabase(dose) {
-  if (SUPABASE_URL === 'TWOJ_SUPABASE_URL') return null;
-  const today = new Date().toISOString().split('T')[0];
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/briefs?dose=eq.${dose}&date=eq.${today}&order=created_at.desc&limit=1`, {
-    headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` }
-  });
-  const d = await res.json();
-  if (d?.length > 0) { doseDates[dose] = today; return d[0].items; }
-  return null;
-}
 
 async function loadDose(dose, force=false) {
   if (cache[dose] && !force) { renderDose(dose, cache[dose]); return; }
@@ -512,7 +371,6 @@ async function loadDose(dose, force=false) {
   try {
     let items = await fetchFromBriefsJson(dose);
 
-    if (!items) items = await fetchFromSupabase(dose);
 
     if (!items) items = SAMPLE[dose];
 
@@ -763,7 +621,7 @@ function expandBlock(item) {
       ? `<a class="expand-read-btn" href="${item.rssLink}" target="_blank">Czytaj →</a>`
       : '';
     const imgHtml = item.image_url
-      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
+      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
       : '';
     return `
       ${imgHtml}
@@ -960,7 +818,7 @@ function expandBlockArchive(item, dateStr, dose) {
     const readBtn = item.source_url && item.source_url !== '#'
       ? `<a class="expand-read-btn" href="${item.source_url}" target="_blank">Czytaj →</a>` : '';
     const imgHtml = item.image_url
-      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
+      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
       : '';
     return `
       ${imgHtml}
@@ -1378,6 +1236,8 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('brifup_theme', next);
   document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.setAttribute('content', next === 'dark' ? '#0f0f0f' : '#ffffff');
 }
 
 // ══ Pull-to-refresh ════════════════════════════════════
@@ -1485,11 +1345,24 @@ async function checkAppShellUpdate() {
   try {
     // Zmuś przeglądarkę do ponownego sprawdzenia samego service-workera
     if (swRegistration) { swRegistration.update().catch(() => {}); }
-    const res = await fetch('./index.html', { cache: 'reload' });
-    const tag = res.headers.get('etag') || res.headers.get('last-modified') || res.headers.get('content-length');
+    // HEAD wystarcza do porównania wersji — pełny index.html (~154 KB) ściągamy TYLKO gdy się
+    // zmienił (wcześniej pełny GET przy KAŻDYM powrocie do apki = spory transfer na komórce).
+    // Fallback na pełny GET, gdyby HEAD nie zwrócił żadnego nagłówka wersji.
+    let res = await fetch('./index.html', { method: 'HEAD', cache: 'no-store' });
+    let tag = res.ok ? (res.headers.get('etag') || res.headers.get('last-modified') || res.headers.get('content-length')) : null;
+    if (!tag) {
+      res = await fetch('./index.html', { cache: 'reload' });
+      tag = res.headers.get('etag') || res.headers.get('last-modified') || res.headers.get('content-length');
+    }
     if (!tag) return;
     if (loadedAppTag === null) { loadedAppTag = tag; return; } // pierwsza wizyta = wersja bazowa
-    if (tag !== loadedAppTag) { loadedAppTag = tag; reloadOnce('nowa wersja index.html'); }
+    if (tag !== loadedAppTag) {
+      loadedAppTag = tag;
+      // PRZED reloadem odśwież cache SW pełnym GET-em (nawigacja po reloadzie serwuje z cache —
+      // stale-while-revalidate — więc bez tego reload pokazałby jeszcze STARĄ powłokę).
+      try { await fetch('./index.html', { cache: 'reload' }); } catch (_) {}
+      reloadOnce('nowa wersja index.html');
+    }
   } catch (_) { /* offline — zostajemy na obecnej wersji */ }
 }
 window.addEventListener('load', () => { checkAppShellUpdate(); });
@@ -2078,7 +1951,7 @@ let lastBriefsTag = null;
 
 async function probeBriefsTag() {
   try {
-    const r = await fetch(`./briefs.json?_=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+    const r = await fetch('./briefs.json', { method: 'HEAD', cache: 'no-store' });
     if (!r.ok) return null;
     return r.headers.get('etag') || r.headers.get('last-modified') || r.headers.get('content-length');
   } catch (_) { return null; }
