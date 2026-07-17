@@ -1383,6 +1383,23 @@ let swRegistration = null;
 // w reload-po-reload, zwłaszcza na wolnym połączeniu, gdzie sam reload nie zdąży się dokończyć,
 // zanim znów zostanie wykryta "nowa wersja". sessionStorage (nie zwykła zmienna) przeżywa sam
 // reload, więc realnie ogranicza to do JEDNEGO przeładowania na całą sesję karty/apki.
+// Watchdog białego ekranu (2026-07-17): jeśli po 8 s NIC się nie wyrenderowało (ani skeleton,
+// ani dawka — znak, że powłoka z cache była zepsuta albo JS padł przy starcie), raz na sesję
+// czyścimy cache SW i przeładowujemy. Normalny start renderuje skeleton w <1 s, więc watchdog
+// nie ma prawa odpalić się przy działającej apce.
+setTimeout(async () => {
+  try {
+    const content = document.getElementById('content');
+    const dt = document.getElementById('dtFeedList');
+    const pusto = (!content || !content.childElementCount) && (!dt || !dt.childElementCount);
+    if (pusto && !sessionStorage.getItem('brifup_watchdog')) {
+      sessionStorage.setItem('brifup_watchdog', '1');
+      if (window.caches) { const keys = await caches.keys(); await Promise.all(keys.map(k => caches.delete(k))); }
+      location.reload();
+    }
+  } catch (_) {}
+}, 8000);
+
 function reloadOnce(powod) {
   if (sessionStorage.getItem('brifup_reloaded_for_update')) return;
   sessionStorage.setItem('brifup_reloaded_for_update', '1');

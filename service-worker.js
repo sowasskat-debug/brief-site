@@ -3,9 +3,12 @@
 //      (2) podstawowy cache, żeby apka otwierała się nawet bez sieci,
 //      (3) obsługa push notifications przez OneSignal.
 
-importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
+// OneSignal z CDN bywa blokowany przez adblock/DNS — bez try padłaby CAŁA instalacja SW
+// (razem z cache i obsługą offline), nie tylko push.
+try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js'); }
+catch (e) { /* push niedostępny, reszta SW działa */ }
 
-const CACHE_NAME = 'brifup-cache-v44';
+const CACHE_NAME = 'brifup-cache-v45';
 // UWAGA: index.html NIE jest tu precache'owany — patrz komentarz przy jego fetch-handlerze niżej.
 const STATIC_ASSETS = [
   './manifest.json',
@@ -67,11 +70,16 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate') {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {
-        const cached = await cache.match('./index.html');
+        // ⚠️ ZATRUTY CACHE (2026-07-17, „białe tło przy starcie"): wcześniej cache.put szedł BEZ
+        // sprawdzenia response.ok — błąd 5xx/zaślepka Cloudflare lądowała w cache jako powłoka
+        // i stale-while-revalidate serwował ją NATYCHMIAST przy każdym starcie. Teraz: (1) do cache
+        // trafia wyłącznie response.ok, (2) zatruty/niepełny wpis w cache jest ignorowany.
+        let cached = await cache.match('./index.html');
+        if (cached && !cached.ok) { cached = undefined; cache.delete('./index.html'); }
         const siec = fetch(event.request, { cache: 'reload' })
-          .then((response) => { cache.put('./index.html', response.clone()); return response; })
+          .then((response) => { if (response.ok) cache.put('./index.html', response.clone()); return response; })
           .catch(() => cached);
-        return cached || siec;   // jest cache → oddaj OD RAZU (sieć odświeża w tle); brak (1. wizyta) → czekaj na sieć
+        return cached || siec;   // jest DOBRY cache → oddaj OD RAZU (sieć odświeża w tle); brak → czekaj na sieć
       })
     );
     return;
@@ -87,8 +95,10 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request, wymusSwiezyCssJs ? { cache: 'reload' } : undefined)
       .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        if (response.ok) {   // nie cache'uj błędów/zaślepek — patrz komentarz przy nawigacji
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
         return response;
       })
       .catch(() => caches.match(event.request))

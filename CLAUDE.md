@@ -172,6 +172,13 @@ commicie** dotykającym CSS/JS, nawet drobnym.
   cache HTTP. Zasada: bump CACHE_NAME dalej rób (warstwa offline/precache), ale realną świeżość daje `cache:'reload'`.
 - **Po deployu telefon z już zainstalowanym starym SW potrzebuje ~2 odświeżeń:** 1. instaluje nowy SW
   (skipWaiting+clients.claim), 2. nowy SW serwuje świeży CSS. Pierwszy load po zmianie bywa jeszcze stary.
+- ⚠️ **Zatruty cache powłoki = białe tło przy starcie (2026-07-17, zgłoszenie właściciela):** `cache.put` szedł BEZ
+  sprawdzenia `response.ok` — błędna odpowiedź (5xx/zaślepka Cloudflare) lądowała w cache jako `./index.html`, a
+  stale-while-revalidate serwował ją NATYCHMIAST przy każdym starcie → biały ekran do czasu nadpisania dobrą kopią.
+  Fix (SW v45): (1) do cache trafia tylko `response.ok` (nawigacja + statyczne), (2) zatruty wpis w cache jest
+  ignorowany i kasowany, (3) `importScripts` OneSignal w try (zablokowany CDN nie ubija całego SW), (4) watchdog
+  w index.html: 8 s bez żadnego renderu → czyszczenie cache + reload raz na sesję (normalny start renderuje
+  skeleton w <1 s, więc przy zdrowej apce nie odpala się nigdy).
 - ⚠️ **App-shell `index.html` = STALE-WHILE-REVALIDATE dla NAWIGACJI (2026-07-16, zgłoszenie „apka wolno się ładuje"):**
   fetch-handler dla `event.request.mode === 'navigate'` oddaje `index.html` NATYCHMIAST z cache (szybkie ładowanie),
   a świeży pobiera w tle. Wersję/świeżość pilnuje dalej `checkAppShellUpdate` (index.html) — pobiera index.html
