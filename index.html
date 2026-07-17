@@ -1549,6 +1549,12 @@ let dtArchiveLoaded = false;
 function isDesktop() { return window.innerWidth >= 1024; }
 
 function dtGetCategory(item) {
+  // Kategoria nadana przez BOTA przy selekcji (pole `category` w briefs.json, 2026-07-17) — bot widzi pełny
+  // kontekst newsa, więc jego etykieta wygrywa ze zgadywaniem po słowach kluczowych niżej. Tylko znane nazwy
+  // (klucze DT_CAT_COLORS = ta sama lista co `_dozwoloneKategorie` w bocie). Klaster: kotwica często nie ma
+  // pola — bierzemy kategorię pierwszego sub-itemu, który ją ma. Stare itemy bez pola → fallback niżej (zero regresji).
+  const botCat = item.category || ((item.subItems || []).map(s => s && s.category).find(Boolean));
+  if (botCat && DT_CAT_COLORS[botCat]) return botCat;
   const t = (item.text || '').toLowerCase();
   if (/\bfed(u|zie|em|owi)?\b|\bboe\b|\brpp\b|ebc\b|ecb\b|boj\b|nbp\b|monetarn|inflacj|stopa proc|stóp proc|stopy proc|obniżk\w* stóp|podwyżk\w* stóp|oprocentow|rrr\b|bank centraln|rezerw federal|polityk pieniężn|powell|lagarde|projekcj\w* inflac/.test(t)) return 'Fed / Banki';
   // Wojna na Ukrainie — wyjęte z Geopolityki. Ukraina/Kijów/Zełenski w KONTEKŚCIE wojennym (żeby "Ukraina wchodzi do UE" nie łapało),

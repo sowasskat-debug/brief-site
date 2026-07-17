@@ -38,7 +38,13 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 { "morning"|"afternoon"|"evening"|"poczekalnia": { "date":"YYYY-MM-DD", "items":[ BriefItem ] } }
 ```
 BriefItem (klucze małą literą): `text`, `flag`, `article`, `impact`, `source_name`,
-`source_url`, `rssLink`, `added_at`, `image_url`, `subItems` (klaster = tablica BriefItem).
+`source_url`, `rssLink`, `added_at`, `category`, `image_url`, `subItems` (klaster = tablica BriefItem).
+**`category` (2026-07-17):** kategoria tematyczna nadawana przez SELEKCJĘ bota (zamknięta lista = klucze
+`DT_CAT_COLORS`/`DT_CAT_ORDER`; bot waliduje po swojej stronie). `dtGetCategory` używa jej wprost, gdy jest
+znaną nazwą (klaster: kotwica bez pola bierze kategorię pierwszego sub-itemu z polem); brak/null/nieznana →
+dotychczasowe zgadywanie po słowach kluczowych (stare itemy działają bez zmian). ⚠️ Przy dodawaniu nowej
+kategorii: NAJPIERW front (DT_CAT_ORDER/COLORS/FLAG + dtGetCategory), POTEM `_dozwoloneKategorie` + prompt
+`FORMAT_JSON_SELEKCJI` w bocie — inaczej bot będzie emitował nazwę, której front nie zna (walidacja bota ją zresztą utnie).
 Pozycja `items[0]` = **top story** (bot ją tam ustawia).
 **Sygnał "ile źródeł" = pole `reach`** (int, opcjonalne) — liczba różnych redakcji piszących o temacie
 (`GoogleNewsReachPL` w bocie). ⚠️ NAZYWA SIĘ `reach`, NIE `coverage` — Flusso musi czytać `it.reach`
