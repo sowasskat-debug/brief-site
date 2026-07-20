@@ -60,6 +60,12 @@ fallback na pozycję w `items[]`.
 ## Architektura JS (kluczowe funkcje w index.html)
 - **Ładowanie:** `loadDose(dose)` → `fetchFromBriefsJson` (z cache-busterem `?_=ts`)
   → fallback `fetchFromSupabase` (NIEskonfigurowany, placeholdery) → `SAMPLE`.
+  ⚠️ **Pusta dawka ≠ awaria (2026-07-20):** świeżo założona dawka z `items:[]` (normalne okno tuż po granicy,
+  np. 17:00-18:00 dla wieczornej — bot funduje pustą i dosypuje kolejnymi biegami) pokazywała mylące
+  „Nie udało się pobrać… sprawdź połączenie" (SAMPLE). Teraz `fetchFromBriefsJson` zwraca sentinel `'PUSTA'`
+  → `loadDose` renderuje kartę `PUSTA_DAWKA` („⏳ dawka w przygotowaniu"); `pollLiveUpdates` ignoruje `'PUSTA'`
+  (nie nadpisuje widoku), a gdy bot dosypie itemy, live-tick podmienia kartę na realne newsy automatycznie.
+  SAMPLE zostaje wyłącznie dla realnej awarii pobierania (fetch padł / zły JSON / brak dawki w pliku).
 - **Render mobile:** `renderDose(dose,items)` → `#content`. Hero = `items[0]`, reszta niżej. Klastry rozwijane (`toggleGroup`/`toggleSubItem`).
 - **Render desktop (≥1024px):** `renderDesktop` → `dtRenderFeed` (`#dtFeedList`) + `dtShowDetail` (`#dtDetail`, panel po prawej). Top story = `i===0` → klasa `.top-item` (styl „gazeta": kicker ★ TOP STORY + większy nagłówek).
 - **Auto-odświeżanie na żywo:** `liveTick()` co 60 s — najpierw tania sonda `probeBriefsTag()` (HEAD, ETag/rozmiar), pełne dane `pollLiveUpdates()` **tylko gdy się zmieniło**. Zachowuje scroll + otwarty artykuł na PC.

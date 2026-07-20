@@ -188,6 +188,25 @@ const SAMPLE = {
   ],
 };
 
+// Dawka ISTNIEJE w briefs.json, ale bot jeszcze nic do niej nie wybrał (normalne okno tuż po granicy
+// dawki, np. 17:00-18:00 dla wieczornej — bot founduje dawkę pustą i dosypuje z kolejnymi biegami).
+// To NIE jest błąd sieci — stąd osobny, uczciwy komunikat zamiast „sprawdź połączenie" (2026-07-20:
+// właściciel dostał mylący komunikat o awarii przy świeżo założonej, jeszcze pustej wieczornej dawce).
+const PUSTA_DAWKA = {
+  morning: [
+    { flag:'⏳', text:'Poranna dawka w przygotowaniu — bot zbiera pierwsze newsy.', source_name:'Brif.up', source_url:'#',
+      article:'Nowa dawka właśnie wystartowała i jest jeszcze pusta. Bot przegląda źródła co pół godziny — pierwsze newsy pojawią się wkrótce i wskoczą tu automatycznie, bez odświeżania.' },
+  ],
+  afternoon: [
+    { flag:'⏳', text:'Południowa dawka w przygotowaniu — bot zbiera pierwsze newsy.', source_name:'Brif.up', source_url:'#',
+      article:'Nowa dawka właśnie wystartowała i jest jeszcze pusta. Bot przegląda źródła co pół godziny — pierwsze newsy pojawią się wkrótce i wskoczą tu automatycznie, bez odświeżania.' },
+  ],
+  evening: [
+    { flag:'⏳', text:'Wieczorna dawka w przygotowaniu — bot zbiera pierwsze newsy.', source_name:'Brif.up', source_url:'#',
+      article:'Nowa dawka właśnie wystartowała i jest jeszcze pusta. Bot przegląda źródła co pół godziny — pierwsze newsy pojawią się wkrótce i wskoczą tu automatycznie, bez odświeżania.' },
+  ],
+};
+
 let currentDose = getCurrentDose();
 let cache = {};
 
@@ -367,8 +386,11 @@ async function fetchFromBriefsJson(dose) {
     if (!r.ok) return null;
     const d = await r.json();
     const doseData = d?.[dose];
-    if (!doseData || !doseData.items?.length) return null;
+    if (!doseData) return null;
     doseDates[dose] = doseData.date || null;   // data treści tej dawki (do oznaczenia starego wydania)
+    // Dawka założona, ale jeszcze bez itemów → sentinel 'PUSTA' (odróżnia „bot jeszcze nie wybrał"
+    // od realnej awarii pobierania; loadDose pokazuje wtedy PUSTA_DAWKA zamiast SAMPLE).
+    if (!doseData.items?.length) return 'PUSTA';
     return doseData.items;
   } catch(e) { return null; }
 }
@@ -381,8 +403,8 @@ async function loadDose(dose, force=false) {
   try {
     let items = await fetchFromBriefsJson(dose);
 
-
-    if (!items) items = SAMPLE[dose];
+    if (items === 'PUSTA') items = PUSTA_DAWKA[dose];
+    else if (!items) items = SAMPLE[dose];
 
     cache[dose] = items.map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) }));
     // Sub-itemy w klastrach: newest-first. Top-level: zachowaj [0] jako top story wybrany przez bota,
@@ -2004,7 +2026,7 @@ async function pollLiveUpdates() {
   const dose = currentDose;
   let fresh;
   try { fresh = await fetchFromBriefsJson(dose); } catch (_) { return; }
-  if (!fresh || dose !== currentDose || !cache[dose]) return;
+  if (!fresh || fresh === 'PUSTA' || dose !== currentDose || !cache[dose]) return;
   if (doseSignature(fresh) === doseSignature(cache[dose])) return; // nic nowego
 
   // Przetwórz identycznie jak loadDose: własne id-ki + sortowanie (top story + reszta newest-first).
