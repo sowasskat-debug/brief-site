@@ -366,8 +366,13 @@ async function appendRejected(items) {
   }
 }
 
-async function saveBriefs(data, message) {
-  const res = await ghPutJson(BRIEFS_PATH, data, briefsState.sha, message);
+// Commit: PUT z podanym (świeżym) sha; briefsState AKTUALIZOWANY DOPIERO po udanym zapisie.
+// Krytyczne: gdy PUT padnie (np. 409 — bot pisze briefs.json co bieg), stan i DOM muszą zostać
+// SPÓJNE z tym, co realnie jest na GitHubie. Wcześniej delete-funkcje robiły `briefsState = fresh`
+// (z już wyciętym newsem) PRZED zapisem — po 409 DOM pokazywał news, a stan go nie miał, więc
+// kolejne „Usuń" trafiało w PRZESUNIĘTY indeks i kasowało INNY news (+ uczyło nim filtr bota).
+async function saveBriefs(data, sha, message) {
+  const res = await ghPutJson(BRIEFS_PATH, data, sha, message);
   briefsState = { sha: res.content.sha, data };
 }
 
@@ -380,8 +385,7 @@ async function deleteSoloItem(idx) {
       const actualIdx = data[currentDose].items.findIndex(i => i.text === expected.text);
       if (actualIdx === -1) { showToast('Post już nie istnieje'); briefsState = fresh; renderContent(); return; }
       const [removed] = data[currentDose].items.splice(actualIdx, 1);
-      briefsState = fresh;
-      await saveBriefs(data, `Admin: usunięto news (${currentDose}) [skip ci]`);
+      await saveBriefs(data, fresh.sha, `Admin: usunięto news (${currentDose}) [skip ci]`);
       await appendRejected([removed]);
       renderContent();
       showToast('Usunięto');
@@ -408,8 +412,7 @@ async function deleteSubItem(idx, subIdx) {
         // Klaster z 1 subItem to nie klaster — zamień na samodzielny post
         data[currentDose].items[groupIdx] = group.subItems[0];
       }
-      briefsState = fresh;
-      await saveBriefs(data, `Admin: usunięto news z grupy (${currentDose}) [skip ci]`);
+      await saveBriefs(data, fresh.sha, `Admin: usunięto news z grupy (${currentDose}) [skip ci]`);
       await appendRejected([removed]);
       renderContent();
       showToast('Usunięto');
@@ -426,8 +429,7 @@ async function deleteGroup(idx) {
       const actualIdx = data[currentDose].items.findIndex(i => i.text === expected.text);
       if (actualIdx === -1) { showToast('Grupa już nie istnieje'); briefsState = fresh; renderContent(); return; }
       const [removed] = data[currentDose].items.splice(actualIdx, 1);
-      briefsState = fresh;
-      await saveBriefs(data, `Admin: usunięto grupę (${currentDose}) [skip ci]`);
+      await saveBriefs(data, fresh.sha, `Admin: usunięto grupę (${currentDose}) [skip ci]`);
       await appendRejected(removed.subItems && removed.subItems.length ? removed.subItems : [removed]);
       renderContent();
       showToast('Usunięto grupę');

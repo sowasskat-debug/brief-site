@@ -16,7 +16,12 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 - `styles.css` — style (mobile + desktop). Motyw jasny/ciemny przez `:root[data-theme=...]`.
 - `fala.html` — **"Flusso"**, osobna strona-mozaika trend-style. Czyta ten sam `briefs.json`,
   ale własny, niezależny render (nie dotyka `index.html`/`styles.css`). Patrz sekcja niżej.
-- `admin.html` — panel admina (osobny, token GitHub w sessionStorage).
+- `admin.html` — panel admina (osobny, token GitHub w sessionStorage). ⚠️ **Zapis = commit dopiero po sukcesie
+  (2026-07-22):** `saveBriefs(data, sha, msg)` aktualizuje `briefsState` DOPIERO po udanym PUT. Wcześniej
+  delete-funkcje robiły `briefsState = fresh` (z już wyciętym newsem) PRZED zapisem → po 409 (bot pisze
+  briefs.json co bieg) DOM pokazywał news, a stan go nie miał, więc kolejne „Usuń" trafiało w PRZESUNIĘTY indeks
+  i kasowało INNY news (+ dopisywało go do rejected.json, ucząc nim filtr bota). Teraz po 409 stan i DOM zostają
+  spójne z GitHubem.
 - `service-worker.js` — PWA cache + import OneSignal SDK.
 - `briefs.json` — bieżące dane (patrz niżej). `archive/*.json` — archiwum dzienne (jeden plik na dzień,
   ta sama struktura dawek; `archive/index.json` = lista dostępnych dat). `rejected.json` — ręcznie odrzucone (uczy filtr bota).
@@ -195,6 +200,24 @@ commicie** dotykającym CSS/JS, nawet drobnym.
   degraduje do starego network-first (brak przyspieszenia, ale bez zepsucia). ⚠️ Nie dało się w pełni przetestować w
   sandboxie (SW nie rejestruje się — `importScripts` OneSignal CDN zablokowany egress; na produkcji działa) — zweryfikować
   realny czas ładowania na urządzeniu.
+
+- ⚠️ **Gałąź `navigate` TYLKO dla powłoki głównej (2026-07-22, SW v47):** scope SW to cały origin, więc w
+  stale-while-revalidate wpadały też wejścia na PODSTRONY (`lejek.html`/`admin.html`/`fala.html`/`bot-health.html`):
+  (a) serwowały `index.html` ZAMIAST właściwej strony (wejście na lejek → widać główną apkę), (b) rewalidacja
+  w tle robiła `cache.put('./index.html', <treść podstrony>)` → ZATRUCIE powłoki (`response.ok=true`, więc check
+  `!cached.ok` tego nie łapał) → każdy kolejny start PWA otwierał lejek jako stronę główną, aż watchdog (8 s
+  białego ekranu) wyczyścił cache. **Fix:** gałąź navigate bramkowana `new URL(url).pathname === '/' ||
+  endsWith('/index.html')`; podstrony lecą do network-first (cache pod WŁASNYM URL-em, nie nadpisują powłoki).
+
+## Bezpieczeństwo — sanityzacja URL w href (2026-07-22) ⚠️
+`source_url`/`rssLink` pochodzą z zewnętrznego łańcucha (RSS wydawców, dekoder Google News, Bing apiclick) —
+traktujemy je jak wrogie. Wszystkie inne pola (`text`/`article`/`source_name`/`image_url`) były escapowane
+(`escHtml`/`escAttr`), ale href-y przycisków „Czytaj →"/„CZYTAJ →" szły do innerHTML SUROWO (`index.html` ×3:
+`expandBlock`/`expandBlockArchive`/`dtShowDetail`; `fala.html` `cta.href`). URL z `"` mógł wyłamać się z atrybutu
+i dokleić `on*=`, a `javascript:`/`data:` — wykonać kod na origin brifup.com (ten sam origin trzyma token GitHub
+admina w sessionStorage). **Fix — `safeUrl(u)`** (przy `escHtml`): przepuszcza WYŁĄCZNIE `^https?://`, na wyjściu
+`escAttr`; zły schemat/pusty → `''` = brak przycisku. W `fala.html` (przypisanie przez DOM property, nie innerHTML)
+sam guard schematu inline. **ZASADA:** każdy nowy href z danych → przez `safeUrl`, nigdy surowo.
 
 ## OneSignal (push)
 SDK z `cdn.onesignal.com` — **bywa blokowany przez adblock/DNS** → stąd baner
