@@ -704,10 +704,9 @@ function expandBlock(item) {
     ><span class="expand-share-icon">↑</span>Udostępnij</button>`;
 
   if (item.article) {
-    const readBtn = item.source_url && item.source_url !== '#'
-      ? `<a class="expand-read-btn" href="${item.source_url}" target="_blank">Czytaj →</a>`
-      : item.rssLink
-      ? `<a class="expand-read-btn" href="${item.rssLink}" target="_blank">Czytaj →</a>`
+    const readUrl = safeUrl(item.source_url) || safeUrl(item.rssLink);
+    const readBtn = readUrl
+      ? `<a class="expand-read-btn" href="${readUrl}" target="_blank" rel="noopener">Czytaj →</a>`
       : '';
     const imgHtml = item.image_url
       ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
@@ -904,8 +903,8 @@ function expandBlockArchive(item, dateStr, dose) {
       ><span class="expand-share-icon">↑</span>Udostępnij</button>`;
   })() : '';
   if (item.article) {
-    const readBtn = item.source_url && item.source_url !== '#'
-      ? `<a class="expand-read-btn" href="${item.source_url}" target="_blank">Czytaj →</a>` : '';
+    const readBtn = safeUrl(item.source_url)
+      ? `<a class="expand-read-btn" href="${safeUrl(item.source_url)}" target="_blank" rel="noopener">Czytaj →</a>` : '';
     const imgHtml = item.image_url
       ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
       : '';
@@ -936,6 +935,15 @@ function escAttr(s) {
 // z RSS, więc mogą zawierać tagi). Te same podmiany co escAttr; osobna nazwa, żeby w rendererach było
 // widać intencję: escHtml = treść elementu, escAttr = wartość atrybutu, esc = string w inline-JS (onclick).
 function escHtml(s) { return escAttr(s); }
+// URL do atrybutu href — dane (source_url/rssLink) pochodzą z zewnętrznego łańcucha (RSS wydawców, dekoder
+// Google News, Bing apiclick), więc traktujemy je jak wrogie: (1) tylko http/https (blokada javascript:/data:
+// itp. — origin brifup.com trzyma token GitHub admina w sessionStorage, XSS tu = kompromitacja strony),
+// (2) escAttr na wyjściu (cudzysłów w URL nie może wyłamać się z atrybutu i dokleić własnego on*).
+function safeUrl(u) {
+  if (!u) return '';
+  const t = String(u).trim();
+  return /^https?:\/\//i.test(t) ? escAttr(t) : '';
+}
 
 function renderDose(dose, items) {
   const cfg = DOSE_CFG[dose];
@@ -1902,9 +1910,9 @@ function dtShowDetail(item) {
   if (!det) return;
   const cat = dtGetCategory(item);
   const time = formatAddedAt(item);
-  const readBtn = (item.source_url && item.source_url !== '#')
-    ? `<a class="dt-read-btn" href="${item.source_url}" target="_blank" rel="noopener">CZYTAJ →</a>`
-    : (item.rssLink ? `<a class="dt-read-btn" href="${item.rssLink}" target="_blank" rel="noopener">CZYTAJ →</a>` : '');
+  const dtReadUrl = safeUrl(item.source_url) || safeUrl(item.rssLink);
+  const readBtn = dtReadUrl
+    ? `<a class="dt-read-btn" href="${dtReadUrl}" target="_blank" rel="noopener">CZYTAJ →</a>` : '';
   // Udostępnianie także w wersji desktop (dotąd był tylko na mobile). Archiwalny wpis niesie
   // _archiveDate/_dose — wtedy link prowadzi do konkretnego dnia/dawki, inaczej do bieżącej dawki.
   const shareSlug = itemSlug(item.text);

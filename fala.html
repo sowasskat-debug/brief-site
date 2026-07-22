@@ -297,7 +297,10 @@ function openSheet(it){
     rel.classList.add('show');
   }else rel.classList.remove('show');
   const cta=document.getElementById('bscta');
-  if(it.source_url){cta.href=it.source_url;cta.style.display='block';document.getElementById('bssrc').textContent=it.source_name||'';}
+  // source_url pochodzi z zewnętrznego RSS/dekoderów — tylko http(s), inaczej klik w "Otwórz źródło"
+  // mógłby wykonać javascript:/data: w kontekście brifup.com. Zły schemat = brak przycisku.
+  const bezpiecznyUrl = it.source_url && /^https?:\/\//i.test(String(it.source_url).trim()) ? it.source_url : '';
+  if(bezpiecznyUrl){cta.href=bezpiecznyUrl;cta.style.display='block';document.getElementById('bssrc').textContent=it.source_name||'';}
   else{cta.style.display='none';document.getElementById('bssrc').textContent='';}
   document.getElementById('ov').classList.add('open');
   document.getElementById('bs').classList.add('open');
