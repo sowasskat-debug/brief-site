@@ -76,6 +76,25 @@ fallback na pozycję w `items[]`.
 - **Auto-odświeżanie na żywo:** `liveTick()` co 60 s — najpierw tania sonda `probeBriefsTag()` (HEAD, ETag/rozmiar), pełne dane `pollLiveUpdates()` **tylko gdy się zmieniło**. Zachowuje scroll + otwarty artykuł na PC.
 - **Wznowienie apki (2026-07-16):** `syncDoseToTime` (na `visibilitychange`/`pageshow`) dla TEJ SAMEJ dawki odświeża teraz **w miejscu** przez `pollLiveUpdates()` (podmiana tylko gdy podpis treści się zmienił), a NIE `delete cache + loadDose(force)`. Wcześniej każdy powrót do apki kasował dane i przeładowywał dawkę od zera: stary DOM → skeleton → świeże = migotanie „stare artykuły, potem nowe" nawet bez zmian. Zmiana dawki (poranna→południowa) dalej robi pełny `switchDose` ze skeletonem. ⚠️ Osobno: pełny `reload()` przy wznowieniu robi `checkAppShellUpdate` gdy zmienił się `index.html` (network-first app-shell) — to główna przyczyna „wolnego ładowania po powrocie" przy częstych deployach; świadomie NIE ruszane bez zgody właściciela (trauma „zawieszenia na starej wersji").
 - **Deep linki:** `#dawka/slug` i `#archive/data/dawka/slug` → otwierają news (mobile: toggle+scroll; desktop: `dtPickItem`). Slug = `itemSlug(text)`.
+  ⚠️ **Nasłuch `hashchange` (2026-07-22):** routing wydzielony z 2 IIFE do `routeArchiveHash`/`routeDoseHash` +
+  dyspozytor `routeHashDeepLink` wołany na starcie ORAZ na `hashchange`. Wcześniej deep-linki działały TYLKO
+  przy załadowaniu strony — klik w węzeł „Wątków dnia" (ustawia `location.hash` na żywej stronie) zamykał overlay
+  i nic nie otwierał (feature był martwy). Teraz każda zmiana hasha routuje do newsa.
+- ⚠️ **Wyścig `loadDose` (2026-07-22):** render bramkowany `if (dose === currentDose)` — dwa równoległe `loadDose`
+  (deep-link `#evening` tuż po starcie na `morning`, szybkie klikanie zakładek) wrzucały treść jednej dawki pod
+  zakładkę drugiej. Cache wypełniany zawsze (deep-link `tryOpen` go czyta), gate tylko na renderze.
+- ⚠️ **Desktop: koniec podwójnego filtra suwakiem (2026-07-22):** `renderDose` trzyma `fullItems` (bez filtra
+  suwaka) osobno i podaje je do `renderDesktop` (dtAllItems MUSI być pełne — liczniki sidebaru, widoki tematów,
+  dtItemsMap; desktop filtruje SAM raz w `dtRenderFeed`) oraz `mobSwpBuildCats` (liczniki tematów). Wcześniej
+  renderDesktop dostawał już przefiltrowaną listę → filtr aplikował się DRUGI raz (przy 50% widać było ~25%).
+- ⚠️ **Live-tick/wznowienie zachowuje widok tematu (2026-07-22):** `pollLiveUpdates` zapamiętuje
+  `mobActiveCat`/`dtActiveFilter` przed re-renderem i przywraca po (`mobileFilterCat`/`dtRenderCatFilter`, ten sam
+  wzorzec co po zmianie suwaka). Wcześniej każdy zapis bota (~30-60 min) wyrzucał użytkownika z widoku tematu do
+  pełnego feedu. Usunięte też zbędne drugie `renderDesktop` (renderDose woła je wewnętrznie — niszczyło błysk `.is-new`).
+- ⚠️ **„Dziś" liczone LOKALNIE, nie w UTC (2026-07-22):** `watekWhen`/`watekNodeLink`/`dtRenderCatFilter`/
+  `mobileFilterCat` używały `new Date().toISOString().slice(0,10)` (UTC) — między 00:00 a 02:00 czasu PL węzeł
+  z dziś dostawał link `#archive/dziś/...` do nieistniejącego pliku. Teraz `todayLocalISO()` (jak `isPrevEdition`).
+  ⚠️ Pełna poprawność cross-strefowa wymaga stempla strefy w `added_at` od bota — do zrobienia po stronie bota.
 - **Panel szczegółów na PC** zostaje przy zmianie dawki (czyszczony tylko na starcie — `if(!dtCurrentItemId) dtShowEmpty()`).
 
 ## Helpery warte znać

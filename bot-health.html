@@ -95,7 +95,7 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp
 
 function zrodlaHtml(zrodla){
   if (!zrodla) return '';
-  return Object.entries(zrodla).map(([k,v]) => `${SRC_LABEL[k]||k}:${v}`).join(' · ');
+  return Object.entries(zrodla).map(([k,v]) => `${esc(SRC_LABEL[k]||k)}:${esc(v)}`).join(' · ');
 }
 
 function funnelStep(label, value, max){

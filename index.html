@@ -367,7 +367,7 @@ function formatDoseDate(iso) {
 function uid() { return Math.random().toString(36).slice(2,9); }
 // String w inline-JS (onclick='...'): escapuje \ ' " i nowe linie — SAMO escAttr nie chroni apostrofu,
 // a apostrof w tytule (np. „Trump's…") rozrywał JS w onclick przycisku Udostępnij. Używać ZAWSZE w parze: escAttr(esc(...)).
-function esc(s='') { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,' '); }
+function esc(s='') { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/[\r\n]/g,' '); }
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
@@ -412,12 +412,15 @@ async function loadDose(dose, force=false) {
     cache[dose].forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
     const [topStory, ...rest] = cache[dose];
     cache[dose] = topStory ? [topStory, ...sortNewestFirst(rest)] : [];
-    renderDose(dose, cache[dose]);
+    // Render TYLKO gdy ta dawka to wciąż aktywna — inaczej wyścig dwóch równoległych loadDose (np. deep-link
+    // #evening tuż po starcie na 'morning', albo szybkie klikanie zakładek) wrzucał treść jednej dawki pod
+    // zakładkę drugiej. Cache wypełniamy zawsze (deep-link tryOpen go czyta), gate dotyczy tylko renderu.
+    if (dose === currentDose) renderDose(dose, cache[dose]);
   } catch(e) {
     cache[dose] = SAMPLE[dose].map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) }));
     cache[dose].forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
     cache[dose] = sortNewestFirst(cache[dose]);
-    renderDose(dose, cache[dose]);
+    if (dose === currentDose) renderDose(dose, cache[dose]);
   }
 }
 
@@ -612,7 +615,7 @@ function watekWhen(node){
   // Sagi wielodniowe (2026-07-17): węzeł z innego dnia niż dziś dostaje przedrostek daty "16.07" —
   // bot trzyma teraz węzły do 7 dni, oś pokazuje ciągłość sagi, nie tylko dzisiejsze etapy.
   const d = (node.added_at||'').slice(0,10);
-  const dzis = new Date().toISOString().slice(0,10);
+  const dzis = todayLocalISO();
   const dayLbl = (d && d !== dzis) ? `${d.slice(8,10)}.${d.slice(5,7)} ` : '';
   return `<span class="watek-when">${dayLbl}${glyph}${time?' '+time:''}</span>`;
 }
@@ -629,7 +632,7 @@ function closeWatki(){ document.getElementById('watkiOverlay').classList.remove(
 function watekNodeLink(node){
   // Węzeł z dziś → #dawka/slug; z poprzednich dni → #archive/data/dawka/slug (sagi wielodniowe).
   const d = (node.added_at||'').slice(0,10);
-  const dzis = new Date().toISOString().slice(0,10);
+  const dzis = todayLocalISO();
   const slug = itemSlug(node.text);
   return (!d || d === dzis) ? `#${node.dose||'morning'}/${slug}` : `#archive/${d}/${node.dose||'morning'}/${slug}`;
 }
@@ -804,8 +807,15 @@ async function showArchiveDay(dateStr, highlightSlug) {
     let dayData = archiveDayCache[dateStr];
     if (!dayData) {
       const r = await fetch(`./archive/${dateStr}.json`, { cache: 'no-store' });
-      dayData = r.ok ? await r.json() : {};
-      archiveDayCache[dateStr] = dayData;
+      if (r.ok) {
+        dayData = await r.json();
+        archiveDayCache[dateStr] = dayData;         // realne dane — cache
+      } else if (r.status === 404) {
+        dayData = {};
+        archiveDayCache[dateStr] = dayData;         // dzień bez archiwum — zapamiętaj, nie ponawiaj
+      } else {
+        dayData = {};                               // 5xx/zaślepka CDN — NIE cache'uj, pozwól ponowić przy kolejnym otwarciu
+      }
     }
     const doseNames = { morning: '☀ Poranna', afternoon: '◑ Popołudniowa', evening: '☽ Wieczorna' };
     let html = '';
@@ -948,6 +958,12 @@ function safeUrl(u) {
 function renderDose(dose, items) {
   const cfg = DOSE_CFG[dose];
   if (!items || items.length === 0) return;
+  // PEŁNA lista (bez filtra suwaka) idzie do: liczników panelu tematów (mobSwpBuildCats) i renderDesktop
+  // (dtAllItems MUSI być pełne — liczniki sidebaru, widoki tematów, dtItemsMap; desktop filtruje SAM raz
+  // w dtRenderFeed). Tylko MOBILNY główny feed dostaje przefiltrowane `items` (tak ma być — suwak działa
+  // na feedzie). Wcześniej renderDesktop dostawał już przefiltrowaną listę → filtr aplikował się DRUGI raz
+  // (przy 50% widać było ~25% newsów) + zaniżone liczniki i niepełny dtAllItems.
+  const fullItems = items;
   items = filterByCatMeat(items);
   const hero = items[0];
   const isHeroGroup = hero.subItems && hero.subItems.length > 0;
@@ -1051,16 +1067,16 @@ function renderDose(dose, items) {
     });
     markNewItems(items); // chwilowy błysk nowych artykułów (od ostatniej wizyty)
     mobActiveCat = null;
-    mobSwpBuildCats(items);
+    mobSwpBuildCats(fullItems);
     mobSwpBuildArchive();
     // Archiwum wczytuje na PC renderDesktop; na mobile robimy to tutaj (idempotentne, guard dtArchiveLoaded).
     // Po załadowaniu odświeżamy panel, żeby doszła lista dni i cross-day filtr kategorii miał dane.
     if (typeof dtRenderArchiveSidebar === 'function') {
-      dtRenderArchiveSidebar().then(() => { mobSwpBuildCats(items); mobSwpBuildArchive(); }).catch(()=>{});
+      dtRenderArchiveSidebar().then(() => { mobSwpBuildCats(fullItems); mobSwpBuildArchive(); }).catch(()=>{});
     }
   }
 
-  renderDesktop(dose, items);
+  renderDesktop(dose, fullItems);
   updatePageMeta(dose, cfg, items);
   scrollArea.scrollTop = 0;
 }
@@ -1197,20 +1213,24 @@ document.querySelectorAll('.dose-tab').forEach(t=>t.classList.remove('active'));
 document.getElementById('tab-'+currentDose).classList.add('active');
 loadDose(currentDose);
 
-// ══ Deep link do archiwum: brifup.com/#archive/2026-07-03/afternoon/slug ══
-(function() {
+// ══ Deep-linki: #archive/data/dawka/slug ORAZ #dawka/slug ══════════════
+// Wydzielone z IIFE do nazwanych funkcji + nasłuch `hashchange`, żeby działały nie tylko przy STARCIE
+// strony, ale i przy zmianie hasha W TRAKCIE. Klik w węzeł „Wątków dnia" ustawia location.hash na już
+// załadowanej stronie — bez tego listenera nic się nie otwierało (feature był martwy: overlay się zamykał
+// i koniec). Teraz każda zmiana hasha (klik węzła sagi, wstecz/naprzód) routuje do właściwego newsa.
+function routeArchiveHash() {
   const hash = location.hash.slice(1);
   const parts = hash.split('/');
-  if (parts[0] !== 'archive' || parts.length < 4) return;
+  if (parts[0] !== 'archive' || parts.length < 4) return false;
   const dateStr = parts[1], slug = parts[3];
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !slug) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || !slug) return false;
 
   document.getElementById('archiveOverlay').classList.add('show');
   showArchiveDay(dateStr, slug);
-})();
+  return true;
+}
 
-// ══ Deep link: brifup.com/#morning/slug ═══════════════
-(function() {
+function routeDoseHash() {
   const hash = location.hash.slice(1);
   if (!hash) return;
   const sep = hash.indexOf('/');
@@ -1293,7 +1313,15 @@ loadDose(currentDose);
     }, parent ? 140 : 0);
   }
   setTimeout(() => tryOpen(0), 150);
-})();
+}
+
+// Startowy routing + nasłuch zmiany hasha (klik w węzeł sagi z „Wątków dnia", wstecz/naprzód).
+function routeHashDeepLink() {
+  if (routeArchiveHash()) return;
+  routeDoseHash();
+}
+routeHashDeepLink();
+window.addEventListener('hashchange', routeHashDeepLink);
 
 // ══ Swipe między dawkami ══════════════════════════════
 (function() {
@@ -1379,7 +1407,8 @@ function toggleTheme() {
 
 // ══ PWA Install banner ════════════════════════════════
 let deferredInstallPrompt = null;
-const _visits = parseInt(localStorage.getItem('brifup_visits') || '0') + 1;
+// guard na NaN: zepsuta wartość w localStorage → parseInt daje NaN → zapis "NaN" → baner nigdy więcej
+const _visits = (parseInt(localStorage.getItem('brifup_visits'), 10) || 0) + 1;
 localStorage.setItem('brifup_visits', _visits);
 
 window.addEventListener('beforeinstallprompt', e => {
@@ -1730,7 +1759,7 @@ function dtFilterCat(el) {
 // Podłoga: wąski temat nigdy nie pustoszeje — przy "samo mięso" pokazuje przynajmniej najgrubszy item (min 1).
 function dtRenderCatFilter(cat) {
   const matchesCat = it => it.subItems?.length > 0 ? it.subItems.some(sub => dtGetCategory(sub) === cat) : dtGetCategory(it) === cat;
-  const today = new Date().toISOString().slice(0,10);
+  const today = todayLocalISO();
   const matching = [];
   dtAllItems.filter(matchesCat).forEach(it => matching.push({ it, d: today }));
   dtArchiveAllItems.filter(matchesCat).forEach(it => matching.push({ it, d: it._archiveDate }));
@@ -1885,8 +1914,16 @@ function dtToggleGroup(id) {
   g.style.display = open ? 'none' : 'block';
   h?.classList.toggle('selected', !open);
   if (open) {
-    document.querySelectorAll('.dt-sub-item.selected').forEach(e => e.classList.remove('selected'));
-    dtShowEmpty();
+    // Zwijamy grupę: czyść panel/zaznaczenie TYLKO gdy czytany artykuł należał do TEJ grupy (kotwica lub
+    // jej podpunkt). Wcześniej zwinięcie DOWOLNEGO klastra kasowało otwarty artykuł — nawet niepowiązany
+    // top-level po prawej znikał, zastąpiony placeholderem „Wybierz news".
+    const grupa = dtItemsMap[id];
+    const naleziDoGrupy = dtCurrentItemId && (dtCurrentItemId === id ||
+      (grupa && grupa.subItems || []).some(s => s.id === dtCurrentItemId));
+    if (naleziDoGrupy) {
+      document.querySelectorAll('.dt-sub-item.selected').forEach(e => e.classList.remove('selected'));
+      dtShowEmpty();
+    }
   }
 }
 
@@ -2043,13 +2080,20 @@ async function pollLiveUpdates() {
   const [top, ...rest] = processed;
   cache[dose] = top ? [top, ...sortNewestFirst(rest)] : [];
 
-  // Zapamiętaj pozycję scrolla obu widoków (renderDose zeruje scrollArea, renderDesktop — listę).
+  // Zapamiętaj AKTYWNY FILTR TEMATU i pozycję scrolla — renderDose (reset mobActiveCat) i renderDesktop
+  // (reset dtActiveFilter, woła je renderDose wewnętrznie) inaczej wyrzucały użytkownika z widoku tematu
+  // do pełnego feedu przy każdym zapisie bota (co ~30-60 min). Teraz filtr przywracamy po re-renderze.
+  const savedMobCat = mobActiveCat;
+  const savedDtFilter = dtActiveFilter;
   const mobTop = scrollArea ? scrollArea.scrollTop : 0;
   const feedList = document.getElementById('dtFeedList');
   const deskTop = feedList ? feedList.scrollTop : 0;
 
-  renderDose(dose, cache[dose]);
-  renderDesktop(dose, cache[dose]);
+  renderDose(dose, cache[dose]); // woła też renderDesktop wewnętrznie — drugie wywołanie było zbędne (niszczyło błysk .is-new)
+
+  // Przywróć widok tematu, jeśli użytkownik w nim był (ten sam wzorzec co po zmianie suwaka jakości).
+  if (savedMobCat && savedMobCat !== 'all') mobileFilterCat(savedMobCat);
+  if (savedDtFilter) dtRenderCatFilter(savedDtFilter);
 
   if (scrollArea) scrollArea.scrollTop = mobTop;
   const feedList2 = document.getElementById('dtFeedList');
@@ -2213,7 +2257,7 @@ function mobileFilterCat(cat) {
 
   const c = mobActiveCat;
   const matchesCat = it => it.subItems?.length > 0 ? it.subItems.some(sub => dtGetCategory(sub) === c) : dtGetCategory(it) === c;
-  const today = new Date().toISOString().slice(0,10);
+  const today = todayLocalISO();
   const matching = [];
   (cache[currentDose] || []).filter(matchesCat).forEach(it => matching.push({ it, d: today }));
   (typeof dtArchiveAllItems !== 'undefined' ? dtArchiveAllItems : []).filter(matchesCat).forEach(it => matching.push({ it, d: it._archiveDate }));
