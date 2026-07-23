@@ -299,3 +299,68 @@ Dla `fala.html` (czysty ES2017+, bez transpilacji): sanity-check składni JS prz
 - Estetyka: minimalistyczna, „gazetowa". Fonty DM Serif Display + Space Mono. Akcent czerwony (`--red`). UI po polsku. Motyw jasny/ciemny (theme-aware).
 - Zmiany wizualne: **pokazać podgląd (zrzut) przed wdrożeniem** — user tak woli.
 - Commity po polsku.
+
+## ⚠️ PLAN (2026-07-23, NIEWDROŻONE): Panel użytkownika + logowanie Google przez Supabase
+Ustalenia z rozmowy z właścicielem 2026-07-23 (sesja zdalna; wdrożenie planowane w lokalnej sesji,
+gałąź robocza `claude/user-panel-google-login-djonse` w obu repo). **Decyzje właściciela:**
+(1) wariant **Supabase** (nie czysty GIS, nie własne API na Hetznerze), (2) ochrona diagnostyki
+**„prawdziwa"** — bot przenosi dane diagnostyczne do Supabase (nie sama bramka na stronach HTML,
+bo pliki JSON na GitHub Pages i tak są publiczne pod bezpośrednim URL-em — to była kluczowa pułapka
+omówiona w rozmowie: schowanie strony ≠ schowanie danych).
+
+### Cel
+1. **Panel użytkownika** (dla każdego): logowanie Google, synchronizacja ustawień między
+   urządzeniami (motyw `brifup_theme`, suwaki per-temat `brifup_cat_pct`/`brifup_cat_meat` —
+   dziś localStorage, giną przy zmianie telefonu), zapisane artykuły („czytaj później", 🔖).
+   Konto OPCJONALNE — niezalogowany działa dokładnie jak dziś, zero regresji.
+2. **Dostęp admina po tym samym loginie**: właściciel (e-mail `sowass.kat@gmail.com`) po
+   zalogowaniu Googlem widzi diagnostykę (`lejek`, `bot-health`, `brief-health`, zużycie tokenów),
+   która przestaje być publiczna. Dziś te strony + JSON-y widzi każdy.
+
+### Architektura
+- **Supabase (darmowy tier, 50k MAU)** + provider Google w Supabase Auth. Front woła
+  `supabase.auth.signInWithOAuth({provider:'google'})`. `SUPABASE_URL` + klucz **`anon`** są
+  PUBLICZNE z założenia — mogą siedzieć w `index.html` w repo (dostępu pilnuje RLS, nie tajność klucza).
+- **Tabele:** `user_prefs` (ustawienia per user, RLS: własny wiersz), `saved_articles` (RLS: własne),
+  `diag` lub osobne tabele na lejek/health/usage (RLS SELECT: tylko e-mail właściciela z JWT,
+  np. `auth.jwt()->>'email' = 'sowass.kat@gmail.com'`; INSERT/UPSERT tylko service_role = bot).
+- **Panel UI** w `index.html`: przycisk 👤 w topbarze (po zalogowaniu avatar), overlay w stylu
+  istniejących (`.archive-overlay`, estetyka „gazetowa"): profil, motyw, podgląd suwaków tematów,
+  zapisane artykuły, sekcja **Diagnostyka** widoczna tylko dla admina, wyloguj.
+- **Sync ustawień:** merge localStorage↔`user_prefs` przy pierwszym logowaniu, potem zapis przy
+  każdej zmianie; localStorage zostaje jako źródło dla niezalogowanych i cache dla zalogowanych.
+- **Strony diagnostyczne** (`lejek.html`, `bot-health.html`, `brief-health.html`): bramka logowania
+  Google + odczyt danych **z Supabase** zamiast z plików repo. Pliki `lejek.json`, `bot_health.json`,
+  `brief_health.json`, `deepseek_usage.json` docelowo ZNIKAJĄ z repo (bot przestaje je pushować —
+  bonus: koniec commitów „Aktualizacja … [skip ci]" zaśmiecających historię).
+- **Publiczne ZOSTAJE:** `briefs.json`, `threads.json`, `trending.json`, `archive/`, `rejected.json`
+  (treść strony + Flusso czyta cross-origin). `admin.html` (PAT GitHub, sessionStorage) na razie BEZ
+  zmian — konto Google użytkownika NIE dostaje żadnych praw zapisu do repo; to osobne mechanizmy.
+- **Bot (repo financialnewsbot):** zapis diagnostyki przez Supabase REST (`POST /rest/v1/...`,
+  nagłówki `apikey`+`Authorization: Bearer <service_role>`) zamiast GitHub Contents API — szczegóły
+  w `financialnewsbot/CLAUDE.md` (sekcja PLAN). Klucz **service_role jest TAJNY** — tylko
+  `/root/bot_secrets.env` na Hetznerze, NIGDY w repo ani we froncie.
+
+### Setup po stronie właściciela (jednorazowo, ~15 min, PRZED wdrożeniem)
+1. supabase.com → nowy darmowy projekt.
+2. Google Cloud Console (konto już jest — od `YOUTUBE_API_KEY`) → OAuth Client ID typu „Web":
+   Authorized JavaScript origins: `https://brifup.com`; Authorized redirect URI: skopiować z
+   Supabase → Authentication → Providers → Google (callback `https://<projekt>.supabase.co/auth/v1/callback`).
+3. W Supabase włączyć provider Google, wkleić Client ID + Client secret.
+4. Do sesji Claude podać: URL projektu + klucz `anon` (oba publiczne).
+5. Na Hetznerze dopisać `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` (service_role) do `/root/bot_secrets.env`.
+
+### Kolejność wdrożenia (etapy, każdy osobno testowalny)
+1. Front: SDK Supabase (`@supabase/supabase-js` z CDN — uwaga: adblock/DNS może blokować jak
+   OneSignal, panel musi degradować z sensownym komunikatem), przycisk 👤 + overlay + login/logout.
+2. Sync ustawień + zapisane artykuły (tabele + RLS).
+3. Bramka + odczyt diagnostyki z Supabase na 3 stronach diagnostycznych.
+4. Bot: zapis diagnostyki do Supabase (okres przejściowy: pisać w OBA miejsca, po weryfikacji
+   wyłączyć push do repo i skasować pliki z repo).
+5. SW: bump `CACHE_NAME`; nowe strony/skrypty przez `cache:'reload'` jak reszta CSS/JS.
+
+### Uwagi bezpieczeństwa
+- Rozdział ról: anon key (front, publiczny) vs service_role (bot, tajny) — nie mylić.
+- Bramka po stronie klienta to tylko UI; realna ochrona = RLS na tabelach. Testować RLS ręcznie
+  (zapytanie anon bez sesji i z sesją innego konta MUSI dostać 0 wierszy diagnostyki).
+- Każdy nowy href/avatar z danych Google → przez `safeUrl`/`escAttr` jak wszystko inne.
