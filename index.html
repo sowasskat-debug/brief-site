@@ -609,6 +609,18 @@ async function loadThreads(){
 function threadForItem(item){
   return (item && item.text) ? (THREAD_BY_TEXT.get(normThreadKey(item.text)) || null) : null;
 }
+// ⚠️ Wątki też się STARZEJĄ w otwartej apce (2026-07-26, zgłoszenie właściciela: „nie miałeś tego dodać
+// do wątku? przecież to eskalacja"). loadThreads() leciało TYLKO raz przy starcie, a live-tick odświeżał
+// wyłącznie briefs.json — więc gdy bot przepisał nagłówek kontynuacji (eskalacja: „…drugiego drona w ciągu
+// 24 godzin") albo po prostu dorzucił węzły w kolejnym biegu, mapa THREAD_BY_TEXT z chwili startu przestawała
+// pasować do tekstu kafla i badge 🧵 ZNIKAŁ (dane po obu stronach były poprawne — rozjeżdżał się tylko klucz).
+// Teraz przy każdej realnej zmianie briefs.json dociągamy też threads.json; gdy zmieniły się SAME wątki,
+// wymuszamy re-render, żeby badge pojawił się bez czekania na kolejny zapis newsów.
+async function refreshThreadsIfChanged(){
+  const przed = THREADS && THREADS.generated_at;
+  await loadThreads();
+  return !!THREADS && THREADS.generated_at !== przed;
+}
 function watekWhen(node){
   const glyph = { morning:'☀', afternoon:'◑', evening:'☽' }[node.dose] || '·';
   const time = (node.added_at||'').split(' ')[1] || '';
@@ -2064,7 +2076,7 @@ function doseSignature(items) {
   return parts.sort().join('§');
 }
 
-async function pollLiveUpdates() {
+async function pollLiveUpdates(wymusRender = false) {
   if (document.visibilityState !== 'visible') return;
   const overlay = document.getElementById('archiveOverlay');
   if (overlay && overlay.classList.contains('show')) return; // nie przeszkadzaj w archiwum
@@ -2072,7 +2084,8 @@ async function pollLiveUpdates() {
   let fresh;
   try { fresh = await fetchFromBriefsJson(dose); } catch (_) { return; }
   if (!fresh || fresh === 'PUSTA' || dose !== currentDose || !cache[dose]) return;
-  if (doseSignature(fresh) === doseSignature(cache[dose])) return; // nic nowego
+  // wymusRender = zmieniły się same wątki (badge 🧵) przy niezmienionej treści tej dawki — patrz refreshThreadsIfChanged
+  if (!wymusRender && doseSignature(fresh) === doseSignature(cache[dose])) return; // nic nowego
 
   // Przetwórz identycznie jak loadDose: własne id-ki + sortowanie (top story + reszta newest-first).
   const processed = fresh.map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(s => ({ ...s, id: uid() })) }));
@@ -2122,7 +2135,10 @@ async function liveTick() {
   const tag = await probeBriefsTag();
   if (tag !== null && tag === lastBriefsTag) return; // plik bez zmian → nic nie pobieramy
   lastBriefsTag = tag;                               // (tag === null → HEAD niedostępny → pełny poll jako fallback)
-  await pollLiveUpdates();
+  // Bot zapisuje threads.json w tym samym biegu co briefs.json — dociągamy je RAZEM, więc badge 🧵
+  // nadąża za przepisanymi nagłówkami kontynuacji i nowymi węzłami sag (koszt: 1 mały fetch na bieg bota).
+  const watkiZmienione = await refreshThreadsIfChanged();
+  await pollLiveUpdates(watkiZmienione);
 }
 
 // Ustal punkt odniesienia na starcie, żeby pierwszy tik nie ściągał całości bez potrzeby.

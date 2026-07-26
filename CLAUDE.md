@@ -108,8 +108,18 @@ fallback na pozycję w `items[]`.
   kropki na osi, bieżący news = grubsza czerwona kropka + „TEN NEWS", chipy dawek (☀amber/◑blue/☽violet)+godziny,
   relacje przyczyna/skutek czerwonym mono, nagłówki DM Serif. Wpięte w **3 miejsca**: `expandBlock` (mobile ×2) +
   `dtShowDetail` (desktop). CSS klasy `.watek-*` w styles.css (zmienne `--rule/--bg/--red/--muted`, fonty z @import).
-- **Dane:** `loadThreads()` fetchuje **`threads.json`** raz przy starcie → mapa `THREAD_BY_TEXT` (match po znorm. tekście
+- **Dane:** `loadThreads()` fetchuje **`threads.json`** → mapa `THREAD_BY_TEXT` (match po znorm. tekście
   węzła; tylko wątki ≥2 węzły). Przycisk pojawia się TYLKO gdy post należy do wątku. **0 tokenów per klik** (gotowiec z bota).
+  ⚠️ **Mapa wątków musi się ODŚWIEŻAĆ w otwartej apce (2026-07-26):** dawniej `loadThreads()` leciało TYLKO raz przy
+  starcie, a live-tick odświeżał wyłącznie `briefs.json` → gdy bot przepisał nagłówek kontynuacji (nowe
+  `DeepSeekDopiszEskalacjeDoTytulu`: „…drugiego drona w ciągu 24 godzin") albo dorzucił węzły w kolejnym biegu,
+  klucz `normThreadKey(item.text)` przestawał pasować do mapy z chwili startu i **badge 🧵 znikał** — mimo że dane
+  po obu stronach były poprawne (zgłoszenie właściciela: „nie miałeś tego dodać do wątku? przecież to eskalacja").
+  Fix: `refreshThreadsIfChanged()` (porównuje `generated_at`) wołane w `liveTick` przy KAŻDEJ realnej zmianie
+  `briefs.json` — bot zapisuje oba pliki w tym samym biegu, więc to 1 mały fetch na bieg. Gdy zmieniły się SAME
+  wątki (treść dawki bez zmian), `pollLiveUpdates(wymusRender = true)` pomija check `doseSignature` i re-renderuje,
+  żeby badge pojawił się bez czekania na kolejny zapis newsów. **ZASADA:** każdy nowy gotowiec od bota czytany
+  raz przy starcie (mapy po TEKŚCIE newsa) trzeba odświeżać razem z `briefs.json` — teksty bywają przepisywane.
 - **Badge `🧵 N` na kaflach (2026-07-17):** `watekBadgeHtml(item)` w `catMetaRow` (mobile) i wszystkich 3 szablonach
   `dt-item-meta` (desktop; warunek meta rozszerzony o `threadForItem`) — wątki widać z LISTY, nie dopiero po otwarciu
   artykułu. Po dociągnięciu threads.json `loadThreads().then(...)` robi re-render bieżącej dawki (badge bez czekania
