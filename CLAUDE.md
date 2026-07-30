@@ -248,6 +248,29 @@ admina w sessionStorage). **Fix — `safeUrl(u)`** (przy `escHtml`): przepuszcza
 `escAttr`; zły schemat/pusty → `''` = brak przycisku. W `fala.html` (przypisanie przez DOM property, nie innerHTML)
 sam guard schematu inline. **ZASADA:** każdy nowy href z danych → przez `safeUrl`, nigdy surowo.
 
+## Udostępnij na X ⚠️ ZAPLANOWANE, NIEZAIMPLEMENTOWANE (2026-07-30)
+Życzenie właściciela: wrzucać 3-4 najlepsze newsy dziennie na X. Wybrany wariant: **właściciel sam wybiera
+news na stronie i klika „Udostępnij" — composer X otwiera się z GOTOWĄ treścią.** Żadnego API X, żadnych
+kluczy, zero kosztu (X zlikwidował darmowy tier w lutym 2026 i liczy $0,20 za post z linkiem — szczegóły
+rozpoznania w `financialnewsbot/CLAUDE.md`, sekcja „Gotowiec pod X").
+
+- **Skąd treść:** bot dopisuje do każdego itema pole **`x_post`** w `briefs.json` (hook + 1 zdanie z liczbami
+  z artykułu, ≤250 zn.). Front go tylko czyta — 0 tokenów per klik, jak przy `threads.json`.
+  **FALLBACK obowiązkowy:** brak/`null` `x_post` (stare itemy, gotowiec odrzucony przez bramkę pokrycia liczb)
+  → użyj samego `item.text`. Przycisk ma działać ZAWSZE.
+- **Mechanizm:** `https://x.com/intent/post?text=<encodeURIComponent>&url=<deep link>` otwierany w nowej
+  karcie. Web Intent działa bez auth (dokumentacja X aktualizowana 2026-06-03).
+- **Deep link = `https://brifup.com/#<dawka>/<itemSlug(text)>`** — klikający ląduje na OTWARTYM artykule,
+  nie na stronie głównej. Slug liczy istniejąca `itemSlug` (djb2-xor po pierwszych 80 zn., base36).
+  Dla itemów z archiwum: `#archive/<data>/<dawka>/<slug>` (ten sam format co węzły wątków).
+  ⚠️ Deep-linki routują się na żywo od 2026-07-22 (`routeHashDeepLink` na `hashchange`) — działa.
+- **Gdzie wpiąć:** obok istniejącego „Czytaj →" w **3 miejscach** `index.html` — `expandBlock` (mobile),
+  `expandBlockArchive` (mobile-archiwum), `dtShowDetail` (desktop). Ten sam zestaw co przy `safeUrl`.
+- ⚠️ **URL intentu buduj przez `encodeURIComponent`, a href przepuść przez `safeUrl`** (patrz sekcja
+  „Bezpieczeństwo" wyżej) — `x_post` to tekst z modelu, wchodzi do atrybutu.
+- ⚠️ Zmiana dotyka JS+CSS → **bump `CACHE_NAME`** w `service-worker.js`.
+- **Limit X = 280 znaków**, link liczy się jako 23 niezależnie od długości → budżet na tekst ~250.
+
 ## OneSignal (push)
 SDK z `cdn.onesignal.com` — **bywa blokowany przez adblock/DNS** → stąd baner
 „Nie można załadować powiadomień". To po stronie przeglądarki usera, nie bug apki.
