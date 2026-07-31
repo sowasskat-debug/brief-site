@@ -248,6 +248,53 @@ admina w sessionStorage). **Fix — `safeUrl(u)`** (przy `escHtml`): przepuszcza
 `escAttr`; zły schemat/pusty → `''` = brak przycisku. W `fala.html` (przypisanie przez DOM property, nie innerHTML)
 sam guard schematu inline. **ZASADA:** każdy nowy href z danych → przez `safeUrl`, nigdy surowo.
 
+## Wykresy notowań pod „Wpływ na rynek" — quotes.json (2026-07-31)
+Życzenie właściciela („a co gdyby dodać prawdziwe wykresy jak ma X, ale bez wysokich zużyć tokenów").
+**Koszt DeepSeeka: 0** — instrument wykrywa bot deterministycznie z pola `impact`, front tylko rysuje.
+- **`quotes.json`** (nowy plik, pisany przez bota) — `{generated_at, stan_na, series:{SYMBOL:{nazwa,waluta,dec,
+  ostatnia,zmiana_pct,zrodlo,punkty:[...30 dziennych zamknięć]}}}`. **OSOBNY od `briefs.json`**, bo notowania
+  starzeją się co bieg, a briefs i archiwum mają zostać niezmienne. Item niesie tylko `chart:["META","QQQ"]`.
+- **`loadQuotes()` + `refreshQuotesIfChanged()`** — wzorzec 1:1 jak `threads.json`. ⚠️ Odświeżane w `liveTick`
+  przy KAŻDEJ realnej zmianie `briefs.json` — inaczej kafel pokazuje cenę sprzed godzin przy świeżym newsie
+  (dokładnie ta sama pułapka co z mapą wątków, 2026-07-26).
+- **`sparklineSvg()`** — wykres czystym SVG z tablicy zamknięć (ścieżka + gradient pod nią). Zero bibliotek,
+  zgodnie z zasadą „bez frameworka, bez builda".
+- **`quotesHtml(item)`** wpięte pod `impactHtml` w **3 miejscach** (`expandBlock`, `expandBlockArchive`,
+  `dtShowDetail`) — ten sam zestaw co przy `safeUrl`. FAIL-SAFE na każdym kroku: brak `quotes.json`, brak pola
+  `chart`, nieznany symbol albo seria <2 punktów = pusty string = nic się nie renderuje.
+- ⚠️ **Stopka „stan na …" jest OBOWIĄZKOWA** — dane są godzinne i opóźnione, nie live. Bez niej kafel sugeruje
+  notowania w czasie rzeczywistym.
+- ⚠️ **Szerokości w `.q-row`: jedynym elementem, który wolno ścisnąć, jest `.q-name`.** Pierwsza wersja miała
+  sztywne `min-width` na cenie i zmianie — w panelu szczegółów na desktopie (~440 px) procent zmiany był
+  wypychany poza `overflow:hidden` kontenera i ZNIKAŁ. Złapane na renderze realnej strony, nie w mockupie.
+  Stąd układ `[.q-head] [.q-spark] [.q-vals]`, gdzie tylko `.q-head` ma `flex:1 1 auto; min-width:0`.
+  Poniżej 460 px nazwa chowa się całkiem (zostawała z niej sama wielokropkowa końcówka).
+- Wariant wizualny wybrany przez właściciela: **A (pasek gazetowy)**, nie ciemny kafel w stylu X.
+- Źródła danych i ich granice — patrz `financialnewsbot/CLAUDE.md`, sekcja „Notowania".
+
+## Udostępnij na X ⚠️ ZAPLANOWANE, NIEZAIMPLEMENTOWANE (2026-07-30)
+Życzenie właściciela: wrzucać 3-4 najlepsze newsy dziennie na X. Wybrany wariant: **właściciel sam wybiera
+news na stronie i klika „Udostępnij" — composer X otwiera się z GOTOWĄ treścią.** Żadnego API X, żadnych
+kluczy, zero kosztu (X zlikwidował darmowy tier w lutym 2026 i liczy $0,20 za post z linkiem — szczegóły
+rozpoznania w `financialnewsbot/CLAUDE.md`, sekcja „Gotowiec pod X").
+
+- **Skąd treść:** bot dopisuje do każdego itema pole **`x_post`** w `briefs.json` (hook + 1 zdanie z liczbami
+  z artykułu, ≤250 zn.). Front go tylko czyta — 0 tokenów per klik, jak przy `threads.json`.
+  **FALLBACK obowiązkowy:** brak/`null` `x_post` (stare itemy, gotowiec odrzucony przez bramkę pokrycia liczb)
+  → użyj samego `item.text`. Przycisk ma działać ZAWSZE.
+- **Mechanizm:** `https://x.com/intent/post?text=<encodeURIComponent>&url=<deep link>` otwierany w nowej
+  karcie. Web Intent działa bez auth (dokumentacja X aktualizowana 2026-06-03).
+- **Deep link = `https://brifup.com/#<dawka>/<itemSlug(text)>`** — klikający ląduje na OTWARTYM artykule,
+  nie na stronie głównej. Slug liczy istniejąca `itemSlug` (djb2-xor po pierwszych 80 zn., base36).
+  Dla itemów z archiwum: `#archive/<data>/<dawka>/<slug>` (ten sam format co węzły wątków).
+  ⚠️ Deep-linki routują się na żywo od 2026-07-22 (`routeHashDeepLink` na `hashchange`) — działa.
+- **Gdzie wpiąć:** obok istniejącego „Czytaj →" w **3 miejscach** `index.html` — `expandBlock` (mobile),
+  `expandBlockArchive` (mobile-archiwum), `dtShowDetail` (desktop). Ten sam zestaw co przy `safeUrl`.
+- ⚠️ **URL intentu buduj przez `encodeURIComponent`, a href przepuść przez `safeUrl`** (patrz sekcja
+  „Bezpieczeństwo" wyżej) — `x_post` to tekst z modelu, wchodzi do atrybutu.
+- ⚠️ Zmiana dotyka JS+CSS → **bump `CACHE_NAME`** w `service-worker.js`.
+- **Limit X = 280 znaków**, link liczy się jako 23 niezależnie od długości → budżet na tekst ~250.
+
 ## OneSignal (push)
 SDK z `cdn.onesignal.com` — **bywa blokowany przez adblock/DNS** → stąd baner
 „Nie można załadować powiadomień". To po stronie przeglądarki usera, nie bug apki.
