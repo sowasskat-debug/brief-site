@@ -248,6 +248,30 @@ admina w sessionStorage). **Fix — `safeUrl(u)`** (przy `escHtml`): przepuszcza
 `escAttr`; zły schemat/pusty → `''` = brak przycisku. W `fala.html` (przypisanie przez DOM property, nie innerHTML)
 sam guard schematu inline. **ZASADA:** każdy nowy href z danych → przez `safeUrl`, nigdy surowo.
 
+## Wykresy notowań pod „Wpływ na rynek" — quotes.json (2026-07-31)
+Życzenie właściciela („a co gdyby dodać prawdziwe wykresy jak ma X, ale bez wysokich zużyć tokenów").
+**Koszt DeepSeeka: 0** — instrument wykrywa bot deterministycznie z pola `impact`, front tylko rysuje.
+- **`quotes.json`** (nowy plik, pisany przez bota) — `{generated_at, stan_na, series:{SYMBOL:{nazwa,waluta,dec,
+  ostatnia,zmiana_pct,zrodlo,punkty:[...30 dziennych zamknięć]}}}`. **OSOBNY od `briefs.json`**, bo notowania
+  starzeją się co bieg, a briefs i archiwum mają zostać niezmienne. Item niesie tylko `chart:["META","QQQ"]`.
+- **`loadQuotes()` + `refreshQuotesIfChanged()`** — wzorzec 1:1 jak `threads.json`. ⚠️ Odświeżane w `liveTick`
+  przy KAŻDEJ realnej zmianie `briefs.json` — inaczej kafel pokazuje cenę sprzed godzin przy świeżym newsie
+  (dokładnie ta sama pułapka co z mapą wątków, 2026-07-26).
+- **`sparklineSvg()`** — wykres czystym SVG z tablicy zamknięć (ścieżka + gradient pod nią). Zero bibliotek,
+  zgodnie z zasadą „bez frameworka, bez builda".
+- **`quotesHtml(item)`** wpięte pod `impactHtml` w **3 miejscach** (`expandBlock`, `expandBlockArchive`,
+  `dtShowDetail`) — ten sam zestaw co przy `safeUrl`. FAIL-SAFE na każdym kroku: brak `quotes.json`, brak pola
+  `chart`, nieznany symbol albo seria <2 punktów = pusty string = nic się nie renderuje.
+- ⚠️ **Stopka „stan na …" jest OBOWIĄZKOWA** — dane są godzinne i opóźnione, nie live. Bez niej kafel sugeruje
+  notowania w czasie rzeczywistym.
+- ⚠️ **Szerokości w `.q-row`: jedynym elementem, który wolno ścisnąć, jest `.q-name`.** Pierwsza wersja miała
+  sztywne `min-width` na cenie i zmianie — w panelu szczegółów na desktopie (~440 px) procent zmiany był
+  wypychany poza `overflow:hidden` kontenera i ZNIKAŁ. Złapane na renderze realnej strony, nie w mockupie.
+  Stąd układ `[.q-head] [.q-spark] [.q-vals]`, gdzie tylko `.q-head` ma `flex:1 1 auto; min-width:0`.
+  Poniżej 460 px nazwa chowa się całkiem (zostawała z niej sama wielokropkowa końcówka).
+- Wariant wizualny wybrany przez właściciela: **A (pasek gazetowy)**, nie ciemny kafel w stylu X.
+- Źródła danych i ich granice — patrz `financialnewsbot/CLAUDE.md`, sekcja „Notowania".
+
 ## Udostępnij na X ⚠️ ZAPLANOWANE, NIEZAIMPLEMENTOWANE (2026-07-30)
 Życzenie właściciela: wrzucać 3-4 najlepsze newsy dziennie na X. Wybrany wariant: **właściciel sam wybiera
 news na stronie i klika „Udostępnij" — composer X otwiera się z GOTOWĄ treścią.** Żadnego API X, żadnych
