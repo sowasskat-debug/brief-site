@@ -160,7 +160,7 @@ td.num { text-align: right; font-weight: 700; white-space: nowrap; }
     <div class="sec-head"><span class="sec-title">🚫 Odrzucenia (przykłady)</span><span class="sec-note">z rejected.json · warstwa few-shot (ostatnie 40 uczą filtr)</span></div>
     <div id="rejSummary" class="summary"></div>
     <div id="rejTable"></div>
-    <div class="note"><b>Uwaga:</b> to ręczne/nauczone przykłady odrzuceń (uczą bota). Realną skuteczność filtra per bieg pokazuje sekcja <b>Lejek selekcji</b> wyżej.</div>
+    <div class="note"><b>Uwaga:</b> to ręczne/nauczone przykłady odrzuceń (uczą filtr). Realną skuteczność filtra per bieg pokazuje sekcja <b>Lejek selekcji</b> wyżej.</div>
   </section>
 
 </div>
@@ -218,7 +218,7 @@ async function loadCost(){
   try{ const r=await fetch('deepseek_usage.json?_='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); data=await r.json(); }
   catch(e){
     box('costSummary').innerHTML=''; box('stageBars').innerHTML=''; box('costBars').innerHTML='';
-    box('costTable').innerHTML=`<div class="empty">Brak <b>deepseek_usage.json</b> — pojawi się po pierwszym biegu bota po wdrożeniu licznika (~w ciągu godziny). Reszta panelu działa już teraz.</div>`;
+    box('costTable').innerHTML=`<div class="empty">Brak <b>deepseek_usage.json</b> — pojawi się po pierwszym biegu po wdrożeniu licznika (~w ciągu godziny). Reszta panelu działa już teraz.</div>`;
     return;
   }
   const runs=(data.runs||[]);
@@ -353,7 +353,7 @@ async function loadFunnel(){
   try{ const r=await fetch('brief_health.json?_='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); data=await r.json(); }
   catch(e){
     box('funnelSummary').innerHTML=''; box('funnelBars').innerHTML='';
-    box('funnelTable').innerHTML=`<div class="empty">Brak <b>brief_health.json</b> — pojawi się po pierwszym biegu bota po wdrożeniu licznika lejka (~w ciągu godziny).</div>`;
+    box('funnelTable').innerHTML=`<div class="empty">Brak <b>brief_health.json</b> — pojawi się po pierwszym biegu po wdrożeniu licznika lejka (~w ciągu godziny).</div>`;
     return;
   }
   const runs=data.runs||[];
@@ -389,7 +389,7 @@ async function loadFunnel(){
   if(frows.length){
     const maxRate=Math.max(0.01,...frows.map(x=>x.rate));
     box('finderBars').innerHTML=frows.map(x=>barRow(FLABEL[x.f]||x.f, Math.round(x.rate*100), Math.round(maxRate*100), 'f-flusso', `${x.su}/${x.pr}`)).join('');
-  } else { box('finderBars').innerHTML='<div class="empty">Dane per finder pojawią się po biegu na nowym bocie.</div>'; }
+  } else { box('finderBars').innerHTML='<div class="empty">Dane per finder pojawią się po biegu na nowej wersji.</div>'; }
 
   box('funnelTable').innerHTML=`<div class="table-scroll"><table><thead><tr>
     <th>Czas (UTC)</th><th>Sprawdz.</th><th>Prefiltr −</th><th>Wybrane</th><th>Opublik.</th><th>Poczekaln.</th><th>Utknęło</th></tr></thead>

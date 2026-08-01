@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Brief — Bot Health</title>
+<title>Brief — Diagnostyka</title>
 <meta name="robots" content="noindex, nofollow">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
@@ -68,7 +68,7 @@ tbody tr:hover { background: var(--gray1); }
 <body>
 
 <div class="topbar">
-  <div><span class="logo">Brief<span class="logo-dot">.</span></span><br><span class="logo-sub">bot health — lejek flusso trends</span></div>
+  <div><span class="logo">Brief<span class="logo-dot">.</span></span><br><span class="logo-sub">diagnostyka — lejek flusso trends</span></div>
   <button class="refresh-btn" onclick="load()">↻ odśwież</button>
 </div>
 
@@ -153,7 +153,7 @@ function renderTable(runs){
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div>
-  <div class="note">Pokazane ostatnie ${runs.length} biegów (bot trzyma max 200).</div>`;
+  <div class="note">Pokazane ostatnie ${runs.length} biegów (trzymane max 200).</div>`;
 }
 
 async function load(){
@@ -167,7 +167,7 @@ async function load(){
     renderTable(runs);
   } catch (e) {
     document.getElementById('summary').innerHTML = '';
-    document.getElementById('tableWrap').innerHTML = `<div class="empty err">Nie udało się wczytać bot_health.json (${esc(e.message)}). Plik pojawi się po pierwszym biegu bota po wdrożeniu tej zmiany.</div>`;
+    document.getElementById('tableWrap').innerHTML = `<div class="empty err">Nie udało się wczytać danych diagnostycznych (${esc(e.message)}). Pojawią się po pierwszym biegu po wdrożeniu tej zmiany.</div>`;
   }
 }
 

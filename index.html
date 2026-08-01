@@ -198,16 +198,16 @@ const SAMPLE = {
 // właściciel dostał mylący komunikat o awarii przy świeżo założonej, jeszcze pustej wieczornej dawce).
 const PUSTA_DAWKA = {
   morning: [
-    { flag:'⏳', text:'Poranna dawka w przygotowaniu — bot zbiera pierwsze newsy.', source_name:'Brif.up', source_url:'#',
-      article:'Nowa dawka właśnie wystartowała i jest jeszcze pusta. Bot przegląda źródła co pół godziny — pierwsze newsy pojawią się wkrótce i wskoczą tu automatycznie, bez odświeżania.' },
+    { flag:'⏳', text:'Poranna dawka w przygotowaniu — zbieramy pierwsze newsy.', source_name:'Brif.up', source_url:'#',
+      article:'Nowa dawka właśnie wystartowała i jest jeszcze pusta. Przeglądamy źródła co pół godziny — pierwsze newsy pojawią się wkrótce i wskoczą tu automatycznie, bez odświeżania.' },
   ],
   afternoon: [
-    { flag:'⏳', text:'Południowa dawka w przygotowaniu — bot zbiera pierwsze newsy.', source_name:'Brif.up', source_url:'#',
-      article:'Nowa dawka właśnie wystartowała i jest jeszcze pusta. Bot przegląda źródła co pół godziny — pierwsze newsy pojawią się wkrótce i wskoczą tu automatycznie, bez odświeżania.' },
+    { flag:'⏳', text:'Południowa dawka w przygotowaniu — zbieramy pierwsze newsy.', source_name:'Brif.up', source_url:'#',
+      article:'Nowa dawka właśnie wystartowała i jest jeszcze pusta. Przeglądamy źródła co pół godziny — pierwsze newsy pojawią się wkrótce i wskoczą tu automatycznie, bez odświeżania.' },
   ],
   evening: [
-    { flag:'⏳', text:'Wieczorna dawka w przygotowaniu — bot zbiera pierwsze newsy.', source_name:'Brif.up', source_url:'#',
-      article:'Nowa dawka właśnie wystartowała i jest jeszcze pusta. Bot przegląda źródła co pół godziny — pierwsze newsy pojawią się wkrótce i wskoczą tu automatycznie, bez odświeżania.' },
+    { flag:'⏳', text:'Wieczorna dawka w przygotowaniu — zbieramy pierwsze newsy.', source_name:'Brif.up', source_url:'#',
+      article:'Nowa dawka właśnie wystartowała i jest jeszcze pusta. Przeglądamy źródła co pół godziny — pierwsze newsy pojawią się wkrótce i wskoczą tu automatycznie, bez odświeżania.' },
   ],
 };
 
@@ -2750,7 +2750,7 @@ function mobGripPulse() {
           dose.items = dose.items.filter(it => !it.subItems || it.subItems.length > 0);
           if (dose.items.length !== before) usunięto = true;
         }
-        if (!usunięto) { adminToast('Nie znaleziono newsa — być może bot go już zaktualizował. Odśwież stronę i spróbuj ponownie.'); return; }
+        if (!usunięto) { adminToast('Nie znaleziono newsa — być może został już zaktualizowany. Odśwież stronę i spróbuj ponownie.'); return; }
 
         const newContent = utf8ToB64(JSON.stringify(briefs));
         putRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`, {
