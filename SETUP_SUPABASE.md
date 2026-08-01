@@ -167,3 +167,74 @@ bezpośrednim URL-em — bramka na stronie HTML tego nie zmienia.
 
 Realne schowanie = bot przestaje pushować te pliki i zapisuje je do Supabase (krok 6 i dalej).
 Dopiero wtedy wolno skasować pliki z repo.
+
+---
+
+## 8. Licznik wejść (2026-08-01)
+
+Do 2026-08-01 strona **nie liczyła wejść w żaden sposób** — nie było ani skryptu
+analitycznego, ani logów. Warto to wiedzieć, zanim ktoś zacznie szukać danych wstecz:
+**ich nie ma i nie da się ich odzyskać.** Licznik mierzy od chwili wdrożenia w przód.
+
+Sprawdzone przy okazji: `brifup.com` **nie idzie przez Cloudflare** (NS to GoDaddy,
+rekordy A wskazują wprost na GitHub Pages), więc statystyk brzegowych Cloudflare
+też nie ma z czego wziąć.
+
+### 8a. Tabela i agregat
+
+Wklej **`supabase_schema.sql`** do SQL Editora jeszcze raz — sekcje **9** i **9b**
+dokładają tabelę `wizyty`, RLS, retencję 90 dni i funkcję `statystyki_ruchu()`.
+Plik jest idempotentny, więc puszczenie całości nic nie psuje.
+
+### 8b. Wdrożenie funkcji
+
+Jak przy `gotowiec-x`, ale nazwa **`licznik`**, treść z `supabase/functions/licznik/index.ts`.
+
+🔴 **Jedyna różnica, i jest istotna: ta funkcja musi mieć wyłączoną weryfikację JWT.**
+Woła ją przeglądarka **niezalogowanego czytelnika**, który żadnego tokenu nie ma.
+Z domyślną weryfikacją każde wejście dostawałoby 401 i licznik pokazywałby zero.
+
+- w panelu: przy tworzeniu funkcji odznacz **„Verify JWT with legacy secret"**
+- z CLI: `supabase functions deploy licznik --no-verify-jwt`
+
+⚠️ To NIE otwiera dostępu do danych. Funkcja tylko zapisuje i zwraca pustą odpowiedź
+(204), a czytanie tabeli `wizyty` chroni RLS po e-mailu właściciela — tak samo jak przy
+diagnostyce.
+
+### 8c. Sekret z solą
+
+**Edge Functions → Secrets** → dodaj:
+
+| Nazwa | Wartość |
+|---|---|
+| `LICZNIK_SOL` | dowolny długi losowy ciąg, np. z `openssl rand -hex 32` |
+
+🔴 **Nie wklejaj go do czatu.** Bez tego sekretu funkcja **świadomie nie zapisuje nic**
+i loguje „Brak sekretu LICZNIK_SOL" — bo bez soli identyfikator odwiedzającego byłby
+liczony z samego IP+UA, czyli byłby trwałym identyfikatorem człowieka. Wolimy nie
+liczyć niczego niż zbierać to, czego obiecaliśmy nie zbierać.
+
+⚠️ Zmiana soli zeruje ciągłość „unikalnych" na styku dni — nie podmieniaj jej bez powodu.
+
+### 8d. Sprawdzenie
+
+1. Wejdź na `https://brifup.com` (musi być **produkcja** — beacon celowo milczy na
+   localhoście, żeby testy nie pompowały statystyk).
+2. Supabase → SQL Editor: `select count(*) from public.wizyty;` → powinno rosnąć.
+3. Panel `knaga.html` → zakładka **Ruch**.
+
+Gdy liczba stoi na zerze, kolejność sprawdzania: logi funkcji (brak sekretu?) →
+zakładka Network w przeglądarce (czy POST na `/functions/v1/licznik` wychodzi i czy
+nie wraca 401 — 401 znaczy, że `--no-verify-jwt` nie zadziałało) → czy adblock nie
+blokuje domeny `supabase.co`.
+
+### 8e. Czego ten licznik NIE zrobi
+
+- **Nie odtworzy przeszłości.** Liczy od dnia wdrożenia.
+- **„Unikalni" to unikalni W DOBIE.** Sól zmienia się co dobę, więc ta sama osoba
+  przez tydzień to 7 odwiedzin dobowych, nie 1. To cena za brak śledzenia między
+  dniami — i powód, dla którego nie potrzeba baneru zgody. Nie „naprawiaj" tego
+  stałą solą: wtedy zaczynasz śledzić ludzi i baner staje się wymagany.
+- **Nie policzy tych, u których adblock zablokuje `supabase.co`.** Rzadsze niż przy
+  domenach analitycznych, ale niezerowe — traktuj liczby jako dolne oszacowanie.
+- **Nie liczy robotów** (filtr po User-Agent) ani wejść spoza `brifup.com`.

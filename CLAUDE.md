@@ -9,7 +9,16 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 (repo `financialnewsbot`) i zapisuje jako `briefs.json`.
 
 ## Deploy / hosting
-- **GitHub Pages** (domena `brifup.com` przez Cloudflare CDN). Serwowane z gałęzi `main`.
+- **GitHub Pages**, serwowane z gałęzi `main`. ⚠️ **SPROSTOWANIE 2026-08-01: `brifup.com` NIE idzie
+  przez Cloudflare** (ten plik twierdził tak od początku i było to nieprawdą). Zmierzone: NS to
+  `ns75/ns76.domaincontrol.com` (**GoDaddy**, tak samo jak Flusso), rekordy A wskazują wprost na
+  IP GitHub Pages (`185.199.108-111.153`), a nagłówki odpowiedzi to `server: GitHub.com` + `via: varnish`
+  (**Fastly**, własny CDN GitHuba) — zero `cf-ray`, zero `server: cloudflare`.
+  **Dlaczego to ma znaczenie:** Cloudflare nie widzi ruchu, więc NIE MA statystyk brzegowych ani logów
+  — to była przyczyna, dla której licznik wejść trzeba było zbudować od zera (patrz `SETUP_SUPABASE.md`,
+  sekcja 8). Wzmianki o „cache Cloudflare" niżej w tym pliku (sekcja Service Worker) też są tym samym
+  nieporozumieniem — realnie chodzi o cache HTTP GitHub Pages/Fastly, a opisany fix `cache:'reload'`
+  działa i tak, bo dotyczy dowolnego cache HTTP.
 - **Deploy = commit do `main`.** Brak builda. `index.html` ładuje się network-first,
   więc zmiany widać od razu przy następnym otwarciu.
 - `briefs.json` bywa zapisywany **równolegle przez bota** → zawsze

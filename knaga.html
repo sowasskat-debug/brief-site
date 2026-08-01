@@ -307,6 +307,7 @@ input[type=password], input[type=text], input[type=email] {
     <button class="main-tab" id="tabCzekalnia" onclick="switchPane('czekalnia')">Czeka</button>
     <button class="main-tab" id="tabOdrzucone" onclick="switchPane('odrzucone')">Odrzucone</button>
     <button class="main-tab" id="tabLejek" onclick="switchPane('lejek')">Lejek</button>
+    <button class="main-tab" id="tabRuch" onclick="switchPane('ruch')">Ruch</button>
   </div>
 
   <div id="paneKokpit">
@@ -350,6 +351,10 @@ input[type=password], input[type=text], input[type=email] {
       <input id="lejSzukaj" type="search" placeholder="szukaj w nagłówkach…" autocomplete="off">
     </div>
     <div id="lejTresc"></div>
+  </div>
+
+  <div id="paneRuch" style="display:none">
+    <div id="ruchTresc"><div class="empty">Ładowanie…</div></div>
   </div>
 </div>
 
@@ -878,6 +883,7 @@ const PANES = {
   czekalnia: { tab: 'tabCzekalnia', pane: 'paneCzekalnia', onEnter: () => renderCzekalnia() },
   odrzucone: { tab: 'tabOdrzucone', pane: 'paneOdrzucone', onEnter: () => renderOdrzucone() },
   lejek:     { tab: 'tabLejek',     pane: 'paneLejek',     onEnter: () => renderLejek() },
+  ruch:      { tab: 'tabRuch',      pane: 'paneRuch',      onEnter: () => renderRuch() },
 };
 
 function switchPane(p) {
@@ -987,6 +993,149 @@ async function wczytajKokpit() {
 
   html += `<div class="refresh-row"><button onclick="wczytajKokpit()">↻ Odśwież</button></div>`;
   el.innerHTML = html || '<div class="empty">Brak danych.</div>';
+}
+
+// ══ RUCH ══
+// Wejścia na stronę z własnego licznika (Edge Function `licznik` → tabela `wizyty`).
+// Liczy WYŁĄCZNIE Supabase — tu nie ma zapasowego pliku jak przy lejku, bo te dane
+// nigdy nie leżały w repo i leżeć nie mają (byłyby publiczne, patrz STAN.md punkt 1).
+let ruchWczytany = false;
+
+function renderRuch() {
+  if (ruchWczytany) return;
+  ruchWczytany = true;
+  wczytajRuch();
+}
+
+// Ta sama doba co w Edge Function — inaczej „dziś" w panelu rozjeżdżałoby się
+// z `dzien` w bazie między północą a 02:00 czasu polskiego.
+function ruchDzisWarszawa() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+}
+
+async function wczytajRuch() {
+  const el = document.getElementById('ruchTresc');
+  el.innerHTML = '<div class="empty">Ładowanie…</div>';
+
+  if (!supa) { el.innerHTML = '<div class="empty">Brak połączenia z Supabase.</div>'; return; }
+
+  let d;
+  try {
+    const { data, error } = await supa.rpc('statystyki_ruchu', { dni: 30 });
+    if (error) throw error;
+    d = data || {};
+  } catch (e) {
+    // Najczęstsza przyczyna to nienałożony schemat — mówimy wprost co zrobić,
+    // zamiast zostawiać gołe „404 function not found".
+    el.innerHTML = `<div class="empty">Nie udało się pobrać statystyk: ${escapeHtml(e.message || String(e))}
+      <br><br>Jeśli to „function … does not exist" — wklej <b>supabase_schema.sql</b> (sekcja 9 i 9b)
+      do SQL Editora w Supabase.</div>`;
+    return;
+  }
+
+  const dni = Array.isArray(d.dni) ? d.dni : [];
+  if (!dni.length) {
+    el.innerHTML = `<div class="empty">Jeszcze nic nie zmierzone.<br><br>
+      Licznik zapisuje wejścia <b>od chwili wdrożenia</b> — danych wstecz nie ma i nie da się ich odzyskać.
+      Jeśli wdrożenie już było, sprawdź w Supabase → Edge Functions → <b>licznik</b>, czy w logach nie ma
+      „Brak sekretu LICZNIK_SOL".</div>`;
+    return;
+  }
+
+  const mapa = new Map(dni.map(x => [x.dzien, x]));
+  const dzis = ruchDzisWarszawa();
+  const wczorajData = new Date(Date.now() - 864e5);
+  const wczoraj = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(wczorajData);
+
+  const dzisiaj = mapa.get(dzis) || { wyswietlenia: 0, unikalni: 0 };
+  const wczo    = mapa.get(wczoraj) || { wyswietlenia: 0, unikalni: 0 };
+  const ost7    = dni.slice(0, 7).reduce((a, x) => a + Number(x.wyswietlenia || 0), 0);
+
+  // Zmiana dzień do dnia — bez tego liczba „152" nic nie mówi.
+  const zmiana = wczo.wyswietlenia
+    ? Math.round((dzisiaj.wyswietlenia - wczo.wyswietlenia) / wczo.wyswietlenia * 100)
+    : null;
+  const strzalka = zmiana == null ? '' :
+    `<span style="color:${zmiana >= 0 ? '#16a34a' : '#dc2626'}">${zmiana >= 0 ? '↑' : '↓'} ${Math.abs(zmiana)}%</span>`;
+
+  let html = '<div class="kok-siatka">';
+
+  html += `<div class="kok-kafel"><div class="kok-label">Dziś — wyświetlenia</div>
+           <div class="kok-duze">${dzisiaj.wyswietlenia}</div>
+           <div class="kok-sub">${strzalka} ${strzalka ? 'wzgl. wczoraj' : 'brak porównania'}</div></div>`;
+
+  html += `<div class="kok-kafel"><div class="kok-label">Dziś — unikalni</div>
+           <div class="kok-duze">${dzisiaj.unikalni}</div>
+           <div class="kok-sub">wczoraj ${wczo.unikalni}</div></div>`;
+
+  html += `<div class="kok-kafel"><div class="kok-label">Ostatnie 7 dni</div>
+           <div class="kok-duze">${ost7}</div>
+           <div class="kok-sub">wyświetleń łącznie</div></div>`;
+
+  html += `<div class="kok-kafel"><div class="kok-label">30 dni</div>
+           <div class="kok-duze">${d.suma_wyswietlen ?? 0}</div>
+           <div class="kok-sub">${d.suma_odwiedzin_dobowych ?? 0} odwiedzin dobowych</div></div>`;
+
+  const urz = d.urzadzenia || {};
+  const sumaUrz = (urz.mobile || 0) + (urz.desktop || 0);
+  if (sumaUrz) {
+    html += `<div class="kok-kafel"><div class="kok-label">Urządzenia (30 dni)</div>
+             <div class="kok-duze">${Math.round((urz.mobile || 0) / sumaUrz * 100)}%</div>
+             <div class="kok-sub">telefon · ${urz.mobile || 0} mob / ${urz.desktop || 0} desktop</div></div>`;
+  }
+
+  html += '</div>';
+
+  // ── Słupki dzienne ──
+  const ostatnie = dni.slice(0, 14).reverse();
+  const maks = Math.max(...ostatnie.map(x => Number(x.wyswietlenia || 0)), 1);
+  const slupki = ostatnie.map(x => {
+    const h = Math.max(2, Math.round(Number(x.wyswietlenia || 0) / maks * 90));
+    return `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px"
+                 title="${escapeHtml(x.dzien)} — ${x.wyswietlenia} wyświetleń, ${x.unikalni} unikalnych">
+              <div style="width:100%;height:${h}px;background:var(--red,#dc2626);opacity:.75;border-radius:2px 2px 0 0"></div>
+              <div style="font-size:9px;opacity:.55;white-space:nowrap">${escapeHtml(String(x.dzien).slice(8))}</div>
+            </div>`;
+  }).join('');
+  html += `<div class="kok-kafel szeroki"><div class="kok-label">Ostatnie 14 dni</div>
+           <div style="display:flex;gap:3px;align-items:flex-end;height:110px;margin-top:8px">${slupki}</div></div>`;
+
+  // ── Strony i źródła ──
+  const lista = (tytul, poz, klucz, pusty) => {
+    if (!poz || !poz.length) return `<div class="kok-kafel"><div class="kok-label">${tytul}</div>
+                                     <div class="kok-sub" style="margin-top:8px">${pusty}</div></div>`;
+    const maxW = Math.max(...poz.map(x => Number(x.wyswietlenia || 0)), 1);
+    const wiersze = poz.slice(0, 8).map(x => `
+      <div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:12px">
+        <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(String(x[klucz] ?? '—'))}</div>
+        <div style="width:${Math.round(Number(x.wyswietlenia) / maxW * 60)}px;height:6px;background:var(--red,#dc2626);opacity:.5;border-radius:3px"></div>
+        <b style="min-width:34px;text-align:right">${x.wyswietlenia}</b>
+      </div>`).join('');
+    return `<div class="kok-kafel"><div class="kok-label">${tytul}</div>
+            <div style="margin-top:8px">${wiersze}</div></div>`;
+  };
+
+  html += '<div class="kok-siatka">';
+  html += lista('Najczęstsze strony (30 dni)', d.strony, 'sciezka', 'brak danych');
+  html += lista('Skąd przychodzą (30 dni)', d.zrodla, 'host',
+                'Nikt nie przyszedł z linku — całość to wejścia bezpośrednie i z apki.');
+  html += '</div>';
+
+  // ⚠️ Ta uwaga MUSI zostać. Bez niej „unikalni" czyta się jak liczba osób w miesiącu,
+  // a to jest liczba osobo-dni: ta sama osoba przez 7 dni z rzędu to 7 odwiedzin dobowych.
+  // Cena za brak śledzenia między dniami — patrz supabase_schema.sql, sekcja 9.
+  html += `<div class="kok-kafel szeroki"><div class="kok-sub" style="line-height:1.5">
+           <b>Jak to czytać.</b> „Unikalni" liczą się <b>w obrębie doby</b> — ta sama osoba wchodząca
+           przez tydzień daje 7 odwiedzin dobowych, nie 1. Tak działa licznik, który świadomie nie śledzi
+           ludzi między dniami (brak ciasteczek = brak baneru zgody). Roboty są odfiltrowane po User-Agent,
+           a wejścia z podglądu lokalnego nie są liczone w ogóle.</div></div>`;
+
+  html += `<div class="refresh-row"><button onclick="wczytajRuch()">↻ Odśwież</button></div>`;
+  el.innerHTML = html;
 }
 
 // ══ POCZEKALNIA ══

@@ -1567,6 +1567,45 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => reloadOnce('nowy Service Worker'));
 }
 
+// ══ Licznik wejść (2026-08-01) ════════
+// Woła własną Edge Function w Supabase, NIE zewnętrzny analytics. Powody
+// (adblock, brak baneru cookies, dane u nas) opisane w supabase/functions/licznik/index.ts.
+// Tu nie ma ŻADNEGO ciasteczka ani wpisu w localStorage — wysyłamy sam adres strony
+// i referrera, a kto to był, rozstrzyga się po stronie funkcji (hash z solą dnia).
+// ⚠️ SW przepuszcza POST prosto do sieci (service-worker.js, gałąź „nie-GET"),
+// więc beacon nie wymaga bumpa CACHE_NAME ani wyjątku w cache'u.
+(function licznikWejsc() {
+  // Tylko produkcja. Bez tego lokalny podgląd i sandbox dosypywałyby wejść do statystyk,
+  // a właściciel patrzyłby na liczby napompowane własnym testowaniem.
+  if (!location.hostname.endsWith('brifup.com')) return;
+
+  const ENDPOINT = 'https://utmvokfjvrthvcmxzowc.supabase.co/functions/v1/licznik';
+  let ostatnieZgloszenie = 0;
+
+  function zglos() {
+    ostatnieZgloszenie = Date.now();
+    try {
+      fetch(ENDPOINT, {
+        method: 'POST',
+        keepalive: true,               // przeżywa zamknięcie karty
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sciezka: location.pathname, referrer: document.referrer || '' }),
+      }).catch(() => {});              // licznik NIGDY nie może popsuć strony
+    } catch (_) {}
+  }
+
+  zglos();
+
+  // Dlaczego jeszcze wznowienie: w zainstalowanej PWA system WZNAWIA istniejące okno
+  // zamiast ładować stronę od nowa (ta sama mechanika, dla której istnieje
+  // `checkAppShellUpdate`). Bez tego najbardziej lojalni czytelnicy — ci z apką na
+  // ekranie głównym — byliby liczeni raz na instalację, a nie raz na wizytę.
+  // 30 minut to standardowy próg końca sesji; krótsze przełączenie się nie liczy.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - ostatnieZgloszenie > 30 * 60 * 1000) zglos();
+  });
+})();
+
 // ══ Wykrywanie nowej wersji apki (index.html) ════════
 // W zainstalowanej PWA system zwykle WZNAWIA istniejące okno bez nawigacji
 // sieciowej, więc świeży index.html nie jest pobierany aż do pełnego restartu

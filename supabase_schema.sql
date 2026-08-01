@@ -278,3 +278,124 @@ grant execute on function public.sprzatnij_diagnostyke() to service_role;
 --       lejek / bot_health / brief_health / deepseek_usage — po jednym, cmd = SELECT
 --       sekrety — cztery: SELECT, INSERT, UPDATE, DELETE (panel musi tam PISAĆ token).
 -- ════════════════════════════════════════════════════════════════════════════
+
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 9. LICZNIK WIZYT (2026-08-01)
+--
+-- Po co osobna tabela, skoro istnieje diagnostyka: tamte tabele to snapshoty
+-- BOTA per bieg. To są odwiedziny CZYTELNIKÓW — inne źródło, inna retencja,
+-- inna kadencja (zapis przy każdym wejściu, nie raz na godzinę).
+--
+-- 🔴 PRYWATNOŚĆ — dlaczego NIE MA tu baneru cookies i dlaczego nie musi być:
+--   nie zapisujemy IP, nie stawiamy ciasteczka i nie używamy localStorage.
+--   `odwiedzajacy` to sha256(IP + User-Agent + SÓL DNIA), liczone w Edge Function;
+--   surowe IP nigdy nie opuszcza funkcji i nigdzie nie ląduje. Sól zmienia się
+--   co dobę, więc ten sam człowiek ma INNY hash jutro — nie da się go śledzić
+--   między dniami ani cofnąć hasha do adresu. To ta sama konstrukcja, której
+--   używa Plausible; przy niej RODO nie wymaga zgody, bo nie ma danych osobowych.
+--   ⚠️ Konsekwencja, o której trzeba pamiętać przy czytaniu liczb: „unikalni"
+--   są liczeni W OBRĘBIE DOBY. Suma unikalnych z 7 dni ≠ unikalni z tygodnia
+--   (ta sama osoba wchodząca 7 dni z rzędu liczy się 7 razy). To świadoma cena
+--   za brak śledzenia — nie próbuj tego „naprawiać" stałą solą.
+-- ════════════════════════════════════════════════════════════════════════════
+create table if not exists public.wizyty (
+  id           bigint generated always as identity primary key,
+  ts           timestamptz not null default now(),
+  dzien        date not null,          -- doba wg Europe/Warsaw, liczona w funkcji
+  sciezka      text not null,          -- '/', '/fala.html' … bez query i bez hasha
+  odwiedzajacy text not null,          -- sha256(IP + UA + sól dnia) — patrz nagłówek
+  referrer     text,                   -- SAM host ('news.google.com'), nigdy pełny URL
+  urzadzenie   text,                   -- 'mobile' / 'desktop'
+  wstawiono    timestamptz not null default now()
+);
+
+-- Panel liczy „ile dziś / ile w tym tygodniu" i rozbija na strony — te trzy pokrywają wszystko.
+create index if not exists wizyty_dzien_idx    on public.wizyty (dzien desc);
+create index if not exists wizyty_ts_idx       on public.wizyty (ts desc);
+create index if not exists wizyty_unikat_idx   on public.wizyty (dzien, odwiedzajacy);
+
+alter table public.wizyty enable row level security;
+
+-- Ta sama zasada co przy diagnostyce: czyta WYŁĄCZNIE właściciel.
+-- Brak polityki INSERT jest CELOWY — pisze Edge Function kluczem service_role,
+-- który omija RLS. Gdyby INSERT dostała rola anon, każdy mógłby nabijać licznik
+-- prosto z konsoli, z pominięciem funkcji i jej hashowania.
+drop policy if exists "wlasciciel czyta wizyty" on public.wizyty;
+create policy "wlasciciel czyta wizyty" on public.wizyty
+  for select to authenticated
+  using (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
+
+grant select on public.wizyty to authenticated;
+grant select, insert, update, delete on public.wizyty to service_role;
+revoke all on public.wizyty from anon;
+
+
+-- Retencja 90 dni. ⚠️ Świadomie NIE dokładam tego do `sprzatnij_diagnostyke()`:
+-- tamtą woła BOT po zapisie diagnostyki, a bot jeszcze nie pisze do Supabase
+-- (STAN.md, punkt 1) — licznik czekałby na cudzą migrację, żeby zacząć sprzątać.
+-- Osobna funkcja, wołana przez Edge Function co ~200. wejście, działa od pierwszego dnia.
+create or replace function public.sprzatnij_wizyty()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from public.wizyty where ts < now() - interval '90 days';
+end;
+$$;
+
+revoke all on function public.sprzatnij_wizyty() from public, anon, authenticated;
+grant execute on function public.sprzatnij_wizyty() to service_role;
+
+
+-- ── 9b. AGREGAT DLA PANELU ──────────────────────────────────────────────────
+-- Po co RPC, skoro panel mógłby pobrać wiersze i policzyć w JS: PostgREST tnie
+-- odpowiedź na `max_rows` (domyślnie 1000 w Supabase), więc przy kilkuset wejściach
+-- dziennie panel po tygodniu po cichu pokazywałby OBCIĘTE liczby — a wyglądałyby
+-- na prawdziwe. Agregat liczy baza, więc limit wierszy nie ma tu żadnego znaczenia.
+--
+-- ⚠️ `security invoker` (a NIE definer) jest tu celowe: funkcja ma działać w imieniu
+-- wołającego, żeby RLS na `wizyty` dalej obowiązywał. Z `definer` każdy zalogowany
+-- omijałby politykę właściciela i czytałby statystyki.
+create or replace function public.statystyki_ruchu(dni int default 30)
+returns jsonb
+language sql
+security invoker
+stable
+as $$
+  with zakres as (
+    select * from public.wizyty
+     where dzien > ((now() at time zone 'Europe/Warsaw')::date - dni)
+  )
+  select jsonb_build_object(
+    'dni', coalesce((
+      select jsonb_agg(jsonb_build_object('dzien', dzien, 'wyswietlenia', w, 'unikalni', u)
+                       order by dzien desc)
+        from (select dzien, count(*) w, count(distinct odwiedzajacy) u
+                from zakres group by dzien) d
+    ), '[]'::jsonb),
+    'strony', coalesce((
+      select jsonb_agg(jsonb_build_object('sciezka', sciezka, 'wyswietlenia', w) order by w desc)
+        from (select sciezka, count(*) w from zakres group by sciezka order by w desc limit 15) s
+    ), '[]'::jsonb),
+    'zrodla', coalesce((
+      select jsonb_agg(jsonb_build_object('host', referrer, 'wyswietlenia', w) order by w desc)
+        from (select referrer, count(*) w from zakres
+               where referrer is not null group by referrer order by w desc limit 15) z
+    ), '[]'::jsonb),
+    'urzadzenia', coalesce((
+      select jsonb_object_agg(urzadzenie, w)
+        from (select urzadzenie, count(*) w from zakres group by urzadzenie) u
+    ), '{}'::jsonb),
+    -- Liczone osobno, bo „unikalni w okresie" to NIE suma unikalnych z dni
+    -- (sól zmienia się co dobę — patrz sekcja 9). Podajemy oba, żeby panel
+    -- mógł uczciwie pokazać, że to różne wielkości.
+    'suma_wyswietlen', (select count(*) from zakres),
+    'suma_odwiedzin_dobowych', (select count(distinct (dzien, odwiedzajacy)) from zakres)
+  );
+$$;
+
+revoke all on function public.statystyki_ruchu(int) from public, anon;
+grant execute on function public.statystyki_ruchu(int) to authenticated;
