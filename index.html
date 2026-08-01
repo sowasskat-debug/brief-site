@@ -49,7 +49,9 @@
 
 <div class="topbar">
   <div>
-    <div class="logo">Brif<span class="logo-dot">.up</span></div>
+    <div class="logo" onclick="logoDoAktualnejDawki()" role="button" tabindex="0"
+         title="Wróć do aktualnej dawki"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();logoDoAktualnejDawki();}">Brif<span class="logo-dot">.up</span></div>
     <div class="topbar-date" id="topbarDate">—</div>
   </div>
   <div class="topbar-right">
@@ -125,7 +127,9 @@
 <!-- ═══ DESKTOP LAYOUT ═══ -->
 <div class="dt-app" id="dtApp">
   <div class="dt-header">
-    <div class="dt-logo">Brif<span class="dt-logo-dot">.</span>up</div>
+    <div class="dt-logo" onclick="logoDoAktualnejDawki()" role="button" tabindex="0"
+         title="Wróć do aktualnej dawki"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();logoDoAktualnejDawki();}">Brif<span class="dt-logo-dot">.</span>up</div>
     <div class="dt-header-sep"></div>
     <div class="dt-header-date" id="dtHeaderDate">—</div>
     <div class="dt-tabs">
@@ -2032,8 +2036,18 @@ function renderDesktop(dose, items) {
   dtRenderFeed(items);
   dtRenderSidebar(items);
   // Nie czyść panelu szczegółów przy każdym renderze (np. zmiana dawki morning/evening) — zostaw
-  // ostatnio wybrany artykuł widoczny, aż użytkownik kliknie inny. Placeholder tylko na starcie.
-  if (!dtCurrentItemId) dtShowEmpty();
+  // ostatnio wybrany artykuł widoczny, aż użytkownik kliknie inny.
+  // ⚠️ Na WEJŚCIU otwieramy od razu TOP STORY zamiast pustego placeholdera (życzenie właściciela
+  // 2026-08-01): pusty panel na starcie marnował pół ekranu i zmuszał do kliknięcia czegokolwiek,
+  // żeby zobaczyć treść. Warunek `!dtCurrentItemId` sprawia, że dotyczy to TYLKO pierwszego renderu —
+  // przy zmianie dawki i live-ticku wybór użytkownika zostaje nietknięty, jak dotąd.
+  // Deep-link nie koliduje: jeśli routing zdążył wybrać artykuł, dtCurrentItemId jest już ustawione
+  // i ten blok się nie wykona; jeśli zdąży później, po prostu nadpisze top story właściwym wpisem.
+  if (!dtCurrentItemId) {
+    const top = items[0];
+    if (top && dtItemsMap[top.id]) dtPickItem(top.id);
+    else dtShowEmpty();          // pusta dawka / brak dopasowania — stare zachowanie
+  }
 }
 
 function dtToggleGroup(id) {
@@ -2153,6 +2167,33 @@ toggleTheme = function() {
 // Po wznowieniu apki dawka ma pasować do AKTUALNEJ godziny (rano→poranna, po 17→wieczorna itd.),
 // a nie zostać na tej, którą otwarto wcześniej. getCurrentDose() liczymy na nowo z zegara —
 // bez tego, gdy apka wisiała w tle przez zmianę okna (np. przez północ), pokazywała starą dawkę.
+// Klik w logo „Brif.up" = powrót na AKTUALNĄ dawkę (życzenie właściciela 2026-08-01).
+// Logo działa jak przycisk „strona główna": gdy czytelnik zawędrował do porannej dawki
+// po południu albo do archiwum, jedno kliknięcie wraca go tam, gdzie jest świeża treść.
+function logoDoAktualnejDawki() {
+  const teraz = getCurrentDose();
+
+  // Hash po deep-linku otworzyłby stary artykuł przy najbliższym routingu (routeHashDeepLink
+  // słucha `hashchange` od 2026-07-22) — czyścimy go, żeby logo naprawdę wracało na początek.
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+
+  dtCurrentItemId = null;   // wymusza ponowne otwarcie top story w panelu szczegółów
+
+  if (teraz !== currentDose) {
+    delete cache[teraz];    // świeże dane dla dawki, na którą wracamy
+    switchDose(teraz);      // przełącza taby + ładuje; renderDesktop otworzy top story sam
+  } else {
+    // Ta sama dawka — nie przeładowujemy (to dałoby zbędny skeleton). Otwieramy top story wprost,
+    // żeby kliknięcie ZAWSZE dawało widoczny efekt, a nie tylko czasami.
+    const top = (cache[teraz] || [])[0];
+    if (top && dtItemsMap[top.id]) dtPickItem(top.id);
+  }
+
+  scrollArea?.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('dtFeedList')?.scrollTo({ top: 0 });
+  document.getElementById('dtDetail')?.scrollTo({ top: 0 });
+}
+
 function syncDoseToTime() {
   const powinnaByc = getCurrentDose();
   if (powinnaByc !== currentDose) {

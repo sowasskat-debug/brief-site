@@ -114,7 +114,30 @@ fallback na pozycję w `items[]`.
   `mobileFilterCat` używały `new Date().toISOString().slice(0,10)` (UTC) — między 00:00 a 02:00 czasu PL węzeł
   z dziś dostawał link `#archive/dziś/...` do nieistniejącego pliku. Teraz `todayLocalISO()` (jak `isPrevEdition`).
   ⚠️ Pełna poprawność cross-strefowa wymaga stempla strefy w `added_at` od bota — do zrobienia po stronie bota.
-- **Panel szczegółów na PC** zostaje przy zmianie dawki (czyszczony tylko na starcie — `if(!dtCurrentItemId) dtShowEmpty()`).
+- **Panel szczegółów na PC** zostaje przy zmianie dawki — świadomie, żeby nie wyrzucać czytelnika
+  z otwartego artykułu. ⚠️ **Zmiana 2026-08-01 (życzenie właściciela): na WEJŚCIU otwiera się od razu
+  TOP STORY**, zamiast pustego placeholdera „wybierz news" — pusty panel marnował pół ekranu i zmuszał
+  do kliknięcia czegokolwiek. Warunek `if (!dtCurrentItemId)` w `renderDesktop` sprawia, że dotyczy to
+  **tylko pierwszego renderu**: przy zmianie dawki i live-ticku wybór użytkownika zostaje nietknięty.
+  Deep-link nie koliduje — gdy routing zdążył wybrać artykuł, `dtCurrentItemId` jest już ustawione;
+  gdy zdąży później, po prostu nadpisze top story. Fallback `dtShowEmpty()` został na pustą dawkę.
+  ⚠️ **Konsekwencja do zapamiętania:** po zmianie dawki panel dalej pokazuje artykuł z POPRZEDNIEJ
+  dawki (tak było zawsze). Gdyby właściciel chciał, żeby top story otwierał się też przy każdej zmianie
+  dawki, wystarczy zerować `dtCurrentItemId` w `switchDose` — świadomie NIE zrobione, bo to zmienia
+  udokumentowane zachowanie „panel zostaje".
+- **Klik w logo „Brif.up" = powrót na aktualną dawkę** (`logoDoAktualnejDawki`, 2026-08-01). Logo działa
+  jak przycisk „strona główna": wylicza dawkę z zegara (`getCurrentDose`), przełącza na nią, czyści
+  `location.hash` (inaczej `routeHashDeepLink` przy najbliższym `hashchange` otworzyłby stary artykuł),
+  zeruje `dtCurrentItemId` (żeby wrócił top story) i przewija oba panele na górę. Gdy jesteśmy JUŻ na
+  właściwej dawce — nie przeładowuje (to dałoby zbędny skeleton), tylko otwiera top story wprost, żeby
+  kliknięcie zawsze dawało widoczny efekt. Wpięte w oba loga: `.logo` (mobile) i `.dt-logo` (desktop),
+  z `role="button"`, `tabindex` i obsługą Enter/Spacji.
+- **Szerokość panelu szczegółów** (`.dt-body` w `styles.css`): **440px**, powyżej 1500px **510px**
+  (zwężone 2026-08-01 z 480/560 na życzenie „trochę mniejszy, nieznacznie"). 🔴 **Nie schodź niżej bez
+  sprawdzenia kafli notowań:** `.q-row` ma sztywne `.q-spark` 110px i `.q-vals` auto, a kurczy się
+  WYŁĄCZNIE `.q-name` — przy 440px zostaje jej ~150px, czyli nazwa instrumentu jest skrócona
+  wielokropkiem, ale widoczna. ⚠️ Nie myl tego z `@media (max-width:460px)` w sekcji notowań — tamto
+  dotyczy VIEWPORTU (telefony), nie szerokości tego panelu, więc na desktopie nie zadziała jako zabezpieczenie.
 
 ## Helpery warte znać
 - `displaySource(item)` — nazwa źródła; gdy brak `source_name`, pokazuje domenę z linku zamiast „—".

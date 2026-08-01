@@ -54,7 +54,11 @@ html, body {
   font-family: 'DM Serif Display', serif;
   font-size: 22px; font-weight: 400; font-style: italic;
   color: var(--text); letter-spacing: 0.5px; line-height: 1;
+  /* klikalne od 2026-08-01 — powrót na aktualną dawkę */
+  cursor: pointer; -webkit-user-select: none; user-select: none;
 }
+.logo:active { opacity: .6; }
+.logo:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; border-radius: 2px; }
 .logo-dot { color: var(--red); font-style: normal; }
 
 .topbar-date {
@@ -465,7 +469,11 @@ html, body {
   display: flex; align-items: center; padding: 0 28px; gap: 18px;
 }
 [data-theme="dark"] .dt-header { background: #0f0f0f; border-bottom-color: #2a2a2a; }
-.dt-logo { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 28px; color: var(--text); letter-spacing: -0.5px; line-height: 1; flex-shrink: 0; }
+.dt-logo { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 28px; color: var(--text); letter-spacing: -0.5px; line-height: 1; flex-shrink: 0;
+  /* klikalne od 2026-08-01 — powrót na aktualną dawkę */
+  cursor: pointer; user-select: none; transition: opacity .15s; }
+.dt-logo:hover { opacity: .7; }
+.dt-logo:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; border-radius: 2px; }
 .dt-logo-dot { color: var(--red); font-style: normal; }
 .dt-header-sep { width: 1px; height: 22px; background: #dbd8d2; flex-shrink: 0; }
 [data-theme="dark"] .dt-header-sep { background: #2a2a2a; }
@@ -488,8 +496,14 @@ html, body {
    nagłówki, które i tak łamią się na 2-3 linie, a artykuł czyta się w pełnych zdaniach.
    Zwiększona też szerokość dla bardzo szerokich ekranów, gdzie kolumna 480px zaczyna być mała
    w stosunku do reszty. */
-.dt-body { display: grid; grid-template-columns: 210px 1fr 480px; flex: 1; overflow: hidden; }
-@media (min-width: 1500px) { .dt-body { grid-template-columns: 230px 1fr 560px; } }
+/* Panel szczegółów zwężony 2026-08-01 (życzenie właściciela: „trochę mniejszy, nieznacznie")
+   z 480/560 na 440/510 — ok. 9%. Więcej miejsca dla listy newsów, panel dalej czytelny.
+   ⚠️ Próg, poniżej którego NIE schodzić: kafle notowań (.q-row) mają sztywne .q-spark 110px
+   i .q-vals auto, a kurczy się wyłącznie .q-name. Przy 440px zostaje jej ~150px, czyli nazwa
+   instrumentu jest skrócona wielokropkiem, ale WIDOCZNA. Dalsze zwężanie ją wygasi.
+   (Uwaga: @media max-width:460px dotyczy VIEWPORTU, nie tego panelu — na desktopie nie działa.) */
+.dt-body { display: grid; grid-template-columns: 210px 1fr 440px; flex: 1; overflow: hidden; }
+@media (min-width: 1500px) { .dt-body { grid-template-columns: 230px 1fr 510px; } }
 
 /* left index */
 .dt-index { border-right: 1px solid #dbd8d2; overflow-y: auto; background: var(--bg); }
