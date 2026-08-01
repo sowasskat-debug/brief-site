@@ -140,6 +140,30 @@ input[type=password], input[type=text], input[type=email] {
 .solo { border: 1px solid var(--rule); border-radius: 3px; margin: 10px 0; }
 .solo .group-head { border-bottom: none; }
 
+/* ── OKNO GOTOWCA X ── */
+.x-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.45); padding: 20px; overflow-y: auto;
+}
+.x-overlay.on { display: flex; align-items: flex-start; justify-content: center; }
+.x-modal {
+  background: #fff; border-radius: 3px; max-width: 520px; width: 100%;
+  padding: 16px; margin-top: 40px; border-top: 3px solid var(--text);
+}
+.x-modal-head {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+  font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+}
+.x-close { border: none; background: none; font-size: 14px; cursor: pointer; color: var(--muted); padding: 0 4px; }
+.x-modal textarea {
+  width: 100%; font-family: 'Space Mono', monospace; font-size: 12.5px; line-height: 1.5;
+  padding: 11px 12px; border: 1px solid var(--rule); border-radius: 2px; resize: vertical;
+}
+.x-licznik { font-size: 9px; letter-spacing: 1px; color: var(--muted); margin: 6px 0 12px; text-align: right; }
+.x-licznik.zaduzo { color: var(--red); font-weight: 700; }
+.x-modal-akcje { display: flex; gap: 8px; }
+.x-modal-info { font-size: 9.5px; color: var(--muted); line-height: 1.6; margin-top: 10px; }
+
 /* ── ODRZUCONE ── */
 .odrz { border: 1px solid var(--rule); border-radius: 3px; margin: 10px 0; }
 /* Tylko te wpisy bot realnie czyta — muszą się odróżniać od archiwalnych,
@@ -293,6 +317,26 @@ input[type=password], input[type=text], input[type=email] {
   </div>
 </div>
 
+<!-- Okno gotowca X. Treść pochodzi z modelu, więc MUSI przejść przed oczami
+     właściciela zanim trafi na X — stąd podgląd z edycją zamiast otwierania composera od razu. -->
+<div class="x-overlay" id="xOverlay" onclick="if(event.target===this) zamknijX()">
+  <div class="x-modal">
+    <div class="x-modal-head">
+      <span>Post na X</span>
+      <button class="x-close" onclick="zamknijX()">✕</button>
+    </div>
+    <div id="xStatus"></div>
+    <textarea id="xTresc" rows="6" oninput="xPolicz()" placeholder="Generuję…"></textarea>
+    <div class="x-licznik" id="xLicznik"></div>
+    <div class="x-modal-akcje">
+      <button class="btn" id="xOtworz" onclick="wyslijNaX()">Otwórz X z tą treścią</button>
+    </div>
+    <div class="x-modal-info">
+      X skraca każdy link do 23 znaków — adres newsa doklei się sam i nie wchodzi do limitu poniżej.
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- SDK Supabase. ⚠️ CDN bywa blokowane przez adblock/DNS (dokładnie jak OneSignal) —
@@ -333,13 +377,6 @@ function escapeHtml(s) {
   }[c]));
 }
 
-// Przepuszcza WYŁĄCZNIE http(s) — patrz sekcja „Bezpieczeństwo" w CLAUDE.md.
-// Tu href idzie do innerHTML, a treść posta pochodzi z modelu (pole x_post), więc nie ufamy jej.
-function safeUrl(u) {
-  const s = String(u ?? '').trim();
-  return /^https?:\/\//i.test(s) ? escapeHtml(s) : '';
-}
-
 // ══ UDOSTĘPNIJ NA X ══
 // itemSlug — KOPIA z index.html (djb2-xor po pierwszych 80 zn., base36).
 // ⚠️ Musi zostać identyczna, inaczej deep link nie trafi w news. Zmiana tam = zmiana tu.
@@ -362,20 +399,101 @@ function xPostText(item) {
   return raw.length > X_TEXT_MAX ? raw.slice(0, X_TEXT_MAX - 1).trimEnd() + '…' : raw;
 }
 
-// Deep link prowadzi na OTWARTY artykuł, nie na stronę główną.
-// routeDoseHash w index.html przeszukuje też subItems, więc slug z tekstu newsa działa
-// zarówno dla postów samodzielnych, jak i tych w klastrze.
-function xShareHref(item) {
-  const text = xPostText(item);
-  if (!text) return '';
-  const deep = `https://brifup.com/#${currentDose}/${itemSlug(String(item.text || ''))}`;
-  return safeUrl(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(deep)}`);
+// Adres composera X. Treść pochodzi z modelu i z pola edytowalnego, więc mimo że idzie
+// do window.open (nie do innerHTML), sprawdzamy schemat — zasada „żaden URL z danych
+// nie leci bez kontroli" z sekcji „Bezpieczeństwo" w CLAUDE.md obowiązuje wszędzie.
+// encodeURIComponent na obu parametrach pilnuje, żeby treść nie wyłamała się z query stringa.
+function xIntentUrl(tresc, deep) {
+  const u = `https://x.com/intent/post?text=${encodeURIComponent(tresc)}&url=${encodeURIComponent(deep)}`;
+  return /^https:\/\/x\.com\//.test(u) ? u : '';
 }
 
-// Zwraca gotowy przycisk albo pusty string (brak treści = brak przycisku, zero martwych linków).
+// Rejestr newsów pod przyciskami X — onclick nie może nieść całego obiektu,
+// a indeksy przesuwają się przy usuwaniu. Slug jest stabilny i już go liczymy.
+const X_ITEMS = new Map();
+
+// Zwraca gotowy przycisk albo pusty string (brak treści = brak przycisku).
 function xBtnHtml(item) {
-  const href = xShareHref(item);
-  return href ? `<a class="x-btn" href="${href}" target="_blank" rel="noopener noreferrer">Wrzuć na X</a>` : '';
+  const t = String(item.text || '');
+  if (!t) return '';
+  const slug = itemSlug(t);
+  X_ITEMS.set(slug, item);
+  return `<button class="x-btn" onclick="otworzX('${slug}')">Wrzuć na X</button>`;
+}
+
+// ── OKNO GOTOWCA ────────────────────────────────────────────────────────────
+let xBiezacy = null;   // { item, deep }
+
+async function otworzX(slug) {
+  const item = X_ITEMS.get(slug);
+  if (!item) return;
+  xBiezacy = { item, deep: `https://brifup.com/#${currentDose}/${itemSlug(String(item.text || ''))}` };
+
+  document.getElementById('xOverlay').classList.add('on');
+  const pole = document.getElementById('xTresc');
+  const otworz = document.getElementById('xOtworz');
+
+  // Zaczynamy od fallbacku — gdyby generowanie padło, i tak masz czym wrzucić.
+  pole.value = xPostText(item);
+  xPolicz();
+
+  if (!supa) {
+    setNotice('xStatus', 'warn', 'Brak połączenia z Supabase — treść to sam nagłówek newsa.');
+    return;
+  }
+
+  setNotice('xStatus', '', 'Generuję gotowca…');
+  otworz.disabled = true;
+  try {
+    const { data, error } = await supa.functions.invoke('gotowiec-x', {
+      body: { text: item.text, article: item.article, impact: item.impact },
+    });
+    if (error) throw error;
+
+    if (data?.post) {
+      pole.value = data.post;
+      setNotice('xStatus', '', data.przyciety
+        ? 'Gotowiec wygenerowany (przycięty do limitu). Możesz go poprawić.'
+        : 'Gotowiec wygenerowany. Możesz go poprawić przed wysłaniem.');
+    } else {
+      // Najczęściej bramka pokrycia liczb — model wymyślił liczbę spoza artykułu.
+      // Mówimy DLACZEGO, zamiast po cichu podstawiać nagłówek.
+      setNotice('xStatus', 'warn',
+        `Gotowiec odrzucony: ${escapeHtml(data?.powod || 'nieznany powód')}. Zostaje sam nagłówek.`);
+    }
+  } catch (e) {
+    setNotice('xStatus', 'warn',
+      `Nie udało się wygenerować gotowca (${escapeHtml(e.message || 'błąd')}). Zostaje sam nagłówek.`);
+  } finally {
+    otworz.disabled = false;
+    xPolicz();
+  }
+}
+
+function zamknijX() {
+  document.getElementById('xOverlay').classList.remove('on');
+  setNotice('xStatus', '', '');
+  xBiezacy = null;
+}
+
+function xPolicz() {
+  const n = document.getElementById('xTresc').value.length;
+  const el = document.getElementById('xLicznik');
+  // Link zawsze kosztuje 23 znaki, niezależnie od długości adresu (t.co).
+  const razem = n + 1 + 23;
+  el.textContent = `${n} zn. + link (23) = ${razem} / 280`;
+  el.classList.toggle('zaduzo', razem > 280);
+}
+
+function wyslijNaX() {
+  if (!xBiezacy) return;
+  const tresc = document.getElementById('xTresc').value.trim();
+  if (!tresc) { showToast('Pusta treść'); return; }
+  const url = xIntentUrl(tresc, xBiezacy.deep);
+  if (!url) { showToast('Nie udało się zbudować adresu'); return; }
+  // Otwiera się na klik użytkownika, więc blokada popupów tego nie zatrzyma.
+  window.open(url, '_blank', 'noopener,noreferrer');
+  zamknijX();
 }
 
 function utf8ToB64(str) {

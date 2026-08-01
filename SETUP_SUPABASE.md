@@ -86,6 +86,54 @@ W tym samym miejscu co klucz `anon` jest **`service_role`** (albo `secret`).
   SUPABASE_SERVICE_KEY=<klucz service_role>
   ```
 
+## 7. Gotowiec pod X (Edge Function)
+
+Panel generuje treść posta dopiero **w momencie kliknięcia „Wrzuć na X"** — 3-4 razy dziennie,
+a nie dla wszystkich ~107 publikowanych newsów. Koszt DeepSeeka: ~$0,01/mies zamiast ~$1,50.
+
+Robi to funkcja po stronie serwera, bo **klucz DeepSeeka nie może trafić do przeglądarki** —
+strona jest publiczna, więc klucz w kodzie panelu byłby kluczem oddanym światu.
+
+### 7a. Wdrożenie funkcji
+
+**Prościej — przez panel Supabase:**
+1. **Edge Functions** → **Deploy a new function** (albo **Create function**).
+2. Nazwa: **`gotowiec-x`** — musi się zgadzać co do znaku, panel woła ją po nazwie.
+3. Wklej całą zawartość `supabase/functions/gotowiec-x/index.ts` z tego repo.
+4. **Deploy**.
+
+**Albo przez CLI**, jeśli wolisz (z katalogu repo):
+```
+supabase functions deploy gotowiec-x
+```
+
+### 7b. Klucz DeepSeeka jako sekret
+
+**Edge Functions → Secrets** (albo **Settings → Edge Functions**) → dodaj:
+
+| Nazwa | Wartość |
+|---|---|
+| `DEEPSEEK_KEY` | ten sam klucz, którego używa bot (`/root/bot_secrets.env` na Hetznerze) |
+
+🔴 **Tego klucza NIE wklejaj do czatu** — nie jest mi do niczego potrzebny. Kopiujesz go
+z serwera prosto do Supabase.
+
+Opcjonalnie `OWNER_EMAIL`, jeśli kiedyś zmienisz adres — domyślnie funkcja ma `sowass@outlook.com`
+wpisane na sztywno.
+
+### 7c. Sprawdzenie
+
+W panelu kliknij **„Wrzuć na X"** przy dowolnym newsie:
+- ✅ po ~2 s treść w okienku podmienia się na wygenerowanego gotowca
+- ⚠️ „Gotowiec odrzucony: Bramka pokrycia…" — to **działa poprawnie**: model wymyślił liczbę,
+  której nie ma w artykule, więc gotowiec został skasowany, a zostaje sam nagłówek.
+  W poście finansowym zmyślona liczba jest gorsza niż brak gotowca.
+- ❌ „Nie udało się wygenerować" — sprawdź, czy funkcja jest wdrożona pod nazwą `gotowiec-x`
+  i czy sekret `DEEPSEEK_KEY` jest ustawiony (Edge Functions → Logs pokaże powód).
+
+Panel **zawsze** działa: gdy generowanie padnie, w okienku zostaje sam nagłówek newsa
+i możesz go wrzucić albo dopisać treść ręcznie.
+
 ---
 
 ## Jedno logowanie — i co za tym stoi
