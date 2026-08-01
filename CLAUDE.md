@@ -1,5 +1,9 @@
 # CLAUDE.md — brief-site (Brif.up / brifup.com)
 
+> 🔴 **Nowa sesja: przeczytaj NAJPIERW [`STAN.md`](STAN.md)** — co jest niedokończone,
+> co zmierzone, w co nie wdepnąć drugi raz i jakich pomysłów nie odgrzewać.
+> Ten plik opisuje jak działa to, co JUŻ zrobione; `STAN.md` mówi, od czego zacząć.
+
 Statyczna strona + PWA z newsami finansowo-polityczno-gospodarczymi po polsku.
 Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 (repo `financialnewsbot`) i zapisuje jako `briefs.json`.
