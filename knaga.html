@@ -57,15 +57,29 @@ html, body { min-height: 100%; font-family: 'Space Mono', monospace; background:
 .notice.bad { border-left-color: var(--red); }
 .notice code { font-size: 9.5px; background: var(--gray2); padding: 1px 4px; border-radius: 2px; }
 
-/* ── ZAKŁADKI PANELU (Posty / Lejek) ── */
-.main-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+/* ── ZAKŁADKI PANELU ── */
+/* Przy 5 zakładkach flex:1 miażdżył etykiety na telefonie — pasek przewija się w poziomie. */
+.main-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .main-tab {
-  flex: 1; padding: 10px 8px; cursor: pointer;
+  flex: 1 0 auto; padding: 10px 12px; cursor: pointer;
   border: 1px solid var(--rule); border-radius: 2px; background: #fff;
   font-family: 'Space Mono', monospace; font-size: 8.5px; font-weight: 700;
-  letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted);
+  letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); white-space: nowrap;
 }
 .main-tab.active { background: var(--text); border-color: var(--text); color: #fff; }
+
+/* ── KOKPIT ── */
+.kok-siatka { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.kok-kafel { border: 1px solid var(--rule); border-radius: 3px; padding: 12px; }
+.kok-kafel.szeroki { grid-column: 1 / -1; }
+.kok-kafel.uwaga { border-left: 3px solid var(--red); }
+.kok-label { font-size: 8px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.kok-duze { font-family: 'DM Serif Display', serif; font-size: 26px; line-height: 1.1; }
+.kok-duze small { font-size: 13px; color: var(--muted); font-family: 'Space Mono', monospace; }
+.kok-sub { font-size: 9px; color: var(--muted); margin-top: 4px; letter-spacing: 0.5px; line-height: 1.6; }
+.kok-dawki { display: flex; gap: 14px; }
+.kok-dawka { flex: 1; text-align: center; }
+.kok-feedy { display: flex; gap: 6px; overflow-x: auto; padding-top: 4px; }
 
 /* ── LOGIN ── */
 .login-box { padding: 40px 16px; max-width: 420px; margin: 0 auto; }
@@ -184,11 +198,11 @@ input[type=password], input[type=text], input[type=email] {
    żeby nie mieszały się ze stylami panelu (ten sam wygląd, inny kontekst). */
 #paneLejek { font-family: Inter, 'Space Mono', sans-serif; }
 #paneLejek .lej-health { display:flex; gap:8px; overflow-x:auto; padding-bottom:12px; border-bottom:1px solid var(--rule); }
-#paneLejek .h-pill { flex:0 0 auto; border:1px solid var(--rule); border-radius:6px; padding:6px 10px; font-family:'Space Mono',monospace; font-size:10px; color:#444; }
-#paneLejek .h-pill b { display:block; font-size:11px; letter-spacing:.5px; color:var(--text); }
-#paneLejek .h-ok { border-left:3px solid #16a34a; }
-#paneLejek .h-warn { border-left:3px solid #d97706; background:#fffbeb; }
-#paneLejek .h-err { border-left:3px solid var(--red); background:#fef2f2; }
+.h-pill { flex:0 0 auto; border:1px solid var(--rule); border-radius:6px; padding:6px 10px; font-family:'Space Mono',monospace; font-size:10px; color:#444; }
+.h-pill b { display:block; font-size:11px; letter-spacing:.5px; color:var(--text); }
+.h-ok { border-left:3px solid #16a34a; }
+.h-warn { border-left:3px solid #d97706; background:#fffbeb; }
+.h-err { border-left:3px solid var(--red); background:#fef2f2; }
 #paneLejek .lej-filters { display:flex; gap:6px; padding:10px 0; overflow-x:auto; border-bottom:1px solid var(--rule); }
 #paneLejek .chip { flex:0 0 auto; font-family:'Space Mono',monospace; font-size:11px; padding:5px 10px; border:1px solid #ccc; border-radius:99px; color:#555; cursor:pointer; background:#fff; }
 #paneLejek .chip.on { background:var(--text); color:#fff; border-color:var(--text); }
@@ -288,9 +302,25 @@ input[type=password], input[type=text], input[type=email] {
 
 <div id="mainScreen" class="wrap" style="display:none">
   <div class="main-tabs">
-    <button class="main-tab active" id="tabPosty" onclick="switchPane('posty')">Posty</button>
+    <button class="main-tab active" id="tabKokpit" onclick="switchPane('kokpit')">Kokpit</button>
+    <button class="main-tab" id="tabPosty" onclick="switchPane('posty')">Posty</button>
+    <button class="main-tab" id="tabCzekalnia" onclick="switchPane('czekalnia')">Czeka</button>
     <button class="main-tab" id="tabOdrzucone" onclick="switchPane('odrzucone')">Odrzucone</button>
     <button class="main-tab" id="tabLejek" onclick="switchPane('lejek')">Lejek</button>
+  </div>
+
+  <div id="paneKokpit">
+    <div id="kokTresc"><div class="empty">Ładowanie…</div></div>
+  </div>
+
+  <div id="paneCzekalnia" style="display:none">
+    <div class="notice">
+      Newsy, które przeszły selekcję, ale <strong>enrich nie znalazł jeszcze źródła</strong> —
+      strona ich nie pokazuje. Bot ponawia do 4 prób, potem item ginie. Stąd można go wyrzucić
+      wcześniej (trafi do nauki filtra jak przy zwykłym usunięciu).
+    </div>
+    <div class="refresh-row"><button onclick="wczytajCzekalnie(true)">↻ Odśwież</button></div>
+    <div id="czekTresc"></div>
   </div>
 
   <div id="panePosty">
@@ -385,7 +415,7 @@ const DOSE_LABELS = { morning: 'Poranna', afternoon: 'Południowa', evening: 'Wi
 let token = sessionStorage.getItem('knaga_gh_token') || '';
 let briefsState = null; // { sha, data }
 let currentDose = 'morning';
-let currentPane = 'posty';
+let currentPane = 'kokpit';
 
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
@@ -649,10 +679,16 @@ async function logout() {
   sessionStorage.removeItem('knaga_gh_token');
   token = '';
   briefsState = null;
-  // Lejek trzyma dane diagnostyczne w pamięci karty — po wylogowaniu mają zniknąć,
+  // Zakładki trzymają dane w pamięci karty — po wylogowaniu mają zniknąć,
   // a następne wejście ma je pobrać na świeżo.
   LEJ_WPISY = [];
   lejWczytany = false;
+  kokWczytany = false;
+  czekWczytana = false;
+  odrzuconeWczytane = false;
+  document.getElementById('kokTresc').innerHTML = '';
+  document.getElementById('czekTresc').innerHTML = '';
+  document.getElementById('odrzuconeTresc').innerHTML = '';
   document.getElementById('lejTresc').innerHTML = '';
   document.getElementById('lejHealth').innerHTML = '';
   document.getElementById('lejFiltry').innerHTML = '';
@@ -837,7 +873,9 @@ async function initAuth() {
 
 // ══ ZAKŁADKI PANELU ══
 const PANES = {
+  kokpit:    { tab: 'tabKokpit',    pane: 'paneKokpit',    onEnter: () => renderKokpit() },
   posty:     { tab: 'tabPosty',     pane: 'panePosty' },
+  czekalnia: { tab: 'tabCzekalnia', pane: 'paneCzekalnia', onEnter: () => renderCzekalnia() },
   odrzucone: { tab: 'tabOdrzucone', pane: 'paneOdrzucone', onEnter: () => renderOdrzucone() },
   lejek:     { tab: 'tabLejek',     pane: 'paneLejek',     onEnter: () => renderLejek() },
 };
@@ -849,6 +887,178 @@ function switchPane(p) {
     document.getElementById(cfg.pane).style.display = nazwa === p ? 'block' : 'none';
   }
   PANES[p]?.onEnter?.();
+}
+
+// ══ KOKPIT ══
+// Przegląd na wejściu: stan dawek, ostatni bieg bota, martwe feedy, tokeny DeepSeeka dziś.
+// Dane z plików publicznych (briefs/deepseek_usage) + lejek przez wspólny loader —
+// jeden rzut oka zamiast klikania po zakładkach.
+let kokWczytany = false;
+
+function renderKokpit() {
+  if (kokWczytany) return;
+  kokWczytany = true;
+  wczytajKokpit();
+}
+
+async function wczytajKokpit() {
+  const el = document.getElementById('kokTresc');
+  el.innerHTML = '<div class="empty">Ładowanie…</div>';
+
+  // Trzy źródła równolegle; każde pada osobno — kokpit z dziurą jest lepszy niż pusty.
+  const [briefs, lejek, usage] = await Promise.all([
+    fetch('./briefs.json?_=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).catch(() => null),
+    pobierzLejekDane().catch(() => null),
+    fetch('./deepseek_usage.json?_=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).catch(() => null),
+  ]);
+
+  let html = '<div class="kok-siatka">';
+
+  // ── Dawki ──
+  if (briefs) {
+    const licz = it => 1 + ((it.subItems || []).length ? it.subItems.length - 1 : 0);
+    const dawki = ['morning', 'afternoon', 'evening'].map(k => {
+      const d = briefs[k] || {};
+      return `<div class="kok-dawka"><div class="kok-duze">${(d.items || []).length}</div>
+              <div class="kok-sub">${escapeHtml(DOSE_LABELS[k])}<br>${escapeHtml(d.date || '—')}</div></div>`;
+    }).join('');
+    html += `<div class="kok-kafel szeroki"><div class="kok-label">Dawki na stronie</div>
+             <div class="kok-dawki">${dawki}</div></div>`;
+
+    const pocz = (briefs.poczekalnia || {}).items || [];
+    html += `<div class="kok-kafel${pocz.length >= 5 ? ' uwaga' : ''}">
+             <div class="kok-label">Poczekalnia</div><div class="kok-duze">${pocz.length}</div>
+             <div class="kok-sub">newsów szuka źródła</div></div>`;
+  }
+
+  // ── Ostatni bieg + dzisiejsza skuteczność ──
+  if (lejek && lejek.wpisy.length) {
+    const w = lejek.wpisy;
+    const ost = w.reduce((m, x) => String(x.ts || '') > m ? String(x.ts) : m, '');
+    const min = lejMinTemu(ost);
+    const dzis = ost.slice(0, 10);
+    const dzisiejsze = w.filter(x => String(x.ts || '').startsWith(dzis));
+    const tg = dzisiejsze.filter(x => x.status !== 'odrzucony' && x.status !== 'odrzucony_enrich').length;
+    const main = dzisiejsze.filter(x => x.status === 'main').length;
+    html += `<div class="kok-kafel${min != null && min > 90 ? ' uwaga' : ''}">
+             <div class="kok-label">Ostatni bieg bota</div>
+             <div class="kok-duze">${escapeHtml(lejOpisTemu(min))} <small>temu</small></div>
+             <div class="kok-sub">${dzisiejsze.length} kandydatów dziś → ${tg} telegram → ${main} main</div></div>`;
+  }
+
+  // ── Tokeny DeepSeek dziś ──
+  if (usage && Array.isArray(usage.runs)) {
+    // Cennik deepseek-v4-flash (cache miss): $0,27 / 1M in, $1,10 / 1M out.
+    const dzis = new Date().toISOString().slice(0, 10);
+    let tin = 0, tout = 0, biegi = 0;
+    for (const r of usage.runs) {
+      if (!String(r.ts || '').startsWith(dzis)) continue;
+      biegi++;
+      for (const v of Object.values(r.stages || {})) { tin += v.in || 0; tout += v.out || 0; }
+    }
+    const koszt = tin * 0.27 / 1e6 + tout * 1.10 / 1e6;
+    html += `<div class="kok-kafel"><div class="kok-label">DeepSeek dziś</div>
+             <div class="kok-duze">$${koszt.toFixed(2)}</div>
+             <div class="kok-sub">${biegi} biegów · ${(tin/1000).toFixed(0)}k in / ${(tout/1000).toFixed(0)}k out</div></div>`;
+  }
+
+  html += '</div>';
+
+  // ── Zdrowie feedów (pełna szerokość, te same progi co w Lejku: >4 h żółty, >12 h czerwony) ──
+  if (lejek && lejek.wpisy.length) {
+    const perFeed = new Map();
+    for (const x of lejek.wpisy) {
+      const f = x.feed || '?';
+      const cur = perFeed.get(f);
+      if (!cur || String(x.ts || '') > cur) perFeed.set(f, String(x.ts || ''));
+    }
+    const pigulki = [...perFeed.entries()]
+      .map(([f, ts]) => ({ f, min: lejMinTemu(ts) }))
+      .sort((a, b) => (b.min ?? 1e9) - (a.min ?? 1e9))
+      .map(({ f, min }) => {
+        const cls = min == null || min > 12 * 60 ? 'h-err' : (min > 4 * 60 ? 'h-warn' : 'h-ok');
+        return `<div class="h-pill ${cls}"><b>${escapeHtml(f.toUpperCase())}</b>${lejOpisTemu(min)} temu</div>`;
+      }).join('');
+    const martwe = [...perFeed.values()].filter(ts => (lejMinTemu(ts) ?? 1e9) > 12 * 60).length;
+    html += `<div class="kok-kafel szeroki${martwe ? ' uwaga' : ''}" id="paneKokpitFeedy">
+             <div class="kok-label">Feedy — ostatni sygnał${martwe ? ` · ${martwe} milczy >12 h` : ''}</div>
+             <div class="kok-feedy">${pigulki}</div></div>`;
+  }
+
+  html += `<div class="refresh-row"><button onclick="wczytajKokpit()">↻ Odśwież</button></div>`;
+  el.innerHTML = html || '<div class="empty">Brak danych.</div>';
+}
+
+// ══ POCZEKALNIA ══
+// briefs.json ma sekcję "poczekalnia" — newsy po selekcji, którym enrich nie znalazł
+// jeszcze źródła. Front jej nie renderuje; panel dotąd też nie. Stąd widać, co utknęło.
+let czekWczytana = false;
+
+function renderCzekalnia() {
+  if (czekWczytana) return;
+  czekWczytana = true;
+  wczytajCzekalnie();
+}
+
+async function wczytajCzekalnie(pokazToast) {
+  const el = document.getElementById('czekTresc');
+  el.innerHTML = '<div class="empty">Ładowanie…</div>';
+  try {
+    const r = await fetch('./briefs.json?_=' + Date.now(), { cache: 'no-store' });
+    const d = await r.json();
+    const items = (d.poczekalnia || {}).items || [];
+    if (!items.length) { el.innerHTML = '<div class="empty">Poczekalnia pusta — nic nie utknęło.</div>'; return; }
+    el.innerHTML = items.map((it, idx) => `
+      <div class="solo">
+        <div class="group-head">
+          <span class="item-flag">${escapeHtml(it.flag || '📰')}</span>
+          <div style="flex:1">
+            <div class="item-text">${escapeHtml(it.text)}</div>
+            <div class="item-meta">${escapeHtml(it.added_at || '—')} · próba ${it.enrich_attempts ?? '?'} z 4${it.category ? ' · ' + escapeHtml(it.category) : ''}</div>
+          </div>
+          <div class="act-col">
+            <button class="del-btn" onclick="wyrzucZCzekalni(${idx})">Wyrzuć</button>
+          </div>
+        </div>
+      </div>`).join('');
+    if (pokazToast) showToast('Odświeżono');
+  } catch (e) {
+    el.innerHTML = `<div class="empty">Błąd ładowania: ${escapeHtml(String(e.message || e))}</div>`;
+  }
+}
+
+// Wyrzucenie z poczekalni = commit do briefs.json + nauka filtra (rejected.json),
+// jak przy zwykłym usunięciu. Kosza tu nie ma — item nie był opublikowany, nie ma
+// pełnej wersji do przywracania. Ten sam wzorzec antykolizyjny co delete-funkcje:
+// świeży odczyt sha + dopasowanie po TEKŚCIE, bo bot pisze do pliku co bieg.
+async function wyrzucZCzekalni(idx) {
+  try {
+    const przed = await fetch('./briefs.json?_=' + Date.now(), { cache: 'no-store' }).then(r => r.json());
+    const cel = ((przed.poczekalnia || {}).items || [])[idx];
+    if (!cel) { showToast('Wpis już zniknął'); wczytajCzekalnie(); return; }
+
+    const fresh = await ghGetJson(BRIEFS_PATH);
+    if (!fresh.data) { showToast('Brak briefs.json'); return; }
+    const lista = (fresh.data.poczekalnia || {}).items || [];
+    const realny = lista.findIndex(i => i.text === cel.text);
+    if (realny === -1) { showToast('Bot już go zdjął z poczekalni'); wczytajCzekalnie(); return; }
+    const [usuniety] = lista.splice(realny, 1);
+    await ghPutJson(BRIEFS_PATH, fresh.data, fresh.sha, 'Panel: wyrzucono z poczekalni [skip ci]');
+    // currentDose w appendRejected opisuje dawkę — dla poczekalni nadpisujemy wprost.
+    try {
+      const rej = await ghGetJson(REJECTED_PATH);
+      let l = Array.isArray(rej.data) ? rej.data : [];
+      l.push({ text: usuniety.text, flag: usuniety.flag || null, article: usuniety.article || null,
+               source_name: usuniety.source_name || null, dose: 'poczekalnia',
+               date: new Date().toISOString().split('T')[0] });
+      if (l.length > REJECTED_MAX) l = l.slice(l.length - REJECTED_MAX);
+      await ghPutJson(REJECTED_PATH, l, rej.sha, 'Panel: odrzucono z poczekalni [skip ci]');
+    } catch (e) { console.warn('rejected.json:', e.message); }
+    wczytajCzekalnie();
+    showToast('Wyrzucono — bot się tego uczy');
+  } catch (e) {
+    showToast(`Błąd: ${e.message}`);
+  }
 }
 
 // ══ ODRZUCONE ══
@@ -1110,37 +1320,39 @@ function lejRender() {
   el.innerHTML = html;
 }
 
-// Źródło danych. Docelowo Supabase (RLS wpuszcza tylko właściciela), ale dopóki bot
-// tam nie pisze, tabela jest pusta — wtedy spadamy na lejek.json i MÓWIMY o tym wprost,
-// żeby nie wyglądało, jakby dane były już schowane. Przełączy się samo, gdy bot ruszy.
-async function lejWczytaj() {
-  const tresc = document.getElementById('lejTresc');
-  tresc.innerHTML = '<div class="pusto">Ładowanie…</div>';
-  let zSupabase = false;
-
+// Wspólny loader danych lejka (zakładka Lejek + Kokpit). Docelowo Supabase (RLS wpuszcza
+// tylko właściciela), ale dopóki bot tam nie pisze, tabela jest pusta — wtedy spadamy na
+// lejek.json. Zwraca też skąd wzięło dane, żeby UI mógł uczciwie powiedzieć „to publiczny plik".
+async function pobierzLejekDane() {
   if (supa) {
     try {
       const { data, error } = await supa
         .from('lejek').select('ts,feed,tytul,link,status,tekst_pl,powod')
         .order('ts', { ascending: false }).limit(1500);
       if (error) throw error;
-      if (data && data.length) { LEJ_WPISY = data; zSupabase = true; }
+      if (data && data.length) return { wpisy: data, zSupabase: true };
     } catch (e) {
       console.warn('Lejek z Supabase nieudany:', e.message);
     }
   }
+  const r = await fetch('./lejek.json?_=' + Date.now(), { cache: 'no-store' });
+  if (!r.ok) throw new Error('lejek.json -> ' + r.status);
+  const d = await r.json();
+  return { wpisy: Array.isArray(d.wpisy) ? d.wpisy : [], zSupabase: false };
+}
 
-  if (!zSupabase) {
-    try {
-      const r = await fetch('./lejek.json?_=' + Date.now(), { cache: 'no-store' });
-      if (!r.ok) throw new Error(r.status);
-      const d = await r.json();
-      LEJ_WPISY = Array.isArray(d.wpisy) ? d.wpisy : [];
-    } catch (e) {
-      LEJ_WPISY = [];
-      tresc.innerHTML = `<div class="pusto">Nie udało się wczytać lejka.<br>(${escapeHtml(String(e.message || e))})</div>`;
-      return;
-    }
+async function lejWczytaj() {
+  const tresc = document.getElementById('lejTresc');
+  tresc.innerHTML = '<div class="pusto">Ładowanie…</div>';
+  let zSupabase = false;
+  try {
+    const dane = await pobierzLejekDane();
+    LEJ_WPISY = dane.wpisy;
+    zSupabase = dane.zSupabase;
+  } catch (e) {
+    LEJ_WPISY = [];
+    tresc.innerHTML = `<div class="pusto">Nie udało się wczytać lejka.<br>(${escapeHtml(String(e.message || e))})</div>`;
+    return;
   }
 
   setNotice('lejekNotice', zSupabase ? '' : 'warn', zSupabase ? '' :
