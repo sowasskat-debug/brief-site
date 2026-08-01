@@ -174,9 +174,6 @@ input[type=password], input[type=text], input[type=email] {
      rejestracji ani resetu hasła, bo użytkownik jest dokładnie jeden i nic nie wysyłamy mailem. -->
 <div id="authScreen" class="login-box" style="display:none">
   <div class="login-title">Panel</div>
-  <div class="login-help">
-    Dostęp ma wyłącznie <code id="ownerHint"></code>.
-  </div>
   <div id="authNotice"></div>
   <form id="authForm" onsubmit="loginEmail(event)">
     <label class="field-label" for="emailInput">E-mail</label>
@@ -242,7 +239,9 @@ input[type=password], input[type=text], input[type=email] {
 // Dopóki poniżej stoją puste stringi, panel działa PO STAREMU (sam token GitHub, bez bramki e-mail).
 const SUPABASE_URL = 'https://utmvokfjvrthvcmxzowc.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_mhV4Ytiwn6kQ75PKyY3dxg_2LpDVJqV';
-const OWNER_EMAIL = 'sowass.kat@gmail.com';
+// ⚠️ Musi być IDENTYCZNY z e-mailem konta w Supabase ORAZ z politykami RLS w supabase_schema.sql.
+// Rozjazd = wpuszczony do panelu, ale diagnostyka pusta (albo odwrotnie).
+const OWNER_EMAIL = 'sowass@outlook.com';
 
 const supaConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 let supa = null;      // klient Supabase (null dopóki brak konfiguracji albo SDK nie wstało)
@@ -464,9 +463,10 @@ function applySession() {
   if (!session) { showScreen('authScreen'); return; }
 
   if (email !== OWNER_EMAIL.toLowerCase()) {
+    // Celowo NIE zdradzamy, który adres ma dostęp — strona jest publiczna,
+    // a podanie e-maila właściciela to gotowa połowa danych do logowania.
     document.getElementById('denyMsg').innerHTML =
-      `Zalogowano jako <code>${escapeHtml(session.user.email || '—')}</code>, a panel jest wyłącznie dla ` +
-      `<code>${escapeHtml(OWNER_EMAIL)}</code>.`;
+      `Zalogowano jako <code>${escapeHtml(session.user.email || '—')}</code> — to konto nie ma dostępu.`;
     showScreen('denyScreen');
     return;
   }
@@ -478,8 +478,6 @@ function applySession() {
 }
 
 async function initAuth() {
-  document.getElementById('ownerHint').textContent = OWNER_EMAIL;
-
   // Tryb przejściowy: klucze jeszcze nie wgrane → panel działa jak dotąd, na samym tokenie.
   if (!supaConfigured) {
     if (token) { enterApp(); } else { showScreen('loginScreen'); }

@@ -9,7 +9,7 @@
 --
 -- 🔴 Model uprawnień (nie mylić ról):
 --   anon          — klucz publiczny we froncie. NIE dostaje dostępu do niczego poniżej.
---   authenticated — zalogowany Googlem. Czyta TYLKO jeśli e-mail = WLASCICIEL.
+--   authenticated — zalogowany e-mailem. Czyta TYLKO jeśli e-mail = WLASCICIEL.
 --   service_role  — bot na Hetznerze. Omija RLS (BYPASSRLS), więc pisze bez polityk.
 --                   Ten klucz jest TAJNY i nie ma prawa pojawić się we froncie.
 -- ════════════════════════════════════════════════════════════════════════════
@@ -91,22 +91,22 @@ alter table public.deepseek_usage enable row level security;
 drop policy if exists "wlasciciel czyta lejek" on public.lejek;
 create policy "wlasciciel czyta lejek" on public.lejek
   for select to authenticated
-  using (lower(auth.jwt() ->> 'email') = 'sowass.kat@gmail.com');
+  using (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
 
 drop policy if exists "wlasciciel czyta bot_health" on public.bot_health;
 create policy "wlasciciel czyta bot_health" on public.bot_health
   for select to authenticated
-  using (lower(auth.jwt() ->> 'email') = 'sowass.kat@gmail.com');
+  using (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
 
 drop policy if exists "wlasciciel czyta brief_health" on public.brief_health;
 create policy "wlasciciel czyta brief_health" on public.brief_health
   for select to authenticated
-  using (lower(auth.jwt() ->> 'email') = 'sowass.kat@gmail.com');
+  using (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
 
 drop policy if exists "wlasciciel czyta deepseek_usage" on public.deepseek_usage;
 create policy "wlasciciel czyta deepseek_usage" on public.deepseek_usage
   for select to authenticated
-  using (lower(auth.jwt() ->> 'email') = 'sowass.kat@gmail.com');
+  using (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
 
 
 -- ── 6. UPRAWNIENIA ──────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ grant select, insert, update, delete
   on public.lejek, public.bot_health, public.brief_health, public.deepseek_usage
   to service_role;
 
--- anon NIE dostaje nic. Klucz anon siedzi jawnie w admin.html, więc każde uprawnienie
+-- anon NIE dostaje nic. Klucz anon siedzi jawnie w knaga.html, więc każde uprawnienie
 -- dla tej roli byłoby równoznaczne z publikacją danych — czyli tym, co właśnie chowamy.
 revoke all on public.lejek, public.bot_health, public.brief_health, public.deepseek_usage
   from anon;

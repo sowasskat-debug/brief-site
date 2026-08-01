@@ -31,7 +31,7 @@ więc nie ma tematu SMTP-a, limitów wysyłki ani linków aktywacyjnych.
 
 **Authentication → Users → Add user → Create new user**
 
-- **Email:** `sowass.kat@gmail.com`
+- **Email:** `sowass@outlook.com`
   ⚠️ Musi się zgadzać co do znaku z `OWNER_EMAIL` w `knaga.html` i z e-mailem w politykach
   RLS w `supabase_schema.sql`. Inny adres = „Brak dostępu" mimo poprawnego hasła.
 - **Password:** wygeneruj **długie, losowe** hasło w menedżerze haseł i tam je zostaw.
