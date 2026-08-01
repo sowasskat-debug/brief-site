@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Brief — Admin</title>
+<title>Brief — Knaga</title>
 <meta name="robots" content="noindex, nofollow">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
@@ -34,13 +34,46 @@ html, body { min-height: 100%; font-family: 'Space Mono', monospace; background:
 
 .wrap { max-width: 640px; margin: 0 auto; padding: 16px; }
 
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.whoami {
+  font-size: 8px; letter-spacing: 0.8px; color: var(--muted);
+  max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.field-label {
+  display: block; font-size: 8px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 5px;
+}
+
+/* Komunikat, gdy czegoś brakuje (SDK zablokowane, brak konfiguracji, złe konto).
+   Ta sama logika co baner OneSignal: awaria zewnętrznego CDN to nie jest bug apki,
+   ale user musi wiedzieć, dlaczego nie działa. */
+.notice {
+  font-size: 10.5px; line-height: 1.6; color: var(--sub);
+  border-left: 3px solid var(--rule); padding: 10px 12px; background: var(--gray1);
+  border-radius: 2px; margin-bottom: 16px;
+}
+.notice.warn { border-left-color: var(--amber); }
+.notice.bad { border-left-color: var(--red); }
+.notice code { font-size: 9.5px; background: var(--gray2); padding: 1px 4px; border-radius: 2px; }
+
+/* ── ZAKŁADKI PANELU (Posty / Lejek) ── */
+.main-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.main-tab {
+  flex: 1; padding: 10px 8px; cursor: pointer;
+  border: 1px solid var(--rule); border-radius: 2px; background: #fff;
+  font-family: 'Space Mono', monospace; font-size: 8.5px; font-weight: 700;
+  letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted);
+}
+.main-tab.active { background: var(--text); border-color: var(--text); color: #fff; }
+
 /* ── LOGIN ── */
 .login-box { padding: 40px 16px; max-width: 420px; margin: 0 auto; }
 .login-title { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 10px; }
 .login-help { font-size: 11px; line-height: 1.6; color: var(--sub); margin-bottom: 18px; }
 .login-help a { color: var(--blue); }
 .login-help code { background: var(--gray1); padding: 1px 4px; }
-input[type=password], input[type=text] {
+input[type=password], input[type=text], input[type=email] {
   width: 100%; font-family: 'Space Mono', monospace; font-size: 12px;
   padding: 11px 12px; border: 1px solid var(--rule); border-radius: 2px; margin-bottom: 10px;
 }
@@ -86,6 +119,17 @@ input[type=password], input[type=text] {
 .del-btn:active { background: var(--red); color: #fff; }
 .del-btn:disabled { opacity: 0.4; }
 
+/* Kolumna akcji przy newsie — „Wrzuć na X" nad „Usuń".
+   Stack pionowy, bo na wąskim telefonie dwa przyciski w rzędzie zjadały tekst newsa. */
+.act-col { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+.x-btn {
+  display: block; text-align: center; text-decoration: none;
+  font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text); background: #fff; border: 1px solid var(--text); border-radius: 2px;
+  padding: 6px 9px; cursor: pointer; white-space: nowrap;
+}
+.x-btn:active { background: var(--text); color: #fff; }
+
 .sub-row {
   display: flex; align-items: flex-start; gap: 10px; padding: 11px 12px 11px 24px;
   border-bottom: 1px solid var(--rule);
@@ -117,12 +161,43 @@ input[type=password], input[type=text] {
 <div class="topbar">
   <div>
     <div class="logo">Brief<span class="logo-dot">.</span></div>
-    <div class="logo-sub">Admin</div>
+    <div class="logo-sub">Knaga</div>
   </div>
-  <button class="logout-btn" id="logoutBtn" style="display:none" onclick="logout()">Wyloguj</button>
+  <div class="topbar-right">
+    <span class="whoami" id="whoami"></span>
+    <button class="logout-btn" id="logoutBtn" style="display:none" onclick="logout()">Wyloguj</button>
+  </div>
 </div>
 
-<div id="loginScreen" class="login-box">
+<!-- Ekran 1: logowanie e-mailem. Brama do panelu.
+     Konto zakłada się RĘCZNIE w Supabase (Add user + auto-confirm) — panel celowo nie ma
+     rejestracji ani resetu hasła, bo użytkownik jest dokładnie jeden i nic nie wysyłamy mailem. -->
+<div id="authScreen" class="login-box" style="display:none">
+  <div class="login-title">Panel</div>
+  <div class="login-help">
+    Dostęp ma wyłącznie <code id="ownerHint"></code>.
+  </div>
+  <div id="authNotice"></div>
+  <form id="authForm" onsubmit="loginEmail(event)">
+    <label class="field-label" for="emailInput">E-mail</label>
+    <input type="email" id="emailInput" autocomplete="username" placeholder="adres@example.com" required>
+    <label class="field-label" for="passInput">Hasło</label>
+    <input type="password" id="passInput" autocomplete="current-password" placeholder="••••••••" required>
+    <button class="btn" id="authBtn" type="submit">Zaloguj</button>
+  </form>
+  <div class="err" id="authErr"></div>
+</div>
+
+<!-- Ekran 2: zalogowany, ale nie tym kontem. -->
+<div id="denyScreen" class="login-box" style="display:none">
+  <div class="login-title">Brak dostępu</div>
+  <div class="notice bad" id="denyMsg"></div>
+  <button class="btn" onclick="logout()">Wyloguj i zmień konto</button>
+</div>
+
+<!-- Ekran 3: token GitHub — potrzebny do ZAPISU (kasowanie newsa = commit do repo).
+     Konto Supabase nie daje żadnych praw do repo, to dwa osobne mechanizmy. -->
+<div id="loginScreen" class="login-box" style="display:none">
   <div class="login-title">Logowanie</div>
   <div class="login-help">
     Wklej GitHub token z dostępem do repo <code>sowasskat-debug/brief-site</code>
@@ -137,14 +212,42 @@ input[type=password], input[type=text] {
 </div>
 
 <div id="mainScreen" class="wrap" style="display:none">
-  <div class="dose-tabs" id="doseTabs"></div>
-  <div class="refresh-row"><button onclick="loadBriefs(true)">↻ Odśwież</button></div>
-  <div id="content"></div>
+  <div class="main-tabs">
+    <button class="main-tab active" id="tabPosty" onclick="switchPane('posty')">Posty</button>
+    <button class="main-tab" id="tabLejek" onclick="switchPane('lejek')">Lejek</button>
+  </div>
+
+  <div id="panePosty">
+    <div class="dose-tabs" id="doseTabs"></div>
+    <div class="refresh-row"><button onclick="loadBriefs(true)">↻ Odśwież</button></div>
+    <div id="content"></div>
+  </div>
+
+  <div id="paneLejek" style="display:none">
+    <div id="lejekBody"></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<!-- SDK Supabase. ⚠️ CDN bywa blokowane przez adblock/DNS (dokładnie jak OneSignal) —
+     panel MUSI to przeżyć i powiedzieć dlaczego nie działa, zamiast wysypać się w ciszy. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
+// ══ KONFIGURACJA SUPABASE ══
+// Oba pola są PUBLICZNE z założenia — dostępu pilnuje RLS na tabelach, nie tajność klucza.
+// Skąd je wziąć: SETUP_SUPABASE.md, krok 5.
+// 🔴 Klucz `service_role` NIE MOŻE tu trafić — on omija RLS i jest wyłącznie dla bota na Hetznerze.
+// Dopóki poniżej stoją puste stringi, panel działa PO STAREMU (sam token GitHub, bez bramki e-mail).
+const SUPABASE_URL = 'https://utmvokfjvrthvcmxzowc.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_mhV4Ytiwn6kQ75PKyY3dxg_2LpDVJqV';
+const OWNER_EMAIL = 'sowass.kat@gmail.com';
+
+const supaConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+let supa = null;      // klient Supabase (null dopóki brak konfiguracji albo SDK nie wstało)
+let session = null;   // sesja Supabase (e-mail + hasło)
+
 const OWNER = 'sowasskat-debug';
 const REPO = 'brief-site';
 const BRIEFS_PATH = 'briefs.json';
@@ -152,14 +255,60 @@ const REJECTED_PATH = 'rejected.json';
 const REJECTED_MAX = 150;
 const DOSE_LABELS = { morning: 'Poranna', afternoon: 'Południowa', evening: 'Wieczorna' };
 
-let token = sessionStorage.getItem('admin_gh_token') || '';
+let token = sessionStorage.getItem('knaga_gh_token') || '';
 let briefsState = null; // { sha, data }
 let currentDose = 'morning';
+let currentPane = 'posty';
 
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
+}
+
+// Przepuszcza WYŁĄCZNIE http(s) — patrz sekcja „Bezpieczeństwo" w CLAUDE.md.
+// Tu href idzie do innerHTML, a treść posta pochodzi z modelu (pole x_post), więc nie ufamy jej.
+function safeUrl(u) {
+  const s = String(u ?? '').trim();
+  return /^https?:\/\//i.test(s) ? escapeHtml(s) : '';
+}
+
+// ══ UDOSTĘPNIJ NA X ══
+// itemSlug — KOPIA z index.html (djb2-xor po pierwszych 80 zn., base36).
+// ⚠️ Musi zostać identyczna, inaczej deep link nie trafi w news. Zmiana tam = zmiana tu.
+function itemSlug(text) {
+  let h = 5381;
+  for (let i = 0; i < Math.min(text.length, 80); i++) {
+    h = ((h << 5) + h) ^ text.charCodeAt(i);
+    h = h >>> 0;
+  }
+  return h.toString(36);
+}
+
+// Limit X = 280 zn., link liczy się jako 23 NIEZALEŻNIE od długości (t.co) → budżet na tekst ~250.
+const X_TEXT_MAX = 250;
+
+// Treść posta: gotowiec `x_post` od bota, a gdy go nie ma (stare itemy, gotowiec odrzucony
+// przez bramkę pokrycia liczb) — sam `text`. FALLBACK OBOWIĄZKOWY: przycisk ma działać ZAWSZE.
+function xPostText(item) {
+  const raw = String(item.x_post || item.text || '').trim();
+  return raw.length > X_TEXT_MAX ? raw.slice(0, X_TEXT_MAX - 1).trimEnd() + '…' : raw;
+}
+
+// Deep link prowadzi na OTWARTY artykuł, nie na stronę główną.
+// routeDoseHash w index.html przeszukuje też subItems, więc slug z tekstu newsa działa
+// zarówno dla postów samodzielnych, jak i tych w klastrze.
+function xShareHref(item) {
+  const text = xPostText(item);
+  if (!text) return '';
+  const deep = `https://brifup.com/#${currentDose}/${itemSlug(String(item.text || ''))}`;
+  return safeUrl(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(deep)}`);
+}
+
+// Zwraca gotowy przycisk albo pusty string (brak treści = brak przycisku, zero martwych linków).
+function xBtnHtml(item) {
+  const href = xShareHref(item);
+  return href ? `<a class="x-btn" href="${href}" target="_blank" rel="noopener noreferrer">Wrzuć na X</a>` : '';
 }
 
 function utf8ToB64(str) {
@@ -230,7 +379,7 @@ async function login() {
     if (!res.ok && res.status !== 404) {
       throw new Error(`GitHub zwrócił błąd: ${res.status}`);
     }
-    sessionStorage.setItem('admin_gh_token', token);
+    sessionStorage.setItem('knaga_gh_token', token);
     enterApp();
   } catch (e) {
     token = '';
@@ -240,20 +389,145 @@ async function login() {
   }
 }
 
-function logout() {
-  sessionStorage.removeItem('admin_gh_token');
+// Pokazuje DOKŁADNIE jeden ekran — wcześniej każdy przełącznik ręcznie gasił poprzedni,
+// co przy czterech ekranach kończy się dwoma naraz.
+const SCREENS = ['authScreen', 'denyScreen', 'loginScreen', 'mainScreen'];
+function showScreen(id) {
+  for (const s of SCREENS) {
+    const el = document.getElementById(s);
+    if (el) el.style.display = (s === id) ? 'block' : 'none';
+  }
+  // „Wyloguj" chowamy tylko tam, gdzie nie ma czego wylogować: ekran logowania bez sesji
+  // i — w trybie przejściowym bez Supabase — ekran tokenu. Na ekranie tokenu PO zalogowaniu
+  // e-mailem przycisk musi być, inaczej nie da się wycofać z konta bez czyszczenia ciasteczek.
+  const nothingToLogOut = id === 'authScreen' || (id === 'loginScreen' && !session);
+  document.getElementById('logoutBtn').style.display = nothingToLogOut ? 'none' : 'block';
+}
+
+async function logout() {
+  sessionStorage.removeItem('knaga_gh_token');
   token = '';
-  document.getElementById('mainScreen').style.display = 'none';
-  document.getElementById('logoutBtn').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'block';
+  briefsState = null;
+  if (supa) { try { await supa.auth.signOut(); } catch (e) { console.warn('signOut:', e); } }
+  session = null;
+  document.getElementById('whoami').textContent = '';
+  const pass = document.getElementById('passInput');
+  if (pass) pass.value = '';
+  showScreen(supaConfigured ? 'authScreen' : 'loginScreen');
 }
 
 function enterApp() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('mainScreen').style.display = 'block';
-  document.getElementById('logoutBtn').style.display = 'block';
+  showScreen('mainScreen');
+  document.getElementById('whoami').textContent = session?.user?.email || '';
+  switchPane(currentPane);
   renderTabs();
   loadBriefs();
+}
+
+// ══ BRAMKA E-MAIL + HASŁO ══
+function setNotice(elId, cls, html) {
+  const el = document.getElementById(elId);
+  if (el) el.innerHTML = html ? `<div class="notice ${cls}">${html}</div>` : '';
+}
+
+async function loginEmail(ev) {
+  if (ev) ev.preventDefault();
+  const btn = document.getElementById('authBtn');
+  const errEl = document.getElementById('authErr');
+  const email = document.getElementById('emailInput').value.trim();
+  const pass = document.getElementById('passInput').value;
+  errEl.textContent = '';
+  if (!supa) { errEl.textContent = 'Logowanie niedostępne — patrz komunikat wyżej.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Sprawdzam…';
+  try {
+    const { error } = await supa.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    // Hasło znika z DOM od razu po udanym logowaniu — nie ma powodu, żeby wisiało w polu.
+    document.getElementById('passInput').value = '';
+    // Ekran przełączy onAuthStateChange.
+  } catch (e) {
+    // Supabase zwraca to samo „Invalid login credentials" i przy złym haśle, i przy
+    // nieistniejącym koncie — celowo, żeby nie dało się zgadywać, które adresy istnieją.
+    errEl.textContent = /invalid login/i.test(e.message || '')
+      ? 'Zły e-mail albo hasło.'
+      : `Błąd logowania: ${e.message}`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Zaloguj';
+  }
+}
+
+// Decyduje, który ekran pokazać na podstawie bieżącej sesji.
+// Wołane po starcie ORAZ z onAuthStateChange (po udanym logowaniu).
+function applySession() {
+  const email = (session?.user?.email || '').toLowerCase();
+  if (!session) { showScreen('authScreen'); return; }
+
+  if (email !== OWNER_EMAIL.toLowerCase()) {
+    document.getElementById('denyMsg').innerHTML =
+      `Zalogowano jako <code>${escapeHtml(session.user.email || '—')}</code>, a panel jest wyłącznie dla ` +
+      `<code>${escapeHtml(OWNER_EMAIL)}</code>.`;
+    showScreen('denyScreen');
+    return;
+  }
+
+  document.getElementById('whoami').textContent = session.user.email || '';
+  // Konto Supabase wpuszcza do panelu, ale NIE daje żadnych praw do repo — do kasowania
+  // newsów (commit) potrzebny jest osobny token GitHub. Stąd drugi krok, raz na sesję karty.
+  if (token) enterApp(); else showScreen('loginScreen');
+}
+
+async function initAuth() {
+  document.getElementById('ownerHint').textContent = OWNER_EMAIL;
+
+  // Tryb przejściowy: klucze jeszcze nie wgrane → panel działa jak dotąd, na samym tokenie.
+  if (!supaConfigured) {
+    if (token) { enterApp(); } else { showScreen('loginScreen'); }
+    return;
+  }
+
+  if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+    showScreen('authScreen');
+    document.getElementById('authBtn').disabled = true;
+    setNotice('authNotice', 'warn',
+      'Nie udało się załadować SDK Supabase z <code>cdn.jsdelivr.net</code> — najczęściej blokuje je ' +
+      'adblock albo filtr DNS. To po stronie przeglądarki, nie panelu. Wyłącz blokowanie dla ' +
+      '<code>brifup.com</code> i odśwież.');
+    return;
+  }
+
+  try {
+    supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await supa.auth.getSession();
+    if (error) throw error;
+    session = data.session;
+    supa.auth.onAuthStateChange((_event, s) => { session = s; applySession(); });
+    applySession();
+  } catch (e) {
+    showScreen('authScreen');
+    setNotice('authNotice', 'bad', `Błąd inicjalizacji Supabase: ${escapeHtml(e.message)}`);
+  }
+}
+
+// ══ ZAKŁADKI PANELU ══
+function switchPane(p) {
+  currentPane = p;
+  document.getElementById('tabPosty').classList.toggle('active', p === 'posty');
+  document.getElementById('tabLejek').classList.toggle('active', p === 'lejek');
+  document.getElementById('panePosty').style.display = p === 'posty' ? 'block' : 'none';
+  document.getElementById('paneLejek').style.display = p === 'lejek' ? 'block' : 'none';
+  if (p === 'lejek') renderLejek();
+}
+
+function renderLejek() {
+  const el = document.getElementById('lejekBody');
+  if (!supaConfigured) {
+    el.innerHTML = `<div class="notice warn">Lejek czeka na konfigurację Supabase — patrz
+      <code>SETUP_SUPABASE.md</code>. Dopóki jej nie ma, dane siedzą w <code>lejek.json</code>
+      w repo i są publiczne, więc chowanie ich za tą zakładką niczego by nie dało.</div>`;
+    return;
+  }
+  el.innerHTML = '<div class="empty">Ładowanie…</div>';
 }
 
 // ══ TABS ══
@@ -300,13 +574,19 @@ function renderContent() {
               <div class="item-text">${escapeHtml(item.text)}</div>
               <div class="item-meta">GRUPA · ${item.subItems.length} newsy</div>
             </div>
-            <button class="del-btn" onclick="deleteGroup(${idx})">Usuń całą grupę</button>
+            <div class="act-col">
+              ${xBtnHtml(item)}
+              <button class="del-btn" onclick="deleteGroup(${idx})">Usuń całą grupę</button>
+            </div>
           </div>
           ${item.subItems.map((sub, subIdx) => `
             <div class="sub-row">
               <span class="item-flag">${escapeHtml(sub.flag || '📰')}</span>
               <div class="sub-text">${escapeHtml(sub.text)}</div>
-              <button class="del-btn" onclick="deleteSubItem(${idx}, ${subIdx})">Usuń</button>
+              <div class="act-col">
+                ${xBtnHtml(sub)}
+                <button class="del-btn" onclick="deleteSubItem(${idx}, ${subIdx})">Usuń</button>
+              </div>
             </div>
           `).join('')}
         </div>`;
@@ -319,7 +599,10 @@ function renderContent() {
               <div class="item-text">${escapeHtml(item.text)}</div>
               ${item.source_name ? `<div class="item-meta">${escapeHtml(item.source_name)}</div>` : ''}
             </div>
-            <button class="del-btn" onclick="deleteSoloItem(${idx})">Usuń</button>
+            <div class="act-col">
+              ${xBtnHtml(item)}
+              <button class="del-btn" onclick="deleteSoloItem(${idx})">Usuń</button>
+            </div>
           </div>
         </div>`;
     }
@@ -438,9 +721,7 @@ async function deleteGroup(idx) {
 }
 
 // ══ INIT ══
-if (token) {
-  enterApp();
-}
+initAuth();
 </script>
 </body>
 </html>

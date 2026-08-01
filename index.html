@@ -2502,7 +2502,7 @@ function mobGripPulse() {
   const OWNER = 'sowasskat-debug', REPO = 'brief-site', PATH = 'briefs.json';
 
   // atob/btoa zwykłe operują na Latin1 — psują polskie znaki (ą,ę,ł,ń itd.) w treści JSON.
-  // Trzeba przejść przez encodeURIComponent/decodeURIComponent, tak jak w admin.html.
+  // Trzeba przejść przez encodeURIComponent/decodeURIComponent, tak jak w knaga.html.
   function utf8ToB64(str) { return btoa(unescape(encodeURIComponent(str))); }
   function b64ToUtf8(b64) { return decodeURIComponent(escape(atob(b64.replace(/\n/g, '')))); }
 

@@ -8,7 +8,7 @@
 try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js'); }
 catch (e) { /* push niedostępny, reszta SW działa */ }
 
-const CACHE_NAME = 'brifup-cache-v51';
+const CACHE_NAME = 'brifup-cache-v52';
 // UWAGA: index.html NIE jest tu precache'owany — patrz komentarz przy jego fetch-handlerze niżej.
 const STATIC_ASSETS = [
   './manifest.json',
@@ -68,7 +68,7 @@ self.addEventListener('fetch', (event) => {
   //   3. apka NIE MOŻE utknąć na starej wersji — bezpiecznik łapie zmianę w ciągu jednego powrotu do apki
   //      (to była trauma „zamrożenia na starej, zepsutej wersji na tygodnie"; tu detekcja + reload zostają).
   // ⚠️ TYLKO nawigacja do powłoki głównej (/, /index.html) dostaje app-shell z cache. Scope SW to cały
-  // origin, więc w tę gałąź wpadały też wejścia na PODSTRONY (lejek.html/admin.html/fala.html/bot-health.html):
+  // origin, więc w tę gałąź wpadały też wejścia na PODSTRONY (lejek.html/knaga.html/fala.html/bot-health.html):
   //   (a) serwowały index.html ZAMIAST właściwej strony (użytkownik wchodzi na lejek → widzi główną apkę),
   //   (b) rewalidacja w tle robiła cache.put('./index.html', <treść podstrony>) → ZATRUCIE powłoki treścią
   //       lejka (response.ok=true, więc check !cached.ok tego nie łapał) → każdy kolejny start PWA otwierał

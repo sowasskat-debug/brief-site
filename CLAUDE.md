@@ -16,7 +16,13 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 - `styles.css` — style (mobile + desktop). Motyw jasny/ciemny przez `:root[data-theme=...]`.
 - `fala.html` — **"Flusso"**, osobna strona-mozaika trend-style. Czyta ten sam `briefs.json`,
   ale własny, niezależny render (nie dotyka `index.html`/`styles.css`). Patrz sekcja niżej.
-- `admin.html` — panel admina (osobny, token GitHub w sessionStorage). ⚠️ **Zapis = commit dopiero po sukcesie
+- `knaga.html` — panel właściciela. **Przemianowany z `admin.html` 2026-08-01** — `admin.html` to adres,
+  który zgaduje każdy skaner. ⚠️ **Przy okazji USUNIĘTY wpis z `robots.txt`** (`Disallow: /admin.html`):
+  robots.txt jest publiczny, więc *ogłaszał* ścieżkę panelu — wpisanie tam nowej nazwy zniweczyłoby całe
+  przemianowanie. Przed indeksacją broni `<meta name="robots" content="noindex, nofollow">` w samej stronie,
+  a to nie wymaga zdradzania adresu. **Nie dopisywać `knaga.html` do robots.txt ani do sitemap.xml.**
+  ⚠️ To obscurity, nie zabezpieczenie — realną bramką jest logowanie (Supabase) i RLS na tabelach.
+  ⚠️ **Zapis = commit dopiero po sukcesie
   (2026-07-22):** `saveBriefs(data, sha, msg)` aktualizuje `briefsState` DOPIERO po udanym PUT. Wcześniej
   delete-funkcje robiły `briefsState = fresh` (z już wyciętym newsem) PRZED zapisem → po 409 (bot pisze
   briefs.json co bieg) DOM pokazywał news, a stan go nie miał, więc kolejne „Usuń" trafiało w PRZESUNIĘTY indeks
@@ -231,7 +237,7 @@ commicie** dotykającym CSS/JS, nawet drobnym.
   realny czas ładowania na urządzeniu.
 
 - ⚠️ **Gałąź `navigate` TYLKO dla powłoki głównej (2026-07-22, SW v47):** scope SW to cały origin, więc w
-  stale-while-revalidate wpadały też wejścia na PODSTRONY (`lejek.html`/`admin.html`/`fala.html`/`bot-health.html`):
+  stale-while-revalidate wpadały też wejścia na PODSTRONY (`lejek.html`/`knaga.html`/`fala.html`/`bot-health.html`):
   (a) serwowały `index.html` ZAMIAST właściwej strony (wejście na lejek → widać główną apkę), (b) rewalidacja
   w tle robiła `cache.put('./index.html', <treść podstrony>)` → ZATRUCIE powłoki (`response.ok=true`, więc check
   `!cached.ok` tego nie łapał) → każdy kolejny start PWA otwierał lejek jako stronę główną, aż watchdog (8 s
@@ -272,11 +278,18 @@ sam guard schematu inline. **ZASADA:** każdy nowy href z danych → przez `safe
 - Wariant wizualny wybrany przez właściciela: **A (pasek gazetowy)**, nie ciemny kafel w stylu X.
 - Źródła danych i ich granice — patrz `financialnewsbot/CLAUDE.md`, sekcja „Notowania".
 
-## Udostępnij na X ⚠️ ZAPLANOWANE, NIEZAIMPLEMENTOWANE (2026-07-30)
+## Udostępnij na X — ✅ W PANELU (2026-08-01), ⚠️ na `index.html` DALEJ NIEZAIMPLEMENTOWANE
 Życzenie właściciela: wrzucać 3-4 najlepsze newsy dziennie na X. Wybrany wariant: **właściciel sam wybiera
 news na stronie i klika „Udostępnij" — composer X otwiera się z GOTOWĄ treścią.** Żadnego API X, żadnych
 kluczy, zero kosztu (X zlikwidował darmowy tier w lutym 2026 i liczy $0,20 za post z linkiem — szczegóły
 rozpoznania w `financialnewsbot/CLAUDE.md`, sekcja „Gotowiec pod X").
+
+**Stan na 2026-08-01:** przycisk „Wrzuć na X" działa w `knaga.html` (panel — właściciel przegląda dawkę
+i wybiera newsy do wrzucenia; to było realne życzenie: wybierać z panelu, nie z publicznej strony).
+Wpięty w 3 miejsca renderu panelu: kotwica grupy, każdy news w klastrze, post samodzielny.
+Na `index.html` (dla czytelników) przycisku NADAL NIE MA — opis „gdzie wpiąć" niżej zostaje aktualny.
+⚠️ `x_post` od bota **nie istnieje** (zmierzone 2026-08-01: 0/70 itemów) — panel jedzie w całości
+na fallbacku `item.text`, dlatego fallback jest OBOWIĄZKOWY, a nie „na wszelki wypadek".
 
 - **Skąd treść:** bot dopisuje do każdego itema pole **`x_post`** w `briefs.json` (hook + 1 zdanie z liczbami
   z artykułu, ≤250 zn.). Front go tylko czyta — 0 tokenów per klik, jak przy `threads.json`.
