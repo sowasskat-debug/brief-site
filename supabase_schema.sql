@@ -212,7 +212,7 @@ grant execute on function public.sprzatnij_diagnostyke() to service_role;
 -- Bramka w panelu HTML to tylko UI. Realna ochrona to polityki wyżej i jedyny
 -- sposób, żeby wiedzieć, że działają, to sprawdzić je od strony atakującego.
 --
--- (a) JAKO ANON — tak widzi to ktoś obcy z kluczem anon z admin.html.
+-- (a) JAKO ANON — tak widzi to ktoś obcy z kluczem anon z knaga.html.
 --     Wklej w terminalu, podstawiając URL projektu i klucz anon:
 --
 --       curl "https://<projekt>.supabase.co/rest/v1/lejek?select=*&limit=5" \
@@ -232,5 +232,7 @@ grant execute on function public.sprzatnij_diagnostyke() to service_role;
 --       select tablename, policyname, roles, cmd
 --         from pg_policies where schemaname = 'public' order by tablename;
 --
---     Spodziewane: 4 wiersze, każdy cmd = SELECT, roles = {authenticated}.
+--     Spodziewane: 8 wierszy, wszystkie roles = {authenticated}:
+--       lejek / bot_health / brief_health / deepseek_usage — po jednym, cmd = SELECT
+--       sekrety — cztery: SELECT, INSERT, UPDATE, DELETE (panel musi tam PISAĆ token).
 -- ════════════════════════════════════════════════════════════════════════════

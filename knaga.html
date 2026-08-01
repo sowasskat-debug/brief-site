@@ -140,6 +140,39 @@ input[type=password], input[type=text], input[type=email] {
 .solo { border: 1px solid var(--rule); border-radius: 3px; margin: 10px 0; }
 .solo .group-head { border-bottom: none; }
 
+/* ── LEJEK ── style przeniesione z lejek.html, zawężone do #paneLejek,
+   żeby nie mieszały się ze stylami panelu (ten sam wygląd, inny kontekst). */
+#paneLejek { font-family: Inter, 'Space Mono', sans-serif; }
+#paneLejek .lej-health { display:flex; gap:8px; overflow-x:auto; padding-bottom:12px; border-bottom:1px solid var(--rule); }
+#paneLejek .h-pill { flex:0 0 auto; border:1px solid var(--rule); border-radius:6px; padding:6px 10px; font-family:'Space Mono',monospace; font-size:10px; color:#444; }
+#paneLejek .h-pill b { display:block; font-size:11px; letter-spacing:.5px; color:var(--text); }
+#paneLejek .h-ok { border-left:3px solid #16a34a; }
+#paneLejek .h-warn { border-left:3px solid #d97706; background:#fffbeb; }
+#paneLejek .h-err { border-left:3px solid var(--red); background:#fef2f2; }
+#paneLejek .lej-filters { display:flex; gap:6px; padding:10px 0; overflow-x:auto; border-bottom:1px solid var(--rule); }
+#paneLejek .chip { flex:0 0 auto; font-family:'Space Mono',monospace; font-size:11px; padding:5px 10px; border:1px solid #ccc; border-radius:99px; color:#555; cursor:pointer; background:#fff; }
+#paneLejek .chip.on { background:var(--text); color:#fff; border-color:var(--text); }
+#paneLejek select.chip { appearance:none; }
+#paneLejek .lej-szukaj { padding:8px 0; border-bottom:1px solid var(--rule); }
+#paneLejek .lej-szukaj input { width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:8px; font-family:'Space Mono',monospace; font-size:12px; }
+#paneLejek .run-h { font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--muted); padding:18px 0 6px; border-bottom:2px solid var(--text); display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+#paneLejek .run-h .lej { color:var(--text); font-weight:700; }
+#paneLejek .feed-h { font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:1px; padding:12px 0 2px; }
+#paneLejek .row { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--gray2); align-items:flex-start; }
+#paneLejek .row .t { font-size:13.5px; line-height:1.4; flex:1; word-break:break-word; }
+#paneLejek .row.rej .t { color:#8a8a8a; }
+#paneLejek .badges { display:flex; flex-direction:column; gap:3px; align-items:flex-end; flex:0 0 auto; }
+#paneLejek .b { font-family:'Space Mono',monospace; font-size:9.5px; letter-spacing:.5px; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+#paneLejek .b-rej { background:var(--gray2); color:#999; }
+#paneLejek .b-tg { background:#e0edff; color:#1d4ed8; }
+#paneLejek .b-main { background:#dcfce7; color:#15803d; }
+#paneLejek .b-pocz { background:#fef3c7; color:#b45309; }
+#paneLejek .b-dup { background:#f3e8ff; color:#7e22ce; }
+#paneLejek .b-err { background:#fee2e2; color:#b91c1c; }
+#paneLejek .powod { font-size:11px; color:#b0b0b0; font-style:italic; margin-top:2px; }
+#paneLejek .pl { font-size:12px; color:var(--blue); margin-top:2px; }
+#paneLejek .pusto { padding:50px 10px; text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:var(--muted); }
+
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
   background: var(--text); color: #fff; font-size: 8px; font-weight: 700; letter-spacing: 1.5px;
@@ -229,7 +262,13 @@ input[type=password], input[type=text], input[type=email] {
   </div>
 
   <div id="paneLejek" style="display:none">
-    <div id="lejekBody"></div>
+    <div id="lejekNotice"></div>
+    <div class="lej-health" id="lejHealth"></div>
+    <div class="lej-filters" id="lejFiltry"></div>
+    <div class="lej-szukaj">
+      <input id="lejSzukaj" type="search" placeholder="szukaj w nagłówkach…" autocomplete="off">
+    </div>
+    <div id="lejTresc"></div>
   </div>
 </div>
 
@@ -432,6 +471,14 @@ async function logout() {
   sessionStorage.removeItem('knaga_gh_token');
   token = '';
   briefsState = null;
+  // Lejek trzyma dane diagnostyczne w pamięci karty — po wylogowaniu mają zniknąć,
+  // a następne wejście ma je pobrać na świeżo.
+  LEJ_WPISY = [];
+  lejWczytany = false;
+  document.getElementById('lejTresc').innerHTML = '';
+  document.getElementById('lejHealth').innerHTML = '';
+  document.getElementById('lejFiltry').innerHTML = '';
+  setNotice('lejekNotice', '', '');
   if (supa) { try { await supa.auth.signOut(); } catch (e) { console.warn('signOut:', e); } }
   session = null;
   document.getElementById('whoami').textContent = '';
@@ -620,15 +667,167 @@ function switchPane(p) {
   if (p === 'lejek') renderLejek();
 }
 
-function renderLejek() {
-  const el = document.getElementById('lejekBody');
-  if (!supaConfigured) {
-    el.innerHTML = `<div class="notice warn">Lejek czeka na konfigurację Supabase — patrz
-      <code>SETUP_SUPABASE.md</code>. Dopóki jej nie ma, dane siedzą w <code>lejek.json</code>
-      w repo i są publiczne, więc chowanie ich za tą zakładką niczego by nie dało.</div>`;
-    return;
+// ══ LEJEK ══ (render przeniesiony z lejek.html — ten sam wygląd, dane z dwóch źródeł)
+const LEJ_STATUSY = {
+  odrzucony:        { b:'✗ SELEKCJA',    css:'b-rej',  rej:true },
+  telegram:         { b:'📨 TELEGRAM',   css:'b-tg' },
+  main:             { b:'✅ MAIN',        css:'b-main' },
+  poczekalnia:      { b:'⏳ POCZEKALNIA', css:'b-pocz' },
+  duplikat:         { b:'♻ DUPLIKAT',    css:'b-dup' },
+  powtorka:         { b:'♻ POWTÓRKA',    css:'b-dup' },
+  bramka:           { b:'🚫 BRAMKA',      css:'b-err' },
+  utknal:           { b:'⛔ UTKNĄŁ',      css:'b-err' },
+  odrzucony_enrich: { b:'✗ ENRICH',      css:'b-rej',  rej:true },
+  blad_zapisu:      { b:'⚠ BŁĄD ZAPISU', css:'b-err' },
+};
+const LEJ_FILTRY = [
+  { id:'all',  label:'WSZYSTKO',    test: () => true },
+  { id:'main', label:'✅ NA MAIN',   test: s => s === 'main' },
+  { id:'tg',   label:'📨 TELEGRAM', test: s => s !== 'odrzucony' && s !== 'odrzucony_enrich' },
+  { id:'rej',  label:'✗ ODRZUCONE', test: s => s === 'odrzucony' || s === 'odrzucony_enrich' },
+  { id:'inne', label:'⏳ RESZTA',    test: s => ['poczekalnia','duplikat','powtorka','bramka','utknal','blad_zapisu'].includes(s) },
+];
+let LEJ_WPISY = [], lejFiltr = 'all', lejFeed = '', lejSzukaj = '', lejWczytany = false;
+
+function lejMinTemu(ts) {
+  const d = new Date(String(ts || '').replace(' ', 'T'));
+  if (isNaN(d)) return null;
+  // clamp: bot stempluje czasem PL — u widza w innej strefie nie pokazuj ujemnych
+  return Math.max(0, Math.round((Date.now() - d.getTime()) / 60000));
+}
+function lejOpisTemu(min) {
+  if (min == null) return '?';
+  if (min < 60) return min + ' min';
+  if (min < 48 * 60) return Math.round(min / 60) + ' godz.';
+  return Math.round(min / 1440) + ' dni';
+}
+
+// Pasek zdrowia feedów: kiedy każdy RSS ostatnio coś dał. >4 h żółty, >12 h czerwony —
+// od razu widać martwe źródło, bez wczytywania się w listę.
+function lejRenderHealth() {
+  const perFeed = new Map();
+  for (const w of LEJ_WPISY) {
+    const f = w.feed || '?';
+    const cur = perFeed.get(f);
+    if (!cur || String(w.ts || '') > cur.ts) perFeed.set(f, { ts: String(w.ts || ''), n: 1 });
+    else if (String(w.ts || '') === cur.ts) cur.n++;
   }
-  el.innerHTML = '<div class="empty">Ładowanie…</div>';
+  document.getElementById('lejHealth').innerHTML = [...perFeed.entries()]
+    .sort((a, b) => b[1].ts.localeCompare(a[1].ts))
+    .map(([f, v]) => {
+      const min = lejMinTemu(v.ts);
+      const cls = min == null || min > 12 * 60 ? 'h-err' : (min > 4 * 60 ? 'h-warn' : 'h-ok');
+      return `<div class="h-pill ${cls}"><b>${escapeHtml(f.toUpperCase())}</b>${lejOpisTemu(min)} temu · ${v.n} kand.</div>`;
+    }).join('') || '<div class="h-pill h-err"><b>BRAK DANYCH</b>bot jeszcze nic nie zapisał</div>';
+}
+
+function lejRenderFiltry() {
+  const feedy = [...new Set(LEJ_WPISY.map(w => w.feed || '?'))].sort();
+  document.getElementById('lejFiltry').innerHTML =
+    LEJ_FILTRY.map(f => `<button class="chip${lejFiltr === f.id ? ' on' : ''}" onclick="lejUstawFiltr('${f.id}')">${f.label}</button>`).join('') +
+    `<select class="chip" onchange="lejFeed=this.value;lejRender()">
+       <option value="">FEED: WSZYSTKIE</option>
+       ${feedy.map(f => `<option value="${escapeHtml(f)}"${lejFeed === f ? ' selected' : ''}>${escapeHtml(f.toUpperCase())}</option>`).join('')}
+     </select>` +
+    `<button class="chip" onclick="lejWczytaj()">↻ ODŚWIEŻ</button>`;
+}
+function lejUstawFiltr(id) { lejFiltr = id; lejRenderFiltry(); lejRender(); }
+
+function lejRender() {
+  const test = LEJ_FILTRY.find(f => f.id === lejFiltr).test;
+  const q = lejSzukaj.trim().toLowerCase();
+  const widoczne = LEJ_WPISY.filter(w =>
+    test(w.status || 'odrzucony') &&
+    (!lejFeed || (w.feed || '?') === lejFeed) &&
+    (!q || String(w.tytul || '').toLowerCase().includes(q) || String(w.tekst_pl || '').toLowerCase().includes(q)));
+
+  const el = document.getElementById('lejTresc');
+  if (!widoczne.length) { el.innerHTML = '<div class="pusto">Nic nie pasuje do filtra.</div>'; return; }
+
+  // Grupowanie: bieg (ts) → feed.
+  const biegi = new Map();
+  for (const w of widoczne) {
+    const b = String(w.ts || '?');
+    if (!biegi.has(b)) biegi.set(b, new Map());
+    const feedy = biegi.get(b);
+    const f = w.feed || '?';
+    if (!feedy.has(f)) feedy.set(f, []);
+    feedy.get(f).push(w);
+  }
+
+  let html = '';
+  for (const [ts, feedy] of [...biegi.entries()].sort((a, b) => b[0].localeCompare(a[0]))) {
+    const wszystkie = [...feedy.values()].flat();
+    const tg = wszystkie.filter(w => w.status !== 'odrzucony' && w.status !== 'odrzucony_enrich').length;
+    const main = wszystkie.filter(w => w.status === 'main').length;
+    html += `<div class="run"><div class="run-h"><span class="lej">BIEG ${escapeHtml(ts.slice(11) || ts)}</span>` +
+            `<span>${escapeHtml(ts.slice(0, 10))} · ${wszystkie.length} kandydatów → ${tg} telegram → ${main} main</span></div>`;
+    for (const [feed, wpisy] of [...feedy.entries()].sort((a, b) => b[1].length - a[1].length)) {
+      html += `<div class="feed-h">■ ${escapeHtml(feed.toUpperCase())} (${wpisy.length})</div>`;
+      for (const w of wpisy) {
+        const st = LEJ_STATUSY[w.status] || LEJ_STATUSY.odrzucony;
+        // Wszystko poza czystym odrzuceniem przeszło selekcję = poszło na Telegram.
+        const tgBadge = (w.status !== 'odrzucony' && w.status !== 'odrzucony_enrich' && w.status !== 'telegram')
+          ? '<span class="b b-tg">📨 TELEGRAM</span>' : '';
+        const plLine = (w.tekst_pl && w.tekst_pl !== w.tytul) ? `<div class="pl">→ ${escapeHtml(w.tekst_pl)}</div>` : '';
+        const powod = w.powod ? `<div class="powod">${escapeHtml(w.powod)}</div>` : '';
+        html += `<div class="row${st.rej ? ' rej' : ''}"><div class="t">${escapeHtml(w.tytul)}${plLine}${powod}</div>` +
+                `<div class="badges">${tgBadge}<span class="b ${st.css}">${st.b}</span></div></div>`;
+      }
+    }
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// Źródło danych. Docelowo Supabase (RLS wpuszcza tylko właściciela), ale dopóki bot
+// tam nie pisze, tabela jest pusta — wtedy spadamy na lejek.json i MÓWIMY o tym wprost,
+// żeby nie wyglądało, jakby dane były już schowane. Przełączy się samo, gdy bot ruszy.
+async function lejWczytaj() {
+  const tresc = document.getElementById('lejTresc');
+  tresc.innerHTML = '<div class="pusto">Ładowanie…</div>';
+  let zSupabase = false;
+
+  if (supa) {
+    try {
+      const { data, error } = await supa
+        .from('lejek').select('ts,feed,tytul,link,status,tekst_pl,powod')
+        .order('ts', { ascending: false }).limit(1500);
+      if (error) throw error;
+      if (data && data.length) { LEJ_WPISY = data; zSupabase = true; }
+    } catch (e) {
+      console.warn('Lejek z Supabase nieudany:', e.message);
+    }
+  }
+
+  if (!zSupabase) {
+    try {
+      const r = await fetch('./lejek.json?_=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      const d = await r.json();
+      LEJ_WPISY = Array.isArray(d.wpisy) ? d.wpisy : [];
+    } catch (e) {
+      LEJ_WPISY = [];
+      tresc.innerHTML = `<div class="pusto">Nie udało się wczytać lejka.<br>(${escapeHtml(String(e.message || e))})</div>`;
+      return;
+    }
+  }
+
+  setNotice('lejekNotice', zSupabase ? '' : 'warn', zSupabase ? '' :
+    'Dane z <code>lejek.json</code> w repo — czyli <strong>publicznego</strong> pliku, ' +
+    'który pobierze każdy, kto zna adres. Tabela w Supabase jest jeszcze pusta, bo bot do niej ' +
+    'nie pisze. Zakładka przełączy się sama, gdy zacznie. Dopiero wtedy dane będą schowane.');
+
+  lejRenderHealth();
+  lejRenderFiltry();
+  lejRender();
+}
+
+function renderLejek() {
+  // Wczytujemy raz na wejście do panelu; „Odśwież" w zakładce Posty nie dotyczy lejka.
+  if (lejWczytany) return;
+  lejWczytany = true;
+  lejWczytaj();
 }
 
 // ══ TABS ══
@@ -822,6 +1021,7 @@ async function deleteGroup(idx) {
 }
 
 // ══ INIT ══
+document.getElementById('lejSzukaj').addEventListener('input', e => { lejSzukaj = e.target.value; lejRender(); });
 initAuth();
 </script>
 </body>
