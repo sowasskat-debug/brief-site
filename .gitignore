@@ -1,0 +1,12 @@
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json
+
+# Graf graphify — NIE commitować w tym repo.
+# brief-site jest serwowane jako GitHub Pages z main, więc commit wystawiłby
+# graph.html publicznie pod brifup.com/graphify-out/graph.html — a graf nazywa
+# knaga.html, opisuje model auth i wylicza otwarte błędy ze STAN.md.
+# To zniweczyłoby rename admin.html→knaga.html. W financialnewsbot (repo
+# prywatne) graf commitujemy normalnie.
+graphify-out/
