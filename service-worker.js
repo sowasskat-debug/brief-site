@@ -8,7 +8,7 @@
 try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js'); }
 catch (e) { /* push niedostępny, reszta SW działa */ }
 
-const CACHE_NAME = 'brifup-cache-v52';
+const CACHE_NAME = 'brifup-cache-v53';
 // UWAGA: index.html NIE jest tu precache'owany — patrz komentarz przy jego fetch-handlerze niżej.
 const STATIC_ASSETS = [
   './manifest.json',
@@ -101,7 +101,14 @@ self.addEventListener('fetch', (event) => {
   // telefon dostaje NOWY index.html + STARY styles.css = rozjechany render (flaga sklejona z kategorią,
   // brak wersalików i czerwonego badge'a — zgłoszone 2026-07-16). Bump CACHE_NAME nie wystarczał, bo
   // problemem był cache HTTP, nie cache SW. cache:'reload' wymusza świeży pobór, z cache fallbackiem offline.
-  const wymusSwiezyCssJs = /\.(css|js)(\?|$)/i.test(event.request.url);
+  // ⚠️ PODSTRONY .html TEŻ (2026-08-01): regex łapał tylko css|js, więc `knaga.html`
+  // (panel — cały kod inline w HTML) szedł zwykłym fetch, który respektuje cache
+  // przeglądarki. GitHub Pages daje `max-age=600`, czyli po deployu właściciel przez
+  // 10 MINUT widział starą wersję panelu i myślał, że zmiana nie weszła — zgłoszone
+  // („wrzuciłeś update? bo chyba wciąż to samo"), plik na produkcji był już poprawny.
+  // Ta sama przyczyna co przy CSS 2026-07-16: problemem jest cache HTTP, nie cache SW,
+  // więc sam bump CACHE_NAME tego NIE rozwiązuje. Powłoka główna ma własną gałąź wyżej.
+  const wymusSwiezyCssJs = /\.(css|js|html)(\?|$)/i.test(event.request.url);
   event.respondWith(
     fetch(event.request, wymusSwiezyCssJs ? { cache: 'reload' } : undefined)
       .then((response) => {
