@@ -128,6 +128,54 @@ revoke all on public.lejek, public.bot_health, public.brief_health, public.deeps
   from anon;
 
 
+-- ── 6b. SEKRETY (token GitHub) ──────────────────────────────────────────────
+-- Po co: skasowanie newsa to commit do repo, a konto Supabase nie ma praw do GitHuba.
+-- Bez tej tabeli panel przy każdej sesji karty prosiłby o token osobno — czyli dwa
+-- logowania zamiast jednego. Tu token leży raz, a panel pobiera go po zalogowaniu.
+--
+-- ⚠️ ŚWIADOMY KOMPROMIS: token jest pobieralny ZAWSZE, gdy właściciel jest zalogowany
+-- (wcześniej żył tylko w otwartej karcie). Kto zdobędzie hasło do panelu, zdobywa też
+-- zapis do repo. Dlatego token MUSI być fine-grained i ograniczony do
+-- `Contents: Read and write` na JEDNYM repo (brief-site) — nie klasyczny PAT do wszystkiego.
+-- Wariant bez tego kompromisu (Edge Function, token nigdy nie trafia do przeglądarki)
+-- był rozważany i odłożony jako dłuższa robota.
+create table if not exists public.sekrety (
+  klucz     text primary key,       -- na razie jedyny: 'github_token'
+  wartosc   text not null,
+  zmieniono timestamptz not null default now()
+);
+
+alter table public.sekrety enable row level security;
+
+-- Tu, w odróżnieniu od tabel diagnostycznych, właściciel musi też PISAĆ —
+-- to panel zapisuje token, nie bot.
+drop policy if exists "wlasciciel czyta sekrety" on public.sekrety;
+create policy "wlasciciel czyta sekrety" on public.sekrety
+  for select to authenticated
+  using (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
+
+drop policy if exists "wlasciciel dodaje sekrety" on public.sekrety;
+create policy "wlasciciel dodaje sekrety" on public.sekrety
+  for insert to authenticated
+  with check (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
+
+drop policy if exists "wlasciciel zmienia sekrety" on public.sekrety;
+create policy "wlasciciel zmienia sekrety" on public.sekrety
+  for update to authenticated
+  using (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com')
+  with check (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
+
+-- DELETE jest potrzebny: gdy GitHub odrzuci token (wygasł/odwołany), panel kasuje
+-- go sam i prosi o nowy. Bez tego zostałby martwy wpis blokujący logowanie.
+drop policy if exists "wlasciciel kasuje sekrety" on public.sekrety;
+create policy "wlasciciel kasuje sekrety" on public.sekrety
+  for delete to authenticated
+  using (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
+
+grant select, insert, update, delete on public.sekrety to authenticated;
+revoke all on public.sekrety from anon;
+
+
 -- ── 7. RETENCJA ─────────────────────────────────────────────────────────────
 -- Te same limity co dziś w plikach: lejek 3 dni / max 1500 wpisów, zdrowie 200 biegów.
 -- Wołane przez bota po zapisie (jeden RPC), więc nie trzeba pg_cron.

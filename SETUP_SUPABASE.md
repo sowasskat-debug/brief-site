@@ -88,18 +88,28 @@ W tym samym miejscu co klucz `anon` jest **`service_role`** (albo `secret`).
 
 ---
 
-## Dwa osobne logowania — to nie pomyłka
+## Jedno logowanie — i co za tym stoi
 
-- **E-mail + hasło (Supabase)** — wpuszcza do panelu i pozwala czytać diagnostykę.
-- **Token GitHub** — potrzebny dopiero do *zapisu*, bo skasowanie newsa to commit do repo.
-  Panel poprosi o niego raz na sesję karty i trzyma go w `sessionStorage`.
+Logujesz się **wyłącznie e-mailem i hasłem**. Token GitHub wpisujesz **raz w życiu**:
+panel zapisuje go w tabeli `sekrety` (RLS jak przy diagnostyce) i przy kolejnych wejściach
+pobiera sam — także na innym urządzeniu.
 
-Konto w Supabase celowo NIE daje żadnych praw do repo. Gdyby dawało, wyciek hasła
-do panelu oznaczałby wyciek dostępu do kodu strony.
+Token jest w ogóle potrzebny, bo skasowanie newsa to commit do repo, a konto Supabase
+nie ma do niego żadnych praw.
 
-Da się to scalić do jednego logowania (token GitHub schowany w Supabase, wydawany po
-zalogowaniu) — ale to świadomie odłożone: więcej ruchomych części i token wisiałby
-dostępny zawsze, a nie tylko w otwartej karcie.
+Kiedy panel zapyta o token ponownie:
+- przy **pierwszym** użyciu (nic jeszcze nie zapisano),
+- gdy GitHub go **odrzuci** — fine-grained tokeny wygasają. Panel wykryje 401/403, skasuje
+  martwy wpis i poprosi o nowy. Bez tego widziałbyś w kółko „błąd 401".
+- gdy sam klikniesz **„Zmień token"** w panelu (rotacja).
+
+🔴 **Cena tej wygody:** token jest pobieralny zawsze, gdy jesteś zalogowany — wcześniej żył
+tylko w otwartej karcie. Kto zdobędzie hasło do panelu, zdobywa razem z nim zapis do repo.
+Dlatego token **musi być fine-grained i ograniczony do `Contents: Read and write` na jednym
+repo `brief-site`** — nie klasyczny PAT do wszystkiego.
+
+Wariant bez tego kompromisu (Edge Function trzymająca token po stronie serwera, token nigdy
+nie trafia do przeglądarki) był rozważany i odłożony — jest bezpieczniejszy, ale to dłuższa robota.
 
 ## Czego ten setup NIE załatwia
 

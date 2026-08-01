@@ -193,18 +193,23 @@ input[type=password], input[type=text], input[type=email] {
 </div>
 
 <!-- Ekran 3: token GitHub — potrzebny do ZAPISU (kasowanie newsa = commit do repo).
-     Konto Supabase nie daje żadnych praw do repo, to dwa osobne mechanizmy. -->
+     Konto Supabase nie daje żadnych praw do repo, to dwa osobne mechanizmy.
+     Pokazywany TYLKO przy pierwszym użyciu albo gdy GitHub odrzuci zapisany token. -->
 <div id="loginScreen" class="login-box" style="display:none">
-  <div class="login-title">Logowanie</div>
+  <div class="login-title">Token GitHub</div>
+  <div id="tokenNotice"></div>
   <div class="login-help">
-    Wklej GitHub token z dostępem do repo <code>sowasskat-debug/brief-site</code>
-    (uprawnienia: <code>Contents: Read and write</code>, tylko ten jeden plik). Token zostaje
-    wyłącznie w tej karcie przeglądarki (<code>sessionStorage</code>) — znika po zamknięciu karty,
-    nigdzie nie jest zapisywany ani wysyłany poza GitHub.<br><br>
+    Wklej token z dostępem do repo <code>sowasskat-debug/brief-site</code>
+    (uprawnienia: <code>Contents: Read and write</code>). Potrzebny do usuwania newsów —
+    każde usunięcie to commit do repo, a konto z logowania nie ma do niego praw.<br><br>
+    <strong>Wpisujesz go raz.</strong> Zostanie zapisany w Twoim Supabase, w tabeli chronionej
+    tak samo jak diagnostyka, i przy kolejnych wejściach panel pobierze go sam.<br><br>
+    ⚠️ Dlatego token <strong>musi być fine-grained i ograniczony do tego jednego repo</strong> —
+    kto zdobędzie hasło do panelu, dostanie razem z nim ten token.<br><br>
     Nowy fine-grained token: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">github.com/settings/personal-access-tokens/new</a>
   </div>
   <input type="password" id="tokenInput" placeholder="github_pat_..." autocomplete="off">
-  <button class="btn" id="loginBtn" onclick="login()">Zaloguj</button>
+  <button class="btn" id="loginBtn" onclick="login()">Zapisz i wejdź</button>
   <div class="err" id="loginErr"></div>
 </div>
 
@@ -216,7 +221,10 @@ input[type=password], input[type=text], input[type=email] {
 
   <div id="panePosty">
     <div class="dose-tabs" id="doseTabs"></div>
-    <div class="refresh-row"><button onclick="loadBriefs(true)">↻ Odśwież</button></div>
+    <div class="refresh-row">
+      <button onclick="zmienToken()">Zmień token</button>
+      <button onclick="loadBriefs(true)">↻ Odśwież</button>
+    </div>
     <div id="content"></div>
   </div>
 
@@ -340,6 +348,12 @@ async function ghRequest(method, path, body) {
 async function ghGetJson(path) {
   const res = await ghRequest('GET', path);
   if (res.status === 404) return { sha: null, data: null };
+  // Token wygasł albo został odwołany — fine-grained PAT-y mają termin ważności.
+  // Bez tego panel pokazywałby w kółko „błąd 401" z martwym tokenem w Supabase.
+  if (res.status === 401 || res.status === 403) {
+    await tokenOdrzucony();
+    throw new Error('Token GitHub odrzucony — wklej nowy');
+  }
   if (!res.ok) throw new Error(`GET ${path} -> ${res.status}`);
   const body = await res.json();
   const data = JSON.parse(b64ToUtf8(body.content));
@@ -353,6 +367,10 @@ async function ghPutJson(path, data, sha, message) {
     branch: 'main',
     ...(sha ? { sha } : {})
   });
+  if (res.status === 401 || res.status === 403) {
+    await tokenOdrzucony();
+    throw new Error('Token GitHub odrzucony — wklej nowy');
+  }
   if (!res.ok) {
     const t = await res.text();
     throw new Error(`PUT ${path} -> ${res.status}: ${t}`);
@@ -379,12 +397,19 @@ async function login() {
       throw new Error(`GitHub zwrócił błąd: ${res.status}`);
     }
     sessionStorage.setItem('knaga_gh_token', token);
+    // Zapis do Supabase = to, dzięki czemu tego ekranu więcej nie zobaczysz.
+    // Nieudany zapis NIE blokuje wejścia — panel zadziała, tylko token trzeba będzie
+    // podać ponownie następnym razem (np. gdy nie puszczono jeszcze SQL-a z tabelą).
+    const zapisano = await zapiszTokenWSupabase(token);
     enterApp();
+    if (!zapisano) {
+      showToast('Token działa, ale nie udało się go zapisać');
+    }
   } catch (e) {
     token = '';
     errEl.textContent = e.message;
   } finally {
-    btn.disabled = false; btn.textContent = 'Zaloguj';
+    btn.disabled = false; btn.textContent = 'Zapisz i wejdź';
   }
 }
 
@@ -456,9 +481,75 @@ async function loginEmail(ev) {
   }
 }
 
+// ══ TOKEN GITHUB W SUPABASE ══
+// Cel: JEDNO logowanie. Token leży w tabeli `sekrety` (RLS: tylko właściciel),
+// panel pobiera go po zalogowaniu, więc ekran tokenu widzisz raz w życiu —
+// a potem dopiero wtedy, gdy GitHub go odrzuci (wygasł/odwołany).
+const SEKRET_TOKEN = 'github_token';
+
+async function pobierzTokenZSupabase() {
+  if (!supa) return '';
+  try {
+    const { data, error } = await supa
+      .from('sekrety').select('wartosc').eq('klucz', SEKRET_TOKEN).maybeSingle();
+    if (error) throw error;
+    return data?.wartosc || '';
+  } catch (e) {
+    // Brak tabeli (nie puszczono SQL-a) albo błąd sieci — nie blokujemy panelu,
+    // po prostu spadamy na ręczne wpisanie tokenu.
+    console.warn('Nie udało się pobrać tokenu z Supabase:', e.message);
+    return '';
+  }
+}
+
+async function zapiszTokenWSupabase(t) {
+  if (!supa) return false;
+  try {
+    const { error } = await supa
+      .from('sekrety')
+      .upsert({ klucz: SEKRET_TOKEN, wartosc: t, zmieniono: new Date().toISOString() },
+              { onConflict: 'klucz' });
+    if (error) throw error;
+    return true;
+  } catch (e) {
+    console.warn('Nie udało się zapisać tokenu w Supabase:', e.message);
+    return false;
+  }
+}
+
+async function usunTokenZSupabase() {
+  if (!supa) return;
+  try { await supa.from('sekrety').delete().eq('klucz', SEKRET_TOKEN); }
+  catch (e) { console.warn('Nie udało się skasować tokenu:', e.message); }
+}
+
+// GitHub odrzucił token — najczęściej wygasł (fine-grained mają termin ważności).
+// Kasujemy go, żeby martwy wpis nie blokował wejścia, i prosimy o nowy.
+async function tokenOdrzucony() {
+  await usunTokenZSupabase();
+  sessionStorage.removeItem('knaga_gh_token');
+  token = '';
+  setNotice('tokenNotice', 'warn',
+    'GitHub odrzucił zapisany token — najprawdopodobniej wygasł. Wygeneruj nowy i wklej poniżej; ' +
+    'zapiszę go tak samo jak poprzedni.');
+  showScreen('loginScreen');
+}
+
+// Świadoma podmiana tokenu (rotacja, zmiana uprawnień) — automat z tokenOdrzucony()
+// łapie tylko przypadek, gdy GitHub już go nie przyjmuje.
+async function zmienToken() {
+  await usunTokenZSupabase();
+  sessionStorage.removeItem('knaga_gh_token');
+  token = '';
+  briefsState = null;
+  document.getElementById('tokenInput').value = '';
+  setNotice('tokenNotice', '', '');
+  showScreen('loginScreen');
+}
+
 // Decyduje, który ekran pokazać na podstawie bieżącej sesji.
 // Wołane po starcie ORAZ z onAuthStateChange (po udanym logowaniu).
-function applySession() {
+async function applySession() {
   const email = (session?.user?.email || '').toLowerCase();
   if (!session) { showScreen('authScreen'); return; }
 
@@ -472,9 +563,21 @@ function applySession() {
   }
 
   document.getElementById('whoami').textContent = session.user.email || '';
-  // Konto Supabase wpuszcza do panelu, ale NIE daje żadnych praw do repo — do kasowania
-  // newsów (commit) potrzebny jest osobny token GitHub. Stąd drugi krok, raz na sesję karty.
-  if (token) enterApp(); else showScreen('loginScreen');
+
+  // Token już w tej karcie — nic nie dociągamy.
+  if (token) { enterApp(); return; }
+
+  // I tu robi się z dwóch logowań jedno: token leży w Supabase za tym samym RLS-em,
+  // więc samo zalogowanie e-mailem wystarcza. Ekran tokenu zobaczysz tylko wtedy,
+  // gdy nic nie zapisano (pierwsze użycie) albo gdy GitHub odrzucił poprzedni.
+  const zapisany = await pobierzTokenZSupabase();
+  if (zapisany) {
+    token = zapisany;
+    sessionStorage.setItem('knaga_gh_token', token);
+    enterApp();
+    return;
+  }
+  showScreen('loginScreen');
 }
 
 async function initAuth() {
