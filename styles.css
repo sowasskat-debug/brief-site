@@ -483,7 +483,13 @@ html, body {
 .dt-live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--red); animation: blink 1.4s ease-in-out infinite; }
 
 /* 3-column body */
-.dt-body { display: grid; grid-template-columns: 210px 1fr 380px; flex: 1; overflow: hidden; }
+/* Panel artykułu poszerzony 380px -> 480px (2026-08-01, zgłoszenie właściciela: „prawa kolumna
+   z artykułem jest trochę za wąska"). Miejsce bierze środkowa lista, nie sidebar — lista to
+   nagłówki, które i tak łamią się na 2-3 linie, a artykuł czyta się w pełnych zdaniach.
+   Zwiększona też szerokość dla bardzo szerokich ekranów, gdzie kolumna 480px zaczyna być mała
+   w stosunku do reszty. */
+.dt-body { display: grid; grid-template-columns: 210px 1fr 480px; flex: 1; overflow: hidden; }
+@media (min-width: 1500px) { .dt-body { grid-template-columns: 230px 1fr 560px; } }
 
 /* left index */
 .dt-index { border-right: 1px solid #dbd8d2; overflow-y: auto; background: var(--bg); }
