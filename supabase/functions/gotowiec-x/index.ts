@@ -69,12 +69,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json({ blad: 'Tylko POST' }, 405);
 
-  if (!DEEPSEEK_KEY) {
-    return json({ blad: 'Brak sekretu DEEPSEEK_KEY w konfiguracji funkcji' }, 500);
-  }
-
   // ── Kto pyta ──────────────────────────────────────────────────────────────
   // Bez tego każdy z publicznym kluczem anon paliłby tokeny właściciela.
+  // ⚠️ Ta kontrola idzie PRZED sprawdzeniem konfiguracji: inaczej obcy dostawał
+  // odpowiedź o stanie funkcji, zanim ktokolwiek sprawdził, kim jest.
   const authHeader = req.headers.get('Authorization') ?? '';
   if (!authHeader.startsWith('Bearer ')) return json({ blad: 'Brak autoryzacji' }, 401);
 
@@ -88,6 +86,11 @@ Deno.serve(async (req) => {
   const email = (userData?.user?.email ?? '').toLowerCase();
   if (userErr || !email) return json({ blad: 'Nieprawidłowa sesja' }, 401);
   if (email !== OWNER_EMAIL) return json({ blad: 'Brak dostępu' }, 403);
+
+  // Dopiero tu, gdy już wiadomo, że pyta właściciel.
+  if (!DEEPSEEK_KEY) {
+    return json({ blad: 'Brak sekretu DEEPSEEK_KEY w konfiguracji funkcji' }, 500);
+  }
 
   // ── Wejście ───────────────────────────────────────────────────────────────
   let body: { text?: string; article?: string; impact?: string };
