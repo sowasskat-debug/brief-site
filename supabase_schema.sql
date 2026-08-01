@@ -176,6 +176,48 @@ grant select, insert, update, delete on public.sekrety to authenticated;
 revoke all on public.sekrety from anon;
 
 
+-- ── 6c. KOSZ (pełne kopie usuniętych newsów) ────────────────────────────────
+-- Po co: `rejected.json` trzyma tylko text/flag/reason/date, bo karmi filtr bota
+-- (REGUŁA 0, ostatnie 40 wpisów) i ma być chudy. Do PRZYWRÓCENIA newsa to za mało —
+-- zginęłyby source_url, impact, image_url, reach, category, subItems.
+-- Dlatego pełny item ląduje tutaj, a rejected.json zostaje nietknięty.
+--
+-- Czemu w Supabase, a nie w repo: to dane robocze panelu, nikomu poza właścicielem
+-- niepotrzebne, a każdy plik w repo jest publiczny.
+create table if not exists public.kosz (
+  id        bigint generated always as identity primary key,
+  tekst     text not null,           -- klucz dopasowania do wpisu w rejected.json
+  dawka     text,                    -- morning / afternoon / evening
+  item      jsonb not null,          -- PEŁNY BriefItem, gotowy do wstawienia z powrotem
+  usuniete  timestamptz not null default now()
+);
+
+create index if not exists kosz_usuniete_idx on public.kosz (usuniete desc);
+-- Dopasowanie po tekście musi być szybkie — panel sprawdza dla każdego wpisu
+-- rejected.json, czy da się go przywrócić.
+create index if not exists kosz_tekst_idx on public.kosz (tekst);
+
+alter table public.kosz enable row level security;
+
+drop policy if exists "wlasciciel czyta kosz" on public.kosz;
+create policy "wlasciciel czyta kosz" on public.kosz
+  for select to authenticated
+  using (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
+
+drop policy if exists "wlasciciel dodaje kosz" on public.kosz;
+create policy "wlasciciel dodaje kosz" on public.kosz
+  for insert to authenticated
+  with check (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
+
+drop policy if exists "wlasciciel kasuje kosz" on public.kosz;
+create policy "wlasciciel kasuje kosz" on public.kosz
+  for delete to authenticated
+  using (lower(auth.jwt() ->> 'email') = 'sowass@outlook.com');
+
+grant select, insert, delete on public.kosz to authenticated;
+revoke all on public.kosz from anon;
+
+
 -- ── 7. RETENCJA ─────────────────────────────────────────────────────────────
 -- Te same limity co dziś w plikach: lejek 3 dni / max 1500 wpisów, zdrowie 200 biegów.
 -- Wołane przez bota po zapisie (jeden RPC), więc nie trzeba pg_cron.

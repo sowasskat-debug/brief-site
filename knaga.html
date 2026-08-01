@@ -140,6 +140,16 @@ input[type=password], input[type=text], input[type=email] {
 .solo { border: 1px solid var(--rule); border-radius: 3px; margin: 10px 0; }
 .solo .group-head { border-bottom: none; }
 
+/* ── ODRZUCONE ── */
+.odrz { border: 1px solid var(--rule); border-radius: 3px; margin: 10px 0; }
+/* Tylko te wpisy bot realnie czyta — muszą się odróżniać od archiwalnych,
+   inaczej nie widać, co naprawdę wpływa na filtr. */
+.odrz.uczy { border-left: 3px solid var(--amber); background: #fffdf7; }
+.odrz-head { display: flex; align-items: flex-start; gap: 10px; padding: 12px; }
+.odrz-text { font-size: 12px; line-height: 1.5; color: var(--sub); }
+.odrz-powod { font-size: 10px; color: var(--muted); font-style: italic; margin-top: 4px; }
+.odrz-brak { font-size: 9.5px; color: var(--muted); padding: 0 12px 10px; line-height: 1.5; }
+
 /* ── LEJEK ── style przeniesione z lejek.html, zawężone do #paneLejek,
    żeby nie mieszały się ze stylami panelu (ten sam wygląd, inny kontekst). */
 #paneLejek { font-family: Inter, 'Space Mono', sans-serif; }
@@ -249,6 +259,7 @@ input[type=password], input[type=text], input[type=email] {
 <div id="mainScreen" class="wrap" style="display:none">
   <div class="main-tabs">
     <button class="main-tab active" id="tabPosty" onclick="switchPane('posty')">Posty</button>
+    <button class="main-tab" id="tabOdrzucone" onclick="switchPane('odrzucone')">Odrzucone</button>
     <button class="main-tab" id="tabLejek" onclick="switchPane('lejek')">Lejek</button>
   </div>
 
@@ -259,6 +270,16 @@ input[type=password], input[type=text], input[type=email] {
       <button onclick="loadBriefs(true)">↻ Odśwież</button>
     </div>
     <div id="content"></div>
+  </div>
+
+  <div id="paneOdrzucone" style="display:none">
+    <div class="notice">
+      To jest pamięć filtra bota. <strong>Ostatnie 40 wpisów</strong> trafia do promptu selekcji
+      jako przykłady „czego nie chcemy" — reszta leży archiwalnie. Błędnie usunięty news uczy bota
+      złej rzeczy, dopóki go stąd nie wyrzucisz.
+    </div>
+    <div class="refresh-row"><button onclick="wczytajOdrzucone(true)">↻ Odśwież</button></div>
+    <div id="odrzuconeTresc"></div>
   </div>
 
   <div id="paneLejek" style="display:none">
@@ -658,13 +679,165 @@ async function initAuth() {
 }
 
 // ══ ZAKŁADKI PANELU ══
+const PANES = {
+  posty:     { tab: 'tabPosty',     pane: 'panePosty' },
+  odrzucone: { tab: 'tabOdrzucone', pane: 'paneOdrzucone', onEnter: () => renderOdrzucone() },
+  lejek:     { tab: 'tabLejek',     pane: 'paneLejek',     onEnter: () => renderLejek() },
+};
+
 function switchPane(p) {
   currentPane = p;
-  document.getElementById('tabPosty').classList.toggle('active', p === 'posty');
-  document.getElementById('tabLejek').classList.toggle('active', p === 'lejek');
-  document.getElementById('panePosty').style.display = p === 'posty' ? 'block' : 'none';
-  document.getElementById('paneLejek').style.display = p === 'lejek' ? 'block' : 'none';
-  if (p === 'lejek') renderLejek();
+  for (const [nazwa, cfg] of Object.entries(PANES)) {
+    document.getElementById(cfg.tab).classList.toggle('active', nazwa === p);
+    document.getElementById(cfg.pane).style.display = nazwa === p ? 'block' : 'none';
+  }
+  PANES[p]?.onEnter?.();
+}
+
+// ══ ODRZUCONE ══
+// rejected.json UCZY FILTR BOTA (ostatnie 40 wpisów = REGUŁA 0 w prompcie selekcji),
+// więc pomyłka przy „Usuń" nie jest kosmetyczna — po cichu psuje selekcję na kolejne dni.
+// Ta zakładka daje to zobaczyć i cofnąć.
+const REJECTED_UCZACE = 40;   // ile ostatnich wpisów bot realnie czyta
+let odrzuconeStan = null;     // { sha, lista }
+let koszIndex = new Map();    // tekst → wiersz z kosza (czy da się przywrócić)
+let odrzuconeWczytane = false;
+
+async function wczytajOdrzucone(pokazToast) {
+  const el = document.getElementById('odrzuconeTresc');
+  el.innerHTML = '<div class="empty">Ładowanie…</div>';
+  try {
+    const { sha, data } = await ghGetJson(REJECTED_PATH);
+    odrzuconeStan = { sha, lista: Array.isArray(data) ? data : [] };
+  } catch (e) {
+    el.innerHTML = `<div class="empty">Błąd ładowania: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+
+  // Kosz mówi, które wpisy da się przywrócić w całości. Bez niego przywrócenie
+  // dałoby kadłubek (bez source_url/impact/image_url), więc wtedy go nie oferujemy.
+  koszIndex = new Map();
+  if (supa) {
+    try {
+      const { data, error } = await supa.from('kosz').select('id,tekst,dawka,item');
+      if (error) throw error;
+      for (const w of (data || [])) koszIndex.set(w.tekst, w);
+    } catch (e) {
+      console.warn('Kosz niedostępny:', e.message);
+    }
+  }
+
+  renderOdrzuconeLista();
+  if (pokazToast) showToast('Odświeżono');
+}
+
+function renderOdrzucone() {
+  if (odrzuconeWczytane) return;
+  odrzuconeWczytane = true;
+  wczytajOdrzucone();
+}
+
+function renderOdrzuconeLista() {
+  const el = document.getElementById('odrzuconeTresc');
+  const lista = odrzuconeStan?.lista || [];
+  if (!lista.length) { el.innerHTML = '<div class="empty">Nic nie zostało odrzucone.</div>'; return; }
+
+  // Bot czyta OSTATNIE 40 — czyli koniec tablicy. Te wyróżniamy, bo tylko one działają na filtr.
+  const prog = Math.max(0, lista.length - REJECTED_UCZACE);
+  const html = lista.map((w, i) => {
+    const uczy = i >= prog;
+    const doPrzywrocenia = koszIndex.get(String(w.text || ''));
+    return `
+      <div class="odrz ${uczy ? 'uczy' : ''}">
+        <div class="odrz-head">
+          <span class="item-flag">${escapeHtml(w.flag || '📰')}</span>
+          <div style="flex:1">
+            <div class="odrz-text">${escapeHtml(w.text)}</div>
+            <div class="item-meta">
+              ${escapeHtml(w.date || '—')}${w.dose ? ' · ' + escapeHtml(DOSE_LABELS[w.dose] || w.dose) : ''}
+              ${uczy ? ' · <strong>UCZY FILTR</strong>' : ' · archiwalne'}
+            </div>
+            ${w.reason ? `<div class="odrz-powod">powód: ${escapeHtml(w.reason)}</div>` : ''}
+          </div>
+          <div class="act-col">
+            ${doPrzywrocenia
+              ? `<button class="x-btn" onclick="przywrocNews(${i})">Przywróć</button>`
+              : ''}
+            <button class="del-btn" onclick="zapomnijOdrzucone(${i})">Wyrzuć z nauki</button>
+          </div>
+        </div>
+        ${!doPrzywrocenia ? '<div class="odrz-brak">Brak pełnej kopii — przywrócenie niemożliwe (news usunięty przed wprowadzeniem kosza).</div>' : ''}
+      </div>`;
+  }).reverse().join('');   // najnowsze na górze, czyli te uczące
+  el.innerHTML = html;
+}
+
+// Wyrzucenie z rejected.json = bot przestaje się tego uczyć. News NIE wraca do dawki.
+async function zapomnijOdrzucone(idx) {
+  const w = odrzuconeStan?.lista?.[idx];
+  if (!w) return;
+  try {
+    // Świeży odczyt tuż przed zapisem — bot dopisuje do tego pliku między naszym
+    // wczytaniem a kliknięciem (ten sam wyścig co przy briefs.json).
+    const { sha, data } = await ghGetJson(REJECTED_PATH);
+    const lista = Array.isArray(data) ? data : [];
+    const realny = lista.findIndex(x => x.text === w.text && x.date === w.date);
+    if (realny === -1) { showToast('Wpis już nie istnieje'); await wczytajOdrzucone(); return; }
+    lista.splice(realny, 1);
+    await ghPutJson(REJECTED_PATH, lista, sha, 'Panel: wyrzucono wpis z nauki filtra [skip ci]');
+    odrzuconeStan = { sha: null, lista };
+    renderOdrzuconeLista();
+    showToast('Bot przestanie się tego uczyć');
+  } catch (e) {
+    showToast(`Błąd: ${e.message}`);
+  }
+}
+
+// Przywrócenie: news wraca do swojej dawki W CAŁOŚCI (z kosza), znika z nauki filtra
+// i z kosza. Kolejność ma znaczenie — najpierw briefs.json, bo to jedyny krok,
+// który może się nie udać przez konflikt z botem.
+async function przywrocNews(idx) {
+  const w = odrzuconeStan?.lista?.[idx];
+  if (!w) return;
+  const kopia = koszIndex.get(String(w.text || ''));
+  if (!kopia) { showToast('Brak pełnej kopii'); return; }
+
+  const dawka = kopia.dawka || w.dose || 'morning';
+  try {
+    const fresh = await ghGetJson(BRIEFS_PATH);
+    if (!fresh.data) { showToast('Brak briefs.json'); return; }
+    const data = fresh.data;
+    if (!data[dawka]) { showToast(`Dawka ${dawka} już nie istnieje`); return; }
+    data[dawka].items = data[dawka].items || [];
+
+    if (data[dawka].items.some(i => i.text === kopia.item.text)) {
+      showToast('Ten news już jest w dawce');
+    } else {
+      // Na koniec, nie na pozycję 0 — items[0] to top story ustawiana przez bota
+      // i przywracanie nie ma prawa jej podmieniać.
+      data[dawka].items.push(kopia.item);
+      await saveBriefs(data, fresh.sha, `Panel: przywrócono news (${dawka}) [skip ci]`);
+    }
+
+    // Skoro news wraca, nie może dalej uczyć filtra, że jest niechciany.
+    const rej = await ghGetJson(REJECTED_PATH);
+    const lista = Array.isArray(rej.data) ? rej.data : [];
+    const realny = lista.findIndex(x => x.text === w.text && x.date === w.date);
+    if (realny !== -1) {
+      lista.splice(realny, 1);
+      await ghPutJson(REJECTED_PATH, lista, rej.sha, 'Panel: przywrócony news wyjęty z nauki [skip ci]');
+      odrzuconeStan = { sha: null, lista };
+    }
+
+    if (supa) { try { await supa.from('kosz').delete().eq('id', kopia.id); } catch (e) { console.warn(e); } }
+    koszIndex.delete(String(w.text || ''));
+
+    renderOdrzuconeLista();
+    briefsState = null;            // lista postów jest nieaktualna — wymuś świeży odczyt
+    showToast('Przywrócono do dawki');
+  } catch (e) {
+    showToast(`Błąd: ${e.message}`);
+  }
 }
 
 // ══ LEJEK ══ (render przeniesiony z lejek.html — ten sam wygląd, dane z dwóch źródeł)
@@ -930,6 +1103,23 @@ async function withFreshBriefs(expectedTextAtPath, fn) {
   }
 }
 
+// Pełna kopia usuwanych newsów do Supabase — TYLKO po to, żeby dało się je przywrócić.
+// rejected.json zostaje chudy (karmi filtr bota), a tu leży wszystko: source_url,
+// impact, image_url, reach, category, subItems. Bez tego „Przywróć" wskrzeszałoby kadłubek.
+async function doKosza(items) {
+  if (!supa || !items.length) return;
+  try {
+    const { error } = await supa.from('kosz').insert(
+      items.map(it => ({ tekst: String(it.text || ''), dawka: currentDose, item: it }))
+    );
+    if (error) throw error;
+  } catch (e) {
+    // Nieudany zapis do kosza NIE może wywrócić usuwania — news i tak jest już usunięty
+    // z repo. Traci się wtedy tylko możliwość przywrócenia go jednym kliknięciem.
+    console.warn('Nie udało się odłożyć do kosza:', e.message);
+  }
+}
+
 async function appendRejected(items) {
   if (!items.length) return;
   try {
@@ -970,6 +1160,7 @@ async function deleteSoloItem(idx) {
       const [removed] = data[currentDose].items.splice(actualIdx, 1);
       await saveBriefs(data, fresh.sha, `Admin: usunięto news (${currentDose}) [skip ci]`);
       await appendRejected([removed]);
+      await doKosza([removed]);
       renderContent();
       showToast('Usunięto');
     }
@@ -997,6 +1188,7 @@ async function deleteSubItem(idx, subIdx) {
       }
       await saveBriefs(data, fresh.sha, `Admin: usunięto news z grupy (${currentDose}) [skip ci]`);
       await appendRejected([removed]);
+      await doKosza([removed]);
       renderContent();
       showToast('Usunięto');
     }
@@ -1014,6 +1206,8 @@ async function deleteGroup(idx) {
       const [removed] = data[currentDose].items.splice(actualIdx, 1);
       await saveBriefs(data, fresh.sha, `Admin: usunięto grupę (${currentDose}) [skip ci]`);
       await appendRejected(removed.subItems && removed.subItems.length ? removed.subItems : [removed]);
+      // Do kosza cała grupa jako JEDEN item — przywrócenie ma odtworzyć klaster, nie rozsypać go na luzem.
+      await doKosza([removed]);
       renderContent();
       showToast('Usunięto grupę');
     }
