@@ -163,6 +163,12 @@ input[type=password], input[type=text], input[type=email] {
 .x-licznik.zaduzo { color: var(--red); font-weight: 700; }
 .x-modal-akcje { display: flex; gap: 8px; }
 .x-modal-info { font-size: 9.5px; color: var(--muted); line-height: 1.6; margin-top: 10px; }
+.x-link-blok { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.x-link-row { display: flex; gap: 6px; align-items: stretch; }
+.x-link-row input {
+  flex: 1; min-width: 0; margin-bottom: 0; font-size: 10.5px; color: var(--muted);
+}
+.x-link-row .x-btn { flex-shrink: 0; }
 
 /* ── ODRZUCONE ── */
 .odrz { border: 1px solid var(--rule); border-radius: 3px; margin: 10px 0; }
@@ -331,8 +337,18 @@ input[type=password], input[type=text], input[type=email] {
     <div class="x-modal-akcje">
       <button class="btn" id="xOtworz" onclick="wyslijNaX()">Otwórz X z tą treścią</button>
     </div>
-    <div class="x-modal-info">
-      X skraca każdy link do 23 znaków — adres newsa doklei się sam i nie wchodzi do limitu poniżej.
+
+    <div class="x-link-blok">
+      <div class="field-label">Link — wklej jako ODPOWIEDŹ pod swoim postem</div>
+      <div class="x-link-row">
+        <input type="text" id="xLink" readonly>
+        <button class="x-btn" onclick="kopiujLinkX()">Kopiuj</button>
+      </div>
+      <div class="x-modal-info">
+        Link świadomie NIE idzie w treść posta: X obcina za niego 30-50% zasięgu, a na koncie
+        bez Premium takie posty mają praktycznie zerowe zaangażowanie. Główny post zbiera zasięg,
+        źródło dajesz w komentarzu.
+      </div>
     </div>
   </div>
 </div>
@@ -399,12 +415,18 @@ function xPostText(item) {
   return raw.length > X_TEXT_MAX ? raw.slice(0, X_TEXT_MAX - 1).trimEnd() + '…' : raw;
 }
 
-// Adres composera X. Treść pochodzi z modelu i z pola edytowalnego, więc mimo że idzie
-// do window.open (nie do innerHTML), sprawdzamy schemat — zasada „żaden URL z danych
-// nie leci bez kontroli" z sekcji „Bezpieczeństwo" w CLAUDE.md obowiązuje wszędzie.
-// encodeURIComponent na obu parametrach pilnuje, żeby treść nie wyłamała się z query stringa.
-function xIntentUrl(tresc, deep) {
-  const u = `https://x.com/intent/post?text=${encodeURIComponent(tresc)}&url=${encodeURIComponent(deep)}`;
+// Adres composera X — ŚWIADOMIE BEZ parametru `url`.
+// ⚠️ Link w treści głównego posta kosztuje 30-50% zasięgu, a na koncie BEZ Premium
+// mediana zaangażowania takich postów spadła do ZERA (stan na marzec 2026) — X traktuje
+// link jako wyjście z aplikacji. Dlatego post idzie czysty, a adres newsa wkleja się
+// ręcznie jako ODPOWIEDŹ pod własnym postem (panel podaje go do skopiowania).
+//
+// Treść pochodzi z modelu i z pola edytowalnego, więc mimo że URL idzie do window.open
+// (nie do innerHTML), sprawdzamy schemat — zasada „żaden URL z danych nie leci bez
+// kontroli" obowiązuje wszędzie. encodeURIComponent pilnuje, żeby treść nie wyłamała
+// się z query stringa.
+function xIntentUrl(tresc) {
+  const u = `https://x.com/intent/post?text=${encodeURIComponent(tresc)}`;
   return /^https:\/\/x\.com\//.test(u) ? u : '';
 }
 
@@ -430,6 +452,7 @@ async function otworzX(slug) {
   xBiezacy = { item, deep: `https://brifup.com/#${currentDose}/${itemSlug(String(item.text || ''))}` };
 
   document.getElementById('xOverlay').classList.add('on');
+  document.getElementById('xLink').value = xBiezacy.deep;
   const pole = document.getElementById('xTresc');
   const otworz = document.getElementById('xOtworz');
 
@@ -479,21 +502,37 @@ function zamknijX() {
 function xPolicz() {
   const n = document.getElementById('xTresc').value.length;
   const el = document.getElementById('xLicznik');
-  // Link zawsze kosztuje 23 znaki, niezależnie od długości adresu (t.co).
-  const razem = n + 1 + 23;
-  el.textContent = `${n} zn. + link (23) = ${razem} / 280`;
-  el.classList.toggle('zaduzo', razem > 280);
+  // Link nie wchodzi już do posta, więc liczy się sama treść.
+  el.textContent = `${n} / 280`;
+  el.classList.toggle('zaduzo', n > 280);
+}
+
+async function kopiujLinkX() {
+  if (!xBiezacy) return;
+  try {
+    await navigator.clipboard.writeText(xBiezacy.deep);
+    showToast('Link skopiowany');
+  } catch (e) {
+    // Clipboard API bywa zablokowane (brak HTTPS, odmowa uprawnień) — wtedy
+    // zaznaczamy adres, żeby dało się go skopiować ręcznie zamiast zostawiać usera z niczym.
+    const pole = document.getElementById('xLink');
+    pole.removeAttribute('readonly');
+    pole.select();
+    showToast('Skopiuj zaznaczony link (Cmd+C)');
+  }
 }
 
 function wyslijNaX() {
   if (!xBiezacy) return;
   const tresc = document.getElementById('xTresc').value.trim();
   if (!tresc) { showToast('Pusta treść'); return; }
-  const url = xIntentUrl(tresc, xBiezacy.deep);
+  const url = xIntentUrl(tresc);
   if (!url) { showToast('Nie udało się zbudować adresu'); return; }
   // Otwiera się na klik użytkownika, więc blokada popupów tego nie zatrzyma.
   window.open(url, '_blank', 'noopener,noreferrer');
-  zamknijX();
+  // Okna NIE zamykamy — link do wklejenia jako odpowiedź musi zostać na ekranie,
+  // inaczej po powrocie z X nie ma go skąd wziąć.
+  setNotice('xStatus', '', 'Composer otwarty. Po opublikowaniu wklej link poniżej jako ODPOWIEDŹ pod swoim postem.');
 }
 
 function utf8ToB64(str) {
