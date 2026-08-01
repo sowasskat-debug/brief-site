@@ -131,6 +131,27 @@ wchodzi przy najbliższym biegu. **Sobota ma za mało newsów — realny obraz d
 
 ---
 
+## 🔑 6. Haiku 4.5 pisze „Wpływ na rynek" — WDROŻONE, CZEKA NA KLUCZ NA HETZNERZE
+
+Wcześniej to był odrzucony pomysł („policzone ~$1,45/mies, właściciel odpuścił") — wrócił 2026-08-01
+i jest w kodzie bota (`HaikuNapiszWplyw`, szczegóły w `financialnewsbot/CLAUDE.md`).
+DeepSeek dalej robi opis i bramkę `marketMoving`; Haiku pisze samą linię `impact` z **surowych faktów źródła**.
+
+🔴 **Bez `ANTHROPIC_API_KEY` w `/root/bot_secrets.env` nic się nie zmieni** — fail-safe zostawia wtedy
+linię DeepSeeka (zero regresji, ale i zero efektu). To jest jedyny krok blokujący.
+
+| Co sprawdzić | Gdzie | Na co patrzeć |
+|---|---|---|
+| Czy Haiku w ogóle odpala | `brief_health.json` | `impact_haiku_ok` > 0 |
+| Realny koszt (to on przesądził w lipcu) | `brief_health.json` | `impact_haiku_tok_in` / `impact_haiku_tok_out` |
+| Jakość promptu | `brief_health.json` | jak `impact_haiku_bez_strzalki`/`_ogolnikowy` dominują → poprawić prompt |
+| ⚠️ **Wykresy notowań** | `briefs.json`, pole `chart` | `WykryjInstrumenty` dopasowuje frazy z `impact` do słownika — inne nazewnictwo Haiku może dać **mniej** wykresów; jak ubędzie, dopisać frazy do `_mapaInstrumentow` |
+
+Podgląd różnicy na już opublikowanej dawce (nic nie zapisuje):
+`IMPACT_HAIKU_DOSE=evening dotnet run`; zapis: dołożyć `IMPACT_HAIKU_ZAPISZ=true`.
+
+---
+
 ## ✅ Co jest ZROBIONE i zweryfikowane (nie ruszaj bez powodu)
 
 - **Panel `knaga.html`** (przemianowany z `admin.html` — patrz `CLAUDE.md`, sekcja Pliki):
@@ -164,6 +185,5 @@ wchodzi przy najbliższym biegu. **Sobota ma za mało newsów — realny obraz d
 - **Gotowiec `x_post` generowany przez bota dla każdego newsa** — publikowanych jest
   107/dzień, na X idą 3-4, więc 96% do kosza ($1,11-1,58/mies vs ~$0,01). Zastąpione
   generowaniem na żądanie (Edge Function).
-- **Haiku 4.5 do „Wpływu na rynek"** — policzone (~$1,45/mies, +4,7%), właściciel odpuścił.
 - **Edge Function do tokenu GitHub** — bezpieczniejsza (token nigdy w przeglądarce),
   ale dłuższa robota. Wybrany token w tabeli `sekrety`. Kompromis opisany w SETUP_SUPABASE.md.
