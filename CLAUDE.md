@@ -61,6 +61,19 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
   wcześnie. Trzyma ostatnie 200 biegów. Czytane przez `bot-health.html` (tabela + paski lejka, publiczny
   odczyt bez auth jak `briefs.json`/`trending.json`) — narzędzie diagnostyczne dla właściciela, NIE dotyczy
   Flusso ani Briefu. Patrz `financialnewsbot/CLAUDE.md` sekcja "Diagnostyczny lejek".
+- `s/<slug>.html` — **stuby pod podgląd linku** (2026-08-02), pisane przez bota jednym commitem na bieg.
+  🔴 **Po co:** deep linki apki są HASHOWE, a fragment nie dociera do serwera i scrapery nie wykonują JS —
+  więc każdy udostępniony link oddawał meta strony głównej. Stub ma własne `og:*` + przekierowanie **tylko
+  JS-em** (`meta http-equiv="refresh"` byłby błędem: część scraperów podąża za nim i czyta meta strony
+  głównej). `s/_index.json` to manifest retencji (14 dni). **Nie edytuj ręcznie** — bot odtwarza stan
+  z `briefs.json` przy każdym biegu. Szczegóły: `financialnewsbot/CLAUDE.md`, sekcja „Stuby pod podgląd linku".
+- `supabase/functions/og/index.ts` — generator obrazka karty 1200×630 (nagłówek + poprzedni etap + pasek
+  ciągłości sagi). Wołany WYŁĄCZNIE przez scrapery przy wysyłce linku. ⚠️ Deploy **musi** iść
+  z `--no-verify-jwt` (scraper nie ma tokenu). FAIL-SAFE: każdy błąd = przekierowanie na `og-image.png`,
+  karta nigdy nie zostaje bez obrazka. Wdrożenie i weryfikacja: `SETUP_SUPABASE.md`, sekcja 9.
+- `fonts/*.ttf` — DM Serif Display + Space Mono (licencja OFL, redystrybucja dozwolona). **Potrzebne
+  wyłącznie funkcji `og`** (satori musi dostać kroje jako bajty); sama strona bierze fonty z CDN Google.
+  ⚠️ Nie kasować — bez nich generator obrazka leci w gałąź awaryjną.
 - `manifest.json`, ikony, `og-image.png`, `CNAME`, `robots.txt`, `sitemap.xml`.
   ⚠️ **`og-image.png` (1200×630) NIE MA generatora w repo** — to gotowy PNG, nie ma pliku źródłowego.
   Przy zmianie treści: fonty (DM Serif Display / Space Mono) idą z CDN, którego sandbox nie widzi, więc
@@ -362,6 +375,13 @@ Na `index.html` (dla czytelników) przycisku NADAL NIE MA — opis „gdzie wpi�
 ⚠️ `x_post` od bota **nie istnieje** (zmierzone 2026-08-01: 0/70 itemów) — panel jedzie w całości
 na fallbacku `item.text`, dlatego fallback jest OBOWIĄZKOWY, a nie „na wszelki wypadek".
 
+- 🔴 **Link do komentarza = STUB, nie hash (2026-08-02):** pole `xLink` w knadze podawało
+  `brifup.com/#dawka/slug`, który na X i Slacku daje **generyczną kartę strony głównej** — fragment nigdy
+  nie dociera do crawlera. Teraz `linkDoUdostepnienia` podstawia `brifup.com/s/<slug>.html` (stub z własnymi
+  `og:*`/`twitter:*`, przekierowujący człowieka JS-em do apki). ⚠️ **Sprawdzane HEAD-em przed podmianą** —
+  stub powstaje dopiero pod koniec biegu bota i ma retencję 14 dni, więc dla newsa świeżo opublikowanego
+  albo starego może go nie być; wtedy wracamy do adresu hashowego (lepiej gorsza karta niż link w 404).
+  ⚠️ Zasada „link NIE idzie w treść głównego posta" **bez zmian** — to dotyczy wyłącznie adresu do komentarza.
 - **Skąd treść:** bot dopisuje do każdego itema pole **`x_post`** w `briefs.json` (hook + 1 zdanie z liczbami
   z artykułu, ≤250 zn.). Front go tylko czyta — 0 tokenów per klik, jak przy `threads.json`.
   **FALLBACK obowiązkowy:** brak/`null` `x_post` (stare itemy, gotowiec odrzucony przez bramkę pokrycia liczb)

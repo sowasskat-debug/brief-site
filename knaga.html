@@ -383,6 +383,9 @@ input[type=password], input[type=text], input[type=email] {
         Link świadomie NIE idzie w treść posta: X obcina za niego 30-50% zasięgu, a na koncie
         bez Premium takie posty mają praktycznie zerowe zaangażowanie. Główny post zbiera zasięg,
         źródło dajesz w komentarzu.
+        <br><br>
+        To adres <code>s/&lt;slug&gt;.html</code>, a nie ten z paska przeglądarki — tylko on pokazuje
+        kartę z nagłówkiem newsa i osią wątku. Link hashowy dałby generyczną kartę strony głównej.
       </div>
     </div>
   </div>
@@ -481,6 +484,24 @@ function xBtnHtml(item) {
 // ── OKNO GOTOWCA ────────────────────────────────────────────────────────────
 let xBiezacy = null;   // { item, deep }
 
+// 🔴 LINK DO KOMENTARZA MUSI WSKAZYWAĆ STUB, NIE HASH (2026-08-02).
+// Adres `brifup.com/#dawka/slug` daje na X i Slacku GENERYCZNĄ kartę strony głównej, bo fragment
+// nigdy nie dociera do crawlera — to jest dokładnie powód, dla którego powstały stuby `s/<slug>.html`
+// (patrz financialnewsbot/CLAUDE.md, sekcja „Stuby pod podgląd linku"). Stub niesie własne og:*/twitter:*
+// i przekierowuje człowieka JS-em do apki, więc działa dla obu odbiorców.
+// ⚠️ FALLBACK: stub powstaje dopiero pod koniec biegu bota i ma retencję 14 dni, więc dla newsa
+// świeżo opublikowanego albo starego może go jeszcze/już nie być. Sprawdzamy HEAD-em i przy braku
+// wracamy do adresu hashowego — lepiej gorsza karta niż skopiowany link prowadzący w 404.
+async function linkDoUdostepnienia(item) {
+  const slug = itemSlug(String(item.text || ''));
+  const stub = `https://brifup.com/s/${slug}.html`;
+  const hash = `https://brifup.com/#${currentDose}/${slug}`;
+  try {
+    const r = await fetch(`${stub}?_=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+    return r.ok ? stub : hash;
+  } catch (_) { return hash; }
+}
+
 async function otworzX(slug) {
   const item = X_ITEMS.get(slug);
   if (!item) return;
@@ -488,6 +509,13 @@ async function otworzX(slug) {
 
   document.getElementById('xOverlay').classList.add('on');
   document.getElementById('xLink').value = xBiezacy.deep;
+  // Podmiana na stub, gdy istnieje — asynchronicznie, żeby nie opóźniać otwarcia okna.
+  linkDoUdostepnienia(item).then(url => {
+    if (!xBiezacy || xBiezacy.item !== item) return;   // okno zdążyło się przełączyć na inny news
+    xBiezacy.deep = url;
+    const pole = document.getElementById('xLink');
+    if (pole) pole.value = url;
+  });
   const pole = document.getElementById('xTresc');
   const otworz = document.getElementById('xOtworz');
 
