@@ -60,7 +60,7 @@ OneSignal (Settings → Web Configuration): czy domena to `brifup.com` i czy web
 
 ---
 
-## ⚠️ 3. GDELT — zmierzony, poprawka NIEZMERGOWANA (PR #96 w bocie)
+## ⚠️ 3. GDELT — poprawka ZMERGOWANA 02.08, kryterium do sprawdzenia 03.08
 
 **Zmierzone 2026-08-02, nie zgadnięte:** GDELT **żyje** (proste zapytanie → 200 + poprawny JSON,
 bez klucza), ale odrzuca ~70% ruchu. 24 zapytania przy odstępie 6 s (ich dokumentowany limit):
@@ -73,18 +73,28 @@ oraz długość odstępu (120 s ciszy dało 429, a 6 s później 200).
 finder na cały bieg. Przy ~70% szans na odbicie pierwszy item niemal zawsze wygasza GDELT, zanim
 ten trafi w swoje 29%.
 
-**PR #96** zamienia to na 3 próby w jednym wywołaniu + breaker dopiero po 3 wywołaniach z rzędu i na
-5 min. ⚠️ **Nie jest udowodniony:** zaraz po serii 29% cztery wywołania przez realny kod dały 0/4.
+✅ **PR #96 ZMERGOWANY 02.08 wieczorem → `a6a0661`** (3 próby w jednym wywołaniu + breaker dopiero po
+3 wywołaniach z rzędu i na 5 min zamiast 15). Wdroży się przy najbliższym biegu Hetznera.
+⚠️ **Nadal NIE JEST UDOWODNIONY:** zaraz po serii 29% cztery wywołania przez realny kod dały 0/4.
 Najpewniej własnym ruchem testowym wpędziłem IP w ostrzejsze limitowanie — czyli GDELT karze
 **skumulowanym wolumenem**, nie odstępem. Pomiar szedł z Maca, bot pyta z Hetznera.
 
 ⚠️ **Ze starych liczników NIE DA SIĘ tego rozstrzygnąć:** `finder_gdelt_proba` inkrementuje się PRZED
-wywołaniem findera (`ProbujFindery`), więc liczy też przebiegi wycięte przez breaker. **Dopiero po
-zmergowaniu #96 liczniki zaczną mówić prawdę.**
+wywołaniem findera (`ProbujFindery`), więc liczy też przebiegi wycięte przez breaker. **Dopiero teraz
+liczniki zaczną mówić prawdę** — breaker przestał maskować realne strzały.
 
-**Kryterium:** `finder_gdelt_fakty` przez dobę po deployu. Dalej zero = z IP datacenter GDELT nie
-oddaje nic i uczciwą decyzją jest **wyrzucić go z łańcucha finderów** (kosztuje wtedy tylko czas,
-do 3 × 5,5 s na item).
+**Powód zmergowania (02.08, pomiar dnia):** z 77 newsów, które przeszły selekcję, **10 odpadło bez
+źródła (13,0%)** wobec 3,7–7,9% w trzech poprzednich dniach. W licznikach dnia GDELT dał **zero faktów
+ze 134 zarejestrowanych prób**, polskie Google News 5 na 165, a cały enrich stał na Google News EN
+(31 faktów / 73 próby). Fallback EN: 73 próby → 26 sukcesów (36%), w tym 18 dzięki poprawce
+„oryginalny tytuł przeżywa selekcję".
+
+🔴 **KRYTERIUM ROZSTRZYGAJĄCE — sprawdź to 03.08:** `finder_gdelt_fakty` przez dobę.
+- **> 0** → GDELT działa, zostaje.
+- **dalej ZERO** → z IP datacenter nie oddaje nic i uczciwą decyzją jest **wyrzucić go z łańcucha
+  finderów**. ⚠️ Ta zmiana **potroiła jego koszt czasowy**: do 3 × 5,5 s na item zamiast 5,5 s, a GDELT
+  stoi w łańcuchu PRZED finderami, które realnie dowożą. Przy ~20 itemach na bieg to do ~5 min
+  dokładane do biegu za nic. Nie zostawiaj tego w zawieszeniu „na później".
 
 ---
 
