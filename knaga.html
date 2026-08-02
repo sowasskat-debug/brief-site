@@ -1352,17 +1352,22 @@ async function wyrzucZCzekalni(idx) {
     const [usuniety] = lista.splice(realny, 1);
     await ghPutJson(BRIEFS_PATH, fresh.data, fresh.sha, 'Panel: wyrzucono z poczekalni [skip ci]');
     // currentDose w appendRejected opisuje dawkę — dla poczekalni nadpisujemy wprost.
+    let nauczyl = true;
     try {
-      const rej = await ghGetJson(REJECTED_PATH);
-      let l = Array.isArray(rej.data) ? rej.data : [];
-      l.push({ text: usuniety.text, flag: usuniety.flag || null, article: usuniety.article || null,
-               source_name: usuniety.source_name || null, dose: 'poczekalnia',
-               date: new Date().toISOString().split('T')[0] });
-      if (l.length > REJECTED_MAX) l = l.slice(l.length - REJECTED_MAX);
-      await ghPutJson(REJECTED_PATH, l, rej.sha, 'Panel: odrzucono z poczekalni [skip ci]');
-    } catch (e) { console.warn('rejected.json:', e.message); }
+      await zapiszRejected((l) => {
+        l.push({ text: usuniety.text, flag: usuniety.flag || null, article: usuniety.article || null,
+                 source_name: usuniety.source_name || null, dose: 'poczekalnia',
+                 date: new Date().toISOString().split('T')[0] });
+        return l.length > REJECTED_MAX ? l.slice(l.length - REJECTED_MAX) : l;
+      }, 'Panel: odrzucono z poczekalni [skip ci]');
+    } catch (e) {
+      nauczyl = false;
+      console.warn('rejected.json:', e.message);
+    }
     wczytajCzekalnie();
-    showToast('Wyrzucono — bot się tego uczy');
+    // ⚠️ Komunikat MUSI odpowiadać temu, co się realnie stało. Wcześniej stało tu bezwarunkowe
+    // „bot się tego uczy" nawet po nieudanym zapisie — czyli panel zapewniał o nauce, której nie było.
+    showToast(nauczyl ? 'Wyrzucono — bot się tego uczy' : '⚠️ Wyrzucono, ale NIE nauczył filtra (zapis padł)');
   } catch (e) {
     showToast(`Błąd: ${e.message}`);
   }
@@ -1451,14 +1456,14 @@ async function zapomnijOdrzucone(idx) {
   const w = odrzuconeStan?.lista?.[idx];
   if (!w) return;
   try {
-    // Świeży odczyt tuż przed zapisem — bot dopisuje do tego pliku między naszym
-    // wczytaniem a kliknięciem (ten sam wyścig co przy briefs.json).
-    const { sha, data } = await ghGetJson(REJECTED_PATH);
-    const lista = Array.isArray(data) ? data : [];
-    const realny = lista.findIndex(x => x.text === w.text && x.date === w.date);
-    if (realny === -1) { showToast('Wpis już nie istnieje'); await wczytajOdrzucone(); return; }
-    lista.splice(realny, 1);
-    await ghPutJson(REJECTED_PATH, lista, sha, 'Panel: wyrzucono wpis z nauki filtra [skip ci]');
+    let znikl = false;
+    const lista = await zapiszRejected((swieza) => {
+      const realny = swieza.findIndex(x => x.text === w.text && x.date === w.date);
+      if (realny === -1) { znikl = true; return null; }
+      swieza.splice(realny, 1);
+      return swieza;
+    }, 'Panel: wyrzucono wpis z nauki filtra [skip ci]');
+    if (znikl) { showToast('Wpis już nie istnieje'); await wczytajOdrzucone(); return; }
     odrzuconeStan = { sha: null, lista };
     renderOdrzuconeLista();
     showToast('Bot przestanie się tego uczyć');
@@ -1494,13 +1499,18 @@ async function przywrocNews(idx) {
     }
 
     // Skoro news wraca, nie może dalej uczyć filtra, że jest niechciany.
-    const rej = await ghGetJson(REJECTED_PATH);
-    const lista = Array.isArray(rej.data) ? rej.data : [];
-    const realny = lista.findIndex(x => x.text === w.text && x.date === w.date);
-    if (realny !== -1) {
-      lista.splice(realny, 1);
-      await ghPutJson(REJECTED_PATH, lista, rej.sha, 'Panel: przywrócony news wyjęty z nauki [skip ci]');
-      odrzuconeStan = { sha: null, lista };
+    // ⚠️ Ten zapis MUSI być głośny: news jest już z powrotem w dawce, więc cicha porażka
+    // zostawiłaby go jednocześnie opublikowanego I uczącego filtr, że jest niechciany.
+    try {
+      const lista = await zapiszRejected((swieza) => {
+        const realny = swieza.findIndex(x => x.text === w.text && x.date === w.date);
+        if (realny === -1) return null;
+        swieza.splice(realny, 1);
+        return swieza;
+      }, 'Panel: przywrócony news wyjęty z nauki [skip ci]');
+      if (lista) odrzuconeStan = { sha: null, lista };
+    } catch (e) {
+      showToast(`⚠️ News przywrócony, ale NADAL uczy filtra: ${e.message}`);
     }
 
     if (supa) { try { await supa.from('kosz').delete().eq('id', kopia.id); } catch (e) { console.warn(e); } }
@@ -1796,21 +1806,52 @@ async function doKosza(items) {
   }
 }
 
+// 🔴 JEDNA ŚCIEŻKA ZAPISU rejected.json, z ponowieniem na konflikt (2026-08-02).
+// Dotąd każdy zapis robił „pobierz sha → PUT" bez ponowienia, a `appendRejected` DODATKOWO
+// połykał błąd (`console.warn`). Skutek: klikasz „Usuń", news znika z briefs.json, dostajesz
+// potwierdzenie — a nauka filtra mogła się nie zapisać i NIKT ci o tym nie powiedział.
+// ⚠️ Sprostowanie komentarza, który tu wcześniej stał: bot NIE dopisuje do rejected.json,
+// tylko go czyta (ostatnie 40 wpisów jako REGUŁA 0 w prompcie selekcji). Konflikt może więc
+// powstać wyłącznie między dwoma zapisami z panelu — rzadko, ale wtedy cicha porażka kosztuje
+// nauczenie filtra, czyli realnie psuje selekcję na kolejne dni.
+// `mutuj` dostaje ZAWSZE świeżą listę z GitHuba i zwraca nową — dzięki temu ponowienie nakłada
+// zmianę na aktualny stan, a nie nadpisuje cudzej.
+async function zapiszRejected(mutuj, message) {
+  let ostatniBlad = null;
+  for (let proba = 1; proba <= 3; proba++) {
+    try {
+      const { sha, data } = await ghGetJson(REJECTED_PATH);
+      const lista = mutuj(Array.isArray(data) ? data : []);
+      if (lista === null) return null;               // mutacja uznała, że nie ma czego zapisywać
+      await ghPutJson(REJECTED_PATH, lista, sha, message);
+      return lista;
+    } catch (e) {
+      ostatniBlad = e;
+      // 409 = ktoś zapisał między naszym odczytem a PUT-em. Ponawiamy ze świeżym sha.
+      // Każdy inny błąd (401/403/sieć) nie naprawi się ponowieniem — wychodzimy od razu.
+      if (!String(e.message || '').includes('409')) break;
+    }
+  }
+  throw ostatniBlad || new Error('Nie udało się zapisać rejected.json');
+}
+
 async function appendRejected(items) {
   if (!items.length) return;
+  const today = new Date().toISOString().split('T')[0];
   try {
-    const { sha, data } = await ghGetJson(REJECTED_PATH);
-    let list = Array.isArray(data) ? data : [];
-    const today = new Date().toISOString().split('T')[0];
-    for (const it of items) {
-      list.push({
-        text: it.text, flag: it.flag || null, article: it.article || null,
-        source_name: it.source_name || null, dose: currentDose, date: today
-      });
-    }
-    if (list.length > REJECTED_MAX) list = list.slice(list.length - REJECTED_MAX);
-    await ghPutJson(REJECTED_PATH, list, sha, `Admin: odrzucono ${items.length} news(y) [skip ci]`);
+    await zapiszRejected((lista) => {
+      for (const it of items) {
+        lista.push({
+          text: it.text, flag: it.flag || null, article: it.article || null,
+          source_name: it.source_name || null, dose: currentDose, date: today
+        });
+      }
+      return lista.length > REJECTED_MAX ? lista.slice(lista.length - REJECTED_MAX) : lista;
+    }, `Admin: odrzucono ${items.length} news(y) [skip ci]`);
   } catch (e) {
+    // ⚠️ GŁOŚNO, nie do konsoli. News jest już usunięty z briefs.json, więc milcząca porażka
+    // zostawia właściciela w przekonaniu, że filtr się nauczył — a nie nauczył.
+    showToast(`⚠️ News usunięty, ale NIE nauczył filtra: ${e.message}`);
     console.warn('Nie udało się zapisać rejected.json:', e);
   }
 }
