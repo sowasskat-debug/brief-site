@@ -375,6 +375,13 @@ Na `index.html` (dla czytelników) przycisku NADAL NIE MA — opis „gdzie wpi�
 ⚠️ `x_post` od bota **nie istnieje** (zmierzone 2026-08-01: 0/70 itemów) — panel jedzie w całości
 na fallbacku `item.text`, dlatego fallback jest OBOWIĄZKOWY, a nie „na wszelki wypadek".
 
+- 🔴 **Link do komentarza = STUB, nie hash (2026-08-02):** pole `xLink` w knadze podawało
+  `brifup.com/#dawka/slug`, który na X i Slacku daje **generyczną kartę strony głównej** — fragment nigdy
+  nie dociera do crawlera. Teraz `linkDoUdostepnienia` podstawia `brifup.com/s/<slug>.html` (stub z własnymi
+  `og:*`/`twitter:*`, przekierowujący człowieka JS-em do apki). ⚠️ **Sprawdzane HEAD-em przed podmianą** —
+  stub powstaje dopiero pod koniec biegu bota i ma retencję 14 dni, więc dla newsa świeżo opublikowanego
+  albo starego może go nie być; wtedy wracamy do adresu hashowego (lepiej gorsza karta niż link w 404).
+  ⚠️ Zasada „link NIE idzie w treść głównego posta" **bez zmian** — to dotyczy wyłącznie adresu do komentarza.
 - **Skąd treść:** bot dopisuje do każdego itema pole **`x_post`** w `briefs.json` (hook + 1 zdanie z liczbami
   z artykułu, ≤250 zn.). Front go tylko czyta — 0 tokenów per klik, jak przy `threads.json`.
   **FALLBACK obowiązkowy:** brak/`null` `x_post` (stare itemy, gotowiec odrzucony przez bramkę pokrycia liczb)
