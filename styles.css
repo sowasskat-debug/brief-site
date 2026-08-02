@@ -1050,7 +1050,6 @@ html, body {
 .q-px{font-family:'Space Mono',monospace;font-size:13px;white-space:nowrap}
 .q-cur{color:var(--muted,#6b7280);font-size:10px}
 .q-chg{font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;white-space:nowrap;text-align:right;min-width:58px}
-.q-stamp{font-family:'Space Mono',monospace;font-size:9.5px;color:var(--muted,#6b7280);letter-spacing:.05em;margin-bottom:12px}
 
 /* Bardzo wąskie ekrany: nazwa ustępuje miejsca liczbom (to one niosą treść). */
 @media (max-width:460px){

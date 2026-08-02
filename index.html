@@ -797,8 +797,8 @@ function quotesHtml(item){
   if (!QUOTES || !QUOTES.series) return '';
   // Znacznik czasu bierzemy z NAJSTARSZEJ pokazanej serii, nie globalny. Bot od 2026-07-31 potrafi
   // ZACHOWAĆ serię z poprzedniego biegu, gdy źródło nie odpowiedziało (inaczej wykresy akcji znikały
-  // ze strony przy jednej nieudanej odpowiedzi Alpaki) — taka seria niesie własne, starsze `stan_na`
-  // i stopka musi mówić prawdę o tym, jak stare są dane.
+  // ze strony przy jednej nieudanej odpowiedzi Alpaki) — taka seria niesie własne, starsze `stan_na`,
+  // więc znacznik musi mówić prawdę o tym, jak stare są dane.
   const stemple = [];
   const wiersze = item.chart.map(sym => {
     const s = QUOTES.series[sym];
@@ -822,11 +822,13 @@ function quotesHtml(item){
     </div>`;
   }).filter(Boolean).join('');
   if (!wiersze) return '';
-  // ⚠️ Stopka „stan na …" jest OBOWIĄZKOWA: dane są godzinne, nie live. Bez niej kafel sugeruje
-  // notowania w czasie rzeczywistym, czyli wprowadza czytelnika w błąd.
+  // Stopka „Notowania: stan na … · dane opóźnione" ZDJĘTA Z EKRANU na życzenie właściciela (2026-08-02),
+  // ale znacznik ZOSTAJE — w `title` (podpowiedź po najechaniu) i w `data-stan` (do odczytu z konsoli).
+  // ⚠️ Nie kasuj go całkiem: dane są godzinne, a bot potrafi ZACHOWAĆ serię z poprzedniego biegu, gdy
+  // źródło nie odpowiedziało — bez znacznika nie da się odróżnić kursu sprzed 20 minut od wczorajszego.
+  // Przywrócenie widocznej stopki to jedna linia (`stan` jest już policzone).
   const stan = stemple.length ? stemple.slice().sort()[0] : (QUOTES.stan_na || '—');
-  return `<div class="q-box">${wiersze}</div>
-    <div class="q-stamp">Notowania: stan na ${escHtml(stan)} · dane opóźnione</div>`;
+  return `<div class="q-box" data-stan="${escAttr(stan)}" title="Notowania: stan na ${escAttr(stan)} · dane opóźnione">${wiersze}</div>`;
 }
 
 function expandBlock(item) {
