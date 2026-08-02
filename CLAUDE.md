@@ -460,3 +460,61 @@ Dla `fala.html` (czysty ES2017+, bez transpilacji): sanity-check składni JS prz
 - Estetyka: minimalistyczna, „gazetowa". Fonty DM Serif Display + Space Mono. Akcent czerwony (`--red`). UI po polsku. Motyw jasny/ciemny (theme-aware).
 - Zmiany wizualne: **pokazać podgląd (zrzut) przed wdrożeniem** — user tak woli.
 - Commity po polsku.
+
+## Dwie karty pod X — `og?w=1` + przyciski w knadze (2026-08-02)
+Właściciel wrzuca na X **post samym tekstem**, w 1. komentarzu kartę z osią sagi, w 2. link
+(podgląd renderuje się sam). Dzięki temu w nitce są **dwie różne** grafiki, a nie ta sama trzy razy.
+- **`og?w=1`** → `kartaWatku`: tytuł wątku + **ostatnie 4 etapy** z datami, najnowszy na DOLE
+  (czerwona kropka). ⚠️ **Cztery to granica czytelności przy 1200×630**, nie kaprys — przy pięciu
+  węzłach tekst musiałby zejść poniżej 13 px albo urywać się w pół zdania. Stała `MAX_WEZLOW_NA_KARCIE`.
+  Nagłówek mówi wprost „OSTATNIE 4 Z 20 ETAPÓW", żeby nie sugerować, że to cała saga.
+- **Osobne wyszukanie `pelnyWatek`** — karta osi ma sens także gdy news jest PIERWSZYM etapem, a tam
+  zmienna `watek` zostaje `null` z definicji (pierwszy etap nie jest kontynuacją).
+- **Knaga: dwa przyciski** — „Pobierz kartę" i „Pobierz kartę wątku (N etapów)". Drugi pokazuje się
+  WYŁĄCZNIE dla newsów z sagi; `threads.json` wczytywany leniwie przy pierwszym otwarciu panelu X,
+  błąd pobrania = pusta mapa = przycisk się nie pojawia.
+- ⚠️ **CORS na funkcji `og` jest KONIECZNY** — bez `Access-Control-Allow-Origin` `fetch` z brifup.com
+  odbija się o politykę pochodzenia, a `<a download>` cross-origin jest **ignorowane** (przeglądarka
+  tylko otwiera obrazek). FAIL-SAFE: przy błędzie karta otwiera się w nowej zakładce.
+- 🔴 **Deploy funkcji NIE idzie przez git** — `supabase functions deploy og --no-verify-jwt --project-ref …`.
+
+## Post na X: jedna flaga, zero emoji w treści (2026-08-02) ⚠️
+**X przy „Boost" odrzuca posty z więcej niż jednym emoji** — potwierdzone przez właściciela na żywym
+poście, nie teoria. Konsekwencje w `knaga.html`:
+- **`pierwszeEmoji`** — pole `flag` bywa wieloflagowe (zmierzone: 11 z 49 itemów ma 2-3 flagi,
+  `🇮🇱🇮🇷`, `🇷🇺🇨🇳🇮🇳`). Do posta idzie tylko PIERWSZA. Cięcie po **grafemach** (`Intl.Segmenter`),
+  bo flaga to para regional indicators i `slice(0,1)` rozsypałby ją na literę.
+  ŚWIADOMY KOSZT: `🇮🇱🇮🇷` → `🇮🇱` gubi drugą stronę konfliktu.
+- **`bezEmoji`** — treść czyszczona deterministycznie. Oba źródła gotowca (fallback `item.text`
+  i Edge Function `gotowiec-x`) tylko PROSZĄ model w prompcie o brak emoji, a instrukcja w prompcie
+  **nie jest bramką**. ZOSTAJĄ strzałki ↑/↓ z linii `impact` — to symbole matematyczne, nie
+  piktogramy, i niosą kierunek ruchu.
+- ⚠️ **ZAKRES: wyłącznie publikacja na X.** Strona i listy postów w knadze renderują PEŁNĄ flagę
+  (10 miejsc renderu w `index.html`). `zFlaga` wołane tylko z panelu X.
+- **Licznik znaków w punktach kodowych**, nie `.length` — flaga to 4 jednostki UTF-16, a X liczy 2.
+
+## Notowania: znacznik czasu bez widocznej stopki (2026-08-02)
+Linia „Notowania: stan na … · dane opóźnione" **zdjęta z ekranu** na życzenie właściciela, ale
+znacznik ZOSTAJE w `title` kafla (podpowiedź po najechaniu) i w `data-stan`.
+⚠️ **Nie kasuj go całkiem:** dane są godzinne, a bot potrafi ZACHOWAĆ serię z poprzedniego biegu,
+gdy źródło nie odpowiedziało — bez znacznika nie odróżnisz kursu sprzed 20 minut od wczorajszego.
+Przywrócenie widocznej stopki to jedna linia (`stan` jest dalej liczone z najstarszej serii).
+
+## Odrzucone: jedna ścieżka zapisu, głośne porażki (2026-08-02) ⚠️
+Cztery ścieżki zapisu `rejected.json` robiły „pobierz sha → PUT" bez ponowienia, a DWIE połykały błąd
+do konsoli. Najgorsza (z poczekalni) po nieudanym zapisie wyświetlała bezwarunkowe „Wyrzucono — bot
+się tego uczy", czyli **zapewniała o nauce, której nie było**.
+- **`zapiszRejected(mutuj, message)`** — `mutuj` dostaje ZAWSZE świeżą listę i zwraca nową, więc
+  ponowienie nakłada zmianę na aktualny stan zamiast nadpisywać cudzą. Ponowienie do 3× **wyłącznie
+  na 409**; 401/403/sieć nie naprawią się ponowieniem. Zwrot `null` = nie ma czego zapisywać.
+- Komunikaty mówią prawdę: „News usunięty, ale NIE nauczył filtra: …".
+- ⚠️ **SPROSTOWANIE:** bot NIE dopisuje do `rejected.json`, tylko go czyta (ostatnie 40 wpisów jako
+  REGUŁA 0). Konflikt może powstać wyłącznie między dwoma zapisami z panelu.
+- ⚠️ **Zakładka Odrzucone = TWOJE ręczne odrzucenia.** Odrzucenia bota są w zakładce Lejek i nie mają
+  powodu (patrz `STAN.md` punkt 4) — to częste nieporozumienie.
+
+## Podgląd lokalny na macOS (2026-08-02) ⚠️
+**macOS blokuje `python3 -m http.server` na `~/Documents`** (ochrona prywatności „Files and Folders")
+— serwer wstaje, ale każdy plik oddaje 404. Kopiuj pliki do scratchpada i serwuj stamtąd; wpis
+`brief-site-repo` w `~/.claude/launch.json` już tak działa. To NIE jest to samo co dawne ograniczenie
+sandboxa — objaw identyczny, przyczyna inna.
