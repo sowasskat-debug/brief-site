@@ -111,23 +111,29 @@ przebuduje prefiks cache raz; w części zmiennej nie ruszy nic.
 
 ---
 
-## ⚠️ 5. Bramka zapowiedzi tygodnia — WDROŻONA, ale bez licznika
+## ⚠️ 5. Klastrowanie po rdzeniach + re-klastrowanie odrzuconych — WDROŻONE 02.08 wieczorem, OBSERWOWAĆ
 
-`CzyZapowiedzWieluTematow` (bot, PR #103 → `d2a4971`) jest na `main` od 02.08 wieczorem, Hetzner
-pobiera `main` przed każdym biegiem, więc działa od najbliższego uruchomienia. **Nie zweryfikowana
-na produkcji** — pomiar był offline, na 4195 nagłówkach z archiwum.
+Wieczorem 02.08 dawka rozsypała się na 5 kafli tej samej sagi Ormuz (trzy bliźniacze oświadczenia
+MSZ Iranu obok siebie — zgłoszenie właściciela ze zrzutem). ⚠️ **Bramka zapowiedzi (#103) była
+podejrzana i log ją UNIEWINNIŁ** (zero jej linii w biegu 19:00) — winne dwie starsze wady, obie
+naprawione w **PR #105 → `7dacaf9`**:
+1. filtr spójności klastra liczył Jaccarda po SUROWYCH słowach — polska fleksja („przekierowują
+   statki" vs „przekierował statków" = J 0,0) rozrzucała poprawne grupy DeepSeeka → teraz rdzenie,
+2. odrzuceni z kotwicy spadali na top-level POJEDYNCZO → teraz sklejają się między sobą.
 
-⚠️ **Odstępstwo od konwencji repo, świadome:** każda inna bramka w bocie ma licznik w `brief_health.json`
-(`naglowek_eskalacja_odrzucony`, `cross_bieg_cofniecie`…). Ta ma **tylko `Console.WriteLine`**, więc
-częstość widać wyłącznie w logu Hetznera:
+Dane naprawione ręcznie (`b3459800`): dwa parasole (top story+Centcom, trio MSZ).
+Pomiar offline w `financialnewsbot/CLAUDE.md` (sekcja „Filtr spójności klastra: RDZENIE…").
 
-```
-grep -E "zapowiedź wielu tematów" /var/log/bot.log
-```
+**Co obejrzeć po kilku biegach:**
+- liczniki `klaster_odrzut_kotwicy` / `klaster_odrzut_sklejony` / `klaster_zapowiedz_solo`
+  w `brief_health.json` (dołożone w #105 — domyka odstępstwo „bramka bez licznika" z #103),
+- czy dawki przestały mieć bliźniacze kafle obok siebie,
+- czy RetroMerge nie zaczął scalać ZA DUŻO (negatywy na rdzeniach 3,8% vs 2,0% surowo — podłoga
+  otwarta szerzej; werdykt i tak należy do AI, ale jak zobaczysz sklejone RÓŻNE zdarzenia, patrz
+  progi w sekcji CLAUDE.md bota).
 
-**Kryterium:** jeśli bramka odpala się na czymś, co zapowiedzią nie jest — zawęź `_frazyZapowiedziMocne`,
-**nie** ruszaj `PROG_SPOJNOSCI_KLASTRA` (patrz uzasadnienie w `financialnewsbot/CLAUDE.md`).
-Jeśli chcesz mierzyć bez czytania logów — dołożenie licznika to jedna linia w `LiczLejek`.
+**Kryterium dla bramki zapowiedzi bez zmian:** odpala się na nie-zapowiedzi → zawęź
+`_frazyZapowiedziMocne`, **nie** ruszaj `PROG_SPOJNOSCI_KLASTRA`.
 
 ---
 
