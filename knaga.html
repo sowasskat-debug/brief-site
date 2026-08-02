@@ -371,6 +371,12 @@ input[type=password], input[type=text], input[type=email] {
     <div class="x-licznik" id="xLicznik"></div>
     <div class="x-modal-akcje">
       <button class="btn" id="xOtworz" onclick="wyslijNaX()">Otwórz X z tą treścią</button>
+      <button class="btn" id="xKarta" onclick="pobierzKarte()">Pobierz kartę</button>
+    </div>
+    <div class="x-modal-info">
+      Kartę dołącz do posta jako <b>obrazek</b>. Skoro link idzie dopiero w komentarzu, podgląd
+      linku nigdy się nie renderuje — bez tego post jest gołym tekstem, a natywna grafika jest
+      jednym z najmocniejszych sygnałów zasięgu. Dla newsa z sagi karta pokazuje oś etapów.
     </div>
 
     <div class="x-link-blok">
@@ -601,6 +607,42 @@ async function kopiujLinkX() {
     pole.removeAttribute('readonly');
     pole.select();
     showToast('Skopiuj zaznaczony link (Cmd+C)');
+  }
+}
+
+// Pobiera kartę 1200×630 z Edge Function `og` — tę samą, którą widzą scrapery przy podglądzie
+// linku. Do wrzutki na X dołącza się ją jako NATYWNY OBRAZEK: link idzie dopiero w komentarzu,
+// więc podgląd linku nigdy się nie renderuje i grafika inaczej by się nie pokazała.
+// ⚠️ Wymaga nagłówka CORS na funkcji `og` — bez niego `fetch` z brifup.com odbija się o politykę
+// pochodzenia (a `<a download>` cross-origin jest ignorowane i przeglądarka tylko otwiera obrazek).
+// FAIL-SAFE: gdy funkcja padnie albo odda przekierowanie na statyczną grafikę, otwieramy kartę
+// w nowej zakładce — właściciel zapisze ją ręcznie zamiast zostać z niczym.
+async function pobierzKarte() {
+  if (!xBiezacy) return;
+  const item = xBiezacy.item;
+  const slug = itemSlug(String(item.text || ''));
+  const url = `${SUPABASE_URL}/functions/v1/og?d=${encodeURIComponent(currentDose)}&s=${encodeURIComponent(slug)}`;
+  const btn = document.getElementById('xKarta');
+  const etykieta = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Pobieram…'; }
+  try {
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const blob = await r.blob();
+    if (!blob.type.startsWith('image/')) throw new Error('to nie obrazek');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `brifup-${slug}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    showToast('Karta pobrana — dołącz ją do posta jako obrazek');
+  } catch (e) {
+    window.open(url, '_blank', 'noopener');
+    showToast('Nie udało się pobrać automatycznie — karta otwarta w nowej karcie');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = etykieta; }
   }
 }
 
