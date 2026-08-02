@@ -238,3 +238,68 @@ blokuje domeny `supabase.co`.
 - **Nie policzy tych, u których adblock zablokuje `supabase.co`.** Rzadsze niż przy
   domenach analitycznych, ale niezerowe — traktuj liczby jako dolne oszacowanie.
 - **Nie liczy robotów** (filtr po User-Agent) ani wejść spoza `brifup.com`.
+
+---
+
+## 9. Podgląd linku z osią wątku (2026-08-02) — Edge Function `og`
+
+Karta, którą widać przy wysyłaniu linku do newsa. Dla newsa należącego do wątku
+pokazuje **nagłówek + poprzedni etap + pasek ciągłości sagi**; dla pozostałych —
+nagłówek, kategorię i pasek wiarygodności. Obrazek powstaje **na żądanie**, bo
+GitHub Pages to hosting statyczny i nie policzy go sam, a renderowanie dziesiątek
+PNG-ów co bieg zaśmiecałoby repo.
+
+### 9a. Kto to w ogóle woła
+
+Wyłącznie **scrapery** (Facebook, Slack, WhatsApp, LinkedIn, Signal), i tylko
+w chwili wysłania linku — realnie dziesiątki–setki wywołań miesięcznie wobec
+**500 000** w darmowym tierze. Obciążenie jest pomijalne.
+
+### 9b. Wdrożenie
+
+```
+supabase functions deploy og --no-verify-jwt
+```
+
+⚠️ `--no-verify-jwt` jest **konieczne** — scraper nie ma i nie może mieć tokenu.
+Bez tej flagi każdy podgląd dostanie 401 i karta zostanie bez obrazka.
+
+Funkcja nie potrzebuje żadnych sekretów. Czyta publiczne `briefs.json`,
+`threads.json` i `fonts/*.ttf` z `brifup.com`.
+
+### 9c. Wpięcie po stronie bota
+
+Na Hetznerze, w `/root/bot_secrets.env`:
+
+```
+export OG_IMAGE_BASE=https://<PROJEKT>.supabase.co/functions/v1/og
+```
+
+⚠️ Pamiętaj o `export` — patrz pułapka opisana w `financialnewsbot/CLAUDE.md`.
+**Bez tej zmiennej bot działa normalnie**, tylko stuby wskazują na statyczną
+grafikę serwisu (karta poprawna, ale bez osi wątku).
+
+### 9d. Sprawdzenie po wdrożeniu
+
+1. Weź slug dowolnego newsa z wątku (`s/` w repo albo hash z adresu w apce).
+2. Otwórz w przeglądarce:
+   `https://<PROJEKT>.supabase.co/functions/v1/og?d=morning&s=<slug>`
+   → ma się wyświetlić PNG 1200×630, a nie przekierowanie na `og-image.png`.
+3. Wklej `https://brifup.com/s/<slug>.html` w Slacku albo przepuść przez
+   Facebook Sharing Debugger.
+
+**Jeśli widzisz statyczną grafikę zamiast wygenerowanej** — funkcja weszła
+w gałąź awaryjną. Zajrzyj w logi funkcji (`[og] błąd renderu`). Najczęstsze
+przyczyny: nie zdeployowano z `--no-verify-jwt`, brak `fonts/*.ttf` na
+`brifup.com`, albo slug nie istnieje w podanej dawce.
+
+### 9e. Czego ta funkcja NIE zrobi
+
+- **Nie odświeży kart już zescrapowanych.** Facebook trzyma podgląd ~7 dni,
+  X praktycznie na stałe. Karta pokazuje stan wątku **z momentu wysłania linku** —
+  wiadomość sprzed doby sama się nie zaktualizuje.
+- **Nie pokaże się na X, jeśli nie wysyłasz tam linku.** Gotowiec „Wrzuć na X"
+  w knadze świadomie **nie** dokleja adresu (X obcina zasięg postom z linkiem),
+  więc zysk jest na Slacku, WhatsAppie, Messengerze i Facebooku.
+- **Nie jest krytyczna.** Każdy błąd kończy się przekierowaniem na statyczną
+  grafikę — karta nigdy nie zostaje bez obrazka.
