@@ -446,11 +446,27 @@ function itemSlug(text) {
 // Limit X = 280 zn., link liczy się jako 23 NIEZALEŻNIE od długości (t.co) → budżet na tekst ~250.
 const X_TEXT_MAX = 250;
 
+// Flaga kraju przed treścią — post na X ma wyglądać jak kafel na brifup.com (życzenie
+// właściciela 2026-08-02). Ta sama wartość i ten sam fallback `📰` co na froncie.
+// 🔴 Doklejamy ją do OBU źródeł treści: fallbacku NIŻEJ i gotowca z `gotowiec-x`, który
+//   nadpisuje całe pole. Bez tego drugiego miejsca flaga znikałaby dokładnie wtedy, gdy
+//   generowanie SIĘ UDAŁO — czyli w większości wrzutek.
+// ⚠️ Budżet liczony w punktach kodowych, nie w `.length`: flaga to para regional indicators,
+//   czyli 4 jednostki UTF-16, ale X liczy ją jako 2 znaki. Tniemy TYLKO treść — flaga zostaje
+//   w całości, bo `slice` w środku pary rozsypałby ją na dwie litery.
+function zFlaga(item, tresc) {
+  const flaga = String(item.flag || '📰').trim();
+  const t = String(tresc || '').trim();
+  if (!flaga || t.startsWith(flaga)) return t;
+  const budzet = X_TEXT_MAX - [...flaga].length - 1;
+  const ciety = t.length > budzet ? t.slice(0, budzet - 1).trimEnd() + '…' : t;
+  return `${flaga} ${ciety}`;
+}
+
 // Treść posta: gotowiec `x_post` od bota, a gdy go nie ma (stare itemy, gotowiec odrzucony
 // przez bramkę pokrycia liczb) — sam `text`. FALLBACK OBOWIĄZKOWY: przycisk ma działać ZAWSZE.
 function xPostText(item) {
-  const raw = String(item.x_post || item.text || '').trim();
-  return raw.length > X_TEXT_MAX ? raw.slice(0, X_TEXT_MAX - 1).trimEnd() + '…' : raw;
+  return zFlaga(item, String(item.x_post || item.text || '').trim());
 }
 
 // Adres composera X — ŚWIADOMIE BEZ parametru `url`.
@@ -537,7 +553,7 @@ async function otworzX(slug) {
     if (error) throw error;
 
     if (data?.post) {
-      pole.value = data.post;
+      pole.value = zFlaga(item, data.post);
       setNotice('xStatus', '', data.przyciety
         ? 'Gotowiec wygenerowany (przycięty do limitu). Możesz go poprawić.'
         : 'Gotowiec wygenerowany. Możesz go poprawić przed wysłaniem.');
@@ -563,7 +579,10 @@ function zamknijX() {
 }
 
 function xPolicz() {
-  const n = document.getElementById('xTresc').value.length;
+  // ⚠️ Punkty kodowe, nie `.length` — odkąd treść zaczyna się flagą, `.length` liczyłby ją
+  // jako 4 (dwie pary surogatów), a X liczy 2. Licznik pokazywałby przekroczenie limitu
+  // przy poście, który realnie się mieści.
+  const n = [...document.getElementById('xTresc').value].length;
   const el = document.getElementById('xLicznik');
   // Link nie wchodzi już do posta, więc liczy się sama treść.
   el.textContent = `${n} / 280`;
