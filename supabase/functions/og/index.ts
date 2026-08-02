@@ -19,8 +19,11 @@
 //   kończy się przekierowaniem na statyczną grafikę serwisu. Karta podglądu
 //   nigdy nie zostaje bez obrazka — w najgorszym razie jest to grafika ogólna.
 //
-// ⚠️ NIETESTOWANE NA ŻYWO — napisane bez dostępu do projektu Supabase. Pierwsze
-//   uruchomienie obejrzeć ręcznie (patrz SETUP_SUPABASE.md, sekcja „Podgląd linku").
+// ⚠️ GEOMETRIĘ TESTUJ LOKALNIE, NIE PRZEZ DEPLOY. Ta sama karta składa się w node
+//   (`npm i satori @resvg/resvg-js`, fonty z `fonts/`, dane z `briefs.json`+`threads.json`)
+//   i wychodzi pixel-perfect jak na Supabase. Pierwsza wersja pojechała na produkcję
+//   nieprzejrzana i WSZYSTKIE 46 kart dawki miało tekst ucięty prawą krawędzią — objaw,
+//   którego nie widać w kodzie, tylko na renderze. Sprawdzaj całą dawkę, nie jedną kartę.
 //
 // WDROŻENIE: supabase functions deploy og --no-verify-jwt
 //   (--no-verify-jwt jest KONIECZNE: scraper nie ma i nie może mieć tokenu).
@@ -66,10 +69,21 @@ function itemSlug(text: string): string {
 }
 const normKlucz = (s: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
+// Cięcie na granicy SŁOWA — „…zalecając rozwag…" czyta się jak błąd renderu, nie jak skrót.
+// Cofamy się do ostatniej spacji, ale nie dalej niż o 1/4 limitu (inaczej krótkie zdanie
+// z jednym długim słowem straciłoby pół treści).
 function tnij(s: string, max: number) {
   s = (s || '').trim();
-  return s.length <= max ? s : s.slice(0, max - 1).trimEnd() + '…';
+  if (s.length <= max) return s;
+  const kadlub = s.slice(0, max - 1);
+  const spacja = kadlub.lastIndexOf(' ');
+  return (spacja > max * 0.75 ? kadlub.slice(0, spacja) : kadlub).replace(/[\s,;:.–-]+$/, '') + '…';
 }
+
+// Front trzyma ten sam cap (WATEK_MAX_KROPEK w index.html): bot pozwala na 20 węzłów w wątku,
+// a 20 kropek + tytuł sagi nie mieszczą się w stopce. Powyżej capa pozycja jest mapowana
+// proporcjonalnie — kropki przestają być liczbą etapów, zostają wskaźnikiem „jak daleko".
+const MAX_KROPEK = 12;
 
 // satori nie zna `text-transform` ani `-webkit-line-clamp` — wersaliki i skracanie robimy w kodzie.
 const el = (type: string, style: any, children: any = null) => ({ type, props: { style, children } });
@@ -78,7 +92,7 @@ function karta(naglowek: string, kicker: string, poprzedni: { kiedy: string; tex
                stopkaTekst: string, kropki: { ile: number; akt: number } | null) {
   const lewa = el('div', {
     display: 'flex', flexDirection: 'column', justifyContent: 'center',
-    width: 330, padding: '66px 0 66px 66px',
+    width: 330, padding: '66px 0 66px 66px', boxSizing: 'border-box', flexShrink: 0,
   }, [
     el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 62, color: '#111' }, [
       el('span', {}, 'Brif'), el('span', { color: CZERWONY }, '.up'),
@@ -89,11 +103,14 @@ function karta(naglowek: string, kicker: string, poprzedni: { kiedy: string; tex
     }, ['TYLKO NAJWAŻNIEJSZE', 'NEWSY RYNKOWE', 'I GEOPOLITYCZNE'].map((t) => el('div', {}, t))),
   ]);
 
-  const kreska = el('div', { width: 2, backgroundColor: '#111', margin: '66px 0' });
+  const kreska = el('div', { width: 2, backgroundColor: '#111', margin: '66px 0', flexShrink: 0 });
 
   const prawaDzieci: any[] = [
     el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 16, letterSpacing: 4, color: CZERWONY }, kicker),
-    el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 50, color: '#111', lineHeight: 1.12, marginTop: 18 }, tnij(naglowek, 115)),
+    // Limit zależy od tego, czy niżej stoi blok „poprzedni etap" — bez niego zostaje miejsce
+    // na dwie linie więcej. Oba progi zmierzone renderem całej dawki (46/46 kart bez przelewu).
+    el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 50, color: '#111', lineHeight: 1.12, marginTop: 18 },
+      tnij(naglowek, poprzedni ? 95 : 150)),
   ];
   if (poprzedni) {
     prawaDzieci.push(el('div', {
@@ -108,26 +125,38 @@ function karta(naglowek: string, kicker: string, poprzedni: { kiedy: string; tex
   }
   const stopkaDzieci: any[] = [];
   if (kropki) {
-    stopkaDzieci.push(el('div', { display: 'flex', alignItems: 'center' },
-      Array.from({ length: kropki.ile }, (_, i) => el('div', {
-        width: i === kropki.akt ? 15 : 10, height: i === kropki.akt ? 15 : 10, borderRadius: 999,
-        backgroundColor: i === kropki.akt ? CZERWONY : '#d2d2d2', marginRight: 7,
+    const ile = Math.min(kropki.ile, MAX_KROPEK);
+    const akt = kropki.ile <= MAX_KROPEK ? kropki.akt : Math.round(kropki.akt / (kropki.ile - 1) * (ile - 1));
+    stopkaDzieci.push(el('div', { display: 'flex', alignItems: 'center', flexShrink: 0 },
+      Array.from({ length: ile }, (_, i) => el('div', {
+        width: i === akt ? 15 : 10, height: i === akt ? 15 : 10, borderRadius: 999,
+        backgroundColor: i === akt ? CZERWONY : '#d2d2d2', marginRight: 7, flexShrink: 0,
       }))));
   }
-  stopkaDzieci.push(el('div', { display: 'flex', fontFamily: 'SM', fontSize: 15, color: '#111', fontWeight: 700 },
-    tnij(stopkaTekst, 46)));
+  // Kropki niosą sygnał i nigdy nie mogą zostać wypchnięte — kurczy się wyłącznie tytuł sagi
+  // (ta sama zasada co `.ws-txt` w pasku ciągłości na froncie).
+  stopkaDzieci.push(el('div', {
+    display: 'flex', fontFamily: 'SM', fontSize: 15, color: '#111', fontWeight: 700,
+    flexShrink: 1, minWidth: 0, overflow: 'hidden',
+  }, tnij(stopkaTekst, 46)));
   prawaDzieci.push(el('div', {
     display: 'flex', alignItems: 'center', borderTop: '1.5px solid #111',
     paddingTop: 20, marginTop: 30,
   }, stopkaDzieci));
 
+  // 🔴 `width` + `boxSizing` są OBOWIĄZKOWE, nie kosmetyką. Przy samym `flexGrow: 1` satori
+  //   liczy 868 px jako szerokość TREŚCI i dokleja `padding` (62+48) NA ZEWNĄTRZ — kolumna
+  //   robi się 978 px przy dostępnych 868, więc tekst zawija się do zbyt szerokiej miary
+  //   i ostatnie ~110 px każdej linii wypada poza kadr 1200 px. Objaw: ucięte końcówki
+  //   wyrazów przy prawej krawędzi (zgłoszenie właściciela 2026-08-02, dotyczyło 46/46 kart).
   const prawa = el('div', {
     display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1,
-    padding: '66px 62px 66px 48px',
+    padding: '66px 62px 66px 48px', width: 868, boxSizing: 'border-box', minWidth: 0,
   }, prawaDzieci);
 
   return el('div', {
     display: 'flex', width: 1200, height: 630, backgroundColor: '#fff', color: '#111',
+    boxSizing: 'border-box', overflow: 'hidden',
   }, [lewa, kreska, prawa]);
 }
 
@@ -173,7 +202,10 @@ Deno.serve(async (req) => {
               { kiedy: kiedy(watek.poprzedni?.added_at), text: watek.poprzedni?.text || '' },
               watek.tytul, { ile: watek.ile, akt: watek.etap - 1 })
       : karta(item.text, (item.category || 'Brif.up').toUpperCase(), null,
-              [kiedy(item.added_at), item.reach ? `✓ ${item.reach} źródeł` : null, item.source_name]
+              // ⚠️ Bez „✓" — satori dostaje WYŁĄCZNIE DM Serif + Space Mono, a Space Mono nie ma
+              // U+2713, więc ptaszek renderował się jako pusty prostokąt (tofu). Na froncie ten
+              // sam znak działa, bo tam fonty bierze przeglądarka i ma z czego zrobić fallback.
+              [kiedy(item.added_at), item.reach ? `${item.reach} źródeł` : null, item.source_name]
                 .filter(Boolean).join('  ·  '), null);
 
     const svg = await satori(drzewo as any, { width: 1200, height: 630, fonts: await fonty() });
