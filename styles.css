@@ -994,6 +994,25 @@ html, body {
   border:1px solid rgba(185,28,28,.35);border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap}
 [data-theme="dark"] .watek-badge{color:#f87171;border-color:rgba(248,113,113,.4)}
 
+/* Pasek ciągłości sagi na kaflu w feedzie (2026-08-02) — kropki = pozycja w wątku, tekst = tytuł wątku.
+   Powód: dwa kafle o tym samym temacie w jednym feedzie czytały się jak powtórka serwisu.
+   Świadomie STONOWANY (wariant B, wybór właściciela): przy dniu gęstym od sag mocny czerwony kicker
+   zamieniłby feed w ścianę czerwieni. Kolor niesie sama kropka bieżącego etapu. */
+.watek-strip{display:flex;align-items:center;gap:7px;margin:3px 0 5px;
+  font-family:'Space Mono',monospace;font-size:10px;line-height:1.3;min-width:0}
+.watek-strip .ws-dots{display:inline-flex;gap:3px;align-items:center;flex:0 0 auto}
+.watek-strip .ws-dots i{width:5px;height:5px;border-radius:50%;background:#d4d4d4;display:block}
+.watek-strip .ws-dots i.past{background:rgba(185,28,28,.42)}
+.watek-strip .ws-dots i.on{background:#b91c1c;width:7px;height:7px}
+/* Tytuł wątku musi się kurczyć PIERWSZY — kropki niosą sygnał i nigdy nie mogą zostać wypchnięte. */
+.watek-strip .ws-txt{color:#8a8a8a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+[data-theme="dark"] .watek-strip .ws-dots i{background:#3f3f46}
+[data-theme="dark"] .watek-strip .ws-dots i.past{background:rgba(248,113,113,.42)}
+[data-theme="dark"] .watek-strip .ws-dots i.on{background:#f87171}
+[data-theme="dark"] .watek-strip .ws-txt{color:#9a9a9a}
+.hero-card .watek-strip{margin:5px 0 7px}
+.dt-item .watek-strip{margin:0 0 3px;font-size:9.5px}
+
 
 /* Widok „Wątki dnia" (overlay, 2026-07-17) */
 .watki-saga{border-bottom:1px solid var(--rule);padding:14px 16px}
