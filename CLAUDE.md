@@ -382,6 +382,19 @@ na fallbacku `item.text`, dlatego fallback jest OBOWIĄZKOWY, a nie „na wszelk
   stub powstaje dopiero pod koniec biegu bota i ma retencję 14 dni, więc dla newsa świeżo opublikowanego
   albo starego może go nie być; wtedy wracamy do adresu hashowego (lepiej gorsza karta niż link w 404).
   ⚠️ Zasada „link NIE idzie w treść głównego posta" **bez zmian** — to dotyczy wyłącznie adresu do komentarza.
+- 🔴 **NEWS W KLASTRZE NIE MA STUBA — fallback odpala się ZAWSZE (2026-08-02, zgłoszenie właściciela):**
+  „chciałem udostępnić post SpaceX, ale nie wygenerowało naszego linku z podglądem". Przyczyna nie leży
+  we froncie ani w funkcji `og`: **`ZapiszStubyNaSite` w bocie iteruje po `d.Items`, czyli wyłącznie po
+  pozycjach TOP-LEVEL** — do `subItems` nie wchodzi. `linkDoUdostepnienia` liczy tymczasem slug z
+  `item.text` KAŻDEGO newsa, także sub-itemu, więc dla newsa schowanego w klastrze dostaje adres,
+  który nie istnieje → HEAD 404 → link hashowy → **X pokazuje generyczną kartę strony głównej**.
+  ⚠️ **Objaw myli:** wygląda jak awaria generatora obrazka, a `og` odpowiada poprawnie — po prostu
+  nikt go nie pyta, bo crawler nigdy nie dostaje stuba. **Diagnozując „nie ma podglądu" sprawdź
+  NAJPIERW, czy news jest top-level, czy sub-itemem** (`briefs.json`, pole `subItems` kotwicy).
+  **Lek: rozdzielić klaster** — `ZapiszStubyNaSite` jest samoleczące i odtworzy stub w kolejnym biegu.
+  Zweryfikowane 02.08 na realnym przypadku (SpaceX): po rozdzieleniu `s/1jj229t.html` → 200 w ciągu
+  jednego biegu, karta 1200×630 z właściwym nagłówkiem i kategorią.
+  ⚠️ **Nie obchodź tego dopisując stub ręcznie** — patrz sekcja „Pliki", `s/<slug>.html`.
 - **Skąd treść:** bot dopisuje do każdego itema pole **`x_post`** w `briefs.json` (hook + 1 zdanie z liczbami
   z artykułu, ≤250 zn.). Front go tylko czyta — 0 tokenów per klik, jak przy `threads.json`.
   **FALLBACK obowiązkowy:** brak/`null` `x_post` (stare itemy, gotowiec odrzucony przez bramkę pokrycia liczb)

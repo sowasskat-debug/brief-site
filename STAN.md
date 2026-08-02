@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-02 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-02 (późny wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
@@ -111,7 +111,27 @@ przebuduje prefiks cache raz; w części zmiennej nie ruszy nic.
 
 ---
 
-## 📊 5. Do obejrzenia
+## ⚠️ 5. Bramka zapowiedzi tygodnia — WDROŻONA, ale bez licznika
+
+`CzyZapowiedzWieluTematow` (bot, PR #103 → `d2a4971`) jest na `main` od 02.08 wieczorem, Hetzner
+pobiera `main` przed każdym biegiem, więc działa od najbliższego uruchomienia. **Nie zweryfikowana
+na produkcji** — pomiar był offline, na 4195 nagłówkach z archiwum.
+
+⚠️ **Odstępstwo od konwencji repo, świadome:** każda inna bramka w bocie ma licznik w `brief_health.json`
+(`naglowek_eskalacja_odrzucony`, `cross_bieg_cofniecie`…). Ta ma **tylko `Console.WriteLine`**, więc
+częstość widać wyłącznie w logu Hetznera:
+
+```
+grep -E "zapowiedź wielu tematów" /var/log/bot.log
+```
+
+**Kryterium:** jeśli bramka odpala się na czymś, co zapowiedzią nie jest — zawęź `_frazyZapowiedziMocne`,
+**nie** ruszaj `PROG_SPOJNOSCI_KLASTRA` (patrz uzasadnienie w `financialnewsbot/CLAUDE.md`).
+Jeśli chcesz mierzyć bez czytania logów — dołożenie licznika to jedna linia w `LiczLejek`.
+
+---
+
+## 📊 6. Do obejrzenia
 
 | Co | Gdzie | Punkt odniesienia |
 |---|---|---|
@@ -126,6 +146,23 @@ przebuduje prefiks cache raz; w części zmiennej nie ruszy nic.
 ---
 
 ## ✅ Co zrobiono 2026-08-02 (nie ruszaj bez powodu)
+
+### Zapowiedź tygodnia nie klei się z konkretnym newsem
+Zgłoszenie właściciela (zrzut): w jednej karcie stały zapowiedź kluczowych wydarzeń tygodnia
+(Iran, ISM, JOLTS, ADP, AMD, SpaceX) i raport kwartalny SpaceX. **Zmierzone:** klaster przeszedł
+deterministyczny filtr spójności na Jaccardzie **0,065 przy progu 0,06** — o 0,005, na dwóch
+wspólnych słowach (`raport`, `spacex`). Item-zapowiedź wymienia cudze tematy z nazwy, więc dzieli
+słowa z każdym newsem, o którym wspomina.
+- **Dane:** klaster rozbity na dwie pozycje top-level (`978aad11`). Przeżył trzy zapisy bota
+  i `RetroCleanup` — potwierdza, że `RetroMergeSameEvent` ich nie sklei (bramka 0,12 > 0,065).
+- **Przyczyna:** bramka `CzyZapowiedzWieluTematow` w bocie (PR #103 → `d2a4971`), opis
+  w `financialnewsbot/CLAUDE.md`. **Progu 0,06 świadomie NIE podnoszono.**
+
+### Karta podglądu X dla newsa w klastrze — przyczyna znaleziona
+Zgłoszenie: „chciałem udostępnić post SpaceX, ale nie wygenerowało naszego linku z podglądem".
+To był **skutek tego samego błędu**, nie druga usterka — patrz nowa pułapka 15 niżej.
+Po rozdzieleniu bot dogenerował stub sam w ciągu jednego biegu; `s/1jj229t.html` → 200,
+`og?d=evening&s=1jj229t` → PNG 1200×630 z właściwym nagłówkiem i kategorią.
 
 ### Karta podglądu linku — naprawiona i wdrożona
 - **Kadr:** prawa kolumna miała `flexGrow: 1` bez `width`, więc satori liczył 868 px jako szerokość
@@ -177,6 +214,14 @@ biegami). Angielski oryginał karmi `DeepSeekWyszukiwarkaQueryEN` zamiast być o
 12. **Panel szczegółów: nie zwężaj poniżej 440 px** bez sprawdzenia kafli notowań.
 13. **`rejected.json` UCZY FILTR** (ostatnie 40 wpisów) — pomyłka przy „Usuń" psuje selekcję.
 14. **Link do X NIE idzie w treść posta** — obcina zasięg. Idzie jako odpowiedź.
+15. 🔴 **News schowany w klastrze NIE MA stuba, więc nie da się go udostępnić z podglądem.**
+    `ZapiszStubyNaSite` iteruje po `d.Items`, czyli **wyłącznie po pozycjach top-level** — do `subItems`
+    nie wchodzi. Knaga liczy slug z `item.text` KAŻDEGO newsa (też sub-itemu), więc dla newsa w klastrze
+    dostaje adres, którego nie ma → HEAD 404 → fallback na link hashowy → **X pokazuje generyczną kartę
+    strony głównej**. Objaw wygląda jak awaria funkcji `og`, a `og` działa poprawnie.
+    ⚠️ Diagnozując „nie generuje podglądu" sprawdź NAJPIERW, czy news jest top-level, a nie sub-itemem.
+    Lek: rozdzielić klaster — stub odtworzy się sam w kolejnym biegu (mechanizm jest samoleczący).
+    ⚠️ Stubów **nie dopisuj ręcznie** (patrz `CLAUDE.md`) — bot i tak odtwarza stan z `briefs.json`.
 
 ## Otwarte drobiazgi
 
