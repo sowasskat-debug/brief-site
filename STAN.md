@@ -1,7 +1,48 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-01 (późny wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-02 (popołudnie)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+---
+
+## 🔴 0. ZACZNIJ TUTAJ — podgląd linku: został JEDEN krok na Hetznerze
+
+**Stan: wszystko zbudowane, wdrożone i potwierdzone POZA jedną linijką w `bot_secrets.env`.**
+
+Co działa (sprawdzone 2026-08-02):
+- ✅ Edge Function **`og`** wdrożona na Supabase i **potwierdzona przez właściciela w przeglądarce** —
+  oddaje PNG 1200×630 z osią wątku. To był największy niewiadomy element (satori + resvg + fonty).
+- ✅ Fonty na produkcji (`brifup.com/fonts/*.ttf`), kod stubów w bocie na `main`.
+- ✅ Knaga podaje link do komentarza jako `s/<slug>.html` (z fallbackiem HEAD-em na adres hashowy).
+
+**Do zrobienia — dokładnie to, nic więcej:**
+
+```
+echo 'export OG_IMAGE_BASE=https://utmvokfjvrthvcmxzowc.supabase.co/functions/v1/og' >> /root/bot_secrets.env
+bash -c 'set -a; source /root/bot_secrets.env; set +a; env | grep -c "^OG_IMAGE_BASE="'   # ma dać 1
+```
+
+Potem pierwszy bieg (`cd /root/FinancialNewsBot && git pull && dotnet run`) i w logu:
+`[STUBY] Zapisano N stubów, usunięto 0 (1 commit).` — pierwszy raz **N ≈ 50**, to normalne.
+
+**Weryfikacja po biegu (da się zrobić z repo, bez serwera):**
+1. czy powstał katalog `s/` i czy commit był **jeden**, a nie pięćdziesiąt;
+2. czy w losowym stubie `og:image` wskazuje na `…supabase.co/functions/v1/og?…`, a **nie** na
+   `og-image.png` (jeśli na stary obrazek → zmienna nie doszła do procesu, patrz pułapka `export`);
+3. czy kolejne biegi piszą `[STUBY] Bez zmian — 0 commitów`. Jeśli KAŻDY bieg zapisuje komplet,
+   to znaczy, że coś w treści stuba zmienia się co bieg — szukać w `BudujStubHtml`.
+
+⚠️ **Dopóki ta zmienna nie jest ustawiona, wszystko i tak działa** — stuby powstają i wskazują na
+statyczną grafikę. Karta pokazuje wtedy właściwy nagłówek newsa, ale bez osi wątku.
+
+### ⚠️ Czego NIE robić w kolejnej sesji
+
+- **Nie zakładaj, że masz dostęp do Hetznera.** W trybie zdalnym (Claude Code w chmurze) **nie ma**
+  klienta `ssh`, kluczy ani sieci do serwera — `brifup.com` i `supabase.co` odbijają się od proxy 403.
+  Z CLI na Macu właściciela to samo polecenie działa, bo tam terminal jest jego. Sprawdź `uname -s`
+  zanim cokolwiek obiecasz: `Darwin` = Mac właściciela, `Linux` + `hostname vm` = kontener w chmurze.
+- **Nie przerabiaj linku w knadze z powrotem na hashowy.** `#dawka/slug` daje generyczną kartę strony
+  głównej — fragment nie dociera do crawlera. To jest CAŁY powód istnienia stubów.
 
 ---
 
@@ -97,6 +138,26 @@ Wtedy `lejek.html`/panel od razu pokazuje rozkład powodów.
 | ⚠️ Wykresy notowań | `briefs.json`, pole `chart` | inne nazewnictwo Haiku może dać MNIEJ wykresów |
 
 ---
+
+## ✅ Co zrobiono 2026-08-02 (nie ruszaj bez powodu)
+
+Wszystko zmergowane do `main`, czyli u bota **zdeployowane** (Hetzner pobiera `main` przed biegiem).
+
+- **Werdykt `COFNIECIE` w cross-biegowym dedupie** (`OcenEtapKontynuacji`, dawniej
+  `CzyPowtorkaBezRozwoju`). Zgłoszenie: w jednej dawce dwa kafle o interwencji na jenie, ten świeższy
+  opisywał WCZEŚNIEJSZY etap. Bramka miała tylko POWTORKA/NOWE, więc model rzetelnie mówił NOWE —
+  **nowość detalu ≠ nowość etapu**. Zero dodatkowych calli. ⚠️ Obejrzeć proporcję
+  `cross_bieg_cofniecie` do `cross_bieg_eskalacja`; jak cofnięcia zaczną dominować, zawężać
+  DEFINICJĘ, nie próg Jaccarda (ten działał poprawnie).
+- **Pasek ciągłości sagi na kaflu** (`watekPasekHtml`) — kropki + „ciąg dalszy: <tytuł wątku>",
+  od 2. etapu wzwyż. Wariant B (stonowany), wybrany przez właściciela zamiast czerwonego kickera.
+  Przy okazji naprawione zdublowane „✓ N ŹRÓDŁA" na kaflach-klastrach.
+- **Reguła „decyzje porządkowe dużych platform"** (YouTube kasuje 130 tys. kanałów). Diagnoza z lejka:
+  to był ROZJAZD MIĘDZY FEEDAMI — Polymarket ciął 3×, Kalshi bliźniaczy news przepuścił.
+- **Stuby `s/<slug>.html`** + Edge Function `og` — patrz punkt 0 na górze.
+- **Karta podglądu linku**: „3× DZIENNIE" wycięte z grafiki ORAZ z `og:description`, cache-buster `?v=2`.
+- **Ręcznie scalone dwa kafle o jenie** w porannej dawce (commit `5fe06f3`) — to było sprzątanie
+  danych, przyczynę zamyka `COFNIECIE`.
 
 ## ✅ Co zrobiono 2026-08-01 (nie ruszaj bez powodu)
 
