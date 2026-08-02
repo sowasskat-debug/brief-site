@@ -85,6 +85,11 @@ function tnij(s: string, max: number) {
 // proporcjonalnie — kropki przestają być liczbą etapów, zostają wskaźnikiem „jak daleko".
 const MAX_KROPEK = 12;
 
+// Ile etapów wchodzi na kartę osi wątku. Cztery to granica czytelności przy 1200×630 — przy pięciu
+// tekst musiałby zejść poniżej 13 px albo urywać się w pół zdania. Bot trzyma do 20 węzłów na wątek,
+// więc nagłówek karty mówi wprost „OSTATNIE 4 Z N", żeby nie sugerować, że to cała saga.
+const MAX_WEZLOW_NA_KARCIE = 4;
+
 // satori nie zna `text-transform` ani `-webkit-line-clamp` — wersaliki i skracanie robimy w kodzie.
 const el = (type: string, style: any, children: any = null) => ({ type, props: { style, children } });
 
@@ -160,6 +165,65 @@ function karta(naglowek: string, kicker: string, poprzedni: { kiedy: string; tex
   }, [lewa, kreska, prawa]);
 }
 
+// ── DRUGA KARTA: OŚ WĄTKU (2026-08-02) ───────────────────────────────────────────────────────
+// Życzenie właściciela: post na X niesie kartę z nagłówkiem, a w KOMENTARZU ma iść druga karta —
+// z etapami sagi zamiast tytułu. Czytelnik widzi wtedy, że temat ma historię, bez wchodzenia na stronę.
+// ⚠️ MAKSYMALNIE 4 OSTATNIE ETAPY — nie z lenistwa, tylko dlatego, że przy 1200×630 pięć węzłów
+// schodzi poniżej granicy czytelności (tekst musiałby zejść pod 13 px albo urywać się w pół zdania).
+// Bot trzyma do 20 węzłów na wątek, więc nagłówek mówi wprost „OSTATNIE 4 Z 12", żeby nie sugerować,
+// że to cała saga. Najnowszy etap na DOLE — oś czasu czyta się z góry na dół.
+function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[], ile: number) {
+  const lewa = el('div', {
+    display: 'flex', flexDirection: 'column', justifyContent: 'center',
+    width: 330, padding: '56px 0 56px 66px', boxSizing: 'border-box', flexShrink: 0,
+  }, [
+    el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 62, color: '#111' }, [
+      el('span', {}, 'Brif'), el('span', { color: CZERWONY }, '.up'),
+    ]),
+    el('div', {
+      display: 'flex', flexDirection: 'column', fontFamily: 'SM', fontSize: 12, fontWeight: 700,
+      letterSpacing: 2.6, color: '#8f8f8f', marginTop: 20, lineHeight: 2,
+    }, ['JAK ROZWIJAŁ SIĘ', 'TEN TEMAT'].map((t) => el('div', {}, t))),
+  ]);
+  const kreska = el('div', { width: 2, backgroundColor: '#111', margin: '56px 0', flexShrink: 0 });
+
+  const naglowek = ile > wezly.length
+    ? `OŚ WĄTKU · OSTATNIE ${wezly.length} Z ${ile} ETAPÓW`
+    : `OŚ WĄTKU · ${ile} ${ile === 1 ? 'ETAP' : (ile < 5 ? 'ETAPY' : 'ETAPÓW')}`;
+
+  const wiersze = wezly.map((w, i) => {
+    const ostatni = i === wezly.length - 1;
+    return el('div', { display: 'flex', marginTop: i === 0 ? 0 : 16 }, [
+      // Kolumna osi: kropka + pionowa kreska. Bieżący (ostatni) etap wyróżniony czerwienią i rozmiarem.
+      el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', width: 22, flexShrink: 0 }, [
+        el('div', {
+          width: ostatni ? 13 : 9, height: ostatni ? 13 : 9, borderRadius: 999, marginTop: ostatni ? 3 : 5,
+          backgroundColor: ostatni ? CZERWONY : '#c9c9c9',
+        }),
+        ...(ostatni ? [] : [el('div', { width: 2, flexGrow: 1, marginTop: 4, backgroundColor: '#e4e4e4' })]),
+      ]),
+      el('div', { display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, paddingLeft: 12 }, [
+        el('div', { display: 'flex', fontFamily: 'SM', fontSize: 12, fontWeight: 700, letterSpacing: 1.4, color: ostatni ? CZERWONY : '#9a9a9a' }, w.kiedy),
+        el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 21, color: ostatni ? '#111' : '#4a4a4a', lineHeight: 1.25, marginTop: 3 }, tnij(w.text, 96)),
+      ]),
+    ]);
+  });
+
+  const prawa = el('div', {
+    display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1,
+    padding: '52px 62px 52px 48px', width: 868, boxSizing: 'border-box', minWidth: 0,
+  }, [
+    el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 15, letterSpacing: 3.4, color: CZERWONY }, naglowek),
+    el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 30, color: '#111', lineHeight: 1.15, marginTop: 10 }, tnij(tytulWatku, 62)),
+    el('div', { display: 'flex', flexDirection: 'column', borderTop: '1.5px solid #111', marginTop: 18, paddingTop: 18 }, wiersze),
+  ]);
+
+  return el('div', {
+    display: 'flex', width: 1200, height: 630, backgroundColor: '#fff', color: '#111',
+    boxSizing: 'border-box', overflow: 'hidden',
+  }, [lewa, kreska, prawa]);
+}
+
 function zapasowa() {
   return new Response(null, { status: 302, headers: { Location: ZAPASOWY_OBRAZEK, 'Cache-Control': 'public, max-age=300' } });
 }
@@ -185,18 +249,43 @@ Deno.serve(async (req) => {
 
     // Wątek: mapa znormalizowany tekst węzła → {tytuł, pozycja, ile}. Brak wątku = karta bez osi.
     let watek: { tytul: string; etap: number; ile: number; poprzedni: any } | null = null;
+    // Osobno CAŁY wątek — dla karty osi (`w=1`) potrzebujemy wszystkich węzłów, także gdy news jest
+    // pierwszym etapem (tam `watek` zostaje null, bo pierwszy etap nie jest kontynuacją).
+    let pelnyWatek: { tytul: string; nodes: any[] } | null = null;
     if (threadsRes.ok) {
       const th = await threadsRes.json();
       for (const t of th?.threads ?? []) {
         const nodes = t?.nodes ?? [];
         if (nodes.length < 2) continue;
         const i = nodes.findIndex((n: any) => normKlucz(n?.text) === normKlucz(item.text));
+        if (i < 0) continue;
+        pelnyWatek ??= { tytul: t.title || '', nodes };
         // Etap 1 nie jest kontynuacją — nie ma czego zapowiadać, więc traktujemy jak news bez wątku.
         if (i > 0) { watek = { tytul: t.title || '', etap: i + 1, ile: nodes.length, poprzedni: nodes[i - 1] }; break; }
       }
     }
 
     const kiedy = (a: string) => { const s = a || ''; return `${s.slice(8, 10)}.${s.slice(5, 7)} ${s.slice(11, 16)}`; };
+
+    // `w=1` → druga karta: oś ostatnich etapów, do wklejenia w KOMENTARZU pod postem.
+    // Gdy news nie należy do żadnego wątku, nie ma czego rysować — wracamy do statycznej grafiki
+    // (knaga i tak pokazuje ten przycisk tylko dla newsów z sagą, to jest zabezpieczenie drugiej warstwy).
+    if (u.searchParams.get('w') === '1') {
+      if (!pelnyWatek) return zapasowa();
+      const ostatnie = pelnyWatek.nodes.slice(-MAX_WEZLOW_NA_KARCIE)
+        .map((n: any) => ({ kiedy: kiedy(n?.added_at), text: n?.text || '' }));
+      const svgW = await satori(kartaWatku(pelnyWatek.tytul, ostatnie, pelnyWatek.nodes.length) as any,
+                               { width: 1200, height: 630, fonts: await fonty() });
+      await wasmInit();
+      const pngW = new Resvg(svgW, { fitTo: { mode: 'width', value: 1200 } }).render().asPng();
+      return new Response(pngW, {
+        headers: {
+          'Content-Type': 'image/png',
+          'Cache-Control': 'public, max-age=1800, s-maxage=3600',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
     const drzewo = watek
       ? karta(item.text, `WĄTEK · ETAP ${watek.etap} Z ${watek.ile}`,
               { kiedy: kiedy(watek.poprzedni?.added_at), text: watek.poprzedni?.text || '' },

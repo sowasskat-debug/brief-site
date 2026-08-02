@@ -371,12 +371,14 @@ input[type=password], input[type=text], input[type=email] {
     <div class="x-licznik" id="xLicznik"></div>
     <div class="x-modal-akcje">
       <button class="btn" id="xOtworz" onclick="wyslijNaX()">Otwórz X z tą treścią</button>
-      <button class="btn" id="xKarta" onclick="pobierzKarte()">Pobierz kartę</button>
+      <button class="btn" id="xKarta" onclick="pobierzKarte(false)">Pobierz kartę</button>
+      <button class="btn" id="xKartaWatek" onclick="pobierzKarte(true)" style="display:none">Pobierz kartę wątku</button>
     </div>
     <div class="x-modal-info">
-      Kartę dołącz do posta jako <b>obrazek</b>. Skoro link idzie dopiero w komentarzu, podgląd
-      linku nigdy się nie renderuje — bez tego post jest gołym tekstem, a natywna grafika jest
-      jednym z najmocniejszych sygnałów zasięgu. Dla newsa z sagi karta pokazuje oś etapów.
+      <b>Kartę</b> dołącz do posta jako obrazek — link idzie dopiero w komentarzu, więc podgląd linku
+      nigdy się nie renderuje i bez niej post jest gołym tekstem.
+      <span id="xKartaWatekInfo" style="display:none"><br><b>Kartę wątku</b> wklej w komentarzu razem
+      z linkiem: pokazuje ostatnie 4 etapy sagi, czyli to, czego nagłówek nie zmieści.</span>
     </div>
 
     <div class="x-link-blok">
@@ -480,9 +482,22 @@ function pierwszeEmoji(s) {
   return s;
 }
 
+// ⚠️ EMOJI W TREŚCI WYCINAMY DETERMINISTYCZNIE. Oba źródła gotowca (fallback `item.text` i Edge
+// Function `gotowiec-x`) tylko PROSZĄ model w prompcie o brak emoji — a instrukcja w prompcie to nie
+// jest bramka; repo przerabiało tę lekcję kilka razy. Flaga kraju doklejana z przodu ma być JEDYNYM
+// emoji w poście, bo X przy boostowaniu odrzuca posty z większą ich liczbą (potwierdzone przez
+// właściciela na żywym poście). ZOSTAJĄ strzałki ↑/↓ z linii „Wpływ na rynek" — to symbole
+// matematyczne, nie piktogramy, i niosą treść (kierunek ruchu), a nie dekorację.
+function bezEmoji(s) {
+  return String(s || '')
+    .replace(/\p{Extended_Pictographic}|\p{Regional_Indicator}|[️‍]/gu, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
 function zFlaga(item, tresc) {
   const flaga = pierwszeEmoji(String(item.flag || '📰').trim());
-  const t = String(tresc || '').trim();
+  const t = bezEmoji(tresc);
   if (!flaga || t.startsWith(flaga)) return t;
   const budzet = X_TEXT_MAX - [...flaga].length - 1;
   const ciety = t.length > budzet ? t.slice(0, budzet - 1).trimEnd() + '…' : t;
@@ -558,6 +573,18 @@ async function otworzX(slug) {
     const pole = document.getElementById('xLink');
     if (pole) pole.value = url;
   });
+  // Karta wątku ma sens TYLKO dla newsa należącego do sagi — inaczej funkcja `og` i tak wróci
+  // do statycznej grafiki. Pokazujemy przycisk dopiero po potwierdzeniu członkostwa w wątku,
+  // zamiast dawać go zawsze i pozwalać właścicielowi pobrać nie to, czego oczekiwał.
+  zaladujWatki().then((mapa) => {
+    if (!xBiezacy || xBiezacy.item !== item) return;   // panel zdążył się przełączyć na inny news
+    const w = mapa.get(String(item.text || '').toLowerCase().replace(/\s+/g, ' ').trim());
+    const btnW = document.getElementById('xKartaWatek');
+    const infoW = document.getElementById('xKartaWatekInfo');
+    if (btnW) { btnW.style.display = w ? '' : 'none'; btnW.textContent = w ? `Pobierz kartę wątku (${w.ile} etapów)` : 'Pobierz kartę wątku'; }
+    if (infoW) infoW.style.display = w ? '' : 'none';
+  });
+
   const pole = document.getElementById('xTresc');
   const otworz = document.getElementById('xOtworz');
 
@@ -637,12 +664,34 @@ async function kopiujLinkX() {
 // pochodzenia (a `<a download>` cross-origin jest ignorowane i przeglądarka tylko otwiera obrazek).
 // FAIL-SAFE: gdy funkcja padnie albo odda przekierowanie na statyczną grafikę, otwieramy kartę
 // w nowej zakładce — właściciel zapisze ją ręcznie zamiast zostać z niczym.
-async function pobierzKarte() {
+// Mapa znormalizowany tekst węzła → wątek. Wczytywana LENIWIE, przy pierwszym otwarciu panelu X —
+// knaga nie potrzebuje wątków do niczego innego, więc nie ma sensu ciągnąć ich przy starcie panelu.
+// FAIL-SAFE: błąd pobrania = pusta mapa = przycisk karty wątku po prostu się nie pokazuje.
+let WATKI = null;
+async function zaladujWatki() {
+  if (WATKI) return WATKI;
+  WATKI = new Map();
+  try {
+    const r = await fetch(`/threads.json?_=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) return WATKI;
+    const th = await r.json();
+    const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    for (const t of th?.threads ?? []) {
+      const n = t?.nodes ?? [];
+      if (n.length < 2) continue;   // front i karta renderują tylko sagi ≥2 węzły
+      for (const w of n) if (!WATKI.has(norm(w?.text))) WATKI.set(norm(w?.text), { tytul: t.title || '', ile: n.length });
+    }
+  } catch (_) { /* zostaje pusta mapa */ }
+  return WATKI;
+}
+
+async function pobierzKarte(watek) {
   if (!xBiezacy) return;
   const item = xBiezacy.item;
   const slug = itemSlug(String(item.text || ''));
-  const url = `${SUPABASE_URL}/functions/v1/og?d=${encodeURIComponent(currentDose)}&s=${encodeURIComponent(slug)}`;
-  const btn = document.getElementById('xKarta');
+  const url = `${SUPABASE_URL}/functions/v1/og?d=${encodeURIComponent(currentDose)}&s=${encodeURIComponent(slug)}`
+            + (watek ? '&w=1' : '');
+  const btn = document.getElementById(watek ? 'xKartaWatek' : 'xKarta');
   const etykieta = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Pobieram…'; }
   try {
@@ -652,7 +701,7 @@ async function pobierzKarte() {
     if (!blob.type.startsWith('image/')) throw new Error('to nie obrazek');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `brifup-${slug}.png`;
+    a.download = `brifup-${slug}${watek ? '-watek' : ''}.png`;
     document.body.appendChild(a);
     a.click();
     a.remove();
