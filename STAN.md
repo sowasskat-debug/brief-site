@@ -5,29 +5,32 @@ niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
-## 🔴 0. ZACZNIJ TUTAJ — jedno wdrożenie Edge Function czeka
+## ✅ 0. Edge Function `og` — WDROŻONA I ZWERYFIKOWANA (02.08 wieczorem)
 
-Na `main` leżą **dwie zmiany funkcji `og`, które nie są wdrożone**, bo deploy nie idzie przez git:
+Ten punkt mówił „dwie zmiany czekają na deploy" — **nieaktualne, obie działają.** Sprawdzone na
+żywym endpoincie: `?w=1` oddaje `PNG image data, 1200 x 630`, a nagłówek `access-control-allow-origin: *`
+jest obecny (czyli „Pobierz kartę" zapisuje plik, nie otwiera zakładki).
 
+🔴 **Zapamiętaj mechanizm, bo wróci:** deploy funkcji **NIE IDZIE PRZEZ GIT**. Commit do `main` nic
+nie wdraża — po każdej zmianie w `supabase/functions/og/index.ts` trzeba ręcznie:
 ```
 cd ~/Documents/brief-site && supabase functions deploy og --no-verify-jwt --project-ref utmvokfjvrthvcmxzowc
 ```
+⚠️ `--no-verify-jwt` jest **konieczne** (scraper nie ma i nie może mieć tokenu).
+⚠️ `supabase login` wygasa — przy błędzie tokenu najpierw `supabase login`.
+⚠️ Ostrzeżenie `Docker is not running` przy deployu jest **nieszkodliwe** — funkcja i tak się wgrywa.
 
-Co przez to nie działa:
-1. **Karta wątku (`?w=1`)** — druga karta z osią ostatnich 4 etapów sagi, do wklejenia w komentarzu
-   na X. Przycisk w knadze jest, funkcja na Supabase jeszcze o parametrze nie wie.
-2. **CORS** — bez nagłówka `Access-Control-Allow-Origin` przyciski „Pobierz kartę" działają tylko
-   w trybie awaryjnym (otwierają obrazek w nowej zakładce zamiast go zapisać).
-
-⚠️ `supabase login` wygasa — jeśli deploy zwróci błąd tokenu, najpierw `supabase login`.
-⚠️ `--no-verify-jwt` jest **konieczne**: scraper nie ma i nie może mieć tokenu.
-
-**Weryfikacja po deployu** (da się z Maca):
+**Weryfikacja po każdym deployu** (z Maca):
 ```
-curl -sS -D- -o /dev/null "https://utmvokfjvrthvcmxzowc.supabase.co/functions/v1/og?d=morning&s=<slug>" | grep -i access-control
-curl -sS -o /tmp/w.png "https://utmvokfjvrthvcmxzowc.supabase.co/functions/v1/og?d=morning&s=<slug>&w=1" && file /tmp/w.png
+curl -sS -D- -o /dev/null ".../og?d=morning&s=<slug>" | grep -i access-control
+curl -sS -o /tmp/w.png ".../og?d=morning&s=<slug>&w=1" && file /tmp/w.png
 ```
-Ma być nagłówek CORS i `PNG image data, 1200 x 630`.
+
+**Ostatnia zmiana 02.08 (życzenie właściciela: „przesuń kreskę w lewo, żeby się więcej zmieściło"):**
+lewa kolumna karty wątku 330→250 px, prawa 868→948, limit tekstu etapu 96→104 znaki.
+Szerokość tekstu osi urosła o 11%. 🔴 **Zmieniając szerokość jednej kolumny, MUSISZ zmienić drugą
+o tyle samo** — satori tego nie wylicza (to ta sama pułapka, przez którą 46/46 kart miało ucięty
+kadr). Zweryfikowane pikselowo: treść w granicach x 48–1148, zapas 51 px z prawej.
 
 ---
 

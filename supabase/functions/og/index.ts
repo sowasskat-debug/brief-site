@@ -173,11 +173,19 @@ function karta(naglowek: string, kicker: string, poprzedni: { kiedy: string; tex
 // Bot trzyma do 20 węzłów na wątek, więc nagłówek mówi wprost „OSTATNIE 4 Z 12", żeby nie sugerować,
 // że to cała saga. Najnowszy etap na DOLE — oś czasu czyta się z góry na dół.
 function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[], ile: number) {
+  // ⚠️ Lewa kolumna WĘŻSZA niż na karcie nagłówkowej (250 zamiast 330) — życzenie właściciela
+  // 2026-08-02: „przesuń kreskę w lewo, żeby się więcej zmieściło". Oś wątku ma cztery etapy po
+  // dwie linie, więc każdy piksel szerokości realnie skraca zawijanie; lewa kolumna niosła tylko
+  // logo i dwa wiersze podpisu i miała nadmiar miejsca.
+  // 🔴 Zmieniając `width` lewej, MUSISZ zmienić `width` prawej o tyle samo (330+2+868 = 250+2+948
+  // = 1200). Satori NIE wylicza tego sam — patrz komentarz przy karcie nagłówkowej.
+  // Logo zeszło 62→58, bo przy 48 px wcięcia „Brif.up" w 62 px zostawiało ~10 px zapasu do krawędzi
+  // kolumny; zawinięcie logo na dwie linie byłoby brzydsze niż ta różnica wielkości.
   const lewa = el('div', {
     display: 'flex', flexDirection: 'column', justifyContent: 'center',
-    width: 330, padding: '56px 0 56px 66px', boxSizing: 'border-box', flexShrink: 0,
+    width: 250, padding: '56px 0 56px 48px', boxSizing: 'border-box', flexShrink: 0,
   }, [
-    el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 62, color: '#111' }, [
+    el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 58, color: '#111' }, [
       el('span', {}, 'Brif'), el('span', { color: CZERWONY }, '.up'),
     ]),
     el('div', {
@@ -204,14 +212,19 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
       ]),
       el('div', { display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, paddingLeft: 12 }, [
         el('div', { display: 'flex', fontFamily: 'SM', fontSize: 12, fontWeight: 700, letterSpacing: 1.4, color: ostatni ? CZERWONY : '#9a9a9a' }, w.kiedy),
-        el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 21, color: ostatni ? '#111' : '#4a4a4a', lineHeight: 1.25, marginTop: 3 }, tnij(w.text, 96)),
+        // 96→104: szersza kolumna mieści więcej w tych samych DWÓCH liniach, więc podniesienie limitu
+        // odzyskuje tekst, który wcześniej ginął w „…". ⚠️ Nie podnoś dalej bez sprawdzenia kadru —
+        // trzecia linia w każdym z czterech etapów wypchnęłaby oś poza 630 px (zapas to ~57 px).
+        el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 21, color: ostatni ? '#111' : '#4a4a4a', lineHeight: 1.25, marginTop: 3 }, tnij(w.text, 104)),
       ]),
     ]);
   });
 
+  // 948 = 1200 − 250 (lewa) − 2 (kreska). Wcięcie od kreski 48→44, prawy margines 62 bez zmian.
+  // Realna szerokość tekstu osi rośnie z 758 do 842 px (+11%).
   const prawa = el('div', {
     display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1,
-    padding: '52px 62px 52px 48px', width: 868, boxSizing: 'border-box', minWidth: 0,
+    padding: '52px 62px 52px 44px', width: 948, boxSizing: 'border-box', minWidth: 0,
   }, [
     el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 15, letterSpacing: 3.4, color: CZERWONY }, naglowek),
     el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 30, color: '#111', lineHeight: 1.15, marginTop: 10 }, tnij(tytulWatku, 62)),
