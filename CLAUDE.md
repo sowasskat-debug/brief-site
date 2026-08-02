@@ -162,6 +162,30 @@ fallback na pozycję w `items[]`.
   wątki (treść dawki bez zmian), `pollLiveUpdates(wymusRender = true)` pomija check `doseSignature` i re-renderuje,
   żeby badge pojawił się bez czekania na kolejny zapis newsów. **ZASADA:** każdy nowy gotowiec od bota czytany
   raz przy starcie (mapy po TEKŚCIE newsa) trzeba odświeżać razem z `briefs.json` — teksty bywają przepisywane.
+- **Pasek ciągłości sagi na kaflu w feedzie — `watekPasekHtml` (2026-08-02):** zgłoszenie właściciela
+  („przecież masakra", dwa zrzuty z telefonu): w jednej dawce stały **dwa kafle o tym samym** — poz. 02
+  „Interwencja walutowa USA i Japonii w obronie jena" i poz. 04 „USA **rozważa** zakup jenów za 5–10 mld USD",
+  przy czym ten późniejszy opisywał WCZEŚNIEJSZY etap. Czytelnik odbiera to jako „portal się powtarza".
+  Kafel niósł tylko ciche `🧵 7`, które nie mówiło ANI że to kontynuacja, ANI jakiego tematu.
+  **Pasek:** kropki (pozycja w sadze) + `ciąg dalszy: <tytuł wątku>`, wstawiany NAD nagłówkiem w mobile
+  (hero + oba szablony `restBlocks`) i desktopie (4 szablony `dt-item`). ⚠️ **Pokazywany DOPIERO OD 2. ETAPU**
+  (`watekEtapInfo` zwraca `null` dla `idx < 1`) — pierwszy news sagi nie jest kontynuacją; bez tego warunku
+  oznaczylibyśmy pół feedu i sygnał przestałby cokolwiek znaczyć. Dane z już wczytanej `THREAD_BY_TEXT`
+  → **0 dodatkowych fetchy, 0 tokenów**. `WATEK_MAX_KROPEK = 12`: bot trzyma do 20 węzłów/wątek, więc powyżej
+  capa kropki przestają być liczbą etapów, a zostają wskaźnikiem „jak daleko" (pozycja mapowana proporcjonalnie);
+  dokładne „N z M" jest w `title`/`aria-label`. W `.watek-strip` kurczy się WYŁĄCZNIE `.ws-txt` — kropki niosą
+  sygnał i nigdy nie mogą zostać wypchnięte.
+  - **Badge `🧵 N` znika, gdy jest pasek** (`watekBadgeHtml` zwraca `''`, gdy `watekEtapInfo` niepuste) —
+    inaczej ten sam fakt stał w kaflu dwa razy. Badge zostaje tam, gdzie paska nie ma (1. etap sagi).
+  - ⚠️ **Wariant wizualny wybrany przez właściciela: B (stonowany pasek), NIE czerwony kicker** — przy dniu
+    gęstym od sag mocny kicker zamieniał feed w ścianę czerwieni (widoczne na podglądzie: oznaczenie dostawały
+    naraz sagi jena, Iranu i Ceuty). Kolor niesie sama kropka bieżącego etapu.
+  - ⚠️ **Przy okazji naprawione: zdublowane „✓ N ŹRÓDŁA" na kaflach-klastrach** (mobile `restBlocks`) — licznik
+    szedł RAZ w `catMetaRow`, a DRUGI raz jako `srcBadge` w `.card-corner`. `.card-corner` usunięty z tego
+    szablonu; **hero go zachowuje**, bo hero nie renderuje `catMetaRow`.
+  - 🔴 To jest **łagodzenie objawu, nie przyczyny** — dwa kafle o tym samym wydarzeniu nadal nie powinny
+    powstawać. Naprawa u źródła jest po stronie bota (werdykt `COFNIĘCIE` w bramce cross-bieg dedupu) —
+    patrz `financialnewsbot/CLAUDE.md`, sekcja „Retrogresja etapu sagi".
 - **Badge `🧵 N` na kaflach (2026-07-17):** `watekBadgeHtml(item)` w `catMetaRow` (mobile) i wszystkich 3 szablonach
   `dt-item-meta` (desktop; warunek meta rozszerzony o `threadForItem`) — wątki widać z LISTY, nie dopiero po otwarciu
   artykułu. Po dociągnięciu threads.json `loadThreads().then(...)` robi re-render bieżącej dawki (badge bez czekania

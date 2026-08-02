@@ -639,7 +639,44 @@ function watekWhen(node){
 // przycisk pojawiał się dopiero PO otwarciu artykułu. Pusty string, dopóki threads.json się nie dociągnie.
 function watekBadgeHtml(item){
   const t = threadForItem(item);
-  return t ? `<span class="watek-badge">🧵 ${t.nodes.length}</span>` : '';
+  if (!t) return '';
+  // Gdy kafel dostaje pasek ciągłości (watekPasekHtml), badge niósłby TĘ SAMĄ informację drugi raz.
+  if (watekEtapInfo(item)) return '';
+  return `<span class="watek-badge">🧵 ${t.nodes.length}</span>`;
+}
+
+// ══ Pasek ciągłości sagi na kaflu w feedzie (2026-08-02) ══════════════════════════
+// Zgłoszenie właściciela (zrzuty z telefonu, saga interwencji na jenie): czytelnik, który wczoraj
+// widział „USA po raz pierwszy od 2011 roku interweniowały…", a dziś widzi „USA rozważa zakup jenów
+// za 5–10 mld USD…", ma wrażenie, że NEWS SIĘ POWTARZA — bo z samego kafla nie wynika, że to kolejny
+// etap znanej historii. Wątek to pokazywał, ale dopiero PO otwarciu artykułu; badge „🧵 7" był zbyt
+// cichy i nie mówił, JAKIEGO tematu dotyczy. Stąd pasek: kropki (pozycja w sadze) + tytuł wątku.
+// ⚠️ Pokazywany DOPIERO OD 2. ETAPU — pierwszy news sagi nie jest kontynuacją, więc nic nie dostaje
+// (inaczej oznaczalibyśmy pół feedu i sygnał przestałby cokolwiek znaczyć).
+// Dane: mapa THREAD_BY_TEXT wczytana z threads.json — 0 dodatkowych fetchy, 0 tokenów.
+const WATEK_MAX_KROPEK = 12;   // bot trzyma do 20 węzłów/wątek; powyżej capa mapujemy pozycję proporcjonalnie
+function watekEtapInfo(item){
+  const t = threadForItem(item);
+  if (!t || !Array.isArray(t.nodes) || t.nodes.length < 2) return null;
+  const key = normThreadKey(item.text);
+  let idx = -1;
+  for (let i = 0; i < t.nodes.length; i++){ if (normThreadKey(t.nodes[i].text) === key) { idx = i; break; } }
+  if (idx < 1) return null;    // nie znaleziono albo to pierwszy etap = nie kontynuacja
+  return { tytul: t.title || '', etap: idx + 1, ile: t.nodes.length };
+}
+function watekPasekHtml(item){
+  const w = watekEtapInfo(item);
+  if (!w) return '';
+  const n = Math.min(w.ile, WATEK_MAX_KROPEK);
+  // Przy sadze dłuższej niż cap kropki przestają być liczbą etapów, a zostają wskaźnikiem „jak daleko".
+  const aktywna = (w.ile <= WATEK_MAX_KROPEK) ? (w.etap - 1)
+                : Math.round((w.etap - 1) / (w.ile - 1) * (n - 1));
+  let kropki = '';
+  for (let i = 0; i < n; i++) kropki += `<i class="${i === aktywna ? 'on' : (i < aktywna ? 'past' : '')}"></i>`;
+  const opis = `Kolejny etap wątku: ${w.tytul} (${w.etap} z ${w.ile})`;
+  return `<div class="watek-strip" title="${escAttr(opis)}" aria-label="${escAttr(opis)}">`
+       + `<span class="ws-dots" aria-hidden="true">${kropki}</span>`
+       + `<span class="ws-txt">ciąg dalszy: ${escHtml(w.tytul)}</span></div>`;
 }
 
 // ══ Widok „Wątki dnia" — lista aktywnych sag (2026-07-17) ══
@@ -1071,6 +1108,7 @@ function renderDose(dose, items) {
         <span class="hero-topbadge">★ Top Story</span>
         <span class="hero-kicker-dose">${cfg.label}</span>
       </div>
+      ${watekPasekHtml(hero)}
       <div class="hero-title">${escHtml(hero.text)}</div>
       <div class="hero-footer">
         <span class="hero-source">${hero.subItems.length} powiązane newsy</span>
@@ -1087,6 +1125,7 @@ function renderDose(dose, items) {
         <span class="hero-topbadge">★ Top Story</span>
         <span class="hero-kicker-dose">${cfg.label}</span>
       </div>
+      ${watekPasekHtml(hero)}
       <div class="hero-title">${escHtml(hero.text)}</div>
       ${hero.added_at ? `<div class="item-time">${formatAddedAt(hero)}</div>` : ''}
       <div class="hero-footer">
@@ -1101,10 +1140,10 @@ function renderDose(dose, items) {
     if (isGroup) {
       return `
         <div class="news-item" id="group-${item.id}" data-text="${escAttr(item.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${item.id}')">
-          ${srcBadge(item) ? `<div class="card-corner">${srcBadge(item)}</div>` : ''}
           <div class="news-num">0${i+2}</div>
           <div class="news-body">
             ${catMetaRow(item)}
+            ${watekPasekHtml(item)}
             <div class="news-title">${escHtml(item.text)}</div>
           </div>
           <div class="news-arrow">›</div>
@@ -1118,6 +1157,7 @@ function renderDose(dose, items) {
           <div class="news-num">0${i+2}</div>
           <div class="news-body">
             ${catMetaRow(item)}
+            ${watekPasekHtml(item)}
             <div class="news-title">${escHtml(item.text)}</div>
             ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}
           </div>
@@ -1943,7 +1983,7 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
           <div class="dt-item-num">${num}</div>
           <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
           <div class="dt-item-body">
-            <div class="dt-item-headline">${escHtml(item.text)}</div>
+            ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
             <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`} ${watekBadgeHtml(item)}</div>
           </div>
         </div>
@@ -1954,7 +1994,7 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
           <div class="dt-item-num">${num}</div>
           <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
           <div class="dt-item-body">
-            <div class="dt-item-headline">${escHtml(item.text)}</div>
+            ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
             ${(t||item.source_name||threadForItem(item))?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${escHtml(item.source_name)}</span>`:''} ${watekBadgeHtml(item)}</div>`:''}
           </div>
         </div>`;
@@ -1984,7 +2024,7 @@ function dtRenderFeed(items) {
         <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
         <div class="dt-item-body">
           ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
-          <div class="dt-item-headline">${escHtml(item.text)}</div>
+          ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
           <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`} ${watekBadgeHtml(item)}</div>
         </div>
       </div>
@@ -1996,7 +2036,7 @@ function dtRenderFeed(items) {
         <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
         <div class="dt-item-body">
           ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
-          <div class="dt-item-headline">${escHtml(item.text)}</div>
+          ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
           ${(t||item.source_name||threadForItem(item))?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${escHtml(item.source_name)}</span>`:''} ${watekBadgeHtml(item)}</div>`:''}
         </div>
       </div>`;
