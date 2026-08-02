@@ -217,6 +217,11 @@ Deno.serve(async (req) => {
         'Content-Type': 'image/png',
         // Scrapery i tak cache'ują kartę po swojej stronie; to skraca powtórne renderowanie.
         'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+        // ⚠️ CORS jest KONIECZNY, odkąd knaga pobiera tę kartę do wrzutki na X (2026-08-02).
+        // Scraperom nagłówek nie przeszkadza (nie wykonują JS), a bez niego `fetch` z brifup.com
+        // odbija się o politykę pochodzenia i przycisk „Pobierz kartę" nie ma jak zapisać pliku.
+        // Obrazek i tak jest publiczny — powstaje z publicznego briefs.json.
+        'Access-Control-Allow-Origin': '*',
       },
     });
   } catch (e) {
