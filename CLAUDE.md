@@ -62,6 +62,17 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
   odczyt bez auth jak `briefs.json`/`trending.json`) — narzędzie diagnostyczne dla właściciela, NIE dotyczy
   Flusso ani Briefu. Patrz `financialnewsbot/CLAUDE.md` sekcja "Diagnostyczny lejek".
 - `manifest.json`, ikony, `og-image.png`, `CNAME`, `robots.txt`, `sitemap.xml`.
+  ⚠️ **`og-image.png` (1200×630) NIE MA generatora w repo** — to gotowy PNG, nie ma pliku źródłowego.
+  Przy zmianie treści: fonty (DM Serif Display / Space Mono) idą z CDN, którego sandbox nie widzi, więc
+  render od zera wychodzi z podmienionymi krojami. **Edytuj piksele istniejącego PNG-a** (Pillow), zamiast
+  składać obrazek na nowo. Czerwień panelu to `(224,31,15)`, panel zaczyna się na `x=730`.
+  2026-08-02 tak właśnie usunięto linię „3× DZIENNIE" (życzenie właściciela) — zamalowana prostokątem
+  w kolorze panelu, reszta obrazka pixel-perfect nietknięta.
+  ⚠️ **Zmiana obrazka WYMAGA cache-bustera w meta-tagach** (`og-image.png?v=N` w `og:image` ORAZ
+  `twitter:image`) — Facebook/Slack/X trzymają podgląd linku w cache'u i bez zmiany URL-a serwowałyby
+  starą wersję w nieskończoność. ⚠️ Pamiętaj też o `og:description`/`twitter:description`: to TEKST pod
+  obrazkiem przy wysyłce linku, więc hasła wycięte z grafiki trzeba wyciąć również stamtąd (przy tej
+  zmianie „Trzy razy dziennie." siedziało w obu opisach).
 
 ## Kształt danych (`briefs.json`)
 ```
