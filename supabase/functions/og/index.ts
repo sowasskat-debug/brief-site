@@ -85,10 +85,18 @@ function tnij(s: string, max: number) {
 // proporcjonalnie — kropki przestają być liczbą etapów, zostają wskaźnikiem „jak daleko".
 const MAX_KROPEK = 12;
 
-// Ile etapów wchodzi na kartę osi wątku. Cztery to granica czytelności przy 1200×630 — przy pięciu
-// tekst musiałby zejść poniżej 13 px albo urywać się w pół zdania. Bot trzyma do 20 węzłów na wątek,
-// więc nagłówek karty mówi wprost „OSTATNIE 4 Z N", żeby nie sugerować, że to cała saga.
-const MAX_WEZLOW_NA_KARCIE = 4;
+// Ile etapów wchodzi na kartę osi wątku. Bot trzyma do 20 węzłów na wątek, więc nagłówek karty
+// mówi wprost „OSTATNIE N Z M", żeby nie sugerować, że to cała saga.
+//
+// 🔴 4 → 3 (2026-08-03, zgłoszenie właściciela „jest wciąż niewyraźnie"). To NIE była kwestia
+// rozdzielczości — PNG jest ostry, 1200×630. Problem to GĘSTOŚĆ: X pokazuje kartę w osi czasu
+// przy ~504 px (desktop) i ~380 px (telefon), czyli w 42% i 32% skali. Tekst etapu w 21 px
+// schodził tam realnie do 8,8 / 6,7 px, a data w 12 px do 5,0 / 3,8 px. Do tego DM Serif Display
+// jest krojem *display* — jego włoskowate kreski znikają przy pomniejszeniu pierwsze.
+// ⚠️ Zmiana z 02.08 („przesuń kreskę w lewo, żeby się więcej zmieściło", limit 96→104) szła
+// dokładnie w przeciwną stronę: więcej znaków w tym samym kadrze = mniejszy realny rozmiar liter.
+// Te dwa cele się wykluczają i wybrano czytelność. Jeden etap mniej finansuje wzrost 21→30/34 px.
+const MAX_WEZLOW_NA_KARCIE = 3;
 
 // satori nie zna `text-transform` ani `-webkit-line-clamp` — wersaliki i skracanie robimy w kodzie.
 const el = (type: string, style: any, children: any = null) => ({ type, props: { style, children } });
@@ -172,69 +180,124 @@ function karta(naglowek: string, kicker: string, poprzedni: { kiedy: string; tex
 // schodzi poniżej granicy czytelności (tekst musiałby zejść pod 13 px albo urywać się w pół zdania).
 // Bot trzyma do 20 węzłów na wątek, więc nagłówek mówi wprost „OSTATNIE 4 Z 12", żeby nie sugerować,
 // że to cała saga. Najnowszy etap na DOLE — oś czasu czyta się z góry na dół.
-function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[], ile: number) {
-  // ⚠️ Lewa kolumna WĘŻSZA niż na karcie nagłówkowej (250 zamiast 330) — życzenie właściciela
-  // 2026-08-02: „przesuń kreskę w lewo, żeby się więcej zmieściło". Oś wątku ma cztery etapy po
-  // dwie linie, więc każdy piksel szerokości realnie skraca zawijanie; lewa kolumna niosła tylko
-  // logo i dwa wiersze podpisu i miała nadmiar miejsca.
-  // 🔴 Zmieniając `width` lewej, MUSISZ zmienić `width` prawej o tyle samo (330+2+868 = 250+2+948
-  // = 1200). Satori NIE wylicza tego sam — patrz komentarz przy karcie nagłówkowej.
-  // Logo zeszło 62→58, bo przy 48 px wcięcia „Brif.up" w 62 px zostawiało ~10 px zapasu do krawędzi
-  // kolumny; zawinięcie logo na dwie linie byłoby brzydsze niż ta różnica wielkości.
-  const lewa = el('div', {
-    display: 'flex', flexDirection: 'column', justifyContent: 'center',
-    width: 250, padding: '56px 0 56px 48px', boxSizing: 'border-box', flexShrink: 0,
-  }, [
-    el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 58, color: '#111' }, [
-      el('span', {}, 'Brif'), el('span', { color: CZERWONY }, '.up'),
-    ]),
-    el('div', {
-      display: 'flex', flexDirection: 'column', fontFamily: 'SM', fontSize: 12, fontWeight: 700,
-      letterSpacing: 2.6, color: '#8f8f8f', marginTop: 20, lineHeight: 2,
-    }, ['JAK ROZWIJAŁ SIĘ', 'TEN TEMAT'].map((t) => el('div', {}, t))),
-  ]);
-  const kreska = el('div', { width: 2, backgroundColor: '#111', margin: '56px 0', flexShrink: 0 });
+// Karta osi wątku (`?w=1`) — układ JEDNOKOLUMNOWY, pełna szerokość.
+//
+// 🔴 PRZEBUDOWA 2026-08-03 (wybrany wariant „B1"). Lewa kolumna z logo i podpisem „JAK ROZWIJAŁ SIĘ
+// TEN TEMAT" ZNIKNĘŁA, logo poszło do prawego górnego rogu obok kickera. Powód nie jest estetyczny:
+// tamta kolumna zjadała 252 px = 21% szerokości karty na treść, której przy 32–42% skali w osi
+// czasu X i tak nikt nie przeczyta (podpis szedł w 12 px, realnie 3,8–5,0 px). Odzyskane piksele
+// płacą za wzrost typografii — patrz komentarz przy MAX_WEZLOW_NA_KARCIE.
+//
+// ✅ EFEKT UBOCZNY, KTÓRY WARTO ZNAĆ: znika sprzężenie szerokości kolumn (330+2+868 = 250+2+948
+// = 1200), przez które satori ucięło kadr w 46/46 kartach. Jedna kolumna = ta klasa błędu nie
+// ma jak wystąpić. Nie przywracaj podziału bez bardzo dobrego powodu.
+//
+// Realna szerokość tekstu osi: 1076 px (1200 − 2×62 padding) wobec 842 px wcześniej, czyli +28%.
+// Dlatego limit tekstu etapu MÓGŁ wzrosnąć 104 → 118 mimo znacznie większego fontu.
+// ════════════════════════════════════════════════════════════════════════════
+// 🔴 GEOMETRIA KARTY OSI JEST STAŁA, NIE ZALEŻY OD TREŚCI — i tak ma zostać.
+//
+// Pierwsze podejście (2026-08-03) opierało kadr na limitach znakowych i przeszło na wszystkich
+// 53 realnych wątkach z threads.json. Test skrajny (trzy etapy po 118 znaków z samych szerokich
+// glifów + najdłuższy tytuł) rozwalił je w drobny mak: tytuł nachodził na kreskę, a ostatni etap
+// wychodził poza dolną krawędź. To DOKŁADNIE ta klasa błędu, przez którą 46/46 kart dawki miało
+// ucięty kadr — „przeszło na dzisiejszych danych" nie jest dowodem.
+//
+// Dlatego każdy blok, który może urosnąć od treści, ma TWARDĄ wysokość + `overflow: hidden`
+// (zweryfikowane: satori to respektuje, blok się nie rozpycha). Bilans pionowy:
+//   630 − 48 (padding góra) − 40 (padding dół) − 44 (głowa) − 52 (tytuł) − 50 (kreska+odstępy)
+//   = 396 px na etapy, przy zapotrzebowaniu (20+5+78)×2 + (20+5+130) + 2×12 marginesów = 385 px.
+// ⚠️ Zmieniasz którykolwiek z tych rozmiarów → przelicz bilans i puść `render.mjs` RAZEM z testem
+// skrajnym, nie samą dawką.
+//
+// ⚠️ Wysokości są o kilka pikseli WIĘKSZE niż iloczyn `linie × fontSize × lineHeight`. To nie
+// zapas „na wszelki wypadek": przy dokładnym iloczynie satori ścina ostatnią linię w pół wysokości
+// glifów (widać na renderze skrajnym — dolne połówki liter zostają na karcie). Nie obcinaj tego.
+//
+// 🔴 To `maxHeight`, NIE `height` — i to jest istotne. Przy sztywnym `height` etap jednoliniowy
+// rezerwował pełne dwie linie i zostawiał pod sobą dziurę, przez co odstępy między etapami były
+// nierówne. `maxHeight` zwija krótkie etapy do ich własnej wysokości, a długie przycina tak samo
+// twardo — gwarancja kadru zostaje, bo górne ograniczenie jest to samo.
+// (Zweryfikowane: satori obsługuje oba; przy `height` krótki tekst NIE zwijał się.)
+// ════════════════════════════════════════════════════════════════════════════
+const WYS_TYTULU = 52;            // jedna linia przy 46 px (46 × 1,1 = 50,6)
+const WYS_TEKSTU_ETAPU = 78;      // dwie linie przy 30 px (73,2 + zapas na glify)
+const WYS_TEKSTU_BIEZACEGO = 130; // trzy linie przy 34 px (124,4 + zapas) — bieżący etap jest najdłuższy
 
+// Tytuł ma zostać w JEDNEJ linii: druga i tak zostanie odcięta klamrą WYS_TYTULU, więc rozmiar
+// dobieramy tak, żeby do tego nie doszło. Progi zmierzone renderem 53 realnych tytułów
+// (skrypt kalibracyjny, 2026-08-03): przy 46 px zawijały się 3 (od 52 znaków), przy 40 px jeden
+// (63 znaki), przy 36 px żaden. Ustawione z zapasem, bo o zawijaniu decyduje szerokość znaków,
+// nie ich liczba — klamra jest zabezpieczeniem na wypadek, gdy heurystyka spudłuje.
+function rozmiarTytulu(t: string) {
+  if (t.length <= 48) return 46;
+  if (t.length <= 56) return 40;
+  return 36;
+}
+
+function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[], ile: number) {
+  const tytul = tnij(tytulWatku, 62);
   const naglowek = ile > wezly.length
     ? `OŚ WĄTKU · OSTATNIE ${wezly.length} Z ${ile} ETAPÓW`
     : `OŚ WĄTKU · ${ile} ${ile === 1 ? 'ETAP' : (ile < 5 ? 'ETAPY' : 'ETAPÓW')}`;
 
+  // Kicker i logo w jednym wierszu, wyrównane do linii bazowej.
+  const glowa = el('div', { display: 'flex', height: 44, overflow: 'hidden', alignItems: 'baseline', justifyContent: 'space-between' }, [
+    el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 18, letterSpacing: 3.4, color: CZERWONY }, naglowek),
+    el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 34, color: '#111' }, [
+      el('span', {}, 'Brif'), el('span', { color: CZERWONY }, '.up'),
+    ]),
+  ]);
+
   const wiersze = wezly.map((w, i) => {
     const ostatni = i === wezly.length - 1;
-    return el('div', { display: 'flex', marginTop: i === 0 ? 0 : 16 }, [
-      // Kolumna osi: kropka + pionowa kreska. Bieżący (ostatni) etap wyróżniony czerwienią i rozmiarem.
-      el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', width: 22, flexShrink: 0 }, [
+    // ⚠️ `marginTop` to PODŁOGA odstępu, nie jego wartość docelową — `space-between` niżej dokłada
+    // resztę wolnej wysokości. Bez tej podłogi karta z dwuliniowym tytułem zjadała cały luz i data
+    // kolejnego etapu siadała tuż pod tekstem poprzedniego (złapane na wątku „Dyplomacja USA-Izrael”).
+    return el('div', { display: 'flex', marginTop: i === 0 ? 0 : 12 }, [
+      // Kolumna osi: kropka + pionowy łącznik. Bieżący (ostatni) etap wyróżniony czerwienią i rozmiarem.
+      // ⚠️ Kropki urosły 13/9 → 16/11, bo przy 42% skali dziewięciopikselowa kropka to 3,8 px i ginie.
+      el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', width: 26, flexShrink: 0 }, [
         el('div', {
-          width: ostatni ? 13 : 9, height: ostatni ? 13 : 9, borderRadius: 999, marginTop: ostatni ? 3 : 5,
-          backgroundColor: ostatni ? CZERWONY : '#c9c9c9',
+          width: ostatni ? 16 : 11, height: ostatni ? 16 : 11, borderRadius: 999, marginTop: ostatni ? 6 : 9,
+          backgroundColor: ostatni ? CZERWONY : '#b4b4b4',
         }),
-        ...(ostatni ? [] : [el('div', { width: 2, flexGrow: 1, marginTop: 4, backgroundColor: '#e4e4e4' })]),
+        ...(ostatni ? [] : [el('div', { width: 2, flexGrow: 1, marginTop: 6, backgroundColor: '#dcdcdc' })]),
       ]),
-      el('div', { display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, paddingLeft: 12 }, [
-        el('div', { display: 'flex', fontFamily: 'SM', fontSize: 12, fontWeight: 700, letterSpacing: 1.4, color: ostatni ? CZERWONY : '#9a9a9a' }, w.kiedy),
-        // 96→104: szersza kolumna mieści więcej w tych samych DWÓCH liniach, więc podniesienie limitu
-        // odzyskuje tekst, który wcześniej ginął w „…". ⚠️ Nie podnoś dalej bez sprawdzenia kadru —
-        // trzecia linia w każdym z czterech etapów wypchnęłaby oś poza 630 px (zapas to ~57 px).
-        el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 21, color: ostatni ? '#111' : '#4a4a4a', lineHeight: 1.25, marginTop: 3 }, tnij(w.text, 104)),
+      el('div', { display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, paddingLeft: 16 }, [
+        // Data 12 → 16 px. Kontrast też w górę (#9a9a9a → #767676): przy tej skali zbyt jasna szarość
+        // rozpada się w kaszę szybciej, niż maleje sam rozmiar.
+        el('div', { display: 'flex', maxHeight: 20, overflow: 'hidden', fontFamily: 'SM', fontSize: 16, fontWeight: 700, letterSpacing: 1.6, color: ostatni ? CZERWONY : '#767676' }, w.kiedy),
+        // 21 → 30 px (bieżący etap 34), kolor poprzednich #4a4a4a → #2a2a2a.
+        // Limity znakowe są dobrane pod te wysokości: bieżący etap ma trzy linie, poprzednie dwie.
+        // ⚠️ Wysokość jest TWARDA — tekst dłuższy niż klamra zostanie ucięty BEZ wielokropka, więc
+        // limit `tnij` musi być niższy niż pojemność klamry, a nie odwrotnie.
+        el('div', {
+          display: 'flex', maxHeight: ostatni ? WYS_TEKSTU_BIEZACEGO : WYS_TEKSTU_ETAPU, overflow: 'hidden',
+          fontFamily: 'DMS', fontSize: ostatni ? 34 : 30, color: ostatni ? '#111' : '#2a2a2a',
+          lineHeight: 1.22, marginTop: 5,
+        }, tnij(w.text, ostatni ? 118 : 104)),
       ]),
     ]);
   });
 
-  // 948 = 1200 − 250 (lewa) − 2 (kreska). Wcięcie od kreski 48→44, prawy margines 62 bez zmian.
-  // Realna szerokość tekstu osi rośnie z 758 do 842 px (+11%).
-  const prawa = el('div', {
-    display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1,
-    padding: '52px 62px 52px 44px', width: 948, boxSizing: 'border-box', minWidth: 0,
-  }, [
-    el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 15, letterSpacing: 3.4, color: CZERWONY }, naglowek),
-    el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 30, color: '#111', lineHeight: 1.15, marginTop: 10 }, tnij(tytulWatku, 62)),
-    el('div', { display: 'flex', flexDirection: 'column', borderTop: '1.5px solid #111', marginTop: 18, paddingTop: 18 }, wiersze),
-  ]);
-
   return el('div', {
-    display: 'flex', width: 1200, height: 630, backgroundColor: '#fff', color: '#111',
-    boxSizing: 'border-box', overflow: 'hidden',
-  }, [lewa, kreska, prawa]);
+    display: 'flex', flexDirection: 'column', width: 1200, height: 630,
+    backgroundColor: '#fff', color: '#111',
+    padding: '48px 62px 40px 62px', boxSizing: 'border-box', overflow: 'hidden',
+  }, [
+    glowa,
+    el('div', {
+      display: 'flex', maxHeight: WYS_TYTULU, overflow: 'hidden',
+      fontFamily: 'DMS', fontSize: rozmiarTytulu(tytul), color: '#111', lineHeight: 1.1, marginTop: 10,
+    }, tytul),
+    // `space-between` rozkłada etapy na całą wysokość — bez tego przy krótkich nagłówkach zostawało
+    // ~110 px pustki pod ostatnim etapem, a karta wyglądała na uciętą w pionie.
+    el('div', {
+      display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexGrow: 1,
+      borderTop: '2px solid #111', marginTop: 22, paddingTop: 26,
+    }, wiersze),
+  ]);
 }
 
 function zapasowa() {
