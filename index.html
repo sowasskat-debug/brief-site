@@ -812,7 +812,13 @@ function quotesHtml(item){
     // Układ: [symbol+nazwa] [sparkline] [cena/zmiana]. Nazwa jest JEDYNYM elementem, który wolno
     // ścisnąć do zera — panel szczegółów na desktopie ma ~440 px i przy sztywnych szerokościach
     // wypychało procent zmiany poza `overflow:hidden` kontenera (złapane na renderze 2026-07-31).
-    return `<div class="q-row">
+    // `zmiana_pct` to od 2026-08-03 zmiana SESYJNA (wcześniej liczona była od pierwszego punktu serii, czyli
+    // za ~30 sesji — stąd „-5,13%" przy QQQ pod newsem o rekordowym zamknięciu Wall Street). Zmiana za cały
+    // okres jest dalej w danych i ląduje w podpowiedzi, żeby nie zniknęła bez śladu.
+    const okres = (typeof s.zmiana_okres_pct === 'number' && s.punktow_okres)
+      ? ` · ${s.zmiana_okres_pct >= 0 ? '+' : ''}${Number(s.zmiana_okres_pct).toLocaleString('pl-PL', {minimumFractionDigits:2, maximumFractionDigits:2})}% przez ostatnie ${s.punktow_okres} sesji`
+      : '';
+    return `<div class="q-row" title="${escAttr((s.nazwa || sym) + ' · zmiana sesyjna ' + zmiana + okres)}">
       <span class="q-head"><span class="q-sym">${escHtml(sym)}</span><span class="q-name">${escHtml(s.nazwa || sym)}</span></span>
       ${sparklineSvg(s.punkty, kolor, 110, 30)}
       <span class="q-vals">

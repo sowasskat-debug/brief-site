@@ -352,6 +352,13 @@ sam guard schematu inline. **ZASADA:** każdy nowy href z danych → przez `safe
 - **`quotesHtml(item)`** wpięte pod `impactHtml` w **3 miejscach** (`expandBlock`, `expandBlockArchive`,
   `dtShowDetail`) — ten sam zestaw co przy `safeUrl`. FAIL-SAFE na każdym kroku: brak `quotes.json`, brak pola
   `chart`, nieznany symbol albo seria <2 punktów = pusty string = nic się nie renderuje.
+- ⚠️ **`zmiana_pct` = zmiana SESYJNA (od 2026-08-03).** Wcześniej bot liczył ją od pierwszego punktu serii,
+  czyli za ~30 sesji, a front stawia ją tuż przy cenie i koloruje na zielono/czerwono — czytelnik odbierał to
+  jako „dziś". Zgłoszenie właściciela: pod newsem o rekordowym zamknięciu Wall Street kafel pokazywał
+  `QQQ −5,13%`, gdy dwa ostatnie punkty tej samej serii dawały +1,76%. Zmiana za cały okres jest dalej
+  w danych (`zmiana_okres_pct` + `punktow_okres`) i ląduje w podpowiedzi wiersza (`title`), żeby nie zniknęła
+  bez śladu. ⚠️ Sparkline dalej rysuje **cały** okres, więc zielona liczba może stać przy opadającej linii —
+  to nie jest błąd, tylko dwa różne horyzonty; podpowiedź podaje oba.
 - ⚠️ **Stopka „stan na …" jest OBOWIĄZKOWA** — dane są godzinne i opóźnione, nie live. Bez niej kafel sugeruje
   notowania w czasie rzeczywistym.
 - ⚠️ **Szerokości w `.q-row`: jedynym elementem, który wolno ścisnąć, jest `.q-name`.** Pierwsza wersja miała
