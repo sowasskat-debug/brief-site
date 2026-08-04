@@ -2137,6 +2137,16 @@ function dtToggleGroup(id) {
   const open = g.style.display !== 'none';
   g.style.display = open ? 'none' : 'block';
   h?.classList.toggle('selected', !open);
+  // ⚠️ ROZWINIĘCIE KLASTRA OTWIERA TEŻ KOTWICĘ W PANELU (2026-08-04). Zgłoszenie właściciela: „wchodzę
+  // na «USA wprowadzają cła i cenę minimalną» i dalej nie mam wątku po prawej stronie".
+  // 🔴 Przyczyna: `dtToggleGroup` TYLKO rozwijał listę i NIGDY nie wołał `dtShowDetail`, więc kotwicy
+  // klastra na desktopie NIE DAŁO SIĘ otworzyć — klikalne były wyłącznie podpozycje. A wątki budowane
+  // są z pozycji TOP-LEVEL, więc to właśnie kotwica jest węzłem sagi (tu: „Cła Trumpa na cały świat",
+  // etap 6/6); podpozycje węzłami nie są. Efekt: dla każdego klastra-węzła oś wątku była nieosiągalna,
+  // mimo że `dtShowDetail` renderuje ją poprawnie. Badge z #91 mówił „tu jest saga", a kliknięcie
+  // i tak jej nie pokazywało — czyli poprzednia poprawka odsłoniła dopiero połowę problemu.
+  // Kotwica bez artykułu (parasol) też ma co pokazać: nagłówek, oś wątku i „Inne wpisy".
+  if (!open) dtPickItem(id);
   if (open) {
     // Zwijamy grupę: czyść panel/zaznaczenie TYLKO gdy czytany artykuł należał do TEJ grupy (kotwica lub
     // jej podpunkt). Wcześniej zwinięcie DOWOLNEGO klastra kasowało otwarty artykuł — nawet niepowiązany
