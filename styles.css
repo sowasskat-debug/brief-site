@@ -993,6 +993,11 @@ html, body {
 .watek-badge{font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.5px;color:#b91c1c;
   border:1px solid rgba(185,28,28,.35);border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap}
 [data-theme="dark"] .watek-badge{color:#f87171;border-color:rgba(248,113,113,.4)}
+/* Badge sagi w wierszu PODPOZYCJI klastra (2026-08-04). Wiersz jest ciasny (flaga + tekst + strzałka),
+   więc badge siada w linii czasu pod tekstem — a gdy podpozycja nie ma `added_at`, stoi tam sam.
+   `vertical-align` wyrównuje go do 8-pikselowej godziny obok, inaczej wisiał o 1px za wysoko. */
+.sub-item-text .item-time .watek-badge{font-size:8.5px;padding:0 4px;margin-left:5px;vertical-align:1px}
+.dt-sub-text .watek-badge{font-size:8.5px;padding:0 4px;margin-left:5px;vertical-align:1px}
 
 /* Pasek ciągłości sagi na kaflu w feedzie (2026-08-02) — kropki = pozycja w wątku, tekst = tytuł wątku.
    Powód: dwa kafle o tym samym temacie w jednym feedzie czytały się jak powtórka serwisu.

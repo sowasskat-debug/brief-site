@@ -645,6 +645,24 @@ function watekBadgeHtml(item){
   return `<span class="watek-badge">🧵 ${t.nodes.length}</span>`;
 }
 
+// ⚠️ Badge dla PODPOZYCJI KLASTRA (2026-08-04, zgłoszenie właściciela: „jak wchodzę w klaster, to
+// wątku nie widać — tylko jak są osobne posty"). Wiersz podpozycji renderował WYŁĄCZNIE flagę i tekst,
+// więc news schowany w klastrze nie miał ŻADNEGO oznaczenia sagi, mimo że po rozwinięciu artykułu oś
+// wątku była na miejscu (`expandBlock`/`dtShowDetail` wołają `watekHtml`). Czyli dane i timeline były
+// poprawne — brakowało sygnału NA LIŚCIE, żeby wiedzieć, że warto tam wejść.
+// Zmierzone na produkcji: 42 podpozycje w briefs+archiwum są węzłami sag i nie miały nic.
+// 🔴 Dlaczego osobna funkcja, a nie `watekBadgeHtml`: tamta MILCZY od 2. etapu, bo na kaflu tę samą
+// informację niesie pasek `watekPasekHtml` — a w wierszu podpozycji paska NIE MA (jest ciasny: flaga,
+// tekst, strzałka), więc badge musi się pokazać ZAWSZE. Świadomie badge, nie pasek: pasek to cała
+// linia z tytułem sagi i rozwaliłby zwarty układ listy w klastrze.
+function watekBadgeSubHtml(sub){
+  const t = threadForItem(sub);
+  if (!t || !Array.isArray(t.nodes) || t.nodes.length < 2) return '';
+  const w = watekEtapInfo(sub);
+  const opis = w ? `Kolejny etap wątku: ${w.tytul} (${w.etap} z ${w.ile})` : `Wątek: ${t.title || ''}`;
+  return `<span class="watek-badge" title="${escAttr(opis)}" aria-label="${escAttr(opis)}">🧵 ${t.nodes.length}</span>`;
+}
+
 // ══ Pasek ciągłości sagi na kaflu w feedzie (2026-08-02) ══════════════════════════
 // Zgłoszenie właściciela (zrzuty z telefonu, saga interwencji na jenie): czytelnik, który wczoraj
 // widział „USA po raz pierwszy od 2011 roku interweniowały…", a dziś widzi „USA rozważa zakup jenów
@@ -878,7 +896,7 @@ function renderSubItems(subItems) {
   return subItems.map(sub => `
     <div class="sub-item" id="item-${sub.id}" role="button" tabindex="0" aria-expanded="false" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
       <span class="sub-item-flag">${escHtml(sub.flag||'📰')}</span>
-      <div class="sub-item-text">${escHtml(sub.text)}${sub.added_at ? `<div class="item-time">${formatAddedAt(sub)}</div>` : ''}</div>
+      <div class="sub-item-text">${escHtml(sub.text)}${sub.added_at || watekBadgeSubHtml(sub) ? `<div class="item-time">${sub.added_at ? formatAddedAt(sub) : ''}${watekBadgeSubHtml(sub)}</div>` : ''}</div>
       <div class="sub-item-arrow">›</div>
     </div>
     <div class="card-expand" id="exp-${sub.id}">${expandBlock(sub)}</div>
@@ -1036,7 +1054,7 @@ function renderArchiveSubItems(subItems, dateStr, dose) {
   return subItems.map(sub => `
     <div class="sub-item" id="item-${sub.id}" role="button" tabindex="0" aria-expanded="false" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
       <span class="sub-item-flag">${escHtml(sub.flag || '📰')}</span>
-      <div class="sub-item-text">${escHtml(sub.text)}${sub.added_at ? `<div class="item-time">${formatAddedAt(sub)}</div>` : ''}</div>
+      <div class="sub-item-text">${escHtml(sub.text)}${sub.added_at || watekBadgeSubHtml(sub) ? `<div class="item-time">${sub.added_at ? formatAddedAt(sub) : ''}${watekBadgeSubHtml(sub)}</div>` : ''}</div>
       <div class="sub-item-arrow">›</div>
     </div>
     <div class="card-expand" id="exp-${sub.id}">${expandBlockArchive(sub, dateStr, dose)}</div>`).join('');
@@ -1998,7 +2016,7 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
         const subsHtml = item.subItems.map(sub =>
           `<div class="dt-sub-item" id="dts-${sub.id}" onclick="event.stopPropagation();dtPickItem('${sub.id}')">
             <span class="dt-sub-flag">${escHtml(sub.flag||'📰')}</span>
-            <div class="dt-sub-text">${escHtml(sub.text)}</div>
+            <div class="dt-sub-text">${escHtml(sub.text)}${watekBadgeSubHtml(sub)}</div>
           </div>`
         ).join('');
         html += `<div class="dt-item group-header" id="dti-${item.id}" onclick="dtToggleGroup('${item.id}')">
@@ -2038,7 +2056,7 @@ function dtRenderFeed(items) {
       const subsHtml = item.subItems.map(sub =>
         `<div class="dt-sub-item" id="dts-${sub.id}" onclick="event.stopPropagation();dtPickItem('${sub.id}')">
           <span class="dt-sub-flag">${escHtml(sub.flag||'📰')}</span>
-          <div class="dt-sub-text">${escHtml(sub.text)}</div>
+          <div class="dt-sub-text">${escHtml(sub.text)}${watekBadgeSubHtml(sub)}</div>
         </div>`
       ).join('');
       html += `<div class="dt-item group-header${isTop?' top-item':''}" id="dti-${item.id}" onclick="dtToggleGroup('${item.id}')">
