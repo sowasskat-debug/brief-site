@@ -210,6 +210,15 @@ fallback na pozycję w `items[]`.
   - 🔴 To jest **łagodzenie objawu, nie przyczyny** — dwa kafle o tym samym wydarzeniu nadal nie powinny
     powstawać. Naprawa u źródła jest po stronie bota (werdykt `COFNIĘCIE` w bramce cross-bieg dedupu) —
     patrz `financialnewsbot/CLAUDE.md`, sekcja „Retrogresja etapu sagi".
+- 🔴 **Rozwinięcie klastra na desktopie OTWIERA TEŻ KOTWICĘ w panelu (2026-08-04):** zgłoszenie
+  właściciela — „wchodzę na «USA wprowadzają cła i cenę minimalną» i dalej nie mam wątku po prawej".
+  `dtToggleGroup` **tylko rozwijał listę i nigdy nie wołał `dtShowDetail`**, więc kotwicy klastra
+  na desktopie NIE DAŁO SIĘ otworzyć — klikalne były wyłącznie podpozycje. A wątki bot buduje
+  z pozycji TOP-LEVEL, czyli to właśnie kotwica jest węzłem sagi (tu: „Cła Trumpa na cały świat",
+  etap 6/6), a podpozycje węzłami nie są. Efekt: dla KAŻDEGO klastra-węzła oś wątku była nieosiągalna,
+  mimo że `dtShowDetail` renderuje ją poprawnie. ⚠️ Badge z poprzedniej poprawki mówił „tu jest saga",
+  a kliknięcie i tak jej nie pokazywało — czyli tamta zmiana odsłoniła dopiero POŁOWĘ problemu.
+  Kotwica bez artykułu (parasol) też ma co pokazać: nagłówek, oś wątku i „Inne wpisy".
 - ⚠️ **Podpozycje klastra też mają badge — `watekBadgeSubHtml` (2026-08-04):** zgłoszenie właściciela
   („jak wchodzę w klaster, to wątku nie widać, tylko jak są osobne posty"). Wiersz podpozycji renderował
   WYŁĄCZNIE flagę i tekst, więc news schowany w klastrze nie miał ŻADNEGO oznaczenia sagi — mimo że po
