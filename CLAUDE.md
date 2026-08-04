@@ -67,6 +67,15 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
   JS-em** (`meta http-equiv="refresh"` byłby błędem: część scraperów podąża za nim i czyta meta strony
   głównej). `s/_index.json` to manifest retencji (14 dni). **Nie edytuj ręcznie** — bot odtwarza stan
   z `briefs.json` przy każdym biegu. Szczegóły: `financialnewsbot/CLAUDE.md`, sekcja „Stuby pod podgląd linku".
+- ⚠️ **`og` szuka newsa TAKŻE w podpozycjach klastra (2026-08-04):** zgłoszenie właściciela („przy tym
+  poście nie generuje mi zdjęcia z wątkami"). Funkcja przeglądała WYŁĄCZNIE poziom top-level
+  (`items.find(...)`), więc dla slugu podpozycji `item` wychodził null i wracała `zapasowa()` — statyczna
+  grafika strony głównej. **Objaw myli:** knaga poprawnie pokazywała przycisk „Pobierz kartę wątku
+  (9 etapów)", bo ma obiekt newsa w ręku; padał dopiero generator obrazka. Realny przypadek: „SpaceX
+  nawiązuje współpracę z Nvidią…" (slug `zkowbz`) to podpozycja klastra, a zarazem 7. z 9 węzłów sagi w7.
+  Po spłaszczeniu podpozycja dziedziczy też wątek po kotwicy (`_kotwica`), spójnie z frontem.
+  ⚠️ Kolejność w spłaszczonej liście: **najpierw top-level**, więc przy hipotetycznej kolizji slugów
+  wygrywa kotwica (zmierzone na 4434 pozycjach z briefs+archiwum: 0 kolizji).
 - `supabase/functions/og/index.ts` — generator obrazka karty 1200×630 (nagłówek + poprzedni etap + pasek
   ciągłości sagi). Wołany WYŁĄCZNIE przez scrapery przy wysyłce linku. ⚠️ Deploy **musi** iść
   z `--no-verify-jwt` (scraper nie ma tokenu). FAIL-SAFE: każdy błąd = przekierowanie na `og-image.png`,

@@ -256,8 +256,21 @@ Deno.serve(async (req) => {
     ]);
     if (!briefsRes.ok) return zapasowa();
     const briefs = await briefsRes.json();
+    // ⚠️ SZUKAMY TAKŻE W PODPOZYCJACH KLASTRA (2026-08-04, zgłoszenie właściciela: „przy tym poście nie
+    // generuje mi zdjęcia z wątkami"). Wcześniej `items.find(...)` przeglądał WYŁĄCZNIE poziom top-level,
+    // więc dla slugu podpozycji `item` wychodził null i funkcja wracała `zapasowa()` — czyli statyczną
+    // grafikę strony głównej. Objaw mylił: knaga poprawnie pokazywała przycisk „Pobierz kartę wątku
+    // (9 etapów)", bo ona ma obiekt newsa w ręku i wątek znajdowała; padał dopiero generator obrazka.
+    // Realny przypadek: „SpaceX nawiązuje współpracę z Nvidią…" (slug zkowbz) to podpozycja klastra,
+    // a jednocześnie węzeł sagi w7 „SpaceX po debiucie giełdowym".
+    // `_kotwica` niesie tekst kotwicy — patrz dziedziczenie wątku niżej.
     const items = briefs?.[dawka]?.items ?? [];
-    const item = items.find((it: any) => it?.text && itemSlug(it.text) === slug);
+    const plaskie: any[] = [];
+    for (const it of items) {
+      plaskie.push(it);
+      for (const s of (it?.subItems ?? [])) plaskie.push({ ...s, _kotwica: it?.text || '' });
+    }
+    const item = plaskie.find((it: any) => it?.text && itemSlug(it.text) === slug);
     if (!item) return zapasowa();
 
     // Wątek: mapa znormalizowany tekst węzła → {tytuł, pozycja, ile}. Brak wątku = karta bez osi.
@@ -267,10 +280,19 @@ Deno.serve(async (req) => {
     let pelnyWatek: { tytul: string; nodes: any[] } | null = null;
     if (threadsRes.ok) {
       const th = await threadsRes.json();
+      // Podpozycja klastra DZIEDZICZY wątek po kotwicy, tak samo jak front (brief-site #93): bot buduje
+      // sagi wyłącznie z pozycji top-level, a klaster znaczy „to samo wydarzenie z różnych źródeł",
+      // więc podpozycja jest tym samym etapem co kotwica. Najpierw próbujemy dopasować własny tekst.
+      const klucze = [normKlucz(item.text)];
+      if (item._kotwica) klucze.push(normKlucz(item._kotwica));
       for (const t of th?.threads ?? []) {
         const nodes = t?.nodes ?? [];
         if (nodes.length < 2) continue;
-        const i = nodes.findIndex((n: any) => normKlucz(n?.text) === normKlucz(item.text));
+        let i = -1;
+        for (const k of klucze) {
+          i = nodes.findIndex((n: any) => normKlucz(n?.text) === k);
+          if (i >= 0) break;
+        }
         if (i < 0) continue;
         pelnyWatek ??= { tytul: t.title || '', nodes };
         // Etap 1 nie jest kontynuacją — nie ma czego zapowiadać, więc traktujemy jak news bez wątku.
