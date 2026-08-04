@@ -210,6 +210,16 @@ fallback na pozycję w `items[]`.
   - 🔴 To jest **łagodzenie objawu, nie przyczyny** — dwa kafle o tym samym wydarzeniu nadal nie powinny
     powstawać. Naprawa u źródła jest po stronie bota (werdykt `COFNIĘCIE` w bramce cross-bieg dedupu) —
     patrz `financialnewsbot/CLAUDE.md`, sekcja „Retrogresja etapu sagi".
+- ⚠️ **Podpozycje klastra też mają badge — `watekBadgeSubHtml` (2026-08-04):** zgłoszenie właściciela
+  („jak wchodzę w klaster, to wątku nie widać, tylko jak są osobne posty"). Wiersz podpozycji renderował
+  WYŁĄCZNIE flagę i tekst, więc news schowany w klastrze nie miał ŻADNEGO oznaczenia sagi — mimo że po
+  rozwinięciu artykułu oś wątku była na miejscu (`expandBlock`/`dtShowDetail` wołają `watekHtml`). Dane
+  i timeline były poprawne; brakowało sygnału NA LIŚCIE, żeby wiedzieć, że warto tam wejść. Zmierzone:
+  42 podpozycje w briefs+archiwum są węzłami sag. Wpięte w **3 szablony**: `renderSubItems` (mobile),
+  archiwalny wiersz podpozycji i oba `dt-sub-item` (desktop).
+  🔴 **Osobna funkcja, NIE `watekBadgeHtml`:** tamta MILCZY od 2. etapu, bo na kaflu tę samą informację
+  niesie pasek `watekPasekHtml` — a w wierszu podpozycji paska NIE MA, więc badge musi się pokazać ZAWSZE.
+  Świadomie badge, nie pasek: pasek to cała linia z tytułem sagi i rozwaliłby zwarty układ listy w klastrze.
 - **Badge `🧵 N` na kaflach (2026-07-17):** `watekBadgeHtml(item)` w `catMetaRow` (mobile) i wszystkich 3 szablonach
   `dt-item-meta` (desktop; warunek meta rozszerzony o `threadForItem`) — wątki widać z LISTY, nie dopiero po otwarciu
   artykułu. Po dociągnięciu threads.json `loadThreads().then(...)` robi re-render bieżącej dawki (badge bez czekania
