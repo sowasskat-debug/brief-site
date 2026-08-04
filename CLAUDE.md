@@ -210,6 +210,19 @@ fallback na pozycję w `items[]`.
   - 🔴 To jest **łagodzenie objawu, nie przyczyny** — dwa kafle o tym samym wydarzeniu nadal nie powinny
     powstawać. Naprawa u źródła jest po stronie bota (werdykt `COFNIĘCIE` w bramce cross-bieg dedupu) —
     patrz `financialnewsbot/CLAUDE.md`, sekcja „Retrogresja etapu sagi".
+- ⚠️ **Podpozycja klastra DZIEDZICZY wątek po kotwicy (2026-08-04):** zgłoszenie właściciela — „skoro
+  jakiś post znajduje się w wątku, to powinien ten wątek być do niego przyczepiony". Bot buduje sagi
+  WYŁĄCZNIE z pozycji top-level, więc news wchłonięty do klastra przestawał być węzłem i tracił
+  oznaczenie — mimo że klaster z definicji znaczy „to samo wydarzenie z różnych źródeł", czyli
+  podpozycja jest TYM SAMYM etapem sagi co kotwica. Zmierzone: 9 takich podpozycji w jednym wydaniu
+  (wobec 1, która była węzłem sama z siebie). `threadForItem` ma fallback na `_parentText`, nadawane
+  przez `oznaczKotwice` przy budowie cache — **wpięte w 3 ścieżki**: `loadDose`, archiwum i SAMPLE.
+  ⚠️ `watekKluczBiezacego` podświetla na osi węzeł KOTWICY (tekst podpozycji nie pasuje do żadnego
+  węzła, więc bez tego oś nie miałaby zaznaczonego „ten news").
+  ⚠️ Dziedziczenie dotyczy WYŁĄCZNIE podpozycji — pozycje top-level działają jak dotąd, więc paski
+  ciągłości i logika „badge milczy, gdy jest pasek" pozostają nietknięte. Do obserwacji: w gęstym
+  wydaniu badge dostaje większość podpozycji (10 z 12 zmierzone) — klastry powstają wokół dużych
+  wydarzeń, a te tworzą sagi; gdyby sygnał zaczął szumieć, zawęzić do kotwic będących ≥2 etapem.
 - 🔴 **Rozwinięcie klastra na desktopie OTWIERA TEŻ KOTWICĘ w panelu (2026-08-04):** zgłoszenie
   właściciela — „wchodzę na «USA wprowadzają cła i cenę minimalną» i dalej nie mam wątku po prawej".
   `dtToggleGroup` **tylko rozwijał listę i nigdy nie wołał `dtShowDetail`**, więc kotwicy klastra
