@@ -177,6 +177,10 @@ input[type=password], input[type=text], input[type=email] {
 .x-licznik.zaduzo { color: var(--red); font-weight: 700; }
 .x-modal-akcje { display: flex; gap: 8px; }
 .x-modal-info { font-size: 9.5px; color: var(--muted); line-height: 1.6; margin-top: 10px; }
+/* Komunikat o dogenerowywanym stubie — ma być widoczny, ale nie krzyczeć: to stan przejściowy,
+   który zwykle sam mija w ~5 min (bot zapisuje stuby na końcu biegu). */
+.x-link-status { font-size: 9.5px; line-height: 1.55; margin-top: 7px; color: #b45309;
+  border-left: 2px solid rgba(180,83,9,.35); padding-left: 8px; }
 .x-link-blok { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--rule); }
 .x-link-row { display: flex; gap: 6px; align-items: stretch; }
 .x-link-row input {
@@ -387,6 +391,7 @@ input[type=password], input[type=text], input[type=email] {
         <input type="text" id="xLink" readonly>
         <button class="x-btn" onclick="kopiujLinkX()">Kopiuj</button>
       </div>
+      <div id="xLinkStatus" class="x-link-status" style="display:none"></div>
       <div class="x-modal-info">
         Link świadomie NIE idzie w treść posta: X obcina za niego 30-50% zasięgu, a na koncie
         bez Premium takie posty mają praktycznie zerowe zaangażowanie. Główny post zbiera zasięg,
@@ -562,6 +567,47 @@ async function linkDoUdostepnienia(item) {
   } catch (_) { return hash; }
 }
 
+// ⚠️ PONAWIANIE, BO STUB POWSTAJE PÓŹNIEJ NIŻ NEWS (2026-08-04, zgłoszenie właściciela: „dlaczego się
+// zły link wygenerował?"). W jednym biegu bota `briefs.json` leci NA POCZĄTKU, a `ZapiszStubyNaSite`
+// dopiero na końcu — zmierzone na 8 biegach: **mediana 5,2 min, maksimum 6,1 min** odstępu, plus deploy
+// GitHub Pages. Panel sprawdzał stub JEDEN raz, przy otwarciu, więc kliknięcie świeżego newsa (czyli
+// dokładnie wtedy, kiedy chce się go wrzucić) zostawiało link hashowy NA STAŁE — a ten daje na X
+// generyczną kartę strony głównej. Teraz dosprawdzamy w rosnących odstępach, dopóki panel jest otwarty
+// na TYM newsie; pierwsze trafienie kończy pętlę. Koszt: kilka żądań HEAD.
+const X_LINK_PROBY_MS = [0, 5000, 10000, 20000, 30000, 60000];
+let xLinkTimer = null;
+function xUstawStatusLinku(tekst) {
+  const el = document.getElementById('xLinkStatus');
+  if (!el) return;
+  el.textContent = tekst || '';
+  el.style.display = tekst ? '' : 'none';
+}
+function xSledzStub(item) {
+  clearTimeout(xLinkTimer);
+  let i = 0;
+  const krok = async () => {
+    if (!xBiezacy || xBiezacy.item !== item) return;          // panel przełączył się na inny news
+    const url = await linkDoUdostepnienia(item);
+    if (!xBiezacy || xBiezacy.item !== item) return;
+    const pole = document.getElementById('xLink');
+    if (url.includes('/s/')) {                                // stub gotowy — koniec ponawiania
+      xBiezacy.deep = url;
+      if (pole) pole.value = url;
+      xUstawStatusLinku('');
+      return;
+    }
+    if (pole) pole.value = url;
+    i++;
+    if (i < X_LINK_PROBY_MS.length) {
+      xUstawStatusLinku('Podgląd linku jeszcze się generuje (bot zapisuje go pod koniec biegu, zwykle ~5 min po publikacji). Link podmieni się sam — albo wklej ten, karta będzie wtedy generyczna.');
+      xLinkTimer = setTimeout(krok, X_LINK_PROBY_MS[i]);
+    } else {
+      xUstawStatusLinku('Podgląd linku wciąż niedostępny. Ten adres zadziała, ale karta na X będzie generyczna — spróbuj ponownie za kilka minut.');
+    }
+  };
+  krok();
+}
+
 async function otworzX(slug) {
   const item = X_ITEMS.get(slug);
   if (!item) return;
@@ -570,12 +616,9 @@ async function otworzX(slug) {
   document.getElementById('xOverlay').classList.add('on');
   document.getElementById('xLink').value = xBiezacy.deep;
   // Podmiana na stub, gdy istnieje — asynchronicznie, żeby nie opóźniać otwarcia okna.
-  linkDoUdostepnienia(item).then(url => {
-    if (!xBiezacy || xBiezacy.item !== item) return;   // okno zdążyło się przełączyć na inny news
-    xBiezacy.deep = url;
-    const pole = document.getElementById('xLink');
-    if (pole) pole.value = url;
-  });
+  // Ponawiane, bo stub powstaje kilka minut po newsie (patrz komentarz przy `xSledzStub`).
+  xUstawStatusLinku('');
+  xSledzStub(item);
   // Karta wątku ma sens TYLKO dla newsa należącego do sagi — inaczej funkcja `og` i tak wróci
   // do statycznej grafiki. Pokazujemy przycisk dopiero po potwierdzeniu członkostwa w wątku,
   // zamiast dawać go zawsze i pozwalać właścicielowi pobrać nie to, czego oczekiwał.
@@ -631,6 +674,8 @@ async function otworzX(slug) {
 function zamknijX() {
   document.getElementById('xOverlay').classList.remove('on');
   setNotice('xStatus', '', '');
+  clearTimeout(xLinkTimer);      // zamknięty panel nie odpytuje dalej o stub
+  xUstawStatusLinku('');
   xBiezacy = null;
 }
 
