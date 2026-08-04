@@ -992,6 +992,13 @@ async function applySession() {
 
   document.getElementById('whoami').textContent = session.user.email || '';
 
+  // Urządzenie właściciela wypada ze statystyk wejść (2026-08-04): do knagi loguje się
+  // wyłącznie właściciel, więc udane logowanie to pewny sygnał „to moje urządzenie".
+  // Flagę czyta beacon licznika w index.html (ten sam origin = wspólny localStorage).
+  // Świadomie localStorage, nie sessionStorage — ma przeżyć zamknięcie karty, żeby
+  // zwykłe czytanie strony z tego telefonu/PC też nie nabijało licznika.
+  try { localStorage.setItem('brifup_pomin_licznik', '1'); } catch (_) {}
+
   // Token już w tej karcie — nic nie dociągamy.
   if (token) { enterApp(); return; }
 

@@ -1631,6 +1631,20 @@ if ('serviceWorker' in navigator) {
   // a właściciel patrzyłby na liczby napompowane własnym testowaniem.
   if (!location.hostname.endsWith('brifup.com')) return;
 
+  // ⚠️ Wykluczenie WŁASNYCH urządzeń właściciela (2026-08-04). Flaga w localStorage — beacon
+  // w ogóle nie wychodzi. CELOWO nie po IP: właściciel chodzi po VPN (adres zmienny i
+  // współdzielony — filtr po IP wycinałby też obcych czytelników za tym samym VPN-em),
+  // a licznik z założenia nie zapisuje IP. Flagę ustawia automatycznie logowanie do knagi
+  // (tam wchodzi tylko właściciel) albo ręcznie wejście na brifup.com/?licznik=off
+  // (cofnięcie: ?licznik=on). To NIE jest identyfikator śledzący — deklaracja „zero wpisów
+  // w localStorage" dotyczy CZYTELNIKÓW; ta flaga wyłącza pomiar, niczego nie mierzy.
+  try {
+    const q = new URLSearchParams(location.search).get('licznik');
+    if (q === 'off') localStorage.setItem('brifup_pomin_licznik', '1');
+    if (q === 'on') localStorage.removeItem('brifup_pomin_licznik');
+    if (localStorage.getItem('brifup_pomin_licznik') === '1') return;
+  } catch (_) {}
+
   const ENDPOINT = 'https://utmvokfjvrthvcmxzowc.supabase.co/functions/v1/licznik';
   let ostatnieZgloszenie = 0;
 

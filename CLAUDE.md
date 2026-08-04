@@ -423,6 +423,21 @@ na fallbacku `item.text`, dlatego fallback jest OBOWIĄZKOWY, a nie „na wszelk
   wymaga Premium; gdyby X odrzucał posty, wróć do 280. ⚠️ Zmiana `MAX_ZNAKOW` wymaga redeployu funkcji
   (`supabase functions deploy gotowiec-x`) — sama zmiana w repo NIE wystarcza.
 
+## Licznik wejść: wykluczenie urządzeń właściciela (2026-08-04) ⚠️
+Życzenie właściciela: „w statystykach chcę usunąć mój telefon i PC". Mechanizm — flaga
+`localStorage['brifup_pomin_licznik']`, którą beacon w `index.html` sprawdza PRZED wysyłką (beacon
+w ogóle nie wychodzi). Flagę ustawia: (a) automatycznie udane logowanie do `knaga.html` (loguje się
+tam wyłącznie właściciel; wspólny origin = wspólny localStorage), (b) ręcznie `brifup.com/?licznik=off`
+(cofnięcie `?licznik=on` — na wypadek nowej przeglądarki/incognito).
+- 🔴 **CELOWO nie po IP:** właściciel chodzi po VPN — adres wyjściowy jest zmienny i WSPÓŁDZIELONY,
+  filtr po IP wycinałby też obcych czytelników za tym samym VPN-em. Poza tym licznik z założenia
+  IP nie zapisuje (hash z solą dnia), więc nie ma go po czym filtrować.
+- **Wstecznie nie da się nic usunąć** — hash rotuje co dobę i nie sposób wskazać, które wpisy były
+  właściciela. Flaga działa od momentu ustawienia.
+- ⚠️ Deklaracja „zero wpisów w localStorage" przy liczniku dotyczy CZYTELNIKÓW (brak identyfikatora
+  śledzącego) — flaga opt-out niczego nie mierzy, tylko wyłącza pomiar. Nie jest to sprzeczność.
+- ⚠️ MAC-a nie zbiera nikt — przeglądarka nie ma do niego dostępu; to częste pytanie.
+
 ## OneSignal (push)
 SDK z `cdn.onesignal.com` — **bywa blokowany przez adblock/DNS** → stąd baner
 „Nie można załadować powiadomień". To po stronie przeglądarki usera, nie bug apki.
