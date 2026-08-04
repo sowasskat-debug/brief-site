@@ -451,8 +451,11 @@ function itemSlug(text) {
   return h.toString(36);
 }
 
-// Limit X = 280 zn., link liczy się jako 23 NIEZALEŻNIE od długości (t.co) → budżet na tekst ~250.
-const X_TEXT_MAX = 250;
+// Budżet treści posta: 300 zn. (podniesione z 250 na życzenie właściciela 2026-08-04 — „często ucina").
+// Stare 250 zakładało link w treści (280 − 23 na t.co), ale link i tak idzie do KOMENTARZA, nie do
+// posta — więc margines był podwójnie nieaktualny. ⚠️ Standardowe konto X ma twardy limit 280;
+// 300 wymaga Premium. Gdyby X zaczął odrzucać posty — to jest przyczyna, wtedy wróć do 280.
+const X_TEXT_MAX = 300;
 
 // Flaga kraju przed treścią — post na X ma wyglądać jak kafel na brifup.com (życzenie
 // właściciela 2026-08-02). Ta sama wartość i ten sam fallback `📰` co na froncie.
@@ -637,9 +640,10 @@ function xPolicz() {
   // przy poście, który realnie się mieści.
   const n = [...document.getElementById('xTresc').value].length;
   const el = document.getElementById('xLicznik');
-  // Link nie wchodzi już do posta, więc liczy się sama treść.
-  el.textContent = `${n} / 280`;
-  el.classList.toggle('zaduzo', n > 280);
+  // Link nie wchodzi już do posta, więc liczy się sama treść. Licznik spójny z X_TEXT_MAX
+  // (300 wymaga Premium — standardowe konto X tnie na 280, patrz komentarz przy stałej).
+  el.textContent = `${n} / ${X_TEXT_MAX}`;
+  el.classList.toggle('zaduzo', n > X_TEXT_MAX);
 }
 
 async function kopiujLinkX() {
