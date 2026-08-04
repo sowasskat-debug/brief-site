@@ -20,9 +20,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const OWNER_EMAIL = (Deno.env.get('OWNER_EMAIL') ?? 'sowass@outlook.com').toLowerCase();
 const DEEPSEEK_KEY = Deno.env.get('DEEPSEEK_KEY') ?? '';
 
-// Limit X = 280 znaków, link liczy się jako 23 NIEZALEŻNIE od długości (t.co) →
-// budżet na sam tekst ~250. Front dokleja link sam, więc tu go nie ma.
-const MAX_ZNAKOW = 250;
+// Budżet treści: 300 zn. (podniesione z 250 na życzenie właściciela 2026-08-04 — „często ucina").
+// Stare 250 zakładało link w treści (280 − 23 na t.co), ale link idzie do KOMENTARZA, nie do posta.
+// ⚠️ Standardowe konto X ma twardy limit 280; 300 wymaga Premium. Ta sama wartość co X_TEXT_MAX
+// w knaga.html — zmieniaj OBA naraz. ⚠️ Zmiana tutaj wymaga redeployu funkcji (nie idzie przez git):
+//   supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc
+const MAX_ZNAKOW = 300;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

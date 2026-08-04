@@ -417,7 +417,11 @@ na fallbacku `item.text`, dlatego fallback jest OBOWIĄZKOWY, a nie „na wszelk
 - ⚠️ **URL intentu buduj przez `encodeURIComponent`, a href przepuść przez `safeUrl`** (patrz sekcja
   „Bezpieczeństwo" wyżej) — `x_post` to tekst z modelu, wchodzi do atrybutu.
 - ⚠️ Zmiana dotyka JS+CSS → **bump `CACHE_NAME`** w `service-worker.js`.
-- **Limit X = 280 znaków**, link liczy się jako 23 niezależnie od długości → budżet na tekst ~250.
+- **Budżet treści posta = 300 znaków** (`X_TEXT_MAX` w knadze + `MAX_ZNAKOW` w `gotowiec-x` — zmieniaj OBA
+  naraz; podniesione z 250 na życzenie właściciela 2026-08-04, „często ucina"). Stare 250 zakładało link
+  w treści (280 − 23 na t.co), ale link idzie do KOMENTARZA. ⚠️ Standardowe konto X tnie na 280 — 300
+  wymaga Premium; gdyby X odrzucał posty, wróć do 280. ⚠️ Zmiana `MAX_ZNAKOW` wymaga redeployu funkcji
+  (`supabase functions deploy gotowiec-x`) — sama zmiana w repo NIE wystarcza.
 
 ## OneSignal (push)
 SDK z `cdn.onesignal.com` — **bywa blokowany przez adblock/DNS** → stąd baner
