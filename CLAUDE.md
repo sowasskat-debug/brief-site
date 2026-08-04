@@ -421,6 +421,17 @@ na fallbacku `item.text`, dlatego fallback jest OBOWIĄZKOWY, a nie „na wszelk
   stub powstaje dopiero pod koniec biegu bota i ma retencję 14 dni, więc dla newsa świeżo opublikowanego
   albo starego może go nie być; wtedy wracamy do adresu hashowego (lepiej gorsza karta niż link w 404).
   ⚠️ Zasada „link NIE idzie w treść głównego posta" **bez zmian** — to dotyczy wyłącznie adresu do komentarza.
+- ⚠️ **Stub POWSTAJE PÓŹNIEJ NIŻ NEWS — panel ponawia sprawdzenie (2026-08-04):** zgłoszenie
+  właściciela („dlaczego się zły link wygenerował?"). Nic nie było zepsute: news był top-level, slug
+  poprawny, stub i manifest w porządku — **to wyścig**. W jednym biegu bota `briefs.json` leci NA
+  POCZĄTKU, a `ZapiszStubyNaSite` na KOŃCU; zmierzone na 8 biegach: **mediana 5,2 min, maksimum
+  6,1 min** odstępu, plus deploy Pages. Knaga sprawdzała stub JEDEN raz przy otwarciu panelu, więc
+  kliknięcie świeżego newsa (czyli dokładnie wtedy, kiedy chce się go wrzucić) zostawiało link
+  hashowy NA STAŁE. Teraz `xSledzStub` dosprawdza w rosnących odstępach (0/5/10/20/30/60 s), dopóki
+  panel jest otwarty na TYM newsie, i podmienia link w chwili pojawienia się stuba; `zamknijX`
+  przerywa pętlę. Do tego komunikat pod polem, żeby było wiadomo, że warto poczekać.
+  ⚠️ Diagnozując podobne: manifest `s/_index.json` trzyma PEŁNE ŚCIEŻKI (`s/jtgyxr.html`), nie same
+  slugi — sprawdzenie „czy slug jest w manifeście" po samym slugu zawsze zwróci fałszywy brak.
 - 🔴 **NEWS W KLASTRZE NIE MA STUBA — fallback odpala się ZAWSZE (2026-08-02, zgłoszenie właściciela):**
   „chciałem udostępnić post SpaceX, ale nie wygenerowało naszego linku z podglądem". Przyczyna nie leży
   we froncie ani w funkcji `og`: **`ZapiszStubyNaSite` w bocie iteruje po `d.Items`, czyli wyłącznie po
