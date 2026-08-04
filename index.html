@@ -410,7 +410,7 @@ async function loadDose(dose, force=false) {
     if (items === 'PUSTA') items = PUSTA_DAWKA[dose];
     else if (!items) items = SAMPLE[dose];
 
-    cache[dose] = items.map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) }));
+    cache[dose] = oznaczKotwice(items.map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) })));
     // Sub-itemy w klastrach: newest-first. Top-level: zachowaj [0] jako top story wybrany przez bota,
     // resztę sortuj newest-first.
     cache[dose].forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
@@ -421,7 +421,7 @@ async function loadDose(dose, force=false) {
     // zakładkę drugiej. Cache wypełniamy zawsze (deep-link tryOpen go czyta), gate dotyczy tylko renderu.
     if (dose === currentDose) renderDose(dose, cache[dose]);
   } catch(e) {
-    cache[dose] = SAMPLE[dose].map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) }));
+    cache[dose] = oznaczKotwice(SAMPLE[dose].map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) })));
     cache[dose].forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
     cache[dose] = sortNewestFirst(cache[dose]);
     if (dose === currentDose) renderDose(dose, cache[dose]);
@@ -611,7 +611,28 @@ async function loadThreads(){
   } catch(_){}
 }
 function threadForItem(item){
-  return (item && item.text) ? (THREAD_BY_TEXT.get(normThreadKey(item.text)) || null) : null;
+  if (!item || !item.text) return null;
+  const wlasny = THREAD_BY_TEXT.get(normThreadKey(item.text));
+  if (wlasny) return wlasny;
+  // ⚠️ PODPOZYCJA KLASTRA DZIEDZICZY WĄTEK PO KOTWICY (2026-08-04, zgłoszenie właściciela: „skoro jakiś
+  // post znajduje się w wątku, to powinien ten wątek być do niego przyczepiony"). Bot buduje sagi
+  // WYŁĄCZNIE z pozycji top-level, więc news wchłonięty do klastra przestaje być węzłem i tracił
+  // oznaczenie — mimo że klaster z definicji znaczy „to samo wydarzenie z różnych źródeł", czyli
+  // podpozycja jest TYM SAMYM etapem sagi co kotwica. Zmierzone: 9 takich podpozycji w jednym wydaniu.
+  // `_parentText` nadaje się przy budowie cache (loadDose/archiwum/SAMPLE) — patrz `oznaczKotwice`.
+  return item._parentText ? (THREAD_BY_TEXT.get(normThreadKey(item._parentText)) || null) : null;
+}
+// Klucz węzła, który na osi ma być podświetlony jako „ten news": dla podpozycji dziedziczącej wątek
+// żaden węzeł nie pasuje do jej tekstu, więc wskazujemy węzeł KOTWICY (to ten sam etap).
+function watekKluczBiezacego(item, t){
+  const wlasny = normThreadKey(item.text);
+  if (t && t.nodes.some(n => normThreadKey(n.text) === wlasny)) return wlasny;
+  return item._parentText ? normThreadKey(item._parentText) : wlasny;
+}
+// Dokleja `_parentText` do podpozycji — jedno miejsce dla wszystkich ścieżek budowy cache.
+function oznaczKotwice(items){
+  (items || []).forEach(it => (it.subItems || []).forEach(s => { s._parentText = it.text; }));
+  return items;
 }
 // ⚠️ Wątki też się STARZEJĄ w otwartej apce (2026-07-26, zgłoszenie właściciela: „nie miałeś tego dodać
 // do wątku? przecież to eskalacja"). loadThreads() leciało TYLKO raz przy starcie, a live-tick odświeżał
@@ -741,7 +762,7 @@ function renderWatkiOverlay(){
 function watekHtml(item){
   const t = threadForItem(item);
   if (!t) return '';
-  const curKey = normThreadKey(item.text);
+  const curKey = watekKluczBiezacego(item, t);
   const rows = t.nodes.map(node => {
     const cur = normThreadKey(node.text) === curKey;
     const sep = '<span class="watek-sep"></span>';
@@ -980,10 +1001,10 @@ async function showArchiveDay(dateStr, highlightSlug) {
     for (const key of ['morning', 'afternoon', 'evening']) {
       const dose = dayData[key];
       if (!dose || !dose.items || !dose.items.length) continue;
-      const items = sortNewestFirst(dose.items).map(i => ({
+      const items = oznaczKotwice(sortNewestFirst(dose.items).map(i => ({
         ...i, id: 'a-' + uid(),
         subItems: sortNewestFirst(i.subItems).map(s => ({ ...s, id: 'a-' + uid() }))
-      }));
+      })));
       if (highlightSlug && !highlight) {
         outer: for (const it of items) {
           if (itemSlug(it.text) === highlightSlug) { highlight = { id: it.id, isGroup: !!(it.subItems && it.subItems.length) }; break; }
