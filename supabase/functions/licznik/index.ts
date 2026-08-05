@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
   const ua = req.headers.get('user-agent') ?? '';
   if (!ua || ROBOT.test(ua)) return pusto();   // robot — cicho, bez zapisu
 
-  let body: { sciezka?: string; referrer?: string };
+  let body: { sciezka?: string; referrer?: string; typ?: string };
   try { body = await req.json(); } catch { return pusto(400); }
 
   // x-forwarded-for bywa listą („klient, proxy1, proxy2") — klient jest pierwszy.
@@ -189,6 +189,11 @@ Deno.serve(async (req) => {
     urzadzenie: /mobile|android|iphone|ipad|ipod/i.test(ua) ? 'mobile' : 'desktop',
     pierwsza_dnia: pierwszaDnia,
     powrot_dni: powrotDni,
+    // ⚠️ Whitelista, nie przepisanie tego, co przyszło: endpoint jest publiczny, a kolumna
+    // ma w bazie `check (typ in (...))`. Nieznana etykieta zostałaby ODRZUCONA przez bazę
+    // i całe wejście przepadłoby — dlatego wszystko spoza listy ląduje jako 'wejscie'.
+    // Starsza wersja strony (z cache) nie wysyła pola w ogóle i też trafia na 'wejscie'.
+    typ: body.typ === 'wznowienie' ? 'wznowienie' : 'wejscie',
   });
 
   if (error) console.error('[LICZNIK] Zapis nieudany:', error.message);

@@ -1687,19 +1687,24 @@ if ('serviceWorker' in navigator) {
   const ENDPOINT = 'https://utmvokfjvrthvcmxzowc.supabase.co/functions/v1/licznik';
   let ostatnieZgloszenie = 0;
 
-  function zglos() {
+  // `typ` rozróżnia REALNE ZAŁADOWANIE STRONY od powrotu do już otwartej apki
+  // (2026-08-05). Bez tego obie rzeczy były jednym „wyświetleniem", więc nie dało się
+  // ruszyć progu wznowień bez napompowania licznika odsłon. ⚠️ Wartości muszą się
+  // zgadzać co do znaku z `check (typ in (...))` w supabase_schema.sql, sekcja 9d —
+  // inna etykieta zostanie odrzucona przez bazę i wejście przepadnie w całości.
+  function zglos(typ) {
     ostatnieZgloszenie = Date.now();
     try {
       fetch(ENDPOINT, {
         method: 'POST',
         keepalive: true,               // przeżywa zamknięcie karty
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sciezka: location.pathname, referrer: document.referrer || '' }),
+        body: JSON.stringify({ sciezka: location.pathname, referrer: document.referrer || '', typ }),
       }).catch(() => {});              // licznik NIGDY nie może popsuć strony
     } catch (_) {}
   }
 
-  zglos();
+  zglos('wejscie');
 
   // Dlaczego jeszcze wznowienie: w zainstalowanej PWA system WZNAWIA istniejące okno
   // zamiast ładować stronę od nowa (ta sama mechanika, dla której istnieje
@@ -1707,7 +1712,7 @@ if ('serviceWorker' in navigator) {
   // ekranie głównym — byliby liczeni raz na instalację, a nie raz na wizytę.
   // 30 minut to standardowy próg końca sesji; krótsze przełączenie się nie liczy.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && Date.now() - ostatnieZgloszenie > 30 * 60 * 1000) zglos();
+    if (document.visibilityState === 'visible' && Date.now() - ostatnieZgloszenie > 30 * 60 * 1000) zglos('wznowienie');
   });
 })();
 

@@ -1274,14 +1274,24 @@ function sekcjaSzczegolow(s) {
           ? `${s.retencja_wrocilo || 0} z ${rBaza} pierwszych wejść · mierzone od ${escapeHtml(String(s.retencja_od || '—'))}`
           : 'jeszcze nie zmierzone — liczy się od wdrożenia sekcji 9c'}</div></div>`;
 
+  // ⚠️ Świadomie BEZ „% wróciło po przerwie" (2026-08-05). To była DRUGA miara tego samego:
+  // beacon zgłasza wznowienie apki dopiero po 30 min, a sesja tnie się na tym samym progu,
+  // więc „≥2 sesje" i „≥2 sygnały" dawały niemal identyczną liczbę. Powroty pokazuje kafel
+  // wyżej; ten mówi już tylko o kształcie wizyty.
   h += `<div class="kok-kafel"><div class="kok-label">Sesje</div>
         <div class="kok-duze">${s.sesji || 0}</div>
         <div class="kok-sub">${cz ? (Number(s.sesji || 0) / cz).toFixed(2) : '0'} na czytelniko-dobę ·
-        ${proc(Number(s.wielosesyjnych || 0), cz)}% wróciło po przerwie</div></div>`;
+        ${s.sesji_odslon_sr || 0} odsłony na sesję</div></div>`;
 
-  h += `<div class="kok-kafel"><div class="kok-label">Mediana sesji</div>
-        <div class="kok-duze">${s.sesji_minut_mediana != null ? s.sesji_minut_mediana + ' min' : '—'}</div>
-        <div class="kok-sub">tylko sesje ≥2 odsłony · ${s.sesji_odslon_sr || 0} odsłony na sesję</div></div>`;
+  // ⚠️ Mediana ZAWSZE z próbką. Sesje o ≥2 odsłonach powstają niemal wyłącznie z przejść
+  // między stronami serwisu w pół godziny, a takich wizyt jest mało — „4 min" policzone
+  // z trzech sesji nie jest faktem o ruchu i panel nie ma prawa go tak podawać.
+  const mn = Number(s.sesji_minut_n || 0);
+  h += `<div class="kok-kafel"><div class="kok-label">Mediana wizyty</div>
+        <div class="kok-duze">${mn >= 5 && s.sesji_minut_mediana != null ? s.sesji_minut_mediana + ' min' : '—'}</div>
+        <div class="kok-sub">${mn >= 5
+          ? `z ${mn} wizyt, w których ktoś otworzył ≥2 strony`
+          : `za mało danych (${mn} ${mn === 1 ? 'taka wizyta' : 'takich wizyt'}) — liczy się tylko z wizyt na ≥2 stronach`}</div></div>`;
   h += '</div>';
 
   h += '<div class="kok-siatka">';
@@ -1404,6 +1414,17 @@ async function wczytajRuch() {
     html += `<div class="kok-kafel"><div class="kok-label">Urządzenia (30 dni)</div>
              <div class="kok-duze">${Math.round((urz.mobile || 0) / sumaUrz * 100)}%</div>
              <div class="kok-sub">telefon · ${urz.mobile || 0} mob / ${urz.desktop || 0} desktop</div></div>`;
+  }
+
+  // Rozbicie sygnału (2026-08-05). ⚠️ Kafel „30 dni" wyżej liczy DALEJ oba rodzaje razem —
+  // to jest rozbicie, nie nowa definicja wyświetleń; zmiana definicji zrobiłaby uskok na
+  // wykresie wyglądający jak spadek ruchu. ⚠️ Rozróżnienie działa od dnia wdrożenia:
+  // starsze wiersze mają domyślne 'wejscie', bo wtedy nie było czym ich odróżnić.
+  const wzn = Number(d.wznowienia || 0);
+  if (d.typ_od) {
+    html += `<div class="kok-kafel"><div class="kok-label">Powroty do otwartej apki</div>
+             <div class="kok-duze">${wzn}</div>
+             <div class="kok-sub">${d.wejscia || 0} realnych wejść · rozróżniane od ${escapeHtml(String(d.typ_od))}</div></div>`;
   }
 
   html += '</div>';

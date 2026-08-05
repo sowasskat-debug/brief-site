@@ -274,6 +274,30 @@ o brakującej funkcji `statystyki_powrotow` — nie przeszedł krok 1. Jeśli ka
 w ciągu 7 dni" pokazuje `—` mimo ruchu przez kilka dni — nie przeszedł krok 2 (albo licznik
 zbiera od zbyt niedawna; kafel podaje datę, od której mierzy).
 
+### 8g. Wejście vs wznowienie apki (2026-08-05) — ⬅️ DO WDROŻENIA
+
+Porządki po pierwszym spojrzeniu na kafel „Sesje": beacon zgłasza powrót do otwartej apki
+dopiero po 30 minutach, a sesja tnie się na tym samym progu — więc „sesje" i „odsłony"
+wychodziły niemal tym samym, a dwa kafle mówiły to samo. Rozdzielamy rodzaj sygnału.
+
+🔴 **Kolejność ma znaczenie — najpierw SQL, potem funkcja.** Funkcja zacznie wysyłać pole `typ`;
+gdyby kolumny jeszcze nie było, baza odrzucałaby **każde** wejście i licznik stanąłby na zerze.
+
+1. **SQL Editor** → wklej `supabase_schema.sql` jeszcze raz (sekcja **9d** dokłada kolumnę `typ`,
+   ograniczenie wartości i rozbicie w agregatach). Plik jest idempotentny.
+2. **Edge Functions → `licznik`** → podmień kod na aktualny z repo → **Deploy**
+   (dalej **bez** weryfikacji JWT: `supabase functions deploy licznik --no-verify-jwt`).
+
+**Co się zmieni w panelu:** znika zdublowany wskaźnik „% wróciło po przerwie", „Mediana sesji"
+zmienia się w „Mediana wizyty" i **zawsze podaje próbkę** (przy mniej niż 5 wizytach mówi „za mało
+danych" zamiast liczby), a dochodzi kafel **„Powroty do otwartej apki"**.
+
+⚠️ **Licznik wyświetleń NIE drgnie** — dalej liczy oba rodzaje sygnału razem. To jest rozbicie,
+nie nowa definicja; zawężenie zrobiłoby uskok na wykresie wyglądający jak spadek ruchu.
+⚠️ **Rozbicie działa od dnia wdrożenia.** Starsze wiersze dostają `wejscie` z wartości domyślnej,
+bo wtedy nie było czym ich odróżnić — kafel podaje datę, od której rozróżnia naprawdę, i pojawia
+się dopiero po pierwszym zarejestrowanym wznowieniu (czyli po ~pół godziny realnego ruchu z apki).
+
 ---
 
 ## 9. Podgląd linku z osią wątku (2026-08-02) — Edge Function `og`
