@@ -239,6 +239,41 @@ blokuje domeny `supabase.co`.
   domenach analitycznych, ale niezerowe — traktuj liczby jako dolne oszacowanie.
 - **Nie liczy robotów** (filtr po User-Agent) ani wejść spoza `brifup.com`.
 
+### 8f. Powroty, sesje i pory dnia (2026-08-05) — ⬅️ DO WDROŻENIA
+
+Rozszerzenie zakładki **Ruch** o to, czego dotąd nie było: ile razy ten sam czytelnik
+wchodził w ciągu doby, po ilu dniach wraca, ile trwa sesja i o której są szczyty.
+
+**Dwa kroki — oba są potrzebne, bo panel czyta nowe kolumny:**
+
+1. **Schemat.** Wklej `supabase_schema.sql` do SQL Editora jeszcze raz — sekcja **9c**
+   dokłada kolumny `pierwsza_dnia` / `powrot_dni`, indeks i funkcję `statystyki_powrotow()`.
+   Plik jest idempotentny, puszczenie całości nic nie psuje.
+2. **Funkcja.** Wdróż `licznik` ponownie (treść z `supabase/functions/licznik/index.ts`),
+   **dalej z wyłączoną weryfikacją JWT**: `supabase functions deploy licznik --no-verify-jwt`.
+   Bez tego kroku panel pokaże powroty w dobie i sesje (liczą się wstecz), ale kafel
+   „wrócili w ciągu 7 dni" zostanie pusty — kolumny nie będą miały kto wypełniać.
+
+🔴 **Co się zmienia w prywatności — przeczytaj, zanim wdrożysz.** Funkcja liczy teraz przy
+zapisie hashe tego samego człowieka dla 7 poprzednich dób i sprawdza, czy któryś już
+w bazie jest. Do wiersza trafia **liczba** „ostatnio był tyle dni temu", nigdy sam hash,
+więc w bazie dalej nie ma czym połączyć dwóch dni tej samej osoby. Materiał do porównania
+istnieje wyłącznie w pamięci funkcji przez czas jednego żądania. **Kto by kiedyś zapisał
+ten hash — dostaje trwały identyfikator i wraca obowiązek baneru zgody.** Cała wartość tej
+konstrukcji polega na tym, że zapisany zostaje wynik porównania, a nie jego materiał.
+
+⚠️ Koszt: jedno dodatkowe zapytanie na odsłonę (po indeksie `wizyty_odw_idx`).
+⚠️ Retencja liczy się **od wdrożenia** — starsze wiersze mają `pierwsza_dnia = false`
+i celowo nie wchodzą do mianownika, żeby procent nie wyszedł zaniżony bez ostrzeżenia.
+⚠️ Podmiana `LICZNIK_SOL` zrywa też ciągłość powrotów: przez 7 dni wszyscy wyglądają na nowych.
+⚠️ Powroty są **dolnym oszacowaniem** — hash zawiera IP, a na komórce IP zmienia się samo,
+więc ta sama osoba bywa liczona jako nowa. Ta liczba nie może być zawyżona, bywa zaniżona.
+
+**Sprawdzenie:** panel `knaga.html` → **Ruch**. Jeśli w miejscu powrotów widzisz komunikat
+o brakującej funkcji `statystyki_powrotow` — nie przeszedł krok 1. Jeśli kafel „wrócili
+w ciągu 7 dni" pokazuje `—` mimo ruchu przez kilka dni — nie przeszedł krok 2 (albo licznik
+zbiera od zbyt niedawna; kafel podaje datę, od której mierzy).
+
 ---
 
 ## 9. Podgląd linku z osią wątku (2026-08-02) — Edge Function `og`

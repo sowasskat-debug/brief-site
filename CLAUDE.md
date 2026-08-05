@@ -475,6 +475,37 @@ na fallbacku `item.text`, dlatego fallback jest OBOWIĄZKOWY, a nie „na wszelk
   wymaga Premium; gdyby X odrzucał posty, wróć do 280. ⚠️ Zmiana `MAX_ZNAKOW` wymaga redeployu funkcji
   (`supabase functions deploy gotowiec-x`) — sama zmiana w repo NIE wystarcza.
 
+## Ruch: powroty, sesje, pory dnia (2026-08-05) ⚠️
+Życzenie właściciela: *„bardziej szczegółowy panel z wyświetleniami, np. ile razy ktoś wracał
+ponownie"*. Pytanie rozpada się na DWA i tylko jedno dało się odpowiedzieć z danych, które już były:
+- **Powroty W DOBIE** — ten sam hash kilka razy tego samego dnia. Policzalne **wstecz**, zero zmian
+  w mechanizmie. Stąd też sesje (przerwa >30 min = nowa sesja), głębokość i pory dnia.
+- 🔴 **Powroty MIĘDZY DNIAMI były NIEPOLICZALNE z definicji** — sól rotuje co dobę, więc jutro ta
+  sama osoba ma inny hash. To nie był brak funkcji, tylko konstrukcja, na której stoi brak baneru zgody.
+- **Rozwiązanie (decyzja właściciela): flaga powrotu liczona przy zapisie.** Edge Function liczy hashe
+  tego samego człowieka dla 7 poprzednich dób (formuła ta sama, zmienia się data) i sprawdza, czy któryś
+  już w bazie leży. Do wiersza trafia `powrot_dni` — **LICZBA 1-7**, nie identyfikator — oraz
+  `pierwsza_dnia`. W bazie dalej nie ma czym połączyć dwóch dni tej samej osoby.
+  🔴 **GRANICA, której nie wolno przekroczyć: nikt nigdy nie zapisuje tego hasha.** Zapisany zostaje
+  WYNIK porównania, materiał ginie z pamięcią żądania. Zapis hasha = trwały identyfikator = wraca
+  obowiązek baneru zgody, którego ta strona świadomie nie ma.
+- **`statystyki_powrotow(dni)`** (schemat 9c) — osobna RPC od `statystyki_ruchu`, bo panel ma działać
+  także gdy schemat 9c nie jest jeszcze wklejony (drugie zapytanie leci równolegle i **wolno mu paść**;
+  wtedy sekcja pokazuje instrukcję zamiast wywalać całą zakładkę).
+- ⚠️ **Mianownik retencji to `pierwsza_dnia`, NIE `czytelnikodni`** — kolumny wypełniają się od wdrożenia,
+  więc liczenie po wszystkich wierszach zaniżałoby procent i wyglądałoby na spadek zainteresowania
+  zamiast na brak danych. Kafel podaje datę, od której mierzy.
+- ⚠️ **„Mediana sesji" to NIE czas czytania** — mierzy odstęp pierwsza↔ostatnia odsłona, więc sesje
+  jednoodsłonowe są z niej WYŁĄCZONE (inaczej każda dawałaby 0 min i zjechała wynik do zera). Czasu na
+  ostatniej stronie nie zmierzy żaden licznik bez śledzenia w tle, którego tu nie ma.
+- ⚠️ **Powroty to DOLNE oszacowanie:** hash zawiera IP, a na komórce IP zmienia się samo z siebie —
+  ta sama osoba bywa wtedy liczona jako nowa. Ta liczba nie może być zawyżona, bywa zaniżona.
+  To samo dotyczy `LICZNIK_SOL`: podmiana zrywa ciągłość i przez 7 dni wszyscy są „nowi".
+- **Zweryfikowane lokalnym Postgresem na syntetycznych danych** (SQL, nie tylko przeczytany):
+  granica sesji 29 min → ta sama sesja, 31 min → nowa; retencja liczona po pierwszych wejściach doby.
+  Render sekcji sprawdzony zrzutem — 0 błędów JS. ⚠️ Na żywej bazie nietestowane (brak dostępu z sandboxa).
+- Wdrożenie (dwa kroki: schemat + redeploy funkcji) — `SETUP_SUPABASE.md`, sekcja 8f.
+
 ## Licznik wejść: wykluczenie urządzeń właściciela (2026-08-04) ⚠️
 Życzenie właściciela: „w statystykach chcę usunąć mój telefon i PC". Mechanizm — flaga
 `localStorage['brifup_pomin_licznik']`, którą beacon w `index.html` sprawdza PRZED wysyłką (beacon
