@@ -20,6 +20,25 @@
 //   supabase_schema.sql, sekcja 9). Nie da się z tego policzyć unikalnych
 //   za tydzień i to jest świadoma cena za brak śledzenia.
 //
+// ── POWROTY MIĘDZY DNIAMI (2026-08-05, decyzja właściciela) ─────────────────
+// Pytanie „czy ludzie do nas wracają" było nieodpowiadalne: hash dobowy z definicji
+// nie łączy się z jutrzejszym. Rozwiązanie, które NIE wprowadza identyfikatora:
+// przy zapisie liczymy hashe TEGO SAMEGO człowieka dla 7 poprzednich dób (formuła
+// jest ta sama, zmienia się tylko data w środku) i sprawdzamy, czy któryś już
+// w bazie leży. Do wiersza trafia wyłącznie `powrot_dni` — LICZBA (1-7) mówiąca
+// „ostatnio był tyle dni temu" — i `pierwsza_dnia`.
+// 🔴 CO SIĘ PRZEZ TO ZMIENIA, uczciwie: w bazie dalej nie ma nic, co łączy wiersze
+//   tej samej osoby z dwóch dni — `powrot_dni` to liczba, nie identyfikator, i nie
+//   da się po niej pogrupować ludzi. Ale ta funkcja przez czas jednego żądania
+//   POTRAFI policzyć wczorajszy hash, czego wcześniej nie robiła. Kto by kiedyś
+//   chciał ten hash ZAPISAĆ — dostaje trwały identyfikator i wraca obowiązek
+//   baneru zgody. Nie rób tego; wartość tej konstrukcji polega właśnie na tym,
+//   że wynik porównania jest liczbą, a materiał do porównania ginie z pamięcią.
+// ⚠️ Zmiana sekretu LICZNIK_SOL zrywa też ciągłość powrotów (stare hashe przestają
+//   pasować) — przez 7 dni po podmianie wszyscy wyglądają na nowych.
+// ⚠️ Powroty są DOLNYM oszacowaniem: hash zawiera IP, a na komórce IP zmienia się
+//   między dniami sam z siebie. Ten sam człowiek na innym adresie = nowy człowiek.
+//
 // WDROŻENIE — patrz SETUP_SUPABASE.md, sekcja „Licznik wejść".
 // Wymaga sekretu LICZNIK_SOL (Supabase → Edge Functions → Secrets).
 // ════════════════════════════════════════════════════════════════════════════
@@ -56,6 +75,23 @@ function dzienWarszawski(): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(new Date());
+}
+
+// Ile dób wstecz sprawdzamy powrót. 7 to jeden pełny tydzień — dłuższy horyzont
+// to dłuższa lista hashy w zapytaniu, a odpowiedź „wrócił po 3 tygodniach" i tak
+// niewiele wnosi przy serwisie, który wydaje trzy dawki dziennie.
+const HORYZONT_POWROTU = 7;
+
+// ⚠️ Odejmowanie dób liczone od POŁUDNIA UTC, nie od „teraz minus 24 h": przy zmianie
+// czasu doba ma 23 albo 25 godzin i naiwne odejmowanie potrafi wylądować na tej samej
+// dacie (albo przeskoczyć o dwie). Kotwica w środku dnia jest od tego odporna.
+function dzienWarszawskiMinus(dzien: string, ile: number): string {
+  const kotwica = Date.parse(`${dzien}T12:00:00Z`) - ile * 86400000;
+  return new Date(kotwica).toISOString().slice(0, 10);
+}
+
+function roznicaDni(od: string, doDnia: string): number {
+  return Math.round((Date.parse(`${doDnia}T12:00:00Z`) - Date.parse(`${od}T12:00:00Z`)) / 86400000);
 }
 
 // Zostawiamy sam host. Pełny URL referrera bywa nośnikiem danych osobowych
@@ -110,12 +146,49 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   );
 
+  // ── Powrót: czy ten sam człowiek był tu w ciągu ostatnich 7 dób ────────────
+  // Jedno zapytanie na odsłonę (indeks `wizyty_odw_idx`). FAIL-SAFE: gdy sprawdzenie
+  // padnie, zapisujemy odsłonę BEZ danych o powrocie — statystyka ruchu nie może
+  // zależeć od dodatkowej statystyki. `pierwsza_dnia=false` jest wtedy celowo
+  // zachowawcze: wiersz nie wejdzie do mianownika retencji, więc procent policzy
+  // się z mniejszej próby, ale nie skłamie.
+  let pierwszaDnia = false;
+  let powrotDni: number | null = null;
+  try {
+    const wczesniejsze: string[] = [];
+    for (let i = 1; i <= HORYZONT_POWROTU; i++) {
+      wczesniejsze.push(await sha256(`${ip}|${ua}|${SOL}|${dzienWarszawskiMinus(dzien, i)}`));
+    }
+    const { data: slady, error: bladSladow } = await supa
+      .from('wizyty')
+      .select('dzien, odwiedzajacy')
+      .in('odwiedzajacy', [odwiedzajacy, ...wczesniejsze])
+      .gte('dzien', dzienWarszawskiMinus(dzien, HORYZONT_POWROTU));
+    if (bladSladow) throw bladSladow;
+
+    // Hash jest z definicji przypisany do konkretnej doby, więc trafienie na hash
+    // sprzed N dni może pochodzić wyłącznie z wiersza tamtej doby — nie trzeba
+    // dopasowywać pary (hash, data), wystarczy wziąć najświeższy dzień z trafień.
+    pierwszaDnia = !(slady ?? []).some((s) => s.odwiedzajacy === odwiedzajacy);
+    if (pierwszaDnia) {
+      const dniWstecz = (slady ?? [])
+        .filter((s) => s.odwiedzajacy !== odwiedzajacy)
+        .map((s) => roznicaDni(String(s.dzien), dzien))
+        .filter((d) => d >= 1 && d <= HORYZONT_POWROTU);
+      if (dniWstecz.length) powrotDni = Math.min(...dniWstecz);
+    }
+  } catch (e) {
+    console.error('[LICZNIK] Sprawdzenie powrotu nieudane:', (e as Error).message);
+  }
+
   const { error } = await supa.from('wizyty').insert({
     dzien,
     sciezka: oczysc(String(body.sciezka ?? '/')),
     odwiedzajacy,
     referrer: samHost(String(body.referrer ?? '')),
     urzadzenie: /mobile|android|iphone|ipad|ipod/i.test(ua) ? 'mobile' : 'desktop',
+    pierwsza_dnia: pierwszaDnia,
+    powrot_dni: powrotDni,
   });
 
   if (error) console.error('[LICZNIK] Zapis nieudany:', error.message);

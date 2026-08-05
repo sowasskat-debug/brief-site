@@ -1229,6 +1229,101 @@ function ruchDzisWarszawa() {
   }).format(new Date());
 }
 
+// ── Szczegóły ruchu: powroty, sesje, pory dnia (2026-08-05) ─────────────────
+// Zgłoszenie właściciela: „bardziej szczegółowy panel z wyświetleniami, np. ile razy
+// ktoś wracał ponownie". Powroty W DOBIE liczą się wstecz z danych, które już były;
+// powroty MIĘDZY DNIAMI wymagały nowych kolumn (patrz supabase_schema.sql, 9c), więc
+// tamten kafel z definicji startuje od dnia wdrożenia i musi to mówić wprost.
+function ruchSlupki(pozycje, etykieta, wartosc, opis) {
+  if (!pozycje || !pozycje.length) return '';
+  const maks = Math.max(...pozycje.map(x => Number(wartosc(x) || 0)), 1);
+  return pozycje.map(x => {
+    const v = Number(wartosc(x) || 0);
+    return `<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:12px">
+      <div style="width:88px;flex:none;opacity:.75">${escapeHtml(String(etykieta(x)))}</div>
+      <div style="flex:1;min-width:0"><div style="width:${Math.round(v / maks * 100)}%;min-width:2px;height:7px;
+           background:var(--red,#dc2626);opacity:.55;border-radius:3px"></div></div>
+      <b style="min-width:38px;text-align:right">${v}</b>
+      ${opis ? `<span style="opacity:.5;min-width:40px;text-align:right">${escapeHtml(opis(x, v))}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function sekcjaSzczegolow(s) {
+  if (!s) {
+    return `<div class="kok-kafel szeroki"><div class="kok-label">Powroty i sesje</div>
+      <div class="kok-sub" style="margin-top:8px">Brak funkcji <b>statystyki_powrotow</b> — wklej
+      <b>supabase_schema.sql</b> (sekcja 9c) do SQL Editora w Supabase. Reszta zakładki działa bez tego.</div></div>`;
+  }
+
+  const cz = Number(s.czytelnikodni || 0);
+  const proc = (licznik, mian) => mian ? Math.round(licznik / mian * 100) : 0;
+  let h = '<div class="kok-siatka">';
+
+  h += `<div class="kok-kafel"><div class="kok-label">Wrócili tego samego dnia</div>
+        <div class="kok-duze">${proc(Number(s.wracajacy_w_dobie || 0), cz)}%</div>
+        <div class="kok-sub">${s.wracajacy_w_dobie || 0} z ${cz} czytelniko-dób weszło ≥2 razy</div></div>`;
+
+  // ⚠️ Osobny mianownik (`retencja_baza`), a nie `czytelnikodni`: kolumny powrotu są
+  // wypełniane dopiero od wdrożenia, więc liczenie po wszystkich wierszach zaniżałoby
+  // procent i wyglądałoby to na spadek zainteresowania zamiast na brak danych.
+  const rBaza = Number(s.retencja_baza || 0);
+  h += `<div class="kok-kafel"><div class="kok-label">Wrócili w ciągu 7 dni</div>
+        <div class="kok-duze">${rBaza ? proc(Number(s.retencja_wrocilo || 0), rBaza) + '%' : '—'}</div>
+        <div class="kok-sub">${rBaza
+          ? `${s.retencja_wrocilo || 0} z ${rBaza} pierwszych wejść · mierzone od ${escapeHtml(String(s.retencja_od || '—'))}`
+          : 'jeszcze nie zmierzone — liczy się od wdrożenia sekcji 9c'}</div></div>`;
+
+  h += `<div class="kok-kafel"><div class="kok-label">Sesje</div>
+        <div class="kok-duze">${s.sesji || 0}</div>
+        <div class="kok-sub">${cz ? (Number(s.sesji || 0) / cz).toFixed(2) : '0'} na czytelniko-dobę ·
+        ${proc(Number(s.wielosesyjnych || 0), cz)}% wróciło po przerwie</div></div>`;
+
+  h += `<div class="kok-kafel"><div class="kok-label">Mediana sesji</div>
+        <div class="kok-duze">${s.sesji_minut_mediana != null ? s.sesji_minut_mediana + ' min' : '—'}</div>
+        <div class="kok-sub">tylko sesje ≥2 odsłony · ${s.sesji_odslon_sr || 0} odsłony na sesję</div></div>`;
+  h += '</div>';
+
+  h += '<div class="kok-siatka">';
+  h += `<div class="kok-kafel"><div class="kok-label">Ile razy weszli w ciągu doby</div>
+        <div style="margin-top:8px">${ruchSlupki(s.rozklad_wejsc, x => x.koszyk, x => x.ile,
+          (x, v) => cz ? proc(v, cz) + '%' : '')}</div></div>`;
+
+  const rozkl = Array.isArray(s.retencja_rozklad) ? s.retencja_rozklad : [];
+  h += `<div class="kok-kafel"><div class="kok-label">Po ilu dniach wracają</div>
+        <div style="margin-top:8px">${rozkl.length
+          ? ruchSlupki(rozkl, x => x.dni === 1 ? 'nazajutrz' : x.dni + ' dni temu', x => x.ile)
+          : '<div class="kok-sub">Nikt jeszcze nie wrócił w oknie 7 dni — albo licznik zbiera od zbyt niedawna.</div>'}
+        </div></div>`;
+  h += '</div>';
+
+  const godz = Array.isArray(s.godziny) ? s.godziny : [];
+  if (godz.length) {
+    const maks = Math.max(...godz.map(x => Number(x.wyswietlenia || 0)), 1);
+    const szczyt = godz.reduce((a, x) => Number(x.wyswietlenia || 0) > Number(a.wyswietlenia || 0) ? x : a, godz[0]);
+    const slupki = godz.map(x => {
+      const v = Number(x.wyswietlenia || 0);
+      return `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px"
+                   title="${x.godzina}:00 — ${v} wyświetleń">
+        <div style="width:100%;height:${Math.max(2, Math.round(v / maks * 70))}px;background:var(--red,#dc2626);
+             opacity:${v ? .7 : .15};border-radius:2px 2px 0 0"></div>
+        <div style="font-size:8px;opacity:.5">${x.godzina % 3 === 0 ? x.godzina : ''}</div></div>`;
+    }).join('');
+    h += `<div class="kok-kafel szeroki"><div class="kok-label">Pory dnia (30 dni, czas polski)</div>
+          <div style="display:flex;gap:2px;align-items:flex-end;height:90px;margin-top:8px">${slupki}</div>
+          <div class="kok-sub" style="margin-top:6px">Szczyt: <b>${szczyt.godzina}:00</b>
+          (${szczyt.wyswietlenia} wyświetleń)</div></div>`;
+  }
+
+  const dt = Array.isArray(s.dni_tygodnia) ? s.dni_tygodnia : [];
+  if (dt.length) {
+    const nazwy = ['pon', 'wt', 'śr', 'czw', 'pt', 'sob', 'niedz'];
+    h += `<div class="kok-kafel szeroki"><div class="kok-label">Dni tygodnia (30 dni)</div>
+          <div style="margin-top:8px">${ruchSlupki(dt, x => nazwy[x.dzien] || x.dzien, x => x.wyswietlenia)}</div></div>`;
+  }
+  return h;
+}
+
 async function wczytajRuch() {
   const el = document.getElementById('ruchTresc');
   el.innerHTML = '<div class="empty">Ładowanie…</div>';
@@ -1236,10 +1331,19 @@ async function wczytajRuch() {
   if (!supa) { el.innerHTML = '<div class="empty">Brak połączenia z Supabase.</div>'; return; }
 
   let d;
+  // Szczegóły (powroty/sesje/pory) lecą OSOBNYM zapytaniem i mają prawo paść:
+  // gdy schemat 9c nie jest jeszcze wklejony, podstawowa zakładka Ruch ma działać
+  // jak dotąd, a nie wywalać się w całości na brakującej funkcji.
+  let szcz = null;
   try {
-    const { data, error } = await supa.rpc('statystyki_ruchu', { dni: 30 });
-    if (error) throw error;
-    d = data || {};
+    const [ruch, powroty] = await Promise.all([
+      supa.rpc('statystyki_ruchu', { dni: 30 }),
+      supa.rpc('statystyki_powrotow', { dni: 30 }).then(r => r, e => ({ error: e })),
+    ]);
+    if (ruch.error) throw ruch.error;
+    d = ruch.data || {};
+    if (powroty && !powroty.error) szcz = powroty.data || null;
+    else if (powroty && powroty.error) console.warn('[RUCH] Brak szczegółów:', powroty.error.message || powroty.error);
   } catch (e) {
     // Najczęstsza przyczyna to nienałożony schemat — mówimy wprost co zrobić,
     // zamiast zostawiać gołe „404 function not found".
@@ -1339,6 +1443,8 @@ async function wczytajRuch() {
                 'Nikt nie przyszedł z linku — całość to wejścia bezpośrednie i z apki.');
   html += '</div>';
 
+  html += sekcjaSzczegolow(szcz);
+
   // ⚠️ Ta uwaga MUSI zostać. Bez niej „unikalni" czyta się jak liczba osób w miesiącu,
   // a to jest liczba osobo-dni: ta sama osoba przez 7 dni z rzędu to 7 odwiedzin dobowych.
   // Cena za brak śledzenia między dniami — patrz supabase_schema.sql, sekcja 9.
@@ -1346,7 +1452,14 @@ async function wczytajRuch() {
            <b>Jak to czytać.</b> „Unikalni" liczą się <b>w obrębie doby</b> — ta sama osoba wchodząca
            przez tydzień daje 7 odwiedzin dobowych, nie 1. Tak działa licznik, który świadomie nie śledzi
            ludzi między dniami (brak ciasteczek = brak baneru zgody). Roboty są odfiltrowane po User-Agent,
-           a wejścia z podglądu lokalnego nie są liczone w ogóle.</div></div>`;
+           a wejścia z podglądu lokalnego nie są liczone w ogóle.
+           <br><br><b>Powroty to DOLNE oszacowanie.</b> Rozpoznanie „ten sam człowiek" opiera się na adresie IP
+           i przeglądarce, a na komórce IP potrafi się zmienić samo z siebie — wtedy ta sama osoba liczy się
+           jako nowa. Liczba „wrócili" nigdy nie będzie zawyżona, za to bywa zaniżona.
+           <br><b>„Mediana sesji" to nie czas czytania.</b> Mierzymy odstęp od pierwszej do ostatniej odsłony
+           w sesji, więc ktoś, kto wszedł raz i czytał 20 minut, ma zero — dlatego sesje jednoodsłonowe są
+           z tej liczby wyłączone. Czasu spędzonego na ostatniej stronie nie zmierzy żaden licznik bez
+           dodatkowego śledzenia w tle, którego tu nie ma.</div></div>`;
 
   html += `<div class="refresh-row"><button onclick="wczytajRuch()">↻ Odśwież</button></div>`;
   el.innerHTML = html;

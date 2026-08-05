@@ -399,3 +399,130 @@ $$;
 
 revoke all on function public.statystyki_ruchu(int) from public, anon;
 grant execute on function public.statystyki_ruchu(int) to authenticated;
+
+
+-- ── 9c. POWROTY, SESJE, PORY DNIA (2026-08-05) ──────────────────────────────
+-- Zgłoszenie właściciela: „bardziej szczegółowy panel z wyświetleniami, np. ile
+-- razy ktoś wracał ponownie". Pytanie rozpada się na dwa i tylko jedno dało się
+-- odpowiedzieć z danych, które już były:
+--   (a) POWROTY W DOBIE — ten sam hash kilka razy tego samego dnia. Policzalne
+--       wstecz, bez żadnej zmiany mechanizmu.
+--   (b) POWROTY MIĘDZY DNIAMI — niepoliczalne z definicji, bo hash rotuje co dobę.
+--       Stąd dwie nowe kolumny, wypełniane przez Edge Function przy zapisie.
+--
+-- 🔴 `powrot_dni` to LICZBA (1-7) „ostatnio był tyle dni temu", a NIE identyfikator:
+--    nie da się po niej pogrupować wierszy tej samej osoby ani jej rozpoznać.
+--    Porównanie hashy robi funkcja w pamięci i materiał do niego ginie z żądaniem —
+--    szczegóły i granica tej konstrukcji w nagłówku supabase/functions/licznik/index.ts.
+-- ⚠️ Obie kolumny są wypełniane od DNIA WDROŻENIA. Starsze wiersze mają NULL
+--    i dlatego panel liczy retencję wyłącznie po `pierwsza_dnia = true` — inaczej
+--    stare dane rozwodniłyby mianownik i procent wyszedłby zaniżony bez ostrzeżenia.
+alter table public.wizyty add column if not exists pierwsza_dnia boolean not null default false;
+alter table public.wizyty add column if not exists powrot_dni    smallint;
+
+-- Sprawdzenie powrotu pyta po samym hashu w oknie 7 dni; istniejący indeks
+-- (dzien, odwiedzajacy) prowadzi kolumnami w złej kolejności dla tego zapytania.
+create index if not exists wizyty_odw_idx on public.wizyty (odwiedzajacy, dzien desc);
+
+create or replace function public.statystyki_powrotow(dni int default 30)
+returns jsonb
+language sql
+security invoker
+stable
+as $$
+  with zakres as (
+    select dzien, odwiedzajacy, sciezka, ts, pierwsza_dnia, powrot_dni
+      from public.wizyty
+     where dzien > ((now() at time zone 'Europe/Warsaw')::date - dni)
+  ),
+  -- ⚠️ Jednostką jest CZYTELNIKO-DOBA, nie człowiek: hash rotuje co dobę, więc
+  -- ta sama osoba w dwa dni to dwa wiersze i nie wolno ich sumować jako „ludzi".
+  na_dobe as (
+    select dzien, odwiedzajacy,
+           count(*)                as odslon,
+           count(distinct sciezka) as stron
+      from zakres group by dzien, odwiedzajacy
+  ),
+  -- Sesja = ciąg odsłon bez przerwy dłuższej niż 30 minut (próg branżowy).
+  -- Granica zweryfikowana testem: przerwa 29 min zostaje w sesji, 31 min ją tnie.
+  ze_znacznikiem as (
+    select dzien, odwiedzajacy, ts,
+           case when ts - lag(ts) over (partition by dzien, odwiedzajacy order by ts)
+                     > interval '30 minutes'
+                  or lag(ts) over (partition by dzien, odwiedzajacy order by ts) is null
+                then 1 else 0 end as nowa
+      from zakres
+  ),
+  ponumerowane as (
+    select dzien, odwiedzajacy, ts,
+           sum(nowa) over (partition by dzien, odwiedzajacy order by ts
+                           rows between unbounded preceding and current row) as nr
+      from ze_znacznikiem
+  ),
+  sesje as (
+    select dzien, odwiedzajacy, nr, count(*) as odslon,
+           extract(epoch from (max(ts) - min(ts))) / 60.0 as minut
+      from ponumerowane group by dzien, odwiedzajacy, nr
+  ),
+  sesji_na_czytelnika as (
+    select dzien, odwiedzajacy, count(*) as ile from sesje group by dzien, odwiedzajacy
+  )
+  select jsonb_build_object(
+    'czytelnikodni',      (select count(*) from na_dobe),
+    'wracajacy_w_dobie',  (select count(*) from na_dobe where odslon >= 2),
+    'rozklad_wejsc', coalesce((
+      select jsonb_agg(jsonb_build_object('koszyk', koszyk, 'ile', ile) order by kolejnosc)
+        from (select case when odslon = 1 then '1 wejście'
+                          when odslon between 2 and 3 then '2-3'
+                          when odslon between 4 and 9 then '4-9'
+                          else '10 i więcej' end as koszyk,
+                     case when odslon = 1 then 1 when odslon between 2 and 3 then 2
+                          when odslon between 4 and 9 then 3 else 4 end as kolejnosc,
+                     count(*) as ile
+                from na_dobe group by 1, 2) r
+    ), '[]'::jsonb),
+    'rozklad_stron', coalesce((
+      select jsonb_agg(jsonb_build_object('koszyk', koszyk, 'ile', ile) order by kolejnosc)
+        from (select case when stron = 1 then '1 strona' when stron = 2 then '2 strony'
+                          else '3 i więcej' end as koszyk,
+                     case when stron = 1 then 1 when stron = 2 then 2 else 3 end as kolejnosc,
+                     count(*) as ile
+                from na_dobe group by 1, 2) s
+    ), '[]'::jsonb),
+    'sesji',                  (select count(*) from sesje),
+    'sesji_odslon_sr',        (select round(avg(odslon)::numeric, 2) from sesje),
+    'sesji_jednoodslonowych', (select count(*) from sesje where odslon = 1),
+    -- ⚠️ Czas WYŁĄCZNIE z sesji o ≥2 odsłonach: przy jednej odsłonie nie ma drugiego
+    -- znacznika, więc taka sesja wyszłaby jako 0 minut i zjechałaby średnią do zera.
+    -- To nie jest „czas na stronie" — ostatniej odsłony nikt nie domyka.
+    'sesji_minut_mediana',    (select round(percentile_cont(0.5) within group (order by minut)::numeric, 1)
+                                 from sesje where odslon >= 2),
+    'wielosesyjnych',         (select count(*) from sesji_na_czytelnika where ile >= 2),
+    -- Retencja: mianownikiem są WYŁĄCZNIE pierwsze wejścia doby zapisane już przez
+    -- nową funkcję (starsze wiersze mają pierwsza_dnia=false), więc procent liczy się
+    -- z mniejszej, ale uczciwej próby zamiast po cichu wliczać dane sprzed wdrożenia.
+    'retencja_baza',          (select count(*) from zakres where pierwsza_dnia),
+    'retencja_wrocilo',       (select count(*) from zakres where pierwsza_dnia and powrot_dni is not null),
+    'retencja_od',            (select min(dzien) from zakres where pierwsza_dnia),
+    'retencja_rozklad', coalesce((
+      select jsonb_agg(jsonb_build_object('dni', powrot_dni, 'ile', ile) order by powrot_dni)
+        from (select powrot_dni, count(*) as ile from zakres
+               where pierwsza_dnia and powrot_dni is not null group by powrot_dni) p
+    ), '[]'::jsonb),
+    'godziny', coalesce((
+      select jsonb_agg(jsonb_build_object('godzina', g, 'wyswietlenia', coalesce(w, 0)) order by g)
+        from generate_series(0, 23) g
+        left join (select extract(hour from ts at time zone 'Europe/Warsaw')::int as h,
+                          count(*) as w from zakres group by 1) x on x.h = g
+    ), '[]'::jsonb),
+    'dni_tygodnia', coalesce((
+      select jsonb_agg(jsonb_build_object('dzien', d, 'wyswietlenia', coalesce(w, 0)) order by d)
+        from generate_series(0, 6) d
+        left join (select extract(isodow from ts at time zone 'Europe/Warsaw')::int - 1 as dt,
+                          count(*) as w from zakres group by 1) y on y.dt = d
+    ), '[]'::jsonb)
+  );
+$$;
+
+revoke all on function public.statystyki_powrotow(int) from public, anon;
+grant execute on function public.statystyki_powrotow(int) to authenticated;
