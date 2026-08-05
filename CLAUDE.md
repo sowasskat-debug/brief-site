@@ -506,6 +506,40 @@ ponownie"*. Pytanie rozpada się na DWA i tylko jedno dało się odpowiedzieć z
   Render sekcji sprawdzony zrzutem — 0 błędów JS. ⚠️ Na żywej bazie nietestowane (brak dostępu z sandboxa).
 - Wdrożenie (dwa kroki: schemat + redeploy funkcji) — `SETUP_SUPABASE.md`, sekcja 8f.
 
+## Wejście ≠ wznowienie apki — kolumna `typ` (2026-08-05) ⚠️
+Zgłoszenie właściciela przy pierwszym spojrzeniu na świeży kafel „Sesje" (*„a to co oznacza"*).
+Liczby były prawdziwe, ale **dwie miary mówiły to samo**, i dopiero to zmusiło do przeczytania beacona:
+- 🔴 **Beacon zgłasza wznowienie apki dopiero po 30 minutach** (`index.html`, `visibilitychange`),
+  a `statystyki_powrotow` tnie sesję **na tym samym progu 30 minut**. Dwa kolejne wznowienia są więc
+  Z DEFINICJI oddalone o >30 min → każde zaczyna nową sesję → „sesje" ≈ „odsłony", a kafel
+  „wrócili tego samego dnia" (≥2 sygnały) i „% wróciło po przerwie" (≥2 sesje) dawały prawie
+  identyczną liczbę. **Zaprojektowane jako dwie miary, w praktyce jedna.**
+- ⚠️ **Sesje NIE są zepsute w całości** — załadowania stron nie mają throttlingu, więc `/` → `/fala.html`
+  w odstępie 2 minut to poprawnie JEDNA sesja o dwóch odsłonach. Ślepota dotyczy wyłącznie powrotów
+  do już otwartej apki.
+- **Wybór właściciela: NIE ruszamy progu beacona** (wariant „2 i 3"), tylko rozdzielamy rodzaj sygnału
+  i porządkujemy kafle. Kolumna **`typ`** (`wejscie` | `wznowienie`, check w bazie, whitelist w funkcji).
+- 🔴 **`suma_wyswietlen` CELOWO zostaje sumą OBU rodzajów.** Pierwsza wersja planu przewidywała
+  zawężenie „wyświetleń" do samych wejść — ale to miało sens tylko razem ze skróceniem progu beacona
+  (inaczej nie ma czego kompensować). Bez tamtej zmiany zawężenie zrobiłoby **uskok na wykresie
+  wyglądający jak spadek ruchu**, za który nie stoi żadna zmiana w rzeczywistości. Rozbicie idzie
+  osobnym kaflem („Powroty do otwartej apki"), definicja głównego licznika bez zmian.
+- ⚠️ **Stare wiersze dostają `wejscie` z defaultu — to ZAŁOŻENIE, nie pomiar.** Przed tą zmianą nie ma
+  czym odróżnić wznowienia od wejścia. Dlatego kafel pokazuje się dopiero, gdy istnieje choć jedno
+  `wznowienie`, i podaje datę, od której rozróżnienie jest realne (`typ_od`).
+- **Kafle po porządkach:** „% wróciło po przerwie" USUNIĘTE (duplikat), „Mediana sesji" → **„Mediana
+  wizyty" ZAWSZE z próbką** (`sesji_minut_n`); przy n<5 pokazuje „za mało danych" zamiast liczby.
+  Wizyty na ≥2 stronach są rzadkie, więc bez próbki panel podawałby medianę z trzech sesji jako fakt.
+- 🐛 **Przy okazji, znaleziona lokalnym testem, NIE moja zmiana:** `jsonb_object_agg(urzadzenie, w)`
+  rzuca „field name must not be null" przy pustym `urzadzenie` i **położyłoby CAŁĄ zakładkę Ruch**,
+  nie jeden kafel. W produkcji nieosiągalne (Edge Function zawsze ustawia pole), ale wystarczy jeden
+  wiersz z innej drogi. Dodane `coalesce(urzadzenie, 'nieznane')`.
+- **Zweryfikowane lokalnym Postgresem:** check odrzuca obcą etykietę, brak pola → default `wejscie`,
+  rozbicie `wejscia`/`wznowienia`/`typ_od` zgodne z wstawionymi danymi, `suma_wyswietlen` niezmieniona.
+- ⚠️ Wdrożenie znów DWA kroki (schemat + redeploy `licznik`) — `SETUP_SUPABASE.md`, sekcja 8g.
+  **Kolejność ma znaczenie:** najpierw schemat. Funkcja wysyłająca `typ` do bazy bez kolumny dostałaby
+  błąd na KAŻDYM wejściu i licznik przestałby zapisywać cokolwiek.
+
 ## Licznik wejść: wykluczenie urządzeń właściciela (2026-08-04) ⚠️
 Życzenie właściciela: „w statystykach chcę usunąć mój telefon i PC". Mechanizm — flaga
 `localStorage['brifup_pomin_licznik']`, którą beacon w `index.html` sprawdza PRZED wysyłką (beacon

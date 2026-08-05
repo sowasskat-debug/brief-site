@@ -386,14 +386,24 @@ as $$
                where referrer is not null group by referrer order by w desc limit 15) z
     ), '[]'::jsonb),
     'urzadzenia', coalesce((
-      select jsonb_object_agg(urzadzenie, w)
+      -- ⚠️ `coalesce` NIE jest kosmetyką: jsonb_object_agg rzuca „field name must not be null"
+      -- przy pustym kluczu i wywaliłby CAŁĄ zakładkę Ruch, nie jeden kafel. Dziś Edge Function
+      -- zawsze ustawia urządzenie, więc to zabezpieczenie na wiersz z innej drogi (ręczny
+      -- insert, przyszła zmiana). Złapane lokalnym testem, nie na produkcji.
+      select jsonb_object_agg(coalesce(urzadzenie, 'nieznane'), w)
         from (select urzadzenie, count(*) w from zakres group by urzadzenie) u
     ), '{}'::jsonb),
     -- Liczone osobno, bo „unikalni w okresie" to NIE suma unikalnych z dni
     -- (sól zmienia się co dobę — patrz sekcja 9). Podajemy oba, żeby panel
     -- mógł uczciwie pokazać, że to różne wielkości.
     'suma_wyswietlen', (select count(*) from zakres),
-    'suma_odwiedzin_dobowych', (select count(distinct (dzien, odwiedzajacy)) from zakres)
+    'suma_odwiedzin_dobowych', (select count(distinct (dzien, odwiedzajacy)) from zakres),
+    -- Rozbicie sygnału (2026-08-05, sekcja 9d). ⚠️ `suma_wyswietlen` CELOWO zostaje
+    -- sumą obu — zmiana definicji zrobiłaby uskok na wykresie, który wyglądałby jak
+    -- spadek ruchu, a nie jak zmiana licznika. To jest rozbicie, nie nowa miara.
+    'wejscia',    (select count(*) from zakres where typ = 'wejscie'),
+    'wznowienia', (select count(*) from zakres where typ = 'wznowienie'),
+    'typ_od',     (select min(dzien) from zakres where typ = 'wznowienie')
   );
 $$;
 
@@ -497,6 +507,10 @@ as $$
     -- To nie jest „czas na stronie" — ostatniej odsłony nikt nie domyka.
     'sesji_minut_mediana',    (select round(percentile_cont(0.5) within group (order by minut)::numeric, 1)
                                  from sesje where odslon >= 2),
+    -- ⚠️ Próbka MUSI iść razem z medianą. Sesje o ≥2 odsłonach powstają niemal wyłącznie
+    -- z przejść między STRONAMI serwisu w ciągu pół godziny, a takie wizyty są rzadkie —
+    -- bez tej liczby panel podawałby „4 min" wyliczone z trzech sesji jako fakt o ruchu.
+    'sesji_minut_n',          (select count(*) from sesje where odslon >= 2),
     'wielosesyjnych',         (select count(*) from sesji_na_czytelnika where ile >= 2),
     -- Retencja: mianownikiem są WYŁĄCZNIE pierwsze wejścia doby zapisane już przez
     -- nową funkcję (starsze wiersze mają pierwsza_dnia=false), więc procent liczy się
@@ -526,3 +540,47 @@ $$;
 
 revoke all on function public.statystyki_powrotow(int) from public, anon;
 grant execute on function public.statystyki_powrotow(int) to authenticated;
+
+
+-- ── 9d. RODZAJ SYGNAŁU: wejście vs wznowienie apki (2026-08-05) ─────────────
+-- Zgłoszenie właściciela przy pierwszym spojrzeniu na kafel „Sesje": liczby były
+-- prawdziwe, ale dwie miary mówiły to samo. Diagnoza: beacon zgłasza wznowienie
+-- apki dopiero po 30 minutach od poprzedniego sygnału, a sesja tnie się dokładnie
+-- na tym samym progu — więc KAŻDE wznowienie z definicji zaczynało nową sesję
+-- i „sesje" zlewały się z „odsłonami".
+--
+-- Sesje dalej poprawnie grupują WIELE ZAŁADOWAŃ STRON (te nie mają throttlingu:
+-- '/' → '/fala.html' w odstępie 2 minut to jedna sesja o dwóch odsłonach), więc
+-- mechanizm nie jest zepsuty — jest ślepy wyłącznie na powroty do otwartej apki.
+--
+-- 🔴 CZEGO TA KOLUMNA NIE ZMIENIA: „wyświetlenia" liczą się DALEJ ze WSZYSTKICH
+--    sygnałów, tak jak dotąd. Rozdzielenie służy rozbiciu i przyszłej zmianie progu
+--    beacona — gdyby ktoś kiedyś skrócił throttling wznowień, bez tej kolumny
+--    napompowałby licznik odsłon i wyglądałoby to na wzrost ruchu.
+-- ⚠️ Stare wiersze dostają 'wejscie' (default). To ZAŁOŻENIE, nie pomiar: przed tą
+--    zmianą nie ma czym odróżnić wznowienia od wejścia. Rozbicie jest więc wiarygodne
+--    dopiero od dnia wdrożenia — panel podaje datę, od której realnie rozróżnia.
+alter table public.wizyty add column if not exists typ text not null default 'wejscie';
+
+-- Zawężamy do dwóch wartości: kolumnę wypełnia publiczny endpoint, więc bez tego
+-- dowolny POST mógłby wstrzyknąć własną etykietę i rozsypać rozbicie w panelu.
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'wizyty_typ_check') then
+    alter table public.wizyty add constraint wizyty_typ_check
+      check (typ in ('wejscie', 'wznowienie'));
+  end if;
+end $$;
+
+-- Od kiedy rozbicie jest realnym pomiarem, a nie domyślną wartością kolumny.
+create or replace function public.rozroznia_typ_od()
+returns date
+language sql
+security invoker
+stable
+as $$
+  select min(dzien) from public.wizyty where typ = 'wznowienie';
+$$;
+
+revoke all on function public.rozroznia_typ_od() from public, anon;
+grant execute on function public.rozroznia_typ_od() to authenticated;
