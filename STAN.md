@@ -1,11 +1,30 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-07 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-07 (noc)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 > 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
 > w `_config.yml`). Dalej widać je w PUBLICZNYM repo na GitHubie — to nie są pliki tajne, tylko zdjęte
 > z domeny produktu i z Google. Edytuj normalnie.
+
+---
+
+## 🔴 A. „Saga × rynek" — ZAPROJEKTOWANA, CZEKA NA DANE (nie buduj przed czasem)
+
+Pomysł zaakceptowany przez właściciela („zajebiste"): pod „Wpływ na rynek" przy sadze z instrumentem
+wykres ceny (30 sesji) z **numerowanymi kropkami etapów sagi** naniesionymi na linię + legenda
+numer → data → nagłówek. Makieta zrobiona na żywych danych (Ormuz × BNO) i zaakceptowana wizualnie.
+
+🔴 **WARUNEK WEJŚCIA, którego jeszcze nie ma: `published_at` w danych.** Kropka MUSI stać w dniu
+publikacji U ŹRÓDŁA (życzenie właściciela), a nie naszego dodania — `added_at` bywa o godziny późniejszy
+(poczekalnia między biegami, okno selekcji 60 min), więc kropka pokazywałaby reakcję rynku w złym
+miejscu, czyli fałszowała dokładnie ten wniosek, który wykres ma podpierać.
+Bot zapisuje `published_at` **od PR #112 (bot) z 07.08** — czyli pole pojawia się WYŁĄCZNIE na NOWYCH
+newsach, stare go nie mają. **Zacznij od pomiaru pokrycia** (`published_at` vs `added_at` w briefs +
+archiwum) i buduj dopiero, gdy uzbiera się kilka dni; front ma mieć fallback na `added_at`.
+
+⚠️ Znane do rozwiązania przy budowie: etapy z tego samego dnia **nakładają się na osi X** — skleić
+w jedną kropkę z listą w legendzie (widać to na makiecie przy Ormuzie).
 
 ---
 
@@ -184,6 +203,55 @@ Pomiar offline w `financialnewsbot/CLAUDE.md` (sekcja „Filtr spójności klast
 | ⚠️ Wykresy notowań | `briefs.json`, pole `chart` | inne nazewnictwo Haiku może dać MNIEJ wykresów |
 | **Skuteczność fallbacku EN** | `brief_health` | `enrich_enfallback_z_oryginalu` vs `_sukces` |
 | **`poczekalnia_utknelo`** | `brief_health` | było **5 na 10** trafiających do poczekalni |
+
+---
+
+## ✅ Co zrobiono 2026-08-07 WIECZOREM/NOCĄ — Wątki jako osobny produkt (nie ruszaj bez powodu)
+
+Sesja mobilno-wizualna. Wszystko zmergowane do `main` i **zweryfikowane na produkcji** (SW v81).
+
+### Podstrona `/watki.html` (PR #104) + poprawki (#105)
+- Wszystkie sagi z `threads.json`, **najnowszy etap NA GÓRZE**, saga zwinięta do 3 etapów
+  (tap w nagłówek rozsuwa pełną oś), **tap w etap wysuwa SKRÓT artykułu** z `briefs.json`;
+  dni archiwalne doładowywane leniwie per plik (`ensureDay`), deep-link „Otwórz news →".
+- 🔴 **Kotwica klastra bywa zbiorcza — bez `article` i `source_name`** (#105). Skrót pokazywał wtedy
+  tekst zastępczy i mylącą etykietę „archiwum" przy DZISIEJSZYM newsie. Teraz sięga do pierwszej
+  podpozycji z artykułem; etykieta awaryjna to „Brif.up". ⚠️ Ta sama pułapka co przy stubach:
+  diagnozując „brak treści", sprawdź NAJPIERW, czy węzeł to kotwica klastra.
+- Wpis w `sitemap.xml` (podstrona jest publiczna, w odróżnieniu od knagi).
+
+### Wejścia do Wątków
+- **Mobile: pasek nad feedem SCHOWANY**, odsłania go PŁYTSZE pociągnięcie w dół (>24 px), głębsze
+  (>60 px) odświeża jak dotąd. Pasek żyje POZA `#content`, więc przeżywa re-rendery; raz odsłonięty
+  zostaje do końca wizyty. Wariant „hairline" (wybór właściciela), desktop go nie pokazuje.
+- **Desktop: przycisk „WĄTKI N"** obok zakładek dawek (PR #106), czerwony obrys (fiolet jest zajęty
+  przez aktywną dawkę), licznik żywy z `threads.json`.
+
+### Oś wątku — jeden język w 3 miejscach
+- **Klaster otwiera się z osią JUŻ ROZWINIĘTĄ** (#107); pojedynczy news dalej ma ją zwiniętą,
+  bo tam treścią główną jest artykuł.
+- **Oś pod postem przestylizowana na wzór /watki** (#108): najnowszy etap na górze, pełne kropki,
+  metka „MM-DD · dawka → relacja". „TEN NEWS" zostaje (czerwony pierścień, gdy nie jest najnowszy).
+- **Karta podglądu `og?w=1` też odwrócona** (#109) — funkcja WDROŻONA osobno przez
+  `supabase functions deploy`, zweryfikowana na żywym endpoincie. ⚠️ X/Slack cache'ują podgląd,
+  więc STARE posty mogą jeszcze pokazywać starą kolejność.
+- **Ikona wątku: emoji 🧵 → SVG** (wariant 2c, naprzemienna oś) w topbarze, badge'ach, przycisku
+  „Wątek tematu" i nakładce. Powód: emoji renderowało się inaczej na każdym systemie i było kolorową
+  plamą w monochromatycznym UI. Stała `WATEK_ICN` w `index.html` — używaj jej, nie wklejaj SVG drugi raz.
+
+### Poprawki mobilne (PR #103) i kafle notowań (PR #110)
+- `.expand-image`: **szare tło z shimmerem na czas ładowania** — bez niego wolne łącze zostawiało
+  180 px białej (jasny motyw) / czarnej dziury nad artykułem (zgłoszenie właściciela).
+- `.expand-read-btn`: `white-space: nowrap` — „Czytaj →" łamało się na dwie linie.
+- `.cat-level-bar`: ukryty przy domyślnych 100% (pełny pasek pod KAŻDYM tematem czytał się jak gruby
+  separator); wraca, gdy suwak realnie przycina.
+- „Wątki dnia" ≤700 px: metka „N etapów · ost." schodzi POD tytuł — obok zjadała ponad połowę wiersza
+  i tytuły sag łamały się po jednym słowie.
+- 🔴 **Kafel notowań mówi teraz, JAKI TO OKRES** (#110, zgłoszenie: „nie wiadomo, czy to ostatni dzień
+  czy 30 dni"): chip „N sesji" przy symbolu = okres LINII, dopisek „dziś" przy procencie = okres ZMIANY.
+  To dwie różne skale w jednym wierszu i stąd zielony procent bywa przy opadającej linii.
+  ⚠️ Poniżej 460 px symbol i chip stoją JEDEN POD DRUGIM — w linii chip był obcinany (zmierzone:
+  głowa potrzebowała 92 px, dostawała 68).
 
 ---
 

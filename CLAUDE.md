@@ -769,3 +769,56 @@ się tego uczy", czyli **zapewniała o nauce, której nie było**.
 — serwer wstaje, ale każdy plik oddaje 404. Kopiuj pliki do scratchpada i serwuj stamtąd; wpis
 `brief-site-repo` w `~/.claude/launch.json` już tak działa. To NIE jest to samo co dawne ograniczenie
 sandboxa — objaw identyczny, przyczyna inna.
+
+## Wątki jako osobna sekcja — `watki.html` + wejścia + jeden język osi (2026-08-07) 🧵
+Wątki przestały być dodatkiem do artykułu i stały się **osobnym produktem**. Trzy powierzchnie
+pokazują TE SAME dane w TEJ SAMEJ konwencji — zmieniając jedną, sprawdź pozostałe dwie.
+
+- **`watki.html`** — publiczna podstrona (jest w `sitemap.xml`, inaczej niż knaga). Czyta
+  `threads.json` + `briefs.json`; dni archiwalne dociąga LENIWIE, per plik, dopiero przy tapnięciu
+  w etap z tamtego dnia (`ensureDay`), więc wejście kosztuje dwa pliki.
+  Saga zwinięta do 3 etapów → tap w nagłówek rozsuwa pełną oś → tap w etap wysuwa **skrót artykułu**
+  z deep-linkiem `#dawka/slug` (albo `#archive/data/dawka/slug`).
+  🔴 **`itemSlug` jest tu SKOPIOWANY** (djb2-xor, 80 znaków, base36) — czwarta kopia obok
+  `index.html`, `knaga.html`, `Runner.cs` i `og/index.ts`. Zmiana algorytmu w jednym miejscu
+  rozjeżdża deep-linki i stuby; trzymać identyczne.
+  🔴 **Kotwica klastra bywa zbiorcza — bez `article` i `source_name`.** Skrót sięga wtedy do
+  pierwszej PODPOZYCJI z artykułem; etykieta awaryjna to „Brif.up", nigdy „archiwum" (mylące przy
+  dzisiejszym newsie). Ta sama klasa pułapki co przy stubach: najpierw sprawdź, czy węzeł to kotwica.
+- **Wejście mobilne = pasek nad feedem, DOMYŚLNIE SCHOWANY.** Odsłania go PŁYTSZE pociągnięcie
+  w dół (>24 px) w `pull-to-refresh`; głębsze (>60 px) odświeża jak dotąd — jeden gest, dwa progi.
+  ⚠️ Pasek leży POZA `#content`, bo `renderDose` nadpisuje `#content` przy każdym renderze i pasek
+  znikałby po każdym live-ticku. Raz odsłonięty zostaje do końca wizyty (klasa `.show`).
+- **Wejście desktopowe = `.dt-watki-btn`** obok zakładek dawek, z żywym licznikiem sag.
+  Czerwony obrys, NIE fioletowy — fiolet znaczy „aktywna dawka" i przycisk czytałby się jak czwarta dawka.
+- **Ikona wątku: stała `WATEK_ICN`** (SVG, wariant „naprzemienna oś"). Zastąpiła emoji 🧵, które
+  renderowało się inaczej na każdym systemie i było kolorową plamą w monochromatycznym UI.
+  Używaj stałej, nie wklejaj SVG drugi raz; osobne kopie są tylko w statycznym HTML (topbar, pasek).
+
+### Chronologia: NAJNOWSZY ETAP NA GÓRZE — we WSZYSTKICH trzech miejscach
+Decyzja właściciela 2026-08-07. Dotyczy `watki.html`, osi pod postem (`watekHtml`) i karty
+podglądu `og?w=1`. Węzły w `threads.json` przychodzą od bota **od najstarszego**, więc każde z tych
+miejsc odwraca listę u siebie — zmieniając jedno, zmień pozostałe, inaczej ta sama saga czyta się
+w dwie różne strony.
+- `watekHtml`: pełne kropki, największa i czerwona na PIERWSZYM (najnowszym) wierszu, metka
+  „MM-DD · dawka → relacja". „TEN NEWS" zostaje jako czerwony pierścień, gdy bieżący news nie jest
+  najnowszym etapem — na podstronie nie ma odpowiednika tej informacji.
+- **Klaster otwiera oś JUŻ ROZWINIĘTĄ**, pojedynczy news — zwiniętą. Powód: kotwica klastra jest
+  zwykle węzłem sagi i dodatkowy tap był zbędny, a przy pojedynczym newsie treścią główną jest artykuł.
+
+## Kafle notowań mówią, JAKI TO OKRES (2026-08-07) ⚠️
+Zgłoszenie właściciela: *„nie jest napisane, z jakiego terminu jest ten wykres — użytkownik nie widzi,
+czy to ostatni dzień czy 30 dni"*. W jednym wierszu stoją **dwie różne skale**: linia rysuje ~30 sesji,
+a procent obok to zmiana SESYJNA — stąd zielony procent bywa przy opadającej linii (to nie jest błąd).
+- **chip `.q-per` („N sesji") przy symbolu** nazywa okres LINII, **dopisek `.q-chg-per` („dziś")**
+  przy procencie nazywa okres ZMIANY. Dotąd mówiła o tym wyłącznie podpowiedź `title` — niedostępna
+  na telefonie, czyli dla większości czytelników nie istniała.
+- ⚠️ **Poniżej 460 px symbol i chip stoją JEDEN POD DRUGIM** (`.q-head` w kolumnie). W jednej linii
+  chip był obcinany — zmierzone: głowa potrzebowała 92 px, dostawała 68. To rozwinięcie starej zasady
+  „w `.q-row` wolno ścisnąć wyłącznie nazwę instrumentu".
+
+## Placeholder pod zdjęciem artykułu (2026-08-07)
+`.expand-image` ma tło z animowanym „shimmerem" (osobny wariant dla motywu ciemnego). Bez niego
+`loading="lazy"` + wolne łącze zostawiały **180 px gołej dziury** — białej w motywie jasnym, czarnej
+w ciemnym — którą właściciel zgłosił jako „zdjęcie, które się nie załadowało". `onerror` chowa obrazek
+dopiero po BŁĘDZIE; ładowanie trwające sekundy nie jest błędem i wcześniej nie miało żadnej reprezentacji.
