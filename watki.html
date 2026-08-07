@@ -140,11 +140,16 @@ function exToggle(el){
   const date = (n.added_at||'').slice(0,10);
   ensureDay(date).then(() => {
     const it = ART[norm(n.text)];
-    const ex = it && it.article ? (it.article.length > 300 ? it.article.slice(0,300) + '…' : it.article) : null;
+    // Kotwica klastra bywa zbiorcza — bez własnego artykułu i źródła; treść niosą podpozycje.
+    let src = it;
+    if (it && !it.article && it.subItems && it.subItems.length) src = it.subItems.find(s => s.article) || it;
+    const art = src && src.article;
+    const ex = art ? (art.length > 300 ? art.slice(0,300) + '…' : art) : null;
+    const zrodlo = (src && src.source_name) || (it && it.source_name) || 'Brif.up';
     const slug = itemSlug(n.text);
     const link = date === todayISO ? `./#${n.dose||'morning'}/${slug}` : `./#archive/${date}/${n.dose||'morning'}/${slug}`;
     box.innerHTML = `<div class="ex-art">${ex ? esc(ex) : 'Pełna treść w wydaniu z tego dnia.'}</div>
-      <div class="ex-foot"><span class="ex-src">${esc(it && it.source_name || 'archiwum')}</span><a class="ex-open" href="${link}">Otwórz news →</a></div>`;
+      <div class="ex-foot"><span class="ex-src">${esc(zrodlo)}</span><a class="ex-open" href="${link}">Otwórz news →</a></div>`;
   });
 }
 </script>
