@@ -1106,3 +1106,19 @@ html, body {
 [data-theme="dark"] #watkiStrip { color: #f87171; }
 [data-theme="dark"] #watkiStrip.show { border-bottom-color: var(--rule); }
 @media (min-width: 1024px) { #watkiStrip { display: none; } }
+
+/* Przycisk „WĄTKI" w desktopowym nagłówku (2026-08-07, wariant A wybrany przez właściciela).
+   Czerwony obrys odróżnia go od fioletowej zakładki aktywnej dawki. Licznik żywy (threads.json). */
+.dt-watki-btn {
+  display: flex; align-items: center; gap: 5px;
+  margin-left: 14px; padding: 6px 12px;
+  border: 1px solid var(--red); border-radius: 2px;
+  color: var(--red); text-decoration: none;
+  font-family: 'Space Mono', monospace; font-size: 10px;
+  letter-spacing: 1.5px; font-weight: 700; text-transform: uppercase;
+  white-space: nowrap;
+}
+.dt-watki-btn:hover { background: var(--red); color: #fff; }
+.dt-watki-n { opacity: .65; font-weight: 400; }
+[data-theme="dark"] .dt-watki-btn { border-color: #f87171; color: #f87171; }
+[data-theme="dark"] .dt-watki-btn:hover { background: #f87171; color: #0f0f0f; }
