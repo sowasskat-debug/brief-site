@@ -171,7 +171,7 @@ function karta(naglowek: string, kicker: string, poprzedni: { kiedy: string; tex
 // ⚠️ MAKSYMALNIE 4 OSTATNIE ETAPY — nie z lenistwa, tylko dlatego, że przy 1200×630 pięć węzłów
 // schodzi poniżej granicy czytelności (tekst musiałby zejść pod 13 px albo urywać się w pół zdania).
 // Bot trzyma do 20 węzłów na wątek, więc nagłówek mówi wprost „OSTATNIE 4 Z 12", żeby nie sugerować,
-// że to cała saga. Najnowszy etap na DOLE — oś czasu czyta się z góry na dół.
+// że to cała saga. Najnowszy etap NA GÓRZE (zmiana 2026-08-07, spójnie z /watki i osią pod postem).
 function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[], ile: number) {
   // ⚠️ Lewa kolumna WĘŻSZA niż na karcie nagłówkowej (250 zamiast 330) — życzenie właściciela
   // 2026-08-02: „przesuń kreskę w lewo, żeby się więcej zmieściło". Oś wątku ma cztery etapy po
@@ -200,7 +200,7 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
     : `OŚ WĄTKU · ${ile} ${ile === 1 ? 'ETAP' : (ile < 5 ? 'ETAPY' : 'ETAPÓW')}`;
 
   const wiersze = wezly.map((w, i) => {
-    const ostatni = i === wezly.length - 1;
+    const ostatni = i === 0; // najnowszy NA GÓRZE — wezly przychodzą już odwrócone
     return el('div', { display: 'flex', marginTop: i === 0 ? 0 : 16 }, [
       // Kolumna osi: kropka + pionowa kreska. Bieżący (ostatni) etap wyróżniony czerwienią i rozmiarem.
       el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', width: 22, flexShrink: 0 }, [
@@ -208,7 +208,8 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
           width: ostatni ? 13 : 9, height: ostatni ? 13 : 9, borderRadius: 999, marginTop: ostatni ? 3 : 5,
           backgroundColor: ostatni ? CZERWONY : '#c9c9c9',
         }),
-        ...(ostatni ? [] : [el('div', { width: 2, flexGrow: 1, marginTop: 4, backgroundColor: '#e4e4e4' })]),
+        // Kreska łączy w DÓŁ — znika przy OSTATNIM WIERSZU (najstarszym), nie przy czerwonym.
+        ...(i === wezly.length - 1 ? [] : [el('div', { width: 2, flexGrow: 1, marginTop: 4, backgroundColor: '#e4e4e4' })]),
       ]),
       el('div', { display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, paddingLeft: 12 }, [
         el('div', { display: 'flex', fontFamily: 'SM', fontSize: 12, fontWeight: 700, letterSpacing: 1.4, color: ostatni ? CZERWONY : '#9a9a9a' }, w.kiedy),
@@ -343,7 +344,7 @@ Deno.serve(async (req) => {
     // (knaga i tak pokazuje ten przycisk tylko dla newsów z sagą, to jest zabezpieczenie drugiej warstwy).
     if (u.searchParams.get('w') === '1') {
       if (!pelnyWatek) return zapasowa();
-      const ostatnie = pelnyWatek.nodes.slice(-MAX_WEZLOW_NA_KARCIE)
+      const ostatnie = pelnyWatek.nodes.slice(-MAX_WEZLOW_NA_KARCIE).reverse()
         .map((n: any) => ({ kiedy: kiedy(n?.added_at), text: n?.text || '' }));
       const svgW = await satori(kartaWatku(pelnyWatek.tytul, ostatnie, pelnyWatek.nodes.length) as any,
                                { width: 1200, height: 630, fonts: await fonty() });
