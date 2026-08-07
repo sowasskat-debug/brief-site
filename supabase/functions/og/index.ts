@@ -241,21 +241,57 @@ function zapasowa() {
   return new Response(null, { status: 302, headers: { Location: ZAPASOWY_OBRAZEK, 'Cache-Control': 'public, max-age=300' } });
 }
 
+// ══ Bramki wejścia (2026-08-07) ════════════════════════════════════════════
+// Funkcja jest wdrażana z `--no-verify-jwt` (scraper nie ma i nie może mieć tokenu), więc każdy
+// może ją wołać w pętli. Limit wywołań Edge Functions jest WSPÓLNY dla całego projektu, czyli
+// wypalenie go kładzie także licznik wejść i gotowiec-x. Stąd trzy tanie bramki poniżej.
+const DAWKI = new Set(['morning', 'afternoon', 'evening']);
+const WZORZEC_SLUGU = /^[a-z0-9]{1,16}$/;     // itemSlug: djb2-xor → base36
+const WZORZEC_DATY  = /^\d{4}-\d{2}-\d{2}$/;
+const ZNANE_PARAMY  = new Set(['s', 'd', 'a', 'w']);
+
+// Pamięć podręczna w instancji funkcji. Kilkanaście kart z jednej dawki (typowa wrzutka na X,
+// albo pętla nadużycia) pobierało briefs.json + threads.json ZA KAŻDYM RAZEM — po ~360 KB
+// z brifup.com na jedno wywołanie. TTL 60 s: karty zostają świeże, a ruch do originu spada
+// do jednego pobrania na minutę niezależnie od liczby żądań.
+const TTL_MS = 60_000;
+const podreczne = new Map<string, { czas: number; dane: any }>();
+async function pobierzJSON(url: string): Promise<any | null> {
+  const teraz = Date.now();
+  const wpis = podreczne.get(url);
+  if (wpis && teraz - wpis.czas < TTL_MS) return wpis.dane;
+  const r = await fetch(url);
+  if (!r.ok) return null;
+  const dane = await r.json();
+  podreczne.set(url, { czas: teraz, dane });
+  return dane;
+}
+
 Deno.serve(async (req) => {
   try {
     const u = new URL(req.url);
+
+    // Nieznany parametr = nie nasze żądanie. Bez tego dowolny `&x=<losowe>` tworzył NOWY klucz
+    // cache CDN mimo `s-maxage`, więc każde takie żądanie wymuszało pełny render satori+resvg.
+    for (const klucz of u.searchParams.keys()) {
+      if (!ZNANE_PARAMY.has(klucz)) return zapasowa();
+    }
+
     const slug = u.searchParams.get('s') || '';
     const dawka = u.searchParams.get('d') || 'morning';
     const archiwum = u.searchParams.get('a');   // YYYY-MM-DD dla itemów z archiwum
-    if (!slug) return zapasowa();
+    if (!WZORZEC_SLUGU.test(slug)) return zapasowa();
+    if (!DAWKI.has(dawka)) return zapasowa();
+    // 🔴 `archiwum` wchodzi do ŚCIEŻKI URL-a, więc bez tego wzorca `a=../../coś` wyprowadzało
+    // pobieranie poza katalog archive/ (podstawienie ścieżki). Data albo nic.
+    if (archiwum !== null && !WZORZEC_DATY.test(archiwum)) return zapasowa();
 
     const zrodlo = archiwum ? `${ORIGIN}/archive/${archiwum}.json` : `${ORIGIN}/briefs.json`;
-    const [briefsRes, threadsRes] = await Promise.all([
-      fetch(`${zrodlo}?_=${Date.now()}`),
-      fetch(`${ORIGIN}/threads.json?_=${Date.now()}`),
+    const [briefs, threadsDane] = await Promise.all([
+      pobierzJSON(zrodlo),
+      pobierzJSON(`${ORIGIN}/threads.json`),
     ]);
-    if (!briefsRes.ok) return zapasowa();
-    const briefs = await briefsRes.json();
+    if (!briefs) return zapasowa();
     // ⚠️ SZUKAMY TAKŻE W PODPOZYCJACH KLASTRA (2026-08-04, zgłoszenie właściciela: „przy tym poście nie
     // generuje mi zdjęcia z wątkami"). Wcześniej `items.find(...)` przeglądał WYŁĄCZNIE poziom top-level,
     // więc dla slugu podpozycji `item` wychodził null i funkcja wracała `zapasowa()` — czyli statyczną
@@ -278,8 +314,8 @@ Deno.serve(async (req) => {
     // Osobno CAŁY wątek — dla karty osi (`w=1`) potrzebujemy wszystkich węzłów, także gdy news jest
     // pierwszym etapem (tam `watek` zostaje null, bo pierwszy etap nie jest kontynuacją).
     let pelnyWatek: { tytul: string; nodes: any[] } | null = null;
-    if (threadsRes.ok) {
-      const th = await threadsRes.json();
+    if (threadsDane) {
+      const th = threadsDane;
       // Podpozycja klastra DZIEDZICZY wątek po kotwicy, tak samo jak front (brief-site #93): bot buduje
       // sagi wyłącznie z pozycji top-level, a klaster znaczy „to samo wydarzenie z różnych źródeł",
       // więc podpozycja jest tym samym etapem co kotwica. Najpierw próbujemy dopasować własny tekst.
