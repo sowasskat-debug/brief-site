@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-07 (noc)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-08 (noc)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 > 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
@@ -15,16 +15,39 @@ Pomysł zaakceptowany przez właściciela („zajebiste"): pod „Wpływ na ryne
 wykres ceny (30 sesji) z **numerowanymi kropkami etapów sagi** naniesionymi na linię + legenda
 numer → data → nagłówek. Makieta zrobiona na żywych danych (Ormuz × BNO) i zaakceptowana wizualnie.
 
-🔴 **WARUNEK WEJŚCIA, którego jeszcze nie ma: `published_at` w danych.** Kropka MUSI stać w dniu
-publikacji U ŹRÓDŁA (życzenie właściciela), a nie naszego dodania — `added_at` bywa o godziny późniejszy
-(poczekalnia między biegami, okno selekcji 60 min), więc kropka pokazywałaby reakcję rynku w złym
-miejscu, czyli fałszowała dokładnie ten wniosek, który wykres ma podpierać.
-Bot zapisuje `published_at` **od PR #112 (bot) z 07.08** — czyli pole pojawia się WYŁĄCZNIE na NOWYCH
-newsach, stare go nie mają. **Zacznij od pomiaru pokrycia** (`published_at` vs `added_at` w briefs +
-archiwum) i buduj dopiero, gdy uzbiera się kilka dni; front ma mieć fallback na `added_at`.
+✅ **Pomiar pokrycia `published_at` ZROBIONY (07/08.08 w nocy) — i wywrócił plan.** Wynik: **0/4693**
+w archiwum i 0/130 w briefs — ale nie dlatego, że kod świeży. **Dwie ścieżki nie mogły pola wypełnić
+NIGDY**, obie załatane w PR #113 (bot):
+1. **Poczekalnia gubiła datę** — `_datyPublikacji` to mapa w pamięci procesu, a poczekalnia ponawia
+   enrich w NASTĘPNYM biegu (nowy proces, pusta mapa). Zmierzone na logu Hetznera: przez poczekalnię
+   idzie **1122 z 2399 publikacji (~47%)** — te nie dostałyby daty niezależnie od czekania.
+2. **`CheckMultipleFeedsBatched` w ogóle nie wołało `ZapamietajDatePublikacji`** — czyli tor Bankiera
+   (17,3% źródeł), ZeroHedge, Ars, The Verge, BBC ×2, Techmeme, Rest of World.
 
-⚠️ Znane do rozwiązania przy budowie: etapy z tego samego dnia **nakładają się na osi X** — skleić
-w jedną kropkę z listą w legendzie (widać to na makiecie przy Ormuzie).
+Do tego **PR #114 (bot): data z SAMEGO artykułu źródłowego** (życzenie właściciela: „myślałem, że ze
+źródła, np. Onet/BBC, będziesz scrapował" + „kto pierwszy, ten lepszy"). Findery LICZYŁY ją i WYRZUCAŁY
+(`_` w krotce). Reguła: **wcześniejsza z dwóch dat** (feedu vs artykułu) — kropka stoi tam, gdzie rynek
+MÓGŁ się dowiedzieć; guard 48 h odrzuca artykuł tła. Zmierzone z Hetznera: 32/59 stron (54%) ma datę
+w meta; 16/16 feedów selekcji oddaje `pubDate` w 100% pozycji. Reguła zweryfikowana refleksją na
+`Bot.dll` — 8/8, w tym obie strony granicy północy.
+
+🔴 **WARUNEK WEJŚCIA TERAZ: pokrycie liczy się od dawek z 08.08.** Sprawdź po 2-3 dniach:
+`python3` po briefs+archiwum (published_at vs added_at) + liczniki `data_z_artykulu_wygrala/odrzucona`
+w `brief_health`. Buduj, gdy pokrycie ustabilizuje się w okolicach sufitu; front MUSI mieć fallback
+na `added_at` — **tor X-feeda ŚWIADOMIE nie dostaje daty nigdy** (pubDate skrótu dnia = czas tweeta,
+nie newsów w nim opisanych) i stare newsy też jej nie mają.
+
+⚠️ Znane do rozwiązania przy budowie:
+- etapy z tego samego dnia **nakładają się na osi X** — skleić w jedną kropkę z listą w legendzie
+  (widać na makiecie przy Ormuzie); rozdzielczość kropki = DZIEŃ (wykres ma 30 dziennych sesji),
+- **serie krypto mają inną gęstość niż akcje**: BTC/ETH dają bar co dobę 7 dni w tygodniu (30 barów
+  = 30 dni), akcje ~22 sesje na 30 dni — saga z instrumentem krypto zachowa się na osi X inaczej
+  niż makieta z Ormuzem (BNO).
+
+✅ Przy okazji tej sesji (07/08.08): **ticker bitcoina naprawiony** — „Bitcoin" w linii wpływu dawało
+wykres funduszu IBIT (podmiana rynku, brak nocnych ruchów); teraz BTC/USD + ETH/USD z endpointu crypto
+Alpaki (PR #113, zweryfikowane na żywym API z Hetznera). **Oś sagi nie powiela artykułu** — kotwica
+klastra brała pierwszą podpozycję, która bywała sąsiednim etapem osi (brief-site #111).
 
 ---
 

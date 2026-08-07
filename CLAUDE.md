@@ -782,9 +782,14 @@ pokazują TE SAME dane w TEJ SAMEJ konwencji — zmieniając jedną, sprawdź po
   🔴 **`itemSlug` jest tu SKOPIOWANY** (djb2-xor, 80 znaków, base36) — czwarta kopia obok
   `index.html`, `knaga.html`, `Runner.cs` i `og/index.ts`. Zmiana algorytmu w jednym miejscu
   rozjeżdża deep-linki i stuby; trzymać identyczne.
-  🔴 **Kotwica klastra bywa zbiorcza — bez `article` i `source_name`.** Skrót sięga wtedy do
-  pierwszej PODPOZYCJI z artykułem; etykieta awaryjna to „Brif.up", nigdy „archiwum" (mylące przy
-  dzisiejszym newsie). Ta sama klasa pułapki co przy stubach: najpierw sprawdź, czy węzeł to kotwica.
+  🔴 **Kotwica klastra bywa zbiorcza — bez `article` i `source_name`.** Skrót sięga wtedy do podpozycji
+  z artykułem, ale **NIE do pierwszej z brzegu — do pierwszej, której NIE MA na osi jako osobnego etapu**
+  (#111, 2026-08-08, zgłoszenie właściciela ze zrzutem): podpozycja klastra bywa równocześnie węzłem tej
+  samej sagi i saga „Trump o kryptowalutach" pokazywała pod OBOMA etapami ten sam artykuł bloomingbit,
+  choć właściwa treść kotwicy (A News) leżała w `sub[1]`. Fallback na „pierwszą z artykułem" zostaje,
+  gdyby wszystkie podpozycje stały już na osi (powtórzony fragment lepszy niż żaden). Etykieta awaryjna
+  to „Brif.up", nigdy „archiwum" (mylące przy dzisiejszym newsie). Ta sama klasa pułapki co przy stubach:
+  najpierw sprawdź, czy węzeł to kotwica.
 - **Wejście mobilne = pasek nad feedem, DOMYŚLNIE SCHOWANY.** Odsłania go PŁYTSZE pociągnięcie
   w dół (>24 px) w `pull-to-refresh`; głębsze (>60 px) odświeża jak dotąd — jeden gest, dwa progi.
   ⚠️ Pasek leży POZA `#content`, bo `renderDose` nadpisuje `#content` przy każdym renderze i pasek
