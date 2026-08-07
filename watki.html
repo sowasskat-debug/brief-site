@@ -141,8 +141,18 @@ function exToggle(el){
   ensureDay(date).then(() => {
     const it = ART[norm(n.text)];
     // Kotwica klastra bywa zbiorcza — bez własnego artykułu i źródła; treść niosą podpozycje.
+    // ⚠️ NIE „pierwsza z artykułem" (bug 2026-08-08, zgłoszenie właściciela ze zrzutem): podpozycja
+    // klastra bywa RÓWNOCZEŚNIE osobnym węzłem tej samej sagi — saga „Trump o kryptowalutach" miała
+    // na osi kotwicę i jej sub[0], więc oba etapy pokazywały ten sam artykuł bloomingbit, a właściwa
+    // treść kotwicy (A News o Chinach) leżała w sub[1]. Dlatego najpierw podpozycja, której NIE MA
+    // na osi jako osobnego etapu; fallback na starą regułę, gdyby wszystkie już na niej stały
+    // (powtórzony fragment jest lepszy niż żaden).
     let src = it;
-    if (it && !it.article && it.subItems && it.subItems.length) src = it.subItems.find(s => s.article) || it;
+    if (it && !it.article && it.subItems && it.subItems.length) {
+      const naOsi = new Set(th.nodes.filter(x => x !== n).map(x => norm(x.text)));
+      src = it.subItems.find(s => s.article && !naOsi.has(norm(s.text)))
+         || it.subItems.find(s => s.article) || it;
+    }
     const art = src && src.article;
     const ex = art ? (art.length > 300 ? art.slice(0,300) + '…' : art) : null;
     const zrodlo = (src && src.source_name) || (it && it.source_name) || 'Brif.up';
