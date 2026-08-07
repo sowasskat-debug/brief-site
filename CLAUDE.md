@@ -24,6 +24,34 @@ brifup.com** (mierzone). Aktualnie wykluczone: `STAN.md`, `CLAUDE.md`, `SETUP_SU
 - ⚠️ Wykluczenie `supabase/` NIE psuje wdrożenia funkcji — te idą przez `supabase functions deploy`,
   nie przez Pages.
 
+## Archiwum ładowane leniwie — `ARCHIWUM_DNI_NA_STARCIE` (2026-08-07) ⚠️
+🔴 **Wejście na stronę ładowało WSZYSTKIE pliki archiwum** (37 dni, 5,13 MB surowo / **1,63 MB gzip**),
+i to **sekwencyjnie, dzień po dniu** — tylko po to, żeby `dtRenderSidebarCounts` policzyło newsy przy
+tematach. Płacił za to KAŻDY czytelnik, przy każdym wejściu, także na telefonie, a koszt rósł o plik
+dziennie. To było **93% wagi strony** i największy pojedynczy koszt wejścia.
+- **`ARCHIWUM_DNI_NA_STARCIE = 7`** — `dtRenderArchiveSidebar` wczytuje tylko tyle najnowszych dni.
+  📊 Zmierzone na 37 dniach: **1,63 MB → 0,34 MB gzip (−79,2%)**, round-tripów 38 → 8.
+- **`wczytajDniArchiwum(daty)`** — wspólny loader, pobiera **równolegle** (`Promise.all`). Przy 37
+  plikach sam łańcuch sekwencyjnych round-tripów trwał dłużej niż transfer. Kolejność wejścia jest
+  zachowana, a widok cross-day i tak grupuje po dacie, więc porządek w tablicy nie ma znaczenia.
+- **`dowczytajCaleArchiwum(poZaladowaniu)`** — dociąga resztę, wołane **WYŁĄCZNIE z widoku tematu**
+  (`dtRenderCatFilter` na PC, `mobileFilterCat` na mobile), bo to jedyne miejsce, w którym dni starsze
+  niż tydzień są w ogóle widoczne. Kto nie wchodzi w temat, nie płaci.
+- 🔴 **`dtArchiveKompletne` to NIE zapasowy guard, tylko warunek zatrzymania.** `poZaladowaniu`
+  przerysowuje widok tematu, a ten woła `dowczytajCaleArchiwum` ponownie — flaga MUSI być ustawiana
+  wewnątrz łańcucha obietnicy (czyli zanim ruszą doczepione callbacki), inaczej re-render zapętla się
+  w nieskończoność. `dtArchiveDniWczytane` podnosimy OD RAZU, a obietnicę trzymamy w
+  `dtArchiveDoczytywanie` — bez tego dwa kliknięcia w temat pobrałyby archiwum dwa razy i **zdublowały
+  itemy** (zweryfikowane: 3017 itemów, 0 duplikatów `data|dawka|tekst`, powtórne wołania nic nie zmieniają).
+- ⚠️ **Po doczytaniu PRZYWRACAMY przewinięcie.** `mobileFilterCat` samo zjeżdża na górę, a wyrzucenie
+  czytelnika na początek listy w trakcie czytania byłoby gorsze niż brak dopisanych dni. Starsze dni
+  dochodzą NA DOLE, więc pozycja zostaje sensowna.
+- ⚠️ **ŚWIADOMY KOSZT:** liczniki przy tematach (sidebar PC i panel mobile) startują z 7 dni i skaczą
+  do pełnych po wejściu w temat. Każde rozwiązanie tego punktu zmieniało liczniki przy pierwszym
+  renderze — to był warunek wejścia, nie regresja.
+- Nietknięte: nakładka archiwum (`showArchiveDay`) pobierała zawsze dzień na żądanie, lista dni
+  (`archiveDatesCache`) to jeden mały plik.
+
 ## Diagnostyka: Supabase-first, pliki zdjęte (2026-08-07)
 Bot pisze diagnostykę RÓWNOLEGLE do Supabase (`SupabaseZapiszLejek`, `SupabaseZapiszSnapshot`) i do
 plików. Migracja od strony danych **kompletna** — zweryfikowane z serwera 2026-08-07: `lejek` 1500
@@ -31,9 +59,18 @@ wierszy, snapshoty (`deepseek_usage`/`brief_health`/`bot_health`) po 200, wszyst
 zdjęte z Pages (patrz wyżej). Tabele mają RLS wpuszczające tylko właściciela.
 - **knaga zakładka Lejek** czyta Supabase-first (`pobierzLejekDane`: `supa.from('lejek')`, plik jako
   fallback gdy tabela pusta — teraz nie pusta, więc plik nietykany).
-- 🔴 **Widget „DeepSeek dziś" w Kokpicie knagi czyta jeszcze PLIK** (`./deepseek_usage.json`) — po
-  jego zdjęciu kafel gaśnie miękko (`catch→null`, kokpit działa). Do przepięcia na
-  `.from('deepseek_usage')` wzorem lejka.
+- ✅ **Widget „DeepSeek dziś" w Kokpicie knagi — `pobierzUzycieDeepSeek()`, Supabase (2026-08-07 wieczorem).**
+  🔴 **Świadomie BEZ zapasowego pliku — inaczej niż lejek.** Tam `lejek.json` jest realną drugą drogą;
+  tu `deepseek_usage.json` siedzi w `exclude` w `_config.yml`, więc pod brifup.com oddaje 404 ZAWSZE.
+  Fallback byłby martwym zapytaniem udającym bezpiecznik (ten sam wybór co w zakładce Ruch).
+  ⚠️ **Doba liczona LOKALNIE, nie w UTC** — `.gte('ts', lokalna_północ.toISOString())`. Stary kod
+  porównywał prefiks `new Date().toISOString().slice(0,10)`, więc między 00:00 a 02:00 czasu PL kafel
+  pokazywał wczorajszy dzień jako „dziś". Kolumna jest `timestamptz`, więc granicę doby podajemy jako
+  konkretny MOMENT — porównanie prefiksu daty rozjeżdżałoby się o 1-2 h zależnie od pory roku.
+  To ta sama zasada, co `todayLocalISO()` na froncie.
+  Suma z `total_in`/`total_out` (bot już je liczy), z awaryjnym sumowaniem `stages` dla wierszy bez tych pól.
+  ⚠️ Zweryfikowane atrapą klienta Supabase na żywej stronie (zapytanie + obie gałęzie sumowania),
+  **nie wobec prawdziwej tabeli** — logowanie do knagi ma wyłącznie właściciel.
 
 ## ?admin=PAT USUNIĘTY (2026-08-07) — nie przywracać 🔴
 `index.html` miał legacy tryb administracyjny `?admin=<PAT>`: token GitHuba z prawem zapisu do repo

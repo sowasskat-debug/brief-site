@@ -1111,7 +1111,7 @@ function switchPane(p) {
 
 // ══ KOKPIT ══
 // Przegląd na wejściu: stan dawek, ostatni bieg bota, martwe feedy, tokeny DeepSeeka dziś.
-// Dane z plików publicznych (briefs/deepseek_usage) + lejek przez wspólny loader —
+// Treść strony z pliku publicznego (briefs), lejek i zużycie DeepSeeka z Supabase —
 // jeden rzut oka zamiast klikania po zakładkach.
 let kokWczytany = false;
 
@@ -1119,6 +1119,32 @@ function renderKokpit() {
   if (kokWczytany) return;
   kokWczytany = true;
   wczytajKokpit();
+}
+
+// Zużycie DeepSeeka — WYŁĄCZNIE Supabase, bez zapasowego pliku. `deepseek_usage.json` od
+// 2026-08-07 jest wykluczony z Pages (`_config.yml`), czyli pod brifup.com oddaje 404 —
+// fallback na niego byłby martwym zapytaniem, nie drugą drogą. Bot pisze do tabeli
+// równolegle od 2026-08-01, wiersz = jeden bieg:
+// {ts, payload:{total_in, total_out, stages:{etap:{in,out,…}}}}.
+async function pobierzUzycieDeepSeek() {
+  if (!supa) return null;
+  // ⚠️ Doba liczona LOKALNIE, nie w UTC — kafel mówi „dziś" do właściciela, nie do serwera
+  // (ta sama zasada co `todayLocalISO` na froncie). Bot stempluje `deepseek_usage` w UTC,
+  // a kolumna jest `timestamptz`, więc granicę doby podajemy jako konkretny MOMENT;
+  // porównanie prefiksu daty rozjeżdżałoby się o 1-2 h zależnie od pory roku.
+  const odPolnocy = new Date(); odPolnocy.setHours(0, 0, 0, 0);
+  try {
+    const { data, error } = await supa
+      .from('deepseek_usage').select('ts,payload')
+      .gte('ts', odPolnocy.toISOString())
+      .order('ts', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (e) {
+    // Kafel po prostu nie powstanie — kokpit z dziurą jest lepszy niż pusty.
+    console.warn('Zużycie DeepSeeka z Supabase nieudane:', e.message);
+    return null;
+  }
 }
 
 async function wczytajKokpit() {
@@ -1129,7 +1155,7 @@ async function wczytajKokpit() {
   const [briefs, lejek, usage] = await Promise.all([
     fetch('./briefs.json?_=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).catch(() => null),
     pobierzLejekDane().catch(() => null),
-    fetch('./deepseek_usage.json?_=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).catch(() => null),
+    pobierzUzycieDeepSeek(),
   ]);
 
   let html = '<div class="kok-siatka">';
@@ -1167,19 +1193,21 @@ async function wczytajKokpit() {
   }
 
   // ── Tokeny DeepSeek dziś ──
-  if (usage && Array.isArray(usage.runs)) {
+  // Zapytanie zwraca już TYLKO dzisiejsze biegi (filtr po stronie bazy), więc wiersz = bieg.
+  if (usage && usage.length) {
     // Cennik deepseek-v4-flash (cache miss): $0,27 / 1M in, $1,10 / 1M out.
-    const dzis = new Date().toISOString().slice(0, 10);
-    let tin = 0, tout = 0, biegi = 0;
-    for (const r of usage.runs) {
-      if (!String(r.ts || '').startsWith(dzis)) continue;
-      biegi++;
-      for (const v of Object.values(r.stages || {})) { tin += v.in || 0; tout += v.out || 0; }
+    let tin = 0, tout = 0;
+    for (const w of usage) {
+      const p = w.payload || {};
+      // `total_*` to suma etapów policzona już przez bota; sumowanie `stages` zostaje na
+      // wypadek wiersza bez tych pól (starsze biegi), żeby kafel nie pokazał wtedy zera.
+      if (p.total_in != null || p.total_out != null) { tin += p.total_in || 0; tout += p.total_out || 0; }
+      else for (const v of Object.values(p.stages || {})) { tin += v.in || 0; tout += v.out || 0; }
     }
     const koszt = tin * 0.27 / 1e6 + tout * 1.10 / 1e6;
     html += `<div class="kok-kafel"><div class="kok-label">DeepSeek dziś</div>
              <div class="kok-duze">$${koszt.toFixed(2)}</div>
-             <div class="kok-sub">${biegi} biegów · ${(tin/1000).toFixed(0)}k in / ${(tout/1000).toFixed(0)}k out</div></div>`;
+             <div class="kok-sub">${usage.length} biegów · ${(tin/1000).toFixed(0)}k in / ${(tout/1000).toFixed(0)}k out</div></div>`;
   }
 
   html += '</div>';
