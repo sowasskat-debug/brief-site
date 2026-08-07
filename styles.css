@@ -1122,3 +1122,13 @@ html, body {
 .dt-watki-n { opacity: .65; font-weight: 400; }
 [data-theme="dark"] .dt-watki-btn { border-color: #f87171; color: #f87171; }
 [data-theme="dark"] .dt-watki-btn:hover { background: #f87171; color: #0f0f0f; }
+
+/* Oś wątku pod postem = styl /watki (2026-08-07): kropki PEŁNE, najnowszy etap na górze
+   z dużą czerwoną kropką (.watek-last). „Ten news" zachowuje czerwony pierścień. */
+.watek-dot { background: #c9c9c9; border: none; }
+[data-theme="dark"] .watek-dot { background: #4a4a4a; }
+.watek-last .watek-dot { left: -25px; top: 2px; width: 11px; height: 11px; background: var(--red); border: none; }
+.watek-cur:not(.watek-last) .watek-dot { background: var(--bg); border: 2px solid var(--red); }
+.watek-last .watek-metaline { color: #b91c1c; }
+[data-theme="dark"] .watek-last .watek-metaline { color: #f87171; }
+.watek-when { text-transform: uppercase; }
