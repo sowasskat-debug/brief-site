@@ -315,6 +315,20 @@ create index if not exists wizyty_dzien_idx    on public.wizyty (dzien desc);
 create index if not exists wizyty_ts_idx       on public.wizyty (ts desc);
 create index if not exists wizyty_unikat_idx   on public.wizyty (dzien, odwiedzajacy);
 
+-- Rodzaj sygnału (2026-08-05, opis w sekcji 9d niżej). ⚠️ MUSI stać przed funkcjami
+-- agregującymi — `statystyki_ruchu` odwołuje się do tej kolumny.
+alter table public.wizyty add column if not exists typ text not null default 'wejscie';
+
+-- Zawężamy do dwóch wartości: kolumnę wypełnia publiczny endpoint, więc bez tego
+-- dowolny POST mógłby wstrzyknąć własną etykietę i rozsypać rozbicie w panelu.
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'wizyty_typ_check') then
+    alter table public.wizyty add constraint wizyty_typ_check
+      check (typ in ('wejscie', 'wznowienie'));
+  end if;
+end $$;
+
 alter table public.wizyty enable row level security;
 
 -- Ta sama zasada co przy diagnostyce: czyta WYŁĄCZNIE właściciel.
@@ -560,17 +574,11 @@ grant execute on function public.statystyki_powrotow(int) to authenticated;
 -- ⚠️ Stare wiersze dostają 'wejscie' (default). To ZAŁOŻENIE, nie pomiar: przed tą
 --    zmianą nie ma czym odróżnić wznowienia od wejścia. Rozbicie jest więc wiarygodne
 --    dopiero od dnia wdrożenia — panel podaje datę, od której realnie rozróżnia.
-alter table public.wizyty add column if not exists typ text not null default 'wejscie';
+-- DDL tej sekcji (kolumna `typ` + ograniczenie) siedzi WYŻEJ, przy definicji tabeli:
+-- funkcja `statystyki_ruchu` z sekcji 9b już się do tej kolumny odwołuje, a Postgres sprawdza
+-- treść funkcji przy CREATE — kolumna dokładana tutaj, na końcu pliku, wywalała cały skrypt
+-- („column \"typ\" does not exist"). Kolejność w pliku jest częścią kontraktu, nie kosmetyką.
 
--- Zawężamy do dwóch wartości: kolumnę wypełnia publiczny endpoint, więc bez tego
--- dowolny POST mógłby wstrzyknąć własną etykietę i rozsypać rozbicie w panelu.
-do $$
-begin
-  if not exists (select 1 from pg_constraint where conname = 'wizyty_typ_check') then
-    alter table public.wizyty add constraint wizyty_typ_check
-      check (typ in ('wejscie', 'wznowienie'));
-  end if;
-end $$;
 
 -- Od kiedy rozbicie jest realnym pomiarem, a nie domyślną wartością kolumny.
 create or replace function public.rozroznia_typ_od()

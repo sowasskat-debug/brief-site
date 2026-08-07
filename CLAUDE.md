@@ -539,6 +539,15 @@ Liczby były prawdziwe, ale **dwie miary mówiły to samo**, i dopiero to zmusi�
 - ⚠️ Wdrożenie znów DWA kroki (schemat + redeploy `licznik`) — `SETUP_SUPABASE.md`, sekcja 8g.
   **Kolejność ma znaczenie:** najpierw schemat. Funkcja wysyłająca `typ` do bazy bez kolumny dostałaby
   błąd na KAŻDYM wejściu i licznik przestałby zapisywać cokolwiek.
+- 🔴 **WPADKA PRZY WDROŻENIU — KOLEJNOŚĆ W PLIKU JEST CZĘŚCIĄ KONTRAKTU.** Pierwsza wersja dopisywała
+  `alter table … add column typ` na KOŃCU `supabase_schema.sql`, a funkcja `statystyki_ruchu` z sekcji
+  9b (WYŻEJ) już się do tej kolumny odwoływała. Postgres sprawdza treść funkcji przy `CREATE`
+  (`check_function_bodies`), więc cały skrypt padał u właściciela na `column "typ" does not exist`.
+  DDL przeniesione nad definicje funkcji, tuż za indeksy tabeli `wizyty`.
+  **ZASADA: po każdej zmianie w `supabase_schema.sql` przepuść CAŁY plik od góry na czystej bazie,
+  nie same dopisane sekcje.** Testowanie fragmentów w kolejności, w jakiej się je pisało, ukrywa
+  dokładnie tę klasę błędu. Zweryfikowane lokalnym Postgresem: dwa przebiegi z rzędu na świeżej
+  bazie, kod wyjścia 0, zero błędów (czyli plik jest też realnie idempotentny, nie tylko z założenia).
 
 ## Licznik wejść: wykluczenie urządzeń właściciela (2026-08-04) ⚠️
 Życzenie właściciela: „w statystykach chcę usunąć mój telefon i PC". Mechanizm — flaga
