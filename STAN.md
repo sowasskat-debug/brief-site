@@ -1,7 +1,11 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-02 (późny wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-07 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+> 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
+> w `_config.yml`). Dalej widać je w PUBLICZNYM repo na GitHubie — to nie są pliki tajne, tylko zdjęte
+> z domeny produktu i z Google. Edytuj normalnie.
 
 ---
 
@@ -34,24 +38,27 @@ kadr). Zweryfikowane pikselowo: treść w granicach x 48–1148, zapas 51 px z p
 
 ---
 
-## 🔴 1. Diagnostyka — migracja do Supabase W POŁOWIE (pliki DALEJ publiczne)
+## ✅ 1. Diagnostyka — ZDJĘTA Z PAGES 2026-08-07 (migracja Supabase potwierdzona)
 
-**Bez zmian od 2026-08-01.** Bot pisze w OBA miejsca naraz; pliki wciąż leżą w publicznym repo:
+**Warunek z tego punktu spełniony i domknięty.** Zweryfikowane 2026-08-07 z serwera (klucz bota,
+`curl` na Supabase REST): `lejek` **1500 wierszy**, `deepseek_usage`/`brief_health`/`bot_health`
+po **200**, wszystkie z najświeższym wpisem z tego samego dnia — dual-write działa od dawna.
 
-```
-curl https://brifup.com/lejek.json           # 200, ~470 KB
-curl https://brifup.com/bot_health.json      # 200
-curl https://brifup.com/brief_health.json    # 200
-curl https://brifup.com/deepseek_usage.json  # 200
-```
+`lejek.json`, `deepseek_usage.json`, `brief_health.json`, `bot_health.json` + panele
+`brief-health.html`, `maszynownia.html` → **wszystkie 404 pod brifup.com** (`_config.yml` exclude,
+PR #100). knaga czyta `lejek` **Supabase-first**, więc zakładka Lejek działa dalej.
 
-Kolejność: (1) popatrzeć dobę czy dane płyną (`select count(*) from public.lejek;` ma rosnąć,
-bot chodzi **co 30 min**), (2) skasować pliki z repo + wyłączyć 4 funkcje `Zapisz*NaSite`.
+🔴 **DWA otwarte ogony:**
+1. **Widget „DeepSeek dziś" w Kokpicie knagi jest teraz PUSTY** — czytał `./deepseek_usage.json`,
+   plik zniknął, `catch→null` gasi kafel (kokpit się nie wywala). Do przywrócenia: przepiąć na
+   `.from('deepseek_usage')` w Supabase, jak zrobiono z lejkiem (`pobierzLejekDane`).
+2. **Repo jest PUBLICZNE na GitHubie**, więc pliki dalej widać pod `github.com/sowasskat-debug/brief-site`.
+   `exclude` zamyka tylko drogę „brifup.com/plik" i Google. Pełne zamknięcie = prywatne repo (Pages
+   z prywatnego wymaga płatnego planu) ALBO wyłączyć 4 funkcje `Zapisz*NaSite` w bocie + skasować
+   pliki z repo (zmiana w bocie, brak CI — `dotnet build` przed pushem).
 
-⚠️ **`lejek.json` NIE MOŻE zniknąć wcześniej** — zakładka Lejek w knadze stoi na nim jako fallbacku.
-
-**Publiczne ZOSTAJE:** `briefs.json`, `threads.json`, `trending.json`, `quotes.json`, `archive/`,
-`rejected.json` — to treść strony, a Flusso czyta je cross-origin.
+**Publiczne ZOSTAJE (treść strony, Flusso czyta cross-origin):** `briefs.json`, `threads.json`,
+`trending.json`, `quotes.json`, `archive/`, `rejected.json`.
 
 ---
 
@@ -63,7 +70,16 @@ OneSignal (Settings → Web Configuration): czy domena to `brifup.com` i czy web
 
 ---
 
-## ⚠️ 3. GDELT — poprawka ZMERGOWANA 02.08, kryterium do sprawdzenia 03.08
+## ✅ 3. GDELT — KRYTERIUM SPEŁNIONE (sprawdzone 2026-08-07), finder ZOSTAJE
+
+**Rozstrzygnięte.** Zmierzone 2026-08-07 z serwera po tygodniu działania poprawki: sumy tygodniowe
+`finder_gdelt_fakty` **> 0** (PL 5, EN 26 — fallback EN dowozi więcej niż tor podstawowy). Kryterium
+z tego punktu („`finder_gdelt_fakty` przez dobę > 0 → zostaje") **spełnione — GDELT zostaje w łańcuchu.**
+Poniżej oryginalny zapis dochodzenia dla kontekstu.
+
+---
+
+### (archiwum dochodzenia) GDELT — poprawka ZMERGOWANA 02.08, kryterium do sprawdzenia 03.08
 
 **Zmierzone 2026-08-02, nie zgadnięte:** GDELT **żyje** (proste zapytanie → 200 + poprawny JSON,
 bez klucza), ale odrzuca ~70% ruchu. 24 zapytania przy odstępie 6 s (ich dokumentowany limit):
@@ -164,6 +180,51 @@ Pomiar offline w `financialnewsbot/CLAUDE.md` (sekcja „Filtr spójności klast
 
 ---
 
+## ✅ Co zrobiono 2026-08-07 — przegląd i hardening przed publicznym startem (nie ruszaj bez powodu)
+
+Pełny przegląd całego Brif.upu (8 finderów + weryfikatory). Dwa PR-y zmergowane do `main`,
+funkcja `og` wdrożona osobno. Wszystko zweryfikowane na produkcji.
+
+### Bezpieczeństwo (PR #100)
+- **`?admin=PAT` USUNIĘTY z `index.html`** (237 linii). Trzymał token GitHuba z prawem zapisu do repo
+  w `sessionStorage` na publicznym originie, bez bramki logowania — wystarczał link `?admin=<token>`,
+  a każdy XSS = przejęcie repo (= produkcji). Moderacja WYŁĄCZNIE w knadze. Zniknęła druga ścieżka
+  zapisu `rejected.json` (cap 200 obok knagowego 150). ⚠️ **Nie przywracaj.**
+- **`_config.yml` (Jekyll exclude)** — `STAN.md`, `CLAUDE.md`, `SETUP_SUPABASE.md`, `supabase_schema.sql`,
+  `supabase/` + cała diagnostyka (patrz punkt 1) → 404 pod brifup.com. `exclude`, NIE `Disallow`
+  w robots.txt (robots jest publiczny i zdradziłby ścieżki — ta sama logika co `knaga.html`).
+
+### Linki udostępniane na X (PR #100)
+- 🔴 **Stuby przestały umierać po dobie.** Żyją 14 dni, ale celowały w `#dawka/slug` z BIEŻĄCEGO
+  `briefs.json`, a news wypada do archiwum następnego dnia → `routeDoseHash` kończył pustą stroną.
+  Teraz `otworzSlugZArchiwum(slug)` szuka w archiwum, gdy sluga nie ma w bieżącej dawce.
+  **Fallback po stronie FRONTU celowo — naprawia też linki JUŻ wrzucone na X.** Weryfikacja:
+  `#morning/18hh119` (news z 6.08) otwiera nakładkę archiwum. ⚠️ Osobny, NIENAPRAWIONY ogon:
+  karta-obrazek (`og`) dla archiwalnego slugu bez `a=` wraca do grafiki zapasowej — bot powinien
+  ustawiać `a=<data>` w stubie (`BudujStubHtml` w Runner.cs), wtedy `og` sięgnie archiwum.
+- **`expandBlock`** buduje link „Udostępnij" z `_archiveDate`/`_dose` dla wpisów archiwalnych
+  (mobilny widok tematu mieszał dni i dawał martwe linki; desktop miał to od początku).
+
+### Poprawność (PR #100)
+- **`liveTick`** zapisuje ETag DOPIERO po udanym pobraniu (`if (pobrano) lastBriefsTag = tag`).
+  Dotąd szedł przed fetchem, więc jeden nieudany poll gasił auto-odświeżanie na 30-60 min.
+- **`pollLiveUpdates`** woła `oznaczKotwice` i zwraca status. Była JEDYNĄ z 4 ścieżek cache bez
+  `oznaczKotwice` → po każdym live-updacie podpozycje klastrów traciły badge 🧵 i oś sagi.
+- **Numeracja mobilna** `padStart(2,'0')` zamiast `0${i+2}` (od 10. pozycji było `010`, `011`).
+- **Service worker**: `threads.json`/`quotes.json` + diagnostyka na czystą sieć (wpadały w gałąź
+  statyczną z cache-busterem → nowy wpis Cache Storage co odświeżenie, ~3 MB/dobę). `CACHE_NAME` v74.
+
+### Funkcja `og` — hardening (PR #101, WDROŻONA osobno przez `supabase functions deploy`)
+- 🔴 **Path traversal w `a=`** — parametr wchodził wprost do `${ORIGIN}/archive/${a}.json`; `a=../../`
+  wyprowadzało pobieranie poza katalog. Teraz wymagany wzorzec daty.
+- **Nieznane parametry odrzucane** — dowolny `&x=<losowe>` omijał cache CDN (nowy klucz mimo `s-maxage`)
+  i wymuszał pełny render satori+resvg. To był mechanizm nadużycia otwartego endpointu.
+- **Slug/dawka walidowane wzorcem** (`^[a-z0-9]{1,16}$` + whitelista dawek). Sprawdzone na 623 stubach.
+- **Pamięć podręczna TTL 60 s** — `briefs.json`+`threads.json` szły przy KAŻDYM wywołaniu (~360 KB).
+- Weryfikacja na produkcji: legalny slug 200 PNG, karta `w=1` 200, `&x=999`/`&a=../` → 302, `d=xxx` → 302.
+
+---
+
 ## ✅ Co zrobiono 2026-08-02 (nie ruszaj bez powodu)
 
 ### Zapowiedź tygodnia nie klei się z konkretnym newsem
@@ -241,6 +302,20 @@ biegami). Angielski oryginał karmi `DeepSeekWyszukiwarkaQueryEN` zamiast być o
     ⚠️ Diagnozując „nie generuje podglądu" sprawdź NAJPIERW, czy news jest top-level, a nie sub-itemem.
     Lek: rozdzielić klaster — stub odtworzy się sam w kolejnym biegu (mechanizm jest samoleczący).
     ⚠️ Stubów **nie dopisuj ręcznie** (patrz `CLAUDE.md`) — bot i tak odtwarza stan z `briefs.json`.
+16. 🔴 **Nowy plik wewnętrzny → dopisz go do `exclude` w `_config.yml`.** GitHub Pages serwuje
+    DOMYŚLNIE każdy plik z repo. Dokumenty, diagnostyka, źródła funkcji są zdejmowane WYŁĄCZNIE przez
+    listę `exclude` — plik spoza niej wyląduje pod brifup.com. ⚠️ `exclude` chowa z domeny i z Google,
+    ale NIE z publicznego repo na GitHubie.
+
+## Otwarte drobiazgi z przeglądu 2026-08-07 (niższa ranga, potwierdzone)
+
+- **JSON-LD `datePublished` ma zaszyte `+02:00`** (index.html, ~1286). `added_at` jest warszawski,
+  więc od końca października (CET, +01:00) wszystkie daty strukturalne będą o godzinę za wysokie.
+- **15 kopii wołania DeepSeek** w `Runner.cs` (różnią się promptem/modelem) i **rozjechana kopia
+  klasyfikatora kategorii** (`brief-health.html` była kopią `dtGetCategory` z index.html, już z driftem)
+  — panel zdjęty, ale wzorzec duplikacji zostaje w innych miejscach.
+- **Slug djb2-xor w 3 miejscach** (index.html, knaga.html, Runner.cs, og/index.ts) — zmiana algorytmu
+  w jednym rozjeżdża deep-linki i stuby. Trzymać identyczne.
 
 ## Otwarte drobiazgi
 
@@ -248,9 +323,16 @@ biegami). Angielski oryginał karmi `DeepSeekWyszukiwarkaQueryEN` zamiast być o
   żywych danych, **do zamknięcia, nie merge'a**), #31 (grafiki z Wikipedii — podejście PORZUCONE na
   rzecz `image_url`, plik `fala.html` to legacy), #34 (liczniki kategorii, `index.html` od lipca
   zmienił się nie do poznania).
-- `bot-health.html` i `brief-health.html` — osierocone, do przeniesienia do knagi.
+- 🔴 **Archiwum: ~1,8 MB (gzip) na KAŻDE wejście.** `dtRenderArchiveSidebar` (index.html) ładuje
+  WSZYSTKIE pliki archiwum (37 dni, 5,13 MB surowo) na starcie, żeby policzyć newsy przy tematach.
+  93% wagi strony, rośnie o plik dziennie, też na telefonie. **Największy koszt wejścia przed startem.**
+  Opcje: cap 7 dni (transfer −80%, widok tematu sięga tygodnia) / lazy-load / plik zbiorczy z bota
+  (same kategorie). Nie ruszone — każda naprawa zmienia liczniki przy pierwszym renderze.
+- `brief-health.html` i `maszynownia.html` — **ZDJĘTE Z PAGES 2026-08-07 (404).** Ich funkcję ma
+  przejąć knaga na Supabase (na razie tylko zakładka Lejek + pusty widget DeepSeek — patrz punkt 1).
 - Przycisk „Udostępnij na X" jest w knadze, ale **na `index.html` dla czytelników NADAL GO NIE MA**.
-- Nieśledzone pliki w repo: `.claude/`, `marka/`, `serve.py`, `supabase/.temp/` — decyzja o `.gitignore`.
+- Nieśledzone pliki w repo: `.claude/`, `marka/`, `serve.py`, `supabase/.temp/` — `_config.yml` już
+  wyklucza `marka/` i `serve.py` z Pages; decyzja o `.gitignore` osobno.
 - 8 wpisów w `rejected.json` (pozycje 91–98) nie ma pól `date`/`dose` — panel pokazuje dla nich „—".
 
 ## Odrzucone pomysły (nie wracaj bez nowego powodu)

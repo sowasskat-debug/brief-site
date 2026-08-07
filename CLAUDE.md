@@ -8,6 +8,40 @@ Statyczna strona + PWA z newsami finansowo-polityczno-gospodarczymi po polsku.
 Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 (repo `financialnewsbot`) i zapisuje jako `briefs.json`.
 
+## Co NIE jest serwowane pod brifup.com — `_config.yml` (2026-08-07) 🔴
+GitHub Pages serwuje **DOMYŚLNIE każdy plik z repo**, więc dokumentacja wewnętrzna i źródła lądowałyby
+publicznie pod domeną produktu. `_config.yml` (`exclude:`) zdejmuje je z buildu Jekylla → **404 pod
+brifup.com** (mierzone). Aktualnie wykluczone: `STAN.md`, `CLAUDE.md`, `SETUP_SUPABASE.md`,
+`supabase_schema.sql`, `supabase/`, `graphify-out/`, `serve.py`, `marka/` oraz diagnostyka
+`lejek.json`/`deepseek_usage.json`/`brief_health.json`/`bot_health.json` i panele
+`brief-health.html`/`maszynownia.html`.
+- 🔴 **Nowy plik wewnętrzny → DOPISZ do `exclude`.** Inaczej wyjdzie pod brifup.com.
+- ⚠️ **`exclude` zamyka domenę i Google, NIE repo.** Repo jest publiczne, więc pliki dalej widać pod
+  `github.com/sowasskat-debug/brief-site`. Pełne zamknięcie = prywatne repo (Pages z prywatnego wymaga
+  płatnego planu) albo wyłączenie zapisu w bocie + kasacja plików.
+- ⚠️ `exclude` zamiast `Disallow` w `robots.txt` — robots jest publiczny i SAM zdradziłby ścieżki
+  (ta sama logika, dla której `knaga.html` nie trafia do robots).
+- ⚠️ Wykluczenie `supabase/` NIE psuje wdrożenia funkcji — te idą przez `supabase functions deploy`,
+  nie przez Pages.
+
+## Diagnostyka: Supabase-first, pliki zdjęte (2026-08-07)
+Bot pisze diagnostykę RÓWNOLEGLE do Supabase (`SupabaseZapiszLejek`, `SupabaseZapiszSnapshot`) i do
+plików. Migracja od strony danych **kompletna** — zweryfikowane z serwera 2026-08-07: `lejek` 1500
+wierszy, snapshoty (`deepseek_usage`/`brief_health`/`bot_health`) po 200, wszystkie świeże. Pliki
+zdjęte z Pages (patrz wyżej). Tabele mają RLS wpuszczające tylko właściciela.
+- **knaga zakładka Lejek** czyta Supabase-first (`pobierzLejekDane`: `supa.from('lejek')`, plik jako
+  fallback gdy tabela pusta — teraz nie pusta, więc plik nietykany).
+- 🔴 **Widget „DeepSeek dziś" w Kokpicie knagi czyta jeszcze PLIK** (`./deepseek_usage.json`) — po
+  jego zdjęciu kafel gaśnie miękko (`catch→null`, kokpit działa). Do przepięcia na
+  `.from('deepseek_usage')` wzorem lejka.
+
+## ?admin=PAT USUNIĘTY (2026-08-07) — nie przywracać 🔴
+`index.html` miał legacy tryb administracyjny `?admin=<PAT>`: token GitHuba z prawem zapisu do repo
+w `sessionStorage` na PUBLICZNYM originie brifup.com, bez bramki logowania. Każdy XSS na tym originie
+= przejęcie repo (czyli produkcji). Usunięty w całości (237 linii); został jednorazowy sprzątacz
+kasujący token z urządzeń. Moderacja WYŁĄCZNIE przez `knaga.html` (Supabase auth + RLS). Znikła też
+druga ścieżka zapisu `rejected.json` (cap 200 obok knagowego 150) — teraz naprawdę jedna ścieżka.
+
 ## Deploy / hosting
 - **GitHub Pages**, serwowane z gałęzi `main`. ⚠️ **SPROSTOWANIE 2026-08-01: `brifup.com` NIE idzie
   przez Cloudflare** (ten plik twierdził tak od początku i było to nieprawdą). Zmierzone: NS to
@@ -80,6 +114,13 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
   ciągłości sagi). Wołany WYŁĄCZNIE przez scrapery przy wysyłce linku. ⚠️ Deploy **musi** iść
   z `--no-verify-jwt` (scraper nie ma tokenu). FAIL-SAFE: każdy błąd = przekierowanie na `og-image.png`,
   karta nigdy nie zostaje bez obrazka. Wdrożenie i weryfikacja: `SETUP_SUPABASE.md`, sekcja 9.
+  - ⚠️ **Bramki wejścia (2026-08-07)** — endpoint jest otwarty (`--no-verify-jwt`), a limit wywołań
+    Edge Functions jest WSPÓLNY dla projektu (wypalenie kładzie też licznik wejść i `gotowiec-x`).
+    Stąd: `a=` musi pasować do wzorca daty (**inaczej `a=../../` wyprowadzał pobieranie poza `archive/`**),
+    `s=`/`d=` walidowane wzorcem (`^[a-z0-9]{1,16}$` + whitelista dawek), **nieznane parametry odrzucane**
+    (`&x=<losowe>` omijał cache CDN i wymuszał pełny render), a `briefs.json`+`threads.json` idą przez
+    pamięć podręczną instancji (TTL 60 s) zamiast ~360 KB na każde wywołanie. Każda bramka wraca przez
+    `zapasowa()` (302 → grafika), więc fail-safe nietknięty.
 - `fonts/*.ttf` — DM Serif Display + Space Mono (licencja OFL, redystrybucja dozwolona). **Potrzebne
   wyłącznie funkcji `og`** (satori musi dostać kroje jako bajty); sama strona bierze fonty z CDN Google.
   ⚠️ Nie kasować — bez nich generator obrazka leci w gałąź awaryjną.
@@ -128,6 +169,14 @@ fallback na pozycję w `items[]`.
 - **Auto-odświeżanie na żywo:** `liveTick()` co 60 s — najpierw tania sonda `probeBriefsTag()` (HEAD, ETag/rozmiar), pełne dane `pollLiveUpdates()` **tylko gdy się zmieniło**. Zachowuje scroll + otwarty artykuł na PC.
 - **Wznowienie apki (2026-07-16):** `syncDoseToTime` (na `visibilitychange`/`pageshow`) dla TEJ SAMEJ dawki odświeża teraz **w miejscu** przez `pollLiveUpdates()` (podmiana tylko gdy podpis treści się zmienił), a NIE `delete cache + loadDose(force)`. Wcześniej każdy powrót do apki kasował dane i przeładowywał dawkę od zera: stary DOM → skeleton → świeże = migotanie „stare artykuły, potem nowe" nawet bez zmian. Zmiana dawki (poranna→południowa) dalej robi pełny `switchDose` ze skeletonem. ⚠️ Osobno: pełny `reload()` przy wznowieniu robi `checkAppShellUpdate` gdy zmienił się `index.html` (network-first app-shell) — to główna przyczyna „wolnego ładowania po powrocie" przy częstych deployach; świadomie NIE ruszane bez zgody właściciela (trauma „zawieszenia na starej wersji").
 - **Deep linki:** `#dawka/slug` i `#archive/data/dawka/slug` → otwierają news (mobile: toggle+scroll; desktop: `dtPickItem`). Slug = `itemSlug(text)`.
+  - 🔴 **Fallback do archiwum w `routeDoseHash` (2026-08-07):** stuby `s/<slug>.html` (podgląd linku na X)
+    żyją 14 DNI, ale ich cel `#<dawka>/<slug>` bot liczy z BIEŻĄCEGO `briefs.json` — a news wypada do
+    archiwum po dobie. Bez fallbacku `routeDoseHash` kończył `if (!found) return` = pusta strona główna,
+    czyli **każdy udostępniony link umierał następnego dnia**. Teraz przy nietrafieniu w bieżącą dawkę
+    woła `otworzSlugZArchiwum(slug)` (skan do 14 dni archiwum wstecz, sekwencyjnie — trafienie w 1. dniu
+    = jeden fetch). **Fix po stronie FRONTU celowo: naprawia też linki JUŻ wrzucone na X** (zmiana w bocie
+    nie ruszyłaby starych stubów). ⚠️ Ogon niezałatany: karta-OBRAZEK (`og`) dla archiwalnego slugu bez
+    `a=` wraca do grafiki zapasowej — bot powinien ustawiać `a=<data>` w `BudujStubHtml`.
   ⚠️ **Nasłuch `hashchange` (2026-07-22):** routing wydzielony z 2 IIFE do `routeArchiveHash`/`routeDoseHash` +
   dyspozytor `routeHashDeepLink` wołany na starcie ORAZ na `hashchange`. Wcześniej deep-linki działały TYLKO
   przy załadowaniu strony — klik w węzeł „Wątków dnia" (ustawia `location.hash` na żywej stronie) zamykał overlay
