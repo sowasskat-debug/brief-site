@@ -140,6 +140,7 @@
       <div class="dt-tab afternoon" id="dttab-afternoon" onclick="switchDose('afternoon')">◑ POPOŁUDNIOWE</div>
       <div class="dt-tab evening"   id="dttab-evening"   onclick="switchDose('evening')">☽ WIECZORNE</div>
     </div>
+    <a class="dt-watki-btn" href="watki.html"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 3v18"/><circle cx="6.5" cy="6" r="2.2"/><path d="M8.7 6H12"/><circle cx="17.5" cy="12" r="2.2"/><path d="M12 12h3.3"/><circle cx="6.5" cy="18" r="2.2" fill="currentColor" stroke="none"/><path d="M8.7 18H12"/></svg> WĄTKI <span class="dt-watki-n" id="dtWatkiCnt"></span></a>
     <div class="dt-header-right">
       <div class="dt-live"><div class="dt-live-dot"></div>LIVE</div>
       <button class="theme-btn" onclick="toggleTheme()" id="dtThemeBtn">🌙</button>
@@ -620,10 +621,13 @@ async function loadThreads(){
 // Odsłonięty zostaje do końca wizyty — kolejne re-rendery go nie chowają (żyje poza #content).
 function odslonWatkiStrip(){ const el = document.getElementById('watkiStrip'); if (el) el.classList.add('show'); }
 function aktualizujWatkiStrip(){
-  const el = document.getElementById('watkiStripTxt');
-  if (!el || !THREADS) return;
+  if (!THREADS) return;
   const n = (THREADS.threads||[]).filter(t => t.nodes && t.nodes.length >= 2).length;
-  if (n > 0) el.textContent = `Śledzimy ${n} historii · Wątki`;
+  if (n <= 0) return;
+  const el = document.getElementById('watkiStripTxt');
+  if (el) el.textContent = `Śledzimy ${n} historii · Wątki`;
+  const dt = document.getElementById('dtWatkiCnt');
+  if (dt) dt.textContent = n;
 }
 function threadForItem(item){
   if (!item || !item.text) return null;
