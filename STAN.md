@@ -48,11 +48,18 @@ po **200**, wszystkie z najświeższym wpisem z tego samego dnia — dual-write 
 `brief-health.html`, `maszynownia.html` → **wszystkie 404 pod brifup.com** (`_config.yml` exclude,
 PR #100). knaga czyta `lejek` **Supabase-first**, więc zakładka Lejek działa dalej.
 
-🔴 **DWA otwarte ogony:**
-1. **Widget „DeepSeek dziś" w Kokpicie knagi jest teraz PUSTY** — czytał `./deepseek_usage.json`,
-   plik zniknął, `catch→null` gasi kafel (kokpit się nie wywala). Do przywrócenia: przepiąć na
-   `.from('deepseek_usage')` w Supabase, jak zrobiono z lejkiem (`pobierzLejekDane`).
-2. **Repo jest PUBLICZNE na GitHubie**, więc pliki dalej widać pod `github.com/sowasskat-debug/brief-site`.
+✅ **Ogon 1 ZAMKNIĘTY 2026-08-07 wieczorem — widget „DeepSeek dziś" czyta Supabase.**
+`pobierzUzycieDeepSeek()` w knadze woła `.from('deepseek_usage')`. **Świadomie BEZ zapasowego
+pliku** (inaczej niż lejek): `deepseek_usage.json` jest w `exclude`, więc pod brifup.com oddaje
+404 ZAWSZE — fallback byłby martwym zapytaniem udającym bezpiecznik. Przy okazji doba liczona
+LOKALNIE zamiast w UTC (`.gte('ts', lokalna_północ)`) — stary kod porównywał prefiks daty UTC,
+więc między 00:00 a 02:00 czasu PL kafel pokazywał wczorajszy dzień jako „dziś".
+⚠️ Sprawdzone atrapą klienta Supabase na żywej stronie (zapytanie + oba warianty sumowania:
+`total_in`/`total_out` oraz awaryjne po `stages`), **nie wobec prawdziwej tabeli** — logowanie
+do knagi ma wyłącznie właściciel.
+
+🔴 **Otwarty ogon:**
+- **Repo jest PUBLICZNE na GitHubie**, więc pliki dalej widać pod `github.com/sowasskat-debug/brief-site`.
    `exclude` zamyka tylko drogę „brifup.com/plik" i Google. Pełne zamknięcie = prywatne repo (Pages
    z prywatnego wymaga płatnego planu) ALBO wyłączyć 4 funkcje `Zapisz*NaSite` w bocie + skasować
    pliki z repo (zmiana w bocie, brak CI — `dotnet build` przed pushem).
@@ -323,11 +330,12 @@ biegami). Angielski oryginał karmi `DeepSeekWyszukiwarkaQueryEN` zamiast być o
   żywych danych, **do zamknięcia, nie merge'a**), #31 (grafiki z Wikipedii — podejście PORZUCONE na
   rzecz `image_url`, plik `fala.html` to legacy), #34 (liczniki kategorii, `index.html` od lipca
   zmienił się nie do poznania).
-- 🔴 **Archiwum: ~1,8 MB (gzip) na KAŻDE wejście.** `dtRenderArchiveSidebar` (index.html) ładuje
-  WSZYSTKIE pliki archiwum (37 dni, 5,13 MB surowo) na starcie, żeby policzyć newsy przy tematach.
-  93% wagi strony, rośnie o plik dziennie, też na telefonie. **Największy koszt wejścia przed startem.**
-  Opcje: cap 7 dni (transfer −80%, widok tematu sięga tygodnia) / lazy-load / plik zbiorczy z bota
-  (same kategorie). Nie ruszone — każda naprawa zmienia liczniki przy pierwszym renderze.
+- ✅ **Archiwum na wejściu — ZAMKNIĘTE 2026-08-07 wieczorem.** Było 1,63 MB gzip (38 plików
+  sekwencyjnie), jest **0,34 MB (8 plików równolegle) = −79,2%**, zmierzone na tym archiwum.
+  `ARCHIWUM_DNI_NA_STARCIE = 7`, resztę dociąga `dowczytajCaleArchiwum` dopiero przy otwarciu
+  widoku tematu — patrz `CLAUDE.md`, sekcja „Archiwum ładowane leniwie".
+  ⚠️ **Widoczna zmiana:** liczniki przy tematach startują z tygodnia i skaczą do pełnych po
+  wejściu w temat. To zapowiedziany koszt, nie usterka.
 - `brief-health.html` i `maszynownia.html` — **ZDJĘTE Z PAGES 2026-08-07 (404).** Ich funkcję ma
   przejąć knaga na Supabase (na razie tylko zakładka Lejek + pusty widget DeepSeek — patrz punkt 1).
 - Przycisk „Udostępnij na X" jest w knadze, ale **na `index.html` dla czytelników NADAL GO NIE MA**.

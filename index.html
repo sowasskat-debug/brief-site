@@ -1861,6 +1861,15 @@ let dtAllItems = [];
 let dtActiveFilter = null;
 let dtArchiveAllItems = []; // [{...item, _archiveDate, _dose}]
 let dtArchiveLoaded = false;
+// 🔴 Ile dni archiwum wczytujemy NA WEJŚCIU. Do 2026-08-07 wchodziły WSZYSTKIE (37 plików,
+// 5,13 MB surowo / ~1,8 MB gzip = 93% wagi strony) tylko po to, żeby policzyć newsy przy
+// tematach — i płacił za to KAŻDY czytelnik, także na telefonie, przy każdym wejściu, a koszt
+// rósł o plik dziennie. Resztę dociąga `dowczytajCaleArchiwum` dopiero wtedy, gdy ktoś realnie
+// otworzy widok tematu (cross-day) — czyli jedyne miejsce, w którym starsze dni są widoczne.
+const ARCHIWUM_DNI_NA_STARCIE = 7;
+let dtArchiveDniWczytane = 0;      // ile najnowszych dni siedzi już w dtArchiveAllItems
+let dtArchiveDoczytywanie = null;  // obietnica trwającego doczytywania (guard przed podwójnym pobraniem)
+let dtArchiveKompletne = false;    // całe archiwum w pamięci — kolejne wołania mają wyjść od razu
 
 function isDesktop() { return window.innerWidth >= 1024; }
 
@@ -1985,30 +1994,66 @@ async function dtRenderArchiveSidebar() {
     if (!dtArchiveLoaded) {
       dtArchiveLoaded = true;
       dtArchiveAllItems = [];
-      for (const d of sorted) {
-        try {
-          if (!archiveDayCache[d]) {
-            const r = await fetch(`./archive/${d}.json`, { cache: 'no-store' });
-            if (r.ok) archiveDayCache[d] = await r.json();
-          }
-          if (archiveDayCache[d]) {
-            for (const dose of ['morning','afternoon','evening']) {
-              const doseData = archiveDayCache[d][dose];
-              if (doseData?.items) {
-                doseData.items.forEach(it => dtArchiveAllItems.push({
-                  ...it, id: it.id || 'a-' + uid(), _archiveDate: d, _dose: dose,
-                  subItems: (it.subItems || []).map(s => ({ ...s, id: s.id || 'a-' + uid() }))
-                }));
-              }
-            }
-          }
-        } catch(e) {}
-      }
+      dtArchiveDniWczytane = Math.min(ARCHIWUM_DNI_NA_STARCIE, sorted.length);
+      await wczytajDniArchiwum(sorted.slice(0, dtArchiveDniWczytane));
       dtRenderSidebarCounts();
     }
   } catch (e) {
     archEl.innerHTML = '<div class="dt-index-title">Archiwum</div>';
   }
+}
+
+// Pobiera podane dni archiwum i DOKŁADA ich itemy do `dtArchiveAllItems`.
+// ⚠️ Pobieranie RÓWNOLEGŁE — dawna pętla szła dzień po dniu i przy 37 plikach sam łańcuch
+// round-tripów potrafił trwać dłużej niż transfer. `Promise.all` zachowuje kolejność wejścia,
+// więc dni zostają ułożone od najnowszego (widok cross-day i tak grupuje je potem po dacie).
+// Każdy dzień pada osobno — brakujący plik nie może zabrać reszty.
+async function wczytajDniArchiwum(daty) {
+  await Promise.all(daty.map(async d => {
+    if (archiveDayCache[d]) return;
+    try {
+      const r = await fetch(`./archive/${d}.json`, { cache: 'no-store' });
+      if (r.ok) archiveDayCache[d] = await r.json();
+    } catch (e) {}
+  }));
+  for (const d of daty) {
+    const dzien = archiveDayCache[d];
+    if (!dzien) continue;
+    for (const dose of ['morning','afternoon','evening']) {
+      const doseData = dzien[dose];
+      if (!doseData?.items) continue;
+      doseData.items.forEach(it => dtArchiveAllItems.push({
+        ...it, id: it.id || 'a-' + uid(), _archiveDate: d, _dose: dose,
+        subItems: (it.subItems || []).map(s => ({ ...s, id: s.id || 'a-' + uid() }))
+      }));
+    }
+  }
+}
+
+// Dociąga dni archiwum starsze niż `ARCHIWUM_DNI_NA_STARCIE` — wołane WYŁĄCZNIE z widoku tematu
+// (cross-day, mobile i PC), bo tylko tam starsze dni są w ogóle widoczne. Po pobraniu odświeża
+// liczniki i woła `poZaladowaniu`, żeby otwarty widok domalował doczytane dni.
+// ⚠️ `dtArchiveDniWczytane` podnosimy OD RAZU, a obietnicę trzymamy w `dtArchiveDoczytywanie` —
+// bez tego dwa kliknięcia w temat pobrałyby całe archiwum dwa razy równolegle i zdublowały itemy.
+// 🔴 `dtArchiveKompletne` to NIE jest zapasowy guard, tylko warunek zatrzymania: `poZaladowaniu`
+// przerysowuje widok tematu, a ten woła tę funkcję ponownie — bez flagi ustawianej WEWNĄTRZ
+// łańcucha obietnicy (czyli zanim ruszą doczepione callbacki) re-render zapętliłby się w nieskończoność.
+function dowczytajCaleArchiwum(poZaladowaniu) {
+  if (!dtArchiveLoaded || !archiveDatesCache || dtArchiveKompletne) return;
+  const sorted = archiveDatesCache.slice().sort((a, b) => b.localeCompare(a));
+  if (!dtArchiveDoczytywanie) {
+    if (dtArchiveDniWczytane >= sorted.length) { dtArchiveKompletne = true; return; }
+    const reszta = sorted.slice(dtArchiveDniWczytane);
+    dtArchiveDniWczytane = sorted.length;
+    dtArchiveDoczytywanie = wczytajDniArchiwum(reszta)
+      .catch(() => {})
+      .then(() => { dtArchiveKompletne = true; });
+  }
+  dtArchiveDoczytywanie.then(() => {
+    dtRenderSidebarCounts();
+    if (typeof mobSwpBuildCats === 'function') mobSwpBuildCats(cache[currentDose] || dtAllItems);
+    if (poZaladowaniu) poZaladowaniu();
+  });
 }
 
 function dtRenderSidebarCounts() {
@@ -2076,6 +2121,17 @@ function dtRenderCatFilter(cat) {
   const total = sortedDates.reduce((s,d) => s + byDate[d].reduce((ss,it) => ss + (it.subItems?.length > 0 ? it.subItems.length : 1), 0), 0);
   const fcEl = document.getElementById('dtFeedCount');
   if (fcEl) fcEl.textContent = `${total} wpisów`;
+
+  // Widok tematu to JEDYNE miejsce, w którym widać dni starsze niż ARCHIWUM_DNI_NA_STARCIE —
+  // dopiero tu ma sens zapłacić za resztę archiwum. Starsze dni dochodzą NA DOLE listy,
+  // więc pozycja przewinięcia zostaje sensowna; przywracamy ją, żeby lista nie skoczyła.
+  dowczytajCaleArchiwum(() => {
+    if (dtActiveFilter !== cat) return;
+    const feedEl = document.getElementById('dtFeedList');
+    const y = feedEl ? feedEl.scrollTop : 0;
+    dtRenderCatFilter(cat);
+    if (feedEl) feedEl.scrollTop = y;
+  });
 }
 
 function dtRenderFeedCrossDay(byDate, sortedDates, today) {
@@ -2658,6 +2714,17 @@ function mobileFilterCat(cat) {
   });
   contentEl.innerHTML = html || '<div class="archive-empty" style="padding:40px 16px;text-align:center;color:var(--muted)">Brak artykułów w tej kategorii.</div>';
   const sa = document.getElementById('scrollArea'); if (sa) sa.scrollTop = 0;
+
+  // Reszta archiwum dociąga się dopiero tutaj (patrz `dowczytajCaleArchiwum`). Po doczytaniu
+  // przerysowujemy widok, ale PRZYWRACAMY przewinięcie — `mobileFilterCat` samo zjeżdża na górę,
+  // a wyrzucenie czytelnika na początek listy w trakcie czytania byłoby gorsze niż brak dopisku.
+  dowczytajCaleArchiwum(() => {
+    if (mobActiveCat !== c) return;
+    const el = document.getElementById('scrollArea');
+    const y = el ? el.scrollTop : 0;
+    mobileFilterCat(c);
+    if (el) el.scrollTop = y;
+  });
 }
 
 // Lista dni archiwum w panelu bocznym (parytet z sidebar PC). Klik otwiera istniejącą nakładkę archiwum.
