@@ -782,14 +782,17 @@ function watekHtml(item){
   const t = threadForItem(item);
   if (!t) return '';
   const curKey = watekKluczBiezacego(item, t);
-  const rows = t.nodes.map(node => {
+  // Styl i chronologia jak na /watki (życzenie właściciela 2026-08-07): NAJNOWSZY etap na górze
+  // z pełną czerwoną kropką, metka „MM-DD · dawka → relacja". „TEN NEWS" zostaje — na podstronie
+  // nie ma odpowiednika, a tu mówi, gdzie w sadze jesteś.
+  const rows = t.nodes.slice().reverse().map((node, i) => {
     const cur = normThreadKey(node.text) === curKey;
     const sep = '<span class="watek-sep"></span>';
-    const rel = node.relacja ? `${sep}<span class="watek-rel">${escHtml(node.relacja)}</span>` : '';
+    const rel = node.relacja ? `${sep}<span class="watek-rel">→ ${escHtml(node.relacja)}</span>` : '';
     const ten = cur ? `${sep}<span class="watek-rel">ten news</span>` : '';
-    return `<div class="watek-node${cur?' watek-cur':''}">
+    return `<div class="watek-node${i===0?' watek-last':''}${cur?' watek-cur':''}">
       <span class="watek-dot"></span>
-      <div class="watek-metaline">${watekWhen(node)}${rel}${ten}</div>
+      <div class="watek-metaline"><span class="watek-when">${(node.added_at||'').slice(5,10)} · ${escHtml(node.dose||'')}</span>${rel}${ten}</div>
       <div class="watek-head">${escHtml(node.text)}</div>
     </div>`;
   }).join('');
