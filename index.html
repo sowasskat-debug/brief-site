@@ -280,12 +280,12 @@ function catFillBarHtml(cat) {
 // READ-ONLY pasek poziomu pod nazwą tematu na LIŚCIE (osobna klasa .cat-level-bar, pointer-events:none — nie łapie gestu).
 function catLevelBarHtml(cat) {
   const pct = getCatPct(cat);
-  return `<div class="cat-level-bar" data-cat="${String(cat).replace(/"/g,'&quot;')}"><div class="cat-level-fill" style="width:${pct}%"></div></div>`;
+  return `<div class="cat-level-bar${pct >= 100 ? ' is-full' : ''}" data-cat="${String(cat).replace(/"/g,'&quot;')}"><div class="cat-level-fill" style="width:${pct}%"></div></div>`;
 }
 function refreshCatLevelBars(cat) {
   const pct = getCatPct(cat);
   document.querySelectorAll('.cat-level-bar').forEach(bar => {
-    if (bar.dataset.cat === cat) { const f = bar.querySelector('.cat-level-fill'); if (f) f.style.width = pct + '%'; }
+    if (bar.dataset.cat === cat) { bar.classList.toggle('is-full', pct >= 100); const f = bar.querySelector('.cat-level-fill'); if (f) f.style.width = pct + '%'; }
   });
 }
 // Przeciąganie palcem/myszą wprost po pasku tematu — zmienia % NA ŻYWO, zapisuje przy puszczeniu.
