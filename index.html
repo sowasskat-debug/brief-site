@@ -793,9 +793,13 @@ function watekHtml(item){
       <div class="watek-head">${escHtml(node.text)}</div>
     </div>`;
   }).join('');
+  // Klaster otwiera się z osią JUŻ ROZWINIĘTĄ (życzenie właściciela 2026-08-07): kotwica klastra
+  // to zwykle węzeł sagi, a dodatkowy tap w „Wątek tematu" był zbędnym krokiem. Pojedynczy news
+  // dalej dostaje zwiniętą oś — tam artykuł jest treścią główną, oś dodatkiem.
+  const odRazu = item.subItems && item.subItems.length > 0;
   return `<div class="watek-wrap">
-    <button class="watek-btn" onclick="event.stopPropagation();toggleWatek(this)">${WATEK_ICN} Wątek tematu · ${t.nodes.length} etapów<span class="watek-caret">▾</span></button>
-    <div class="watek-timeline" hidden><div class="watek-spine"></div>${rows}</div>
+    <button class="watek-btn${odRazu?' open':''}" onclick="event.stopPropagation();toggleWatek(this)">${WATEK_ICN} Wątek tematu · ${t.nodes.length} etapów<span class="watek-caret">▾</span></button>
+    <div class="watek-timeline"${odRazu?'':' hidden'}><div class="watek-spine"></div>${rows}</div>
   </div>`;
 }
 function toggleWatek(btn){
