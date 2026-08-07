@@ -56,7 +56,7 @@
   </div>
   <div class="topbar-right">
     <div class="live-pill"><div class="live-dot"></div><div class="live-text">Live</div></div>
-    <button class="archive-btn" id="watkiBtn" onclick="openWatki()" title="Wątki dnia" aria-label="Wątki dnia">🧵</button>
+    <button class="archive-btn" id="watkiBtn" onclick="openWatki()" title="Wątki dnia" aria-label="Wątki dnia"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="vertical-align:-3px"><path d="M12 3v18"/><circle cx="6.5" cy="6" r="2.2"/><path d="M8.7 6H12"/><circle cx="17.5" cy="12" r="2.2"/><path d="M12 12h3.3"/><circle cx="6.5" cy="18" r="2.2" fill="currentColor" stroke="none"/><path d="M8.7 18H12"/></svg></button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tryb ciemny" aria-label="Przełącz tryb ciemny">🌙</button>
     <button class="bell-btn inactive" id="bellBtn" onclick="togglePush()" title="Powiadomienia push" aria-label="Powiadomienia push">🔔</button>
     <button class="refresh-btn" id="refreshBtn" onclick="refresh()" title="Odśwież" aria-label="Odśwież">↻</button>
@@ -76,7 +76,7 @@
      rozwijana oś czasu (te same klasy .watek-*), klik w węzeł = deep link do artykułu. -->
 <div class="archive-overlay" id="watkiOverlay">
   <div class="archive-header">
-    <div class="archive-title">🧵 Wątki dnia</div>
+    <div class="archive-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" style="vertical-align:-1.5px"><path d="M12 3v18"/><circle cx="6.5" cy="6" r="2.2"/><path d="M8.7 6H12"/><circle cx="17.5" cy="12" r="2.2"/><path d="M12 12h3.3"/><circle cx="6.5" cy="18" r="2.2" fill="currentColor" stroke="none"/><path d="M8.7 18H12"/></svg> Wątki dnia</div>
     <button class="archive-close" onclick="closeWatki()">✕</button>
   </div>
   <div class="archive-body" id="watkiBody"></div>
@@ -113,6 +113,9 @@
 
 <div class="scroll-area" id="scrollArea">
   <div id="ptr"><span class="ptr-arrow">↓ Odśwież</span></div>
+  <!-- Pasek Wątków: domyślnie SCHOWANY; odsłania go pociągnięcie w dół (płytsze niż próg
+       odświeżania). Poza #content, żeby przeżywał re-render dawki. -->
+  <a id="watkiStrip" href="watki.html"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" style="flex:0 0 auto"><path d="M12 3v18"/><circle cx="6.5" cy="6" r="2.2"/><path d="M8.7 6H12"/><circle cx="17.5" cy="12" r="2.2"/><path d="M12 12h3.3"/><circle cx="6.5" cy="18" r="2.2" fill="currentColor" stroke="none"/><path d="M8.7 18H12"/></svg><span id="watkiStripTxt">Wątki dnia</span><span class="ws-arr">→</span></a>
   <div id="content"></div>
 </div>
 <div class="toast" id="toast"></div>
@@ -597,6 +600,8 @@ function impactHtml(item) {
 let THREADS = null;
 let THREAD_BY_TEXT = new Map();
 function normThreadKey(s){ return (s||'').toLowerCase().replace(/\s+/g,' ').trim(); }
+// Ikona wątku (SVG 2c — naprzemienna oś; zastąpiła emoji 🧵, które renderowało się różnie per system)
+const WATEK_ICN = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" style="vertical-align:-1.5px"><path d="M12 3v18"/><circle cx="6.5" cy="6" r="2.2"/><path d="M8.7 6H12"/><circle cx="17.5" cy="12" r="2.2"/><path d="M12 12h3.3"/><circle cx="6.5" cy="18" r="2.2" fill="currentColor" stroke="none"/><path d="M8.7 18H12"/></svg>';
 async function loadThreads(){
   try {
     const r = await fetch(`./threads.json?_=${Date.now()}`, { cache:'no-store' });
@@ -608,7 +613,17 @@ async function loadThreads(){
       t.nodes.forEach(n => { if (n && n.text) map.set(normThreadKey(n.text), t); });
     });
     THREAD_BY_TEXT = map;
+    aktualizujWatkiStrip();
   } catch(_){}
+}
+// Pasek Wątków nad feedem: schowany do pierwszego pociągnięcia w dół (patrz pull-to-refresh).
+// Odsłonięty zostaje do końca wizyty — kolejne re-rendery go nie chowają (żyje poza #content).
+function odslonWatkiStrip(){ const el = document.getElementById('watkiStrip'); if (el) el.classList.add('show'); }
+function aktualizujWatkiStrip(){
+  const el = document.getElementById('watkiStripTxt');
+  if (!el || !THREADS) return;
+  const n = (THREADS.threads||[]).filter(t => t.nodes && t.nodes.length >= 2).length;
+  if (n > 0) el.textContent = `Śledzimy ${n} historii · Wątki`;
 }
 function threadForItem(item){
   if (!item || !item.text) return null;
@@ -663,7 +678,7 @@ function watekBadgeHtml(item){
   if (!t) return '';
   // Gdy kafel dostaje pasek ciągłości (watekPasekHtml), badge niósłby TĘ SAMĄ informację drugi raz.
   if (watekEtapInfo(item)) return '';
-  return `<span class="watek-badge">🧵 ${t.nodes.length}</span>`;
+  return `<span class="watek-badge">${WATEK_ICN} ${t.nodes.length}</span>`;
 }
 
 // ⚠️ Badge dla PODPOZYCJI KLASTRA (2026-08-04, zgłoszenie właściciela: „jak wchodzę w klaster, to
@@ -681,7 +696,7 @@ function watekBadgeSubHtml(sub){
   if (!t || !Array.isArray(t.nodes) || t.nodes.length < 2) return '';
   const w = watekEtapInfo(sub);
   const opis = w ? `Kolejny etap wątku: ${w.tytul} (${w.etap} z ${w.ile})` : `Wątek: ${t.title || ''}`;
-  return `<span class="watek-badge" title="${escAttr(opis)}" aria-label="${escAttr(opis)}">🧵 ${t.nodes.length}</span>`;
+  return `<span class="watek-badge" title="${escAttr(opis)}" aria-label="${escAttr(opis)}">${WATEK_ICN} ${t.nodes.length}</span>`;
 }
 
 // ══ Pasek ciągłości sagi na kaflu w feedzie (2026-08-02) ══════════════════════════
@@ -752,7 +767,7 @@ function renderWatkiOverlay(){
     return `<div class="watki-saga">
       <button class="watki-saga-head" onclick="toggleWatekSaga('saga-${i}')">
         <span class="watki-saga-title">${escHtml(t.title||'Wątek')}</span>
-        <span class="watki-saga-n">🧵 ${t.nodes.length} etapów · ost. ${escHtml((last||'').slice(5,16))}</span>
+        <span class="watki-saga-n">${WATEK_ICN} ${t.nodes.length} etapów · ost. ${escHtml((last||'').slice(5,16))}</span>
       </button>
       ${t.memo ? `<div class="watki-memo">${escHtml(t.memo)}</div>` : ''}
       <div class="watek-timeline" id="saga-${i}" hidden><div class="watek-spine"></div>${rows}</div>
@@ -775,7 +790,7 @@ function watekHtml(item){
     </div>`;
   }).join('');
   return `<div class="watek-wrap">
-    <button class="watek-btn" onclick="event.stopPropagation();toggleWatek(this)">🧵 Wątek tematu · ${t.nodes.length} etapów<span class="watek-caret">▾</span></button>
+    <button class="watek-btn" onclick="event.stopPropagation();toggleWatek(this)">${WATEK_ICN} Wątek tematu · ${t.nodes.length} etapów<span class="watek-caret">▾</span></button>
     <div class="watek-timeline" hidden><div class="watek-spine"></div>${rows}</div>
   </div>`;
 }
@@ -1619,6 +1634,8 @@ function toggleTheme() {
     if (dy > 10) {
       ptr.classList.add('pulling');
       ptr.innerHTML = dy > 60 ? '<span class="ptr-arrow">↑ Puść by odświeżyć</span>' : '<span class="ptr-arrow">↓ Odśwież</span>';
+      // Płytsze pociągnięcie odsłania pasek Wątków (zostaje widoczny); głębsze — jak dotąd — odświeża.
+      if (dy > 24) odslonWatkiStrip();
     } else {
       ptr.classList.remove('pulling');
     }

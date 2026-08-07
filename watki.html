@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<title>Wątki — Brif.up</title>
+<meta name="description" content="Historie, które nie kończą się na jednym newsie — każda saga z pełną osią przyczyn i skutków.">
+<link rel="icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#fff; --text:#111; --sub:#333; --muted:#8a8a8a; --rule:#e2e2e2; --red:#e01f0f; --soft:#faf9f7; --node:#c9c9c9; }
+:root[data-theme="dark"] { --bg:#0f0f0f; --text:#f2f2f2; --sub:#cfcfcf; --muted:#8a8a8a; --rule:#2e2e2e; --soft:#1a1a1a; --node:#4a4a4a; }
+* { box-sizing:border-box; margin:0; }
+html,body { background:var(--bg); color:var(--text); }
+body { font-family:'Space Mono',monospace; max-width:640px; margin:0 auto; }
+.icn { display:inline-block; vertical-align:-3px; flex:0 0 auto; }
+.top { display:flex; align-items:baseline; justify-content:space-between; padding:14px 16px 10px; border-bottom:3px solid var(--text); }
+.logo { font-family:'DM Serif Display',serif; font-size:22px; text-decoration:none; color:var(--text); }
+.logo b { color:var(--red); font-weight:400; }
+.top-date { font-size:9px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; }
+.page-head { padding:18px 16px 6px; }
+.kicker { font-size:9px; letter-spacing:2px; color:var(--red); text-transform:uppercase; font-weight:700; display:flex; align-items:center; gap:6px; }
+h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; margin-top:2px; }
+.lead { font-size:11px; color:var(--muted); line-height:1.6; margin-top:6px; }
+.saga { padding:18px 16px 20px; border-bottom:1px solid var(--rule); }
+.saga-head { cursor:pointer; }
+.saga-meta { font-size:9.5px; color:#b91c1c; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+:root[data-theme="dark"] .saga-meta { color:#f87171; }
+.saga-title { font-family:'DM Serif Display',serif; font-size:21px; line-height:1.25; }
+.saga-memo { font-size:12px; color:var(--muted); font-style:italic; line-height:1.5; margin-top:6px; }
+.tl { margin-top:14px; border-left:2px solid var(--rule); padding-left:14px; display:flex; flex-direction:column; gap:12px; }
+.node { position:relative; cursor:pointer; }
+.node::before { content:''; position:absolute; left:-19.5px; top:4px; width:7px; height:7px; border-radius:50%; background:var(--node); }
+.node.last::before { width:11px; height:11px; left:-21.5px; top:2px; background:var(--red); }
+.node-when { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+.node-rel { color:#b91c1c; font-size:9px; }
+:root[data-theme="dark"] .node-rel { color:#f87171; }
+.node-text { font-family:'DM Serif Display',serif; font-size:14.5px; line-height:1.35; margin-top:2px; }
+.node.last .node-text { font-size:16px; }
+.hidden-nodes { display:none; }
+.saga.open .hidden-nodes { display:contents; }
+.toggle { margin-top:12px; font-size:9.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--red); font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+.saga.open .toggle .t-more { display:none; }
+.saga:not(.open) .toggle .t-less { display:none; }
+.excerpt { display:none; margin:8px 0 4px; background:var(--soft); border-left:3px solid var(--red); padding:10px 12px; }
+.node.exopen + .excerpt { display:block; }
+.ex-art { font-family:'DM Serif Display',serif; font-size:13.5px; line-height:1.6; color:var(--sub); }
+.ex-foot { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:9px; }
+.ex-src { font-size:8px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+.ex-open { font-size:8.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--red); font-weight:700; text-decoration:none; border:1px solid var(--red); padding:4px 9px; white-space:nowrap; }
+.pusto { padding:50px 20px; text-align:center; font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="top"><a class="logo" href="./">Brif<b>.up</b></a><span class="top-date" id="d"></span></div>
+<div class="page-head">
+  <div class="kicker"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v18"/><circle cx="6.5" cy="6" r="2.2"/><path d="M8.7 6H12"/><circle cx="17.5" cy="12" r="2.2"/><path d="M12 12h3.3"/><circle cx="6.5" cy="18" r="2.2" fill="currentColor" stroke="none"/><path d="M8.7 18H12"/></svg> Śledzimy dzień po dniu</div>
+  <h1>Wątki</h1>
+  <div class="lead">Historie, które nie kończą się na jednym newsie. Tapnij wątek, żeby rozsunąć pełną oś; tapnij etap, żeby przeczytać skrót.</div>
+</div>
+<div id="list"><div class="pusto">Wczytywanie wątków…</div></div>
+<script>
+(function(){
+  var t = localStorage.getItem('brifup_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  var mt = document.querySelector('meta[name="theme-color"]');
+  if (mt) mt.setAttribute('content', t === 'dark' ? '#0f0f0f' : '#ffffff');
+})();
+document.getElementById('d').textContent = new Date().toLocaleDateString('pl-PL',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
+
+// ⚠️ Slug MUSI być identyczny z index.html / knaga.html / Runner.cs / og (djb2-xor, 80 zn., base36).
+function itemSlug(text) {
+  let h = 5381;
+  for (let i = 0; i < Math.min(text.length, 80); i++) { h = ((h << 5) + h) ^ text.charCodeAt(i); h = h >>> 0; }
+  return h.toString(36);
+}
+const norm = s => (s||'').toLowerCase().replace(/[^a-ząćęłńóśźż0-9]+/g,' ').trim().slice(0,90);
+const ICN = '<svg class="icn" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 3v18"/><circle cx="6.5" cy="6" r="2.2"/><path d="M8.7 6H12"/><circle cx="17.5" cy="12" r="2.2"/><path d="M12 12h3.3"/><circle cx="6.5" cy="18" r="2.2" fill="currentColor" stroke="none"/><path d="M8.7 18H12"/></svg>';
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const todayISO = (() => { const d=new Date(); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; })();
+
+const ART = {};           // norm(text) -> item (z briefs + doładowanych dni archiwum)
+const archLoaded = {};    // date -> Promise (żeby nie pobierać dnia dwa razy)
+function indexItems(data){ Object.values(data||{}).forEach(d => (d && d.items || []).forEach(it => {
+  ART[norm(it.text)] = it; (it.subItems||[]).forEach(s => { ART[norm(s.text)] = s; });
+})); }
+function ensureDay(date){
+  if (date === todayISO) return Promise.resolve();
+  if (!archLoaded[date]) archLoaded[date] = fetch('archive/' + date + '.json').then(r => r.ok ? r.json() : null).then(j => { if (j) indexItems(j); }).catch(()=>{});
+  return archLoaded[date];
+}
+
+let THREADS = [];
+Promise.all([
+  fetch('threads.json?_=' + Date.now()).then(r=>r.json()),
+  fetch('briefs.json?_=' + Date.now()).then(r=>r.json()).catch(()=>({}))
+]).then(([t, b]) => {
+  indexItems(b);
+  THREADS = (t.threads||[]).filter(x => x.nodes && x.nodes.length >= 2)
+    .sort((a,b2) => (b2.nodes[b2.nodes.length-1].added_at||'').localeCompare(a.nodes[a.nodes.length-1].added_at||''));
+  render();
+}).catch(() => { document.getElementById('list').innerHTML = '<div class="pusto">Nie udało się wczytać wątków. Sprawdź połączenie.</div>'; });
+
+function nodeHtml(n, isNewest, ti, ni){
+  const date = (n.added_at||'').slice(0,10);
+  return `<div class="node${isNewest?' last':''}" data-ti="${ti}" data-ni="${ni}" onclick="exToggle(this)">
+      <span class="node-when">${(n.added_at||'').slice(5,10)} · ${esc(n.dose||'')}</span>
+      ${n.relacja?` <span class="node-rel">→ ${esc(n.relacja)}</span>`:''}
+      <div class="node-text">${esc(n.flag||'')} ${esc(n.text)}</div>
+    </div>
+    <div class="excerpt" id="ex-${ti}-${ni}"><div class="ex-art">Wczytywanie…</div></div>`;
+}
+function render(){
+  document.getElementById('list').innerHTML = THREADS.map((th, ti) => {
+    // Najnowszy etap NA GÓRZE (decyzja właściciela) — odwracamy kolejność węzłów.
+    const rev = th.nodes.slice().reverse();
+    const last = rev[0];
+    const ost = (last.added_at||'').slice(5,16).replace('T',' ');
+    const cut = rev.length - 3;
+    return `<article class="saga" id="s${ti}">
+      <div class="saga-head" onclick="document.getElementById('s${ti}').classList.toggle('open')">
+        <div class="saga-meta">${ICN} ${th.nodes.length} etapów · ost. ${ost}</div>
+        <div class="saga-title">${esc(th.title)}</div>
+        ${th.memo?`<div class="saga-memo">${esc(th.memo)}</div>`:''}
+      </div>
+      <div class="tl">
+        ${rev.slice(0,3).map((n,i)=>nodeHtml(n, i===0, ti, th.nodes.length-1-i)).join('')}
+        ${cut>0?`<div class="hidden-nodes">${rev.slice(3).map((n,i)=>nodeHtml(n, false, ti, th.nodes.length-4-i)).join('')}</div>`:''}
+      </div>
+      ${cut>0?`<div class="toggle" onclick="document.getElementById('s${ti}').classList.toggle('open')"><span class="t-more">Rozsuń pełną oś · ${th.nodes.length} etapów ▾</span><span class="t-less">Zwiń ▴</span></div>`:''}
+    </article>`;
+  }).join('') || '<div class="pusto">Na razie nie śledzimy żadnych wątków.</div>';
+}
+function exToggle(el){
+  const open = el.classList.toggle('exopen');
+  if (!open) return;
+  const th = THREADS[+el.dataset.ti]; const n = th.nodes[+el.dataset.ni];
+  const box = document.getElementById('ex-' + el.dataset.ti + '-' + el.dataset.ni);
+  const date = (n.added_at||'').slice(0,10);
+  ensureDay(date).then(() => {
+    const it = ART[norm(n.text)];
+    const ex = it && it.article ? (it.article.length > 300 ? it.article.slice(0,300) + '…' : it.article) : null;
+    const slug = itemSlug(n.text);
+    const link = date === todayISO ? `./#${n.dose||'morning'}/${slug}` : `./#archive/${date}/${n.dose||'morning'}/${slug}`;
+    box.innerHTML = `<div class="ex-art">${ex ? esc(ex) : 'Pełna treść w wydaniu z tego dnia.'}</div>
+      <div class="ex-foot"><span class="ex-src">${esc(it && it.source_name || 'archiwum')}</span><a class="ex-open" href="${link}">Otwórz news →</a></div>`;
+  });
+}
+</script>
+</body>
+</html>
