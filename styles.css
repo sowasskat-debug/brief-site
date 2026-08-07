@@ -1083,3 +1083,26 @@ html, body {
   .q-spark{flex:0 0 84px}
   .q-row{gap:8px;padding:9px 10px}
 }
+
+/* ── Pasek „Wątki" nad feedem (2026-08-07) ─────────────────────────────
+   Domyślnie SCHOWANY (max-height 0); odsłania go płytsze pociągnięcie w dół
+   (głębsze dalej odświeża — patrz pull-to-refresh w index.html). Wariant
+   „hairline" wybrany przez właściciela. Desktop go nie pokazuje. */
+#watkiStrip {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 16px; padding: 0 2px;
+  max-height: 0; overflow: hidden; opacity: 0;
+  border-bottom: 1px solid transparent;
+  transition: max-height .35s ease, opacity .35s ease, padding .35s ease;
+  text-decoration: none; color: #b91c1c;
+  font-family: 'Space Mono', monospace; font-size: 10px;
+  letter-spacing: 1.5px; font-weight: 700; text-transform: uppercase;
+}
+#watkiStrip.show {
+  max-height: 44px; opacity: 1; padding: 10px 2px;
+  border-bottom-color: var(--rule);
+}
+#watkiStrip .ws-arr { margin-left: auto; }
+[data-theme="dark"] #watkiStrip { color: #f87171; }
+[data-theme="dark"] #watkiStrip.show { border-bottom-color: var(--rule); }
+@media (min-width: 1024px) { #watkiStrip { display: none; } }
