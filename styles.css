@@ -1077,11 +1077,26 @@ html, body {
 .q-cur{color:var(--muted,#6b7280);font-size:10px}
 .q-chg{font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;white-space:nowrap;text-align:right;min-width:58px}
 
-/* Bardzo wąskie ekrany: nazwa ustępuje miejsca liczbom (to one niosą treść). */
+/* Okres linii i okres procentu (2026-08-07) — patrz komentarz przy quotesHtml w index.html.
+   Chip nazywa to, co rysuje sparkline (~30 sesji); dopisek „dziś" to, co niesie procent (sesja).
+   Oba są DROBNE i nie mogą konkurować z liczbami — to etykiety skali, nie treść. */
+.q-per{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted,#6b7280);border:1px solid var(--rule);border-radius:3px;padding:1px 4px;
+  flex:0 0 auto;white-space:nowrap;align-self:center}
+.q-chg-per{font-family:'Space Mono',monospace;font-size:7.5px;font-weight:400;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted,#6b7280)}
+
+/* Bardzo wąskie ekrany: nazwa ustępuje miejsca liczbom (to one niosą treść).
+   ⚠️ Chip okresu ZOSTAJE — jest odpowiedzią na „nie wiadomo, z jakiego terminu jest wykres",
+   więc znika dopiero po nazwie instrumentu, nie przed nią. */
 @media (max-width:460px){
   .q-name{display:none}
   .q-spark{flex:0 0 84px}
   .q-row{gap:8px;padding:9px 10px}
+  .q-chg{min-width:0}
+  /* Symbol i chip jeden pod drugim — w linii chip był OBCINANY (zmierzone: head potrzebował 92px,
+     dostawał 68). Kolumna zwęża głowę do szerokości chipa i mieści oba w całości. */
+  .q-head{flex-direction:column;align-items:flex-start;gap:2px}
 }
 
 /* ── Pasek „Wątki" nad feedem (2026-08-07) ─────────────────────────────
