@@ -1,0 +1,58 @@
+# Konfiguracja GitHub Pages (Jekyll) — dodana 2026-08-07.
+#
+# JEDYNY cel tego pliku: NIE publikować dokumentacji wewnętrznej i źródeł pod brifup.com.
+# Repo jest serwowane jako GitHub Pages z `main`, więc DOMYŚLNIE każdy plik z drzewa ląduje
+# pod publicznym adresem. Zmierzone przed tą zmianą — wszystkie oddawały HTTP 200:
+#   brifup.com/STAN.md              → lista otwartych dziur produktu z datami
+#   brifup.com/CLAUDE.md            → 68 KB opisu mechanizmów, nazwa panelu, model auth
+#   brifup.com/SETUP_SUPABASE.md    → procedury wdrożenia, project-ref, ścieżki sekretów
+#   brifup.com/supabase_schema.sql  → polityki RLS z e-mailem logowania właściciela (13×)
+#   brifup.com/supabase/functions/og/index.ts → źródło Edge Function
+#
+# To ta sama logika, dla której `graphify-out/` jest w .gitignore, a `knaga.html` nie trafia
+# do robots.txt: nie ogłaszamy zaplecza. `exclude` działa lepiej niż `Disallow` w robots.txt,
+# bo robots.txt jest publiczny i SAM zdradziłby ścieżki — a tu pliki po prostu znikają (404).
+#
+# ⚠️ To NIE czyni tych plików tajnymi — repo `brief-site` jest PUBLICZNE na GitHubie, więc
+# dalej widać je pod github.com/sowasskat-debug/brief-site. Ta zmiana zamyka wyłącznie drogę
+# „wpisz brifup.com/STAN.md" i indeksację przez Google z domeny produktu.
+#
+# ⚠️ Wykluczenie `supabase/` NIE psuje wdrożenia funkcji — te idą przez
+# `supabase functions deploy` z lokalnego drzewa, nie przez GitHub Pages.
+#
+# ⚠️ Żaden plik strony nie ma front matter YAML (sprawdzone: wszystkie .html zaczynają się
+# od `<!DOCTYPE html>`), więc Jekyll kopiuje je bajt w bajt. Ten plik niczego nie renderuje.
+
+# ── Pliki i panele DIAGNOSTYCZNE (2026-08-07) ──────────────────────────────
+# Zdejmowane z Pages, bo oddają konkurencji cały aparat redakcyjny: lejek.json to lista
+# 13 feedów źródłowych + progi selekcji, deepseek_usage.json to policzalny koszt miesięczny,
+# brief_health/bot_health to nazwy i skuteczność finderów. Wszystkie oddawały 200 spod brifup.com.
+#
+# 🔴 Dane NIE GINĄ — bot pisze je RÓWNOLEGLE do Supabase (za RLS wpuszczającym tylko właściciela).
+# Zweryfikowane z serwera 2026-08-07: tabela `lejek` ma 1500 wierszy, snapshoty po 200, wszystkie
+# świeże (ostatni wpis z tego samego dnia). knaga.html czyta lejek Supabase-first, więc zakładka
+# Lejek działa dalej; widget „DeepSeek dziś" w Kokpicie gaśnie miękko (fetch→catch→null, kafel po
+# prostu znika — kokpit się nie wywala).
+#
+# ⚠️ Samodzielne panele brief-health.html i maszynownia.html czytały WYŁĄCZNIE te pliki i nie mają
+# logowania — same w sobie były otwartym pulpitem z kosztami. Zdejmowane razem z danymi (decyzja
+# właściciela: „panele w odstawkę"). Docelowo ich funkcję przejmie knaga na Supabase.
+# ⚠️ To zamyka drogę „brifup.com/lejek.json" i indeksację Google. Repo jest publiczne na GitHubie,
+# więc pliki dalej widać pod github.com/sowasskat-debug/brief-site — pełne zamknięcie wymaga albo
+# prywatnego repo, albo wyłączenia zapisu w bocie (osobna robota).
+exclude:
+  - STAN.md
+  - CLAUDE.md
+  - SETUP_SUPABASE.md
+  - README.md
+  - supabase_schema.sql
+  - supabase/
+  - graphify-out/
+  - serve.py
+  - marka/
+  - lejek.json
+  - deepseek_usage.json
+  - brief_health.json
+  - bot_health.json
+  - brief-health.html
+  - maszynownia.html

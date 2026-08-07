@@ -8,7 +8,7 @@
 try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js'); }
 catch (e) { /* push niedostępny, reszta SW działa */ }
 
-const CACHE_NAME = 'brifup-cache-v73';
+const CACHE_NAME = 'brifup-cache-v74';
 // UWAGA: index.html NIE jest tu precache'owany — patrz komentarz przy jego fetch-handlerze niżej.
 const STATIC_ASSETS = [
   './manifest.json',
@@ -51,7 +51,16 @@ self.addEventListener('fetch', (event) => {
   // To newsy: po cichu pokazana stara treść jest groźniejsza niż krótki błąd — a front i tak ma
   // własny łańcuch zapasowy (Supabase, potem dane przykładowe), który przy fallbacku z tego SW
   // nigdy się nie uruchamiał, bo "udany" (choć nieaktualny) wynik z cache maskował awarię sieci.
-  if (url.includes('briefs.json') || url.includes('/archive/') || url.includes('rejected.json') || url.includes('lejek.json')) {
+  // ⚠️ threads.json/quotes.json DOPISANE 2026-08-07 — bez nich wpadały w gałąź „pozostałe statyczne"
+  // na samym dole, która robi `cache.put(event.request)`. A front pobiera je z cache-busterem
+  // `?_=${Date.now()}`, więc KAŻDE odświeżenie zapisywało NOWY wpis pod nowym URL-em, a nic nigdy
+  // ich nie kasowało (jedyne czyszczenie to zmiana CACHE_NAME). Otwarta apka przy ~20 zapisach bota
+  // na dobę dokładała ~3 MB dziennie do Cache Storage. Te pliki są danymi jak briefs.json i mają
+  // dokładnie ten sam powód, żeby iść czystą siecią: stara treść pokazana po cichu jest groźniejsza
+  // niż błąd. Diagnostyczne brief_health/deepseek_usage/bot_health — tak samo (czyta je panel).
+  if (url.includes('briefs.json') || url.includes('/archive/') || url.includes('rejected.json') ||
+      url.includes('lejek.json') || url.includes('threads.json') || url.includes('quotes.json') ||
+      url.includes('brief_health.json') || url.includes('deepseek_usage.json') || url.includes('bot_health.json')) {
     event.respondWith(fetch(event.request));
     return;
   }
