@@ -883,12 +883,18 @@ function quotesHtml(item){
     const okres = (typeof s.zmiana_okres_pct === 'number' && s.punktow_okres)
       ? ` · ${s.zmiana_okres_pct >= 0 ? '+' : ''}${Number(s.zmiana_okres_pct).toLocaleString('pl-PL', {minimumFractionDigits:2, maximumFractionDigits:2})}% przez ostatnie ${s.punktow_okres} sesji`
       : '';
+    // ⚠️ OKRES WYKRESU NA EKRANIE (2026-08-07, zgłoszenie właściciela: „nie jest napisane z jakiego
+    // terminu ten wykres, użytkownik nie widzi czy to ostatni dzień czy 30 dni"). Linia rysuje ~30
+    // SESJI, a procent obok to zmiana SESYJNA — dwie różne skale w jednym wierszu, stąd zielony
+    // procent bywa przy opadającej linii. Chip przy symbolu nazywa okres linii, dopisek „dziś"
+    // nazywa okres procentu. Bez tego jedyną wskazówką była podpowiedź, niedostępna na telefonie.
+    const nSesji = s.punktow_okres || s.punkty.length;
     return `<div class="q-row" title="${escAttr((s.nazwa || sym) + ' · zmiana sesyjna ' + zmiana + okres)}">
-      <span class="q-head"><span class="q-sym">${escHtml(sym)}</span><span class="q-name">${escHtml(s.nazwa || sym)}</span></span>
+      <span class="q-head"><span class="q-sym">${escHtml(sym)}</span><span class="q-per">${nSesji} sesji</span><span class="q-name">${escHtml(s.nazwa || sym)}</span></span>
       ${sparklineSvg(s.punkty, kolor, 110, 30)}
       <span class="q-vals">
         <span class="q-px">${cena}<span class="q-cur"> ${escHtml(s.waluta || '')}</span></span>
-        <span class="q-chg" style="color:${kolor}">${zmiana}</span>
+        <span class="q-chg" style="color:${kolor}">${zmiana}<span class="q-chg-per"> dziś</span></span>
       </span>
     </div>`;
   }).filter(Boolean).join('');
