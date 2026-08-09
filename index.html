@@ -1824,16 +1824,32 @@ setTimeout(async () => {
     const pusto = (!content || !content.childElementCount) && (!dt || !dt.childElementCount);
     if (pusto && !sessionStorage.getItem('brifup_watchdog')) {
       sessionStorage.setItem('brifup_watchdog', '1');
+      oznaczPrzeladowanieWlasne();
       if (window.caches) { const keys = await caches.keys(); await Promise.all(keys.map(k => caches.delete(k))); }
       location.reload();
     }
   } catch (_) {}
 }, 8000);
 
+// 🔴 PRZEŁADOWANIE APKI TO NIE JEST NOWA WIZYTA (2026-08-09).
+// `service-worker.js` robi skipWaiting() + clients.claim(), więc nowy SW przejmuje kontrolę
+// natychmiast → `controllerchange` → reloadOnce → strona ładuje się DRUGI raz i beacon licznika
+// strzelał ponownie kilka sekund po pierwszym. Dzieje się to przy pierwszej wizycie (SW instaluje
+// się od zera) ORAZ po każdym bumpie CACHE_NAME, czyli praktycznie przy każdym deployu CSS/JS.
+// ZMIERZONE na produkcji: 84 pary odsłon tego samego czytelnika w odstępie <60 s przy 228 odsłonach
+// w tygodniu (~37% ruchu). Skutek: zawyżone „Sesje" (137 przy 129 czytelniko-dobach) i „Wrócili tego
+// samego dnia" (56%), a „Mediana wizyty" leżała na 0 min z próbki 74 wizyt — bo obie odsłony
+// dzieliły sekundy. Znacznik przeżywa przeładowanie w sessionStorage; `licznikWejsc` go konsumuje.
+// ⚠️ Samego przeładowania NIE ruszamy — to bezpiecznik przed zawieszeniem apki na starej wersji.
+function oznaczPrzeladowanieWlasne() {
+  try { sessionStorage.setItem('brifup_wlasne_przeladowanie', '1'); } catch (_) {}
+}
+
 function reloadOnce(powod) {
   if (sessionStorage.getItem('brifup_reloaded_for_update')) return;
   sessionStorage.setItem('brifup_reloaded_for_update', '1');
   console.log('Odświeżam raz z powodu:', powod);
+  oznaczPrzeladowanieWlasne();
   window.location.reload();
 }
 
@@ -1893,7 +1909,19 @@ if ('serviceWorker' in navigator) {
     } catch (_) {}
   }
 
-  zglos('wejscie');
+  // Przeładowanie wywołane przez samą apkę (nowy SW / watchdog) NIE jest nową wizytą — patrz
+  // `oznaczPrzeladowanieWlasne`. Znacznik konsumujemy od razu, więc pomija dokładnie JEDNO
+  // najbliższe załadowanie; kolejne wejścia liczą się normalnie.
+  let wlasnePrzeladowanie = false;
+  try {
+    wlasnePrzeladowanie = sessionStorage.getItem('brifup_wlasne_przeladowanie') === '1';
+    if (wlasnePrzeladowanie) sessionStorage.removeItem('brifup_wlasne_przeladowanie');
+  } catch (_) {}
+  // ⚠️ `ostatnieZgloszenie` ustawiane TAK CZY TAK — inaczej pominięte wejście zostawiłoby zero
+  // i pierwsze przełączenie karty (nawet po minucie) zgłosiłoby fałszywe „wznowienie",
+  // bo próg 30 minut liczy się od tego znacznika.
+  if (wlasnePrzeladowanie) ostatnieZgloszenie = Date.now();
+  else zglos('wejscie');
 
   // Dlaczego jeszcze wznowienie: w zainstalowanej PWA system WZNAWIA istniejące okno
   // zamiast ładować stronę od nowa (ta sama mechanika, dla której istnieje
