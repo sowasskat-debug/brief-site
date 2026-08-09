@@ -561,6 +561,41 @@ na fallbacku `item.text`, dlatego fallback jest OBOWIĄZKOWY, a nie „na wszelk
   wymaga Premium; gdyby X odrzucał posty, wróć do 280. ⚠️ Zmiana `MAX_ZNAKOW` wymaga redeployu funkcji
   (`supabase functions deploy gotowiec-x`) — sama zmiana w repo NIE wystarcza.
 
+## Udostępnij: link do STUBA, nie adres hashowy (2026-08-09) 🔴
+Zgłoszenie właściciela: link wysłany na Messengera pokazywał kartę z **samą domeną „brifup.com"** —
+bez tytułu i **bez żadnej grafiki, nawet tej podstawowej**.
+- 🔴 **Przycisk „Udostępnij" wysyłał adres HASHOWY** (`brifup.com/#<dawka>/<slug>`). Fragment po `#`
+  nigdy nie dociera do serwera, więc crawler FB czytał meta STRONY GŁÓWNEJ. Knaga rozwiązała to
+  w sierpniu (`linkDoUdostepnienia`), publiczny front nigdy tej poprawki nie dostał — dokładnie ta
+  klasa dryfu, dla której istnieje `WSPOLNE_ODRZUCENIA` w bocie.
+- **Stub z pełną kartą ISTNIAŁ przez cały czas** — zmierzone: `brifup.com/s/bn2vb6.html` oddaje 200
+  z poprawnym `og:title`/`og:image`. Objaw mylił: wyglądało na awarię generatora obrazka, a nikt go
+  po prostu nie pytał (ta sama pomyłka diagnostyczna co przy podpozycjach klastra 02.08).
+- **Podmiana w `shareItem`, czyli W CHWILI KLIKNIĘCIA**, nie przy renderze. Pierwsza wersja liczyła
+  adres w `expandBlock`/`dtShowDetail` — a manifest/HEAD dociąga się RÓWNOLEGLE z pierwszym renderem
+  i zwykle przychodzi po nim, więc przycisk miał adres hashowy mimo istniejącego stuba. Ofiarą tego
+  wyścigu jest dokładnie ten, kto wchodzi i od razu udostępnia.
+- 🔴 **PODMIANA MUSI BYĆ SYNCHRONICZNA.** `navigator.share` wymaga świeżej aktywacji użytkownika,
+  więc `await` tuż przed nim zabiera ją na iOS i **arkusz udostępniania nie otwiera się wcale**.
+  Stąd podział: `sprawdzStub(slug)` (HEAD) leci przy OTWARCIU artykułu, a kliknięcie robi zwykły
+  odczyt z `STUB_ZNANE`. Knaga może czekać na HEAD po kliknięciu, bo tam przycisk tylko wypełnia
+  pole tekstowe — **nie kopiuj stamtąd wzorca bezmyślnie**.
+- 🔴 **`s/_index.json` ODDAJE 404 POD DOMENĄ** — Jekyll pomija pliki z `_` na początku nazwy.
+  Manifest jest w repo i bot go utrzymuje, ale front go nie zobaczy; pierwsza wersja poprawki czytała
+  właśnie jego i **po cichu by nie działała** (404 w `catch` → pusty zbiór → każdy link hashowy).
+  Gdyby był kiedyś potrzebny — wpisz go wprost w `include:` w `_config.yml`.
+- **Fallback na adres hashowy zostaje** dla trzech realnych przypadków: news sprzed chwili (stub
+  powstaje na końcu biegu bota, mediana 5,2 min), news starszy niż 14 dni (retencja stubów),
+  podpozycja klastra (bot stuba nie tworzy). Gorsza karta jest lepsza niż link w 404.
+- **Negatywne wpisy w `STUB_ZNANE` czyszczone przy każdej realnej zmianie `briefs.json`** — bez tego
+  czytelnik siedzący w otwartej apce udostępniałby świeży news bez karty aż do przeładowania.
+  Pozytywy zostają: stub nie znika w trakcie wizyty.
+- ⚠️ **Facebook trzyma podgląd w cache per URL** — linki wysłane przed poprawką zostaną bez grafiki
+  na zawsze. Wymuszenie: Sharing Debugger → „Scrape Again".
+- ⚠️ Uzupełnienie po stronie bota: `og:url`/`canonical` stuba wskazują teraz sam stub (FinancialNewsBot#119).
+  Bez tego FB kanonizował obiekt pod adres hashowy i karta i tak wychodziła pusta.
+- ⚠️ **`watki.html` NIE MA tagów `og:`** — udostępnienie podstrony Wątków daje gołą kartę. Otwarte.
+
 ## Ruch: powroty, sesje, pory dnia (2026-08-05) ⚠️
 Życzenie właściciela: *„bardziej szczegółowy panel z wyświetleniami, np. ile razy ktoś wracał
 ponownie"*. Pytanie rozpada się na DWA i tylko jedno dało się odpowiedzieć z danych, które już były:

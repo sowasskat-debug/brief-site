@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-08 (noc)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-09 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 > 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
@@ -14,6 +14,67 @@ niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 > Pomiar pokrycia z warunku wejścia: **93,9%** w briefs, **76,9%** w dawkach z 08.08 — sufit osiągnięty.
 > Punkt 4 (powody odrzuceń) też ZAMKNIĘTY — kody w polu `powod` lejka, front bez zmian.
 > Kropki pojawią się po pierwszym biegu bota z nowym kodem (stare serie nie mają `daty`).
+
+## 🔴 B. Karta podglądu linku na Facebooku — NAPRAWIONE 09.08, DO POTWIERDZENIA JUTRO
+
+Zgłoszenie właściciela: link wysłany z brifup.com na Messengera pokazywał kartę z **samą domeną
+„brifup.com"** — bez tytułu i **bez żadnej grafiki, nawet tej podstawowej**.
+
+**Przyczyna była podwójna, obie tej samej klasy — fragment `#` nie dociera do serwera:**
+1. Publiczny przycisk „Udostępnij" wysyłał adres **hashowy** (`brifup.com/#evening/<slug>`), więc
+   crawler FB nie miał z czego zbudować karty. Knaga używa stuba od sierpnia (`linkDoUdostepnienia`),
+   front tej poprawki nigdy nie dostał. Stub z pełną kartą **istniał przez cały czas** — zmierzone:
+   `brifup.com/s/bn2vb6.html` oddaje 200 z poprawnym `og:title`/`og:image`.
+2. Sam stub podawał w `og:url` i `canonical` **adres hashowy apki**. FB traktuje `og:url` jako
+   kanoniczny identyfikator obiektu, więc odsyłał sam siebie pod adres, którego nie umie odczytać.
+   X był pobłażliwy (idzie za `twitter:*`) — stąd wrażenie „na X działa, na FB nie".
+
+Naprawione: brief-site#115 (front) + FinancialNewsBot#119 (stub). Zweryfikowane przechwyconym
+`navigator.share`: klik wysyła `https://brifup.com/s/13vpjg8.html`, a slug spoza stubów zostaje
+przy adresie hashowym (żaden link nie prowadzi w 404).
+
+🔴 **DO SPRAWDZENIA:** udostępnij ŚWIEŻY news i zobacz kartę. ⚠️ **Facebook trzyma podgląd w cache
+per URL** — linki już wysłane zostaną bez grafiki na zawsze, tego się nie odzyska. Wymuszenie:
+Sharing Debugger → „Scrape Again" na `https://brifup.com/s/<slug>.html`.
+
+⚠️ **Efekt pełny dopiero po biegu bota z 09.08 wieczorem** — istniejące stuby mają stary `og:url`,
+dopóki bot ich nie przepisze (funkcja samolecząca, jeden commit).
+
+**Otwarte w tym temacie:**
+- `watki.html` **nie ma ŻADNYCH tagów `og:`** — udostępnienie podstrony Wątków daje gołą kartę.
+- Stuby archiwalne bez `a=<data>`: karta-obrazek dla newsa z archiwum wraca do grafiki zapasowej,
+  bo stub nie przekazuje daty do funkcji `og`. Front ma fallback routingu, obrazek nie.
+- `fb:app_id` — debugger o niego marudzi. To NIE jest przyczyna braku grafiki (służy statystykom
+  udostępnień), ale warto dodać. Czeka na App ID od właściciela z developers.facebook.com/apps.
+
+---
+
+## 🔴 C. Tytuł sagi — ODŚWIEŻANY OD 09.08, OBSERWOWAĆ TYDZIEŃ
+
+Zgłoszenie właściciela („czyli po prostu stary wątek jest?"): karta OG wątku z Lipska miała nad osią
+nagłówek z **05.08**, choć oś pokazywała etapy do 09.08 — a etap, który dał ten tytuł, **wypadł już
+z osi** przy cięciu do 4 ostatnich z 5.
+
+Przyczyna: `title` był zapisywany WYŁĄCZNIE przy zakładaniu wątku, więc saga na zawsze nosiła nagłówek
+pierwszego etapu. Ten sam zamrożony tytuł szedł w trzy miejsca: karta OG, oś pod postem i `/watki.html`.
+
+Naprawione w FinancialNewsBot#118: prompt inkrementalny dostał pole `tytul` (zero dodatkowych calli —
+jedzie tym samym wywołaniem co `memo`), z bramkami: tylko wątek istniejący przed biegiem, ≤90 znaków,
+inny niż obecny, nie wyciek/angielszczyzna, nie dosłowny tekst dopinanego newsa.
+
+🔴 **Przy okazji zamrożony `slug` wątku** — strona sagi `w/<slug>.html` liczyła adres z BIEŻĄCEGO
+tytułu, więc samo przemianowanie przenosiłoby ją pod nowy URL i zostawiało sierotę w sitemapie.
+Backfill liczy slug z dzisiejszego tytułu, więc 53 istniejące sagi zachowują dotychczasowe adresy.
+Trafiło się dobrze: `w/` było jeszcze puste na produkcji i nie ma go w `sitemap.xml`.
+
+⚠️ **DO OBEJRZENIA:** `watki_przemianowane` w `brief_health` oraz log `Wątki[INKR] -> tytuł [wN]`.
+Jeśli przemianowań jest tyle co dopięć, prompt jest za luźny i strony sag przepisują się co dobę.
+⚠️ Sagi, którym nie dojdzie etap, zostaną ze starym tytułem — odświeżenie dzieje się tylko przy
+dopięciu. Jednorazowy przebieg po wszystkich sagach to osobna decyzja (~50 calli).
+⚠️ Testowane JEDNYM wywołaniem modelu na jednym wątku (zwróciło „Incydenty dronowe w Lipsku").
+Zachowanie na pełnym biegu z kilkunastoma dopięciami — dopiero w logu.
+
+---
 
 ## 🔴 A. „Saga × rynek" — ZAPROJEKTOWANA, CZEKA NA DANE (nie buduj przed czasem)
 
@@ -252,6 +313,9 @@ Pomiar offline w `financialnewsbot/CLAUDE.md` (sekcja „Filtr spójności klast
 | **Skuteczność fallbacku EN** | `brief_health` | `enrich_enfallback_z_oryginalu` vs `_sukces` |
 | **`poczekalnia_utknelo`** | `brief_health` | było **5 na 10** trafiających do poczekalni |
 | 🆕 **Amerykański wyścig wyborczy** | zakładka Lejek (Polymarket, Kalshi) | prawybory/kursy wyścigów mają być `odrzucony`; ustawy Kongresu mają PRZECHODZIĆ |
+| 🆕 **`watki_przemianowane`** | `brief_health` | ma być DUŻO mniej niż `watki_dopiete`; równe = prompt za luźny |
+| 🆕 **`do_poczekalni` po przesunięciu GDELT** | `brief_health` | było 134 / 4 dni; wzrost = tor podstawowy jednak coś ratował |
+| 🆕 **Karta linku na Facebooku** | świeżo udostępniony news | ma być grafika newsa; stare linki zostaną bez |
 
 ---
 
@@ -422,26 +486,38 @@ biegami). Angielski oryginał karmi `DeepSeekWyszukiwarkaQueryEN` zamiast być o
    na końcu `UpdateBriefOnSite`, więc **ubijał całą partię feedu razem z finalnym PUT-em**.
    Zniknęło 5 newsów (tytuły spalone w historii = bezpowrotnie). Symulacja przed wdrożeniem testowała
    trzy warianty — wszystkie z NIEPUSTĄ listą. **Testuj przypadek zerowy zawsze.**
-2. 🔴 **`gotowiec-x` NADPISUJE `x_post` od bota.** Knaga woła Edge Function przy każdym otwarciu
+2. 🔴 **`s/_index.json` ODDAJE 404 POD DOMENĄ — Jekyll pomija pliki z `_` na początku nazwy.**
+   Manifest stubów JEST w repo i bot go utrzymuje (retencja 14 dni), ale front go NIE ZOBACZY.
+   Kosztowało to jedną wersję poprawki „Udostępnij" (09.08), która czytała manifest i **po cichu
+   nie działałaby na produkcji** — `loadStuby` łapało 404 w `catch` i zostawiało pusty zbiór, więc
+   każdy link wracał do adresu hashowego. Zmierzone: `brifup.com/s/_index.json` → **404**,
+   `brifup.com/s/13vpjg8.html` → **200**. Przepisane na HEAD po samym stubie. Gdyby manifest
+   kiedyś był potrzebny frontowi — wpisz go wprost w `include:` w `_config.yml`.
+3. 🔴 **`navigator.share` wymaga ŚWIEŻEJ aktywacji użytkownika — `await` przed nim ją zabiera.**
+   Na iOS arkusz udostępniania wtedy NIE OTWIERA SIĘ WCALE. Dlatego podmiana linku na stub jest
+   synchroniczna (odczyt z mapy), a pytanie o istnienie stuba leci wcześniej, przy otwarciu artykułu.
+   Knaga może sobie pozwolić na HEAD po kliknięciu, bo tam przycisk tylko wypełnia pole tekstowe —
+   **nie kopiuj stamtąd wzorca bezmyślnie**.
+4. 🔴 **`gotowiec-x` NADPISUJE `x_post` od bota.** Knaga woła Edge Function przy każdym otwarciu
    panelu X. Generowanie gotowca w bocie było więc podwójną robotą — wycofane. Nie dodawaj z powrotem.
-3. **Lejek stempluje czasem WARSZAWSKIM, `brief_health` UTC.** Porównując godziny z różnych plików
+5. **Lejek stempluje czasem WARSZAWSKIM, `brief_health` UTC.** Porównując godziny z różnych plików
    (albo z zegarem Maca) najpierw sprawdź, w której strefie są.
-4. **X przy „Boost" odrzuca posty z więcej niż jednym emoji** — potwierdzone przez właściciela na
+6. **X przy „Boost" odrzuca posty z więcej niż jednym emoji** — potwierdzone przez właściciela na
    żywym poście. Pole `flag` bywa wieloflagowe (11 z 49 itemów), więc do X idzie tylko pierwsza flaga.
    ⚠️ Dotyczy **wyłącznie** X — strona renderuje pełną flagę.
-5. **macOS blokuje `http.server` na `~/Documents`** (ochrona prywatności) — podgląd lokalny serwuj
+7. **macOS blokuje `http.server` na `~/Documents`** (ochrona prywatności) — podgląd lokalny serwuj
    z kopii w scratchpadzie. Wpis `brief-site-repo` w `~/.claude/launch.json` już tak robi.
-6. **`brifup.com` NIE idzie przez Cloudflare** — NS to GoDaddy, rekordy A wprost na GitHub Pages.
-7. **`bot_secrets.env` ma NIESPÓJNY format** — część linii z `export`, część bez. Naprawione `set -a`
+8. **`brifup.com` NIE idzie przez Cloudflare** — NS to GoDaddy, rekordy A wprost na GitHub Pages.
+9. **`bot_secrets.env` ma NIESPÓJNY format** — część linii z `export`, część bez. Naprawione `set -a`
    w `run_bot.sh`. ⚠️ „przecież Haiku działa" NIE dowodzi, że inne klucze działają.
-8. **Nowy feed testuj Z SERWERA, nie z Maca** (TVN24: 200 z laptopa, 403 z Hetznera).
-9. **Feed przez rss.app sprawdzaj LICZBĄ POZYCJI i DATĄ najnowszej**, nie kodem HTTP.
-10. **Bump `CACHE_NAME` przy każdej zmianie CSS/JS** — świeżość daje `cache:'reload'` w SW.
-11. **Nie dopisuj `knaga.html` do `robots.txt` ani `sitemap.xml`.**
-12. **Panel szczegółów: nie zwężaj poniżej 440 px** bez sprawdzenia kafli notowań.
-13. **`rejected.json` UCZY FILTR** (ostatnie 40 wpisów) — pomyłka przy „Usuń" psuje selekcję.
-14. **Link do X NIE idzie w treść posta** — obcina zasięg. Idzie jako odpowiedź.
-15. 🔴 **News schowany w klastrze NIE MA stuba, więc nie da się go udostępnić z podglądem.**
+10. **Nowy feed testuj Z SERWERA, nie z Maca** (TVN24: 200 z laptopa, 403 z Hetznera).
+11. **Feed przez rss.app sprawdzaj LICZBĄ POZYCJI i DATĄ najnowszej**, nie kodem HTTP.
+12. **Bump `CACHE_NAME` przy każdej zmianie CSS/JS** — świeżość daje `cache:'reload'` w SW.
+13. **Nie dopisuj `knaga.html` do `robots.txt` ani `sitemap.xml`.**
+14. **Panel szczegółów: nie zwężaj poniżej 440 px** bez sprawdzenia kafli notowań.
+15. **`rejected.json` UCZY FILTR** (ostatnie 40 wpisów) — pomyłka przy „Usuń" psuje selekcję.
+16. **Link do X NIE idzie w treść posta** — obcina zasięg. Idzie jako odpowiedź.
+17. 🔴 **News schowany w klastrze NIE MA stuba, więc nie da się go udostępnić z podglądem.**
     `ZapiszStubyNaSite` iteruje po `d.Items`, czyli **wyłącznie po pozycjach top-level** — do `subItems`
     nie wchodzi. Knaga liczy slug z `item.text` KAŻDEGO newsa (też sub-itemu), więc dla newsa w klastrze
     dostaje adres, którego nie ma → HEAD 404 → fallback na link hashowy → **X pokazuje generyczną kartę
@@ -449,7 +525,7 @@ biegami). Angielski oryginał karmi `DeepSeekWyszukiwarkaQueryEN` zamiast być o
     ⚠️ Diagnozując „nie generuje podglądu" sprawdź NAJPIERW, czy news jest top-level, a nie sub-itemem.
     Lek: rozdzielić klaster — stub odtworzy się sam w kolejnym biegu (mechanizm jest samoleczący).
     ⚠️ Stubów **nie dopisuj ręcznie** (patrz `CLAUDE.md`) — bot i tak odtwarza stan z `briefs.json`.
-16. 🔴 **Nowy plik wewnętrzny → dopisz go do `exclude` w `_config.yml`.** GitHub Pages serwuje
+18. 🔴 **Nowy plik wewnętrzny → dopisz go do `exclude` w `_config.yml`.** GitHub Pages serwuje
     DOMYŚLNIE każdy plik z repo. Dokumenty, diagnostyka, źródła funkcji są zdejmowane WYŁĄCZNIE przez
     listę `exclude` — plik spoza niej wyląduje pod brifup.com. ⚠️ `exclude` chowa z domeny i z Google,
     ale NIE z publicznego repo na GitHubie.
