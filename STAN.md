@@ -9,6 +9,12 @@ niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
+> ✅ **AKTUALIZACJA 2026-08-09:** punkt A ZBUDOWANY (front: `sagaRynekHtml` w tym PR; bot: `daty`
+> w `quotes.json` + retencja sag 30 dni / wątek gaśnie po 7 dniach ciszy — FinancialNewsBot#115).
+> Pomiar pokrycia z warunku wejścia: **93,9%** w briefs, **76,9%** w dawkach z 08.08 — sufit osiągnięty.
+> Punkt 4 (powody odrzuceń) też ZAMKNIĘTY — kody w polu `powod` lejka, front bez zmian.
+> Kropki pojawią się po pierwszym biegu bota z nowym kodem (stare serie nie mają `daty`).
+
 ## 🔴 A. „Saga × rynek" — ZAPROJEKTOWANA, CZEKA NA DANE (nie buduj przed czasem)
 
 Pomysł zaakceptowany przez właściciela („zajebiste"): pod „Wpływ na rynek" przy sadze z instrumentem
