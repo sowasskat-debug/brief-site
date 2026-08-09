@@ -496,12 +496,19 @@ as $$
     'wracajacy_w_dobie',  (select count(*) from na_dobe where odslon >= 2),
     'rozklad_wejsc', coalesce((
       select jsonb_agg(jsonb_build_object('koszyk', koszyk, 'ile', ile) order by kolejnosc)
+        -- ⚠️ Koszyki 1 / 2 / 3 / 4-9 / 10+ (2026-08-09, życzenie właściciela: dawne „2-3" sklejało
+        -- dwa różne zachowania). Przy typowym ruchu serwisu masa rozkładu siedzi w 1-3 wejściach,
+        -- więc rozdzielenie ich daje realny sygnał, a szeroki koszyk zostaje dopiero tam, gdzie
+        -- pojedyncze liczby i tak byłyby szumem. `kolejnosc` MUSI iść razem z etykietami — po niej
+        -- sortuje `jsonb_agg`, a bez niej panel ustawiłby koszyki alfabetycznie („10 i więcej" przed „2").
         from (select case when odslon = 1 then '1 wejście'
-                          when odslon between 2 and 3 then '2-3'
+                          when odslon = 2 then '2'
+                          when odslon = 3 then '3'
                           when odslon between 4 and 9 then '4-9'
                           else '10 i więcej' end as koszyk,
-                     case when odslon = 1 then 1 when odslon between 2 and 3 then 2
-                          when odslon between 4 and 9 then 3 else 4 end as kolejnosc,
+                     case when odslon = 1 then 1 when odslon = 2 then 2
+                          when odslon = 3 then 3
+                          when odslon between 4 and 9 then 4 else 5 end as kolejnosc,
                      count(*) as ile
                 from na_dobe group by 1, 2) r
     ), '[]'::jsonb),
