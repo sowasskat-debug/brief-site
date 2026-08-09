@@ -1114,12 +1114,28 @@ html, body {
 .sr-sym{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;
   color:var(--muted,#6b7280);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .sr-svg{display:block;width:100%;height:auto}
+/* Wykres jest PRZYCISKIEM rozsuwającym legendę (2026-08-09) — stąd reset guzika, a nie własny
+   klikacz na divie: dzięki temu działa Enter/Spacja i czytnik ekranu mówi „rozwinięte/zwinięte". */
+.sr-klik{display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.sr-klik:focus-visible{outline:2px solid var(--red,#e01f0f);outline-offset:3px;border-radius:6px}
+.sr-hint{display:flex;align-items:center;gap:5px;margin-top:2px;
+  font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted,#6b7280)}
+.sr-hint i{font-style:normal;transition:transform .15s ease}
+.sr-klik:hover .sr-hint{color:var(--red,#e01f0f)}
+.sr-klik.open .sr-hint i{transform:rotate(180deg)}
+.sr-hint-z,.sr-klik.open .sr-hint-w{display:none}
+.sr-klik.open .sr-hint-z{display:inline}
 .sr-dot{fill:var(--bg,#fff);stroke:var(--muted,#6b7280);stroke-width:1.6}
 .sr-dot.on{fill:var(--red,#e01f0f);stroke:var(--red,#e01f0f)}
 .sr-num{font-family:'Space Mono',monospace;font-size:7px;font-weight:700;text-anchor:middle;
   fill:var(--muted,#6b7280)}
 .sr-dot.on + .sr-num{fill:#fff}
 .sr-legenda{display:flex;flex-direction:column;gap:1px;margin-top:6px}
+/* 🔴 KONIECZNE: selektor klasy bije wbudowane `[hidden]{display:none}`, więc bez tej linii legenda
+   rysowała się mimo atrybutu (`el.hidden === true`, a lista na ekranie). Ta sama pułapka czeka
+   przy każdym `hidden` na elemencie, któremu nadajemy własny `display`. */
+.sr-legenda[hidden]{display:none}
 .sr-leg{display:flex;align-items:baseline;gap:8px;text-decoration:none;color:inherit;
   padding:3px 0;border-top:1px solid var(--rule,#e5e7eb)}
 .sr-leg:first-child{border-top:0}
