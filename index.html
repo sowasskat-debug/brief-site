@@ -908,6 +908,103 @@ function quotesHtml(item){
   return `<div class="q-box" data-stan="${escAttr(stan)}" title="Notowania: stan na ${escAttr(stan)} · dane opóźnione">${wiersze}</div>`;
 }
 
+// ══ „Saga × rynek" — etapy wątku naniesione na wykres ceny (2026-08-09) ══
+// Pomysł właściciela („zajebiste"), odłożony do czasu, aż bot zacznie zapisywać `published_at`.
+// 🔴 DATA PUBLIKACJI U ŹRÓDŁA, NIE `added_at` — kropka ma stać tam, gdzie rynek MÓGŁ się dowiedzieć.
+// `added_at` to czas PRZETWORZENIA przez bota i bywa o godziny późniejszy (poczekalnia między biegami,
+// okno selekcji 60 min wstecz), więc naniesiony na wykres pokazywałby reakcję rynku w ZŁYM miejscu —
+// czyli fałszowałby dokładnie ten wniosek, który wykres ma podpierać. Fallback na `added_at` jest
+// konieczny: tor X-feeda ŚWIADOMIE nie dostaje daty nigdy, a stare newsy jej nie mają.
+// ⚠️ Szerokość viewBoxa dobrana POMIAREM, nie na oko: przy 320 sąsiednie sesje dzieliło ~10 px, czyli
+// mniej niż średnica kropki — etapy z kolejnych dni zlewały się w plamę (widoczne na podglądzie: 2 i 3).
+// 420 daje ~13,5 px odstępu przy 30 sesjach. `padX` musi być ≥ promienia najgrubszej kropki, inaczej
+// ostatni etap (a to zwykle TEN news) jest przycięty krawędzią SVG — tak było przy padX 10 i r 7.
+const SAGA_W = 420, SAGA_H = 104;
+function sagaDataWezla(n){ return String(n && (n.published_at || n.added_at) || '').slice(0,10); }
+function sagaRynekHtml(item){
+  if (!item || !Array.isArray(item.chart) || !item.chart.length) return '';
+  if (!QUOTES || !QUOTES.series) return '';
+  const t = threadForItem(item);
+  if (!t || !Array.isArray(t.nodes) || t.nodes.length < 2) return '';
+  // Pierwsza seria itemu, która MA daty. Serie zachowane z poprzedniego biegu bota (albo zapisane przed
+  // 09.08) niosą same `punkty` — wtedy nie ma po czym nanosić kropek i sekcja się nie pokazuje.
+  let sym = null, s = null;
+  for (const k of item.chart){
+    const kand = QUOTES.series[k];
+    if (kand && Array.isArray(kand.punkty) && kand.punkty.length >= 2
+        && Array.isArray(kand.daty) && kand.daty.length === kand.punkty.length){ sym = k; s = kand; break; }
+  }
+  if (!s) return '';
+
+  // Etap → indeks na osi X. ⚠️ Rozdzielczość to DZIEŃ (wykres ma dzienne zamknięcia), więc szukamy
+  // ostatniej sesji NIE PÓŹNIEJSZEJ niż data etapu: news z soboty ląduje na piątkowym zamknięciu,
+  // bo wcześniej rynek nie miał jak zareagować.
+  const doIndeksu = d => {
+    if (!d) return -1;
+    let idx = -1;
+    for (let i = 0; i < s.daty.length; i++){ if (s.daty[i] <= d) idx = i; else break; }
+    return idx;                       // -1 = etap starszy niż okno wykresu
+  };
+  const kluczBiez = watekKluczBiezacego(item, t);
+  const grupy = new Map();            // indeks sesji → { i, wezly:[] }
+  let pozaOknem = 0;
+  t.nodes.forEach(n => {
+    const i = doIndeksu(sagaDataWezla(n));
+    if (i < 0) { pozaOknem++; return; }
+    if (!grupy.has(i)) grupy.set(i, { i, wezly: [] });
+    grupy.get(i).wezly.push(n);
+  });
+  if (grupy.size < 2) return '';      // jedna kropka nie opowiada żadnej historii
+
+  // ⚠️ ŚWIADOME ODSTĘPSTWO od konwencji „najnowszy etap na górze" (obowiązującej w watki.html, osi pod
+  // postem i karcie og?w=1): oś CZASU wykresu biegnie w lewo→prawo i odwrócić się jej nie da, więc
+  // numeracja i legenda idą OD NAJSTARSZEGO. Inaczej numer 1 stałby po prawej stronie wykresu.
+  const etapy = [...grupy.values()].sort((a,b) => a.i - b.i);
+  const punkty = s.punkty, min = Math.min(...punkty), max = Math.max(...punkty);
+  const rozp = (max - min) || 1, padX = 14, padY = 12;
+  const X = i => (i / (punkty.length - 1)) * (SAGA_W - padX*2) + padX;
+  const Y = v => SAGA_H - padY - ((v - min) / rozp) * (SAGA_H - padY*2);
+  const wzrost = (s.zmiana_okres_pct || 0) >= 0;
+  const kolor = wzrost ? '#0f7b3d' : '#c81e1e';
+  const d = punkty.map((v,i) => (i?'L':'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+  const pod = `${d} L${X(punkty.length-1).toFixed(1)} ${SAGA_H} L${X(0).toFixed(1)} ${SAGA_H} Z`;
+  const gid = 'sr' + Math.random().toString(36).slice(2,8);
+
+  let kropki = '', legenda = '';
+  etapy.forEach((g, nr) => {
+    const teraz = g.wezly.some(n => normThreadKey(n.text) === kluczBiez);
+    const x = X(g.i), y = Y(punkty[g.i]);
+    kropki += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${teraz ? 6.5 : 5}" class="sr-dot${teraz ? ' on' : ''}"/>`
+           +  `<text x="${x.toFixed(1)}" y="${(y + 2.8).toFixed(1)}" class="sr-num">${nr+1}</text>`;
+    g.wezly.forEach((n, j) => {
+      const dataPL = (sagaDataWezla(n) || '').slice(5).split('-').reverse().join('.');
+      // Kilka etapów tej samej sesji dzieli JEDNĄ kropkę (weekend spada na piątkowe zamknięcie).
+      // Kolejne wiersze dostają „↳", a nie pusty numer — pusta komórka czytała się jak brakujące dane.
+      legenda += `<a class="sr-leg${teraz ? ' on' : ''}" href="${escAttr(watekNodeLink(n))}">`
+              +  `<span class="sr-leg-nr">${j === 0 ? (nr+1) : '<i>↳</i>'}</span>`
+              +  `<span class="sr-leg-dt">${escHtml(dataPL)}</span>`
+              +  `<span class="sr-leg-tx">${escHtml(n.text || '')}</span></a>`;
+    });
+  });
+  // Etapy sprzed okna wykresu NIE są przemilczane — inaczej saga wyglądałaby na krótszą, niż jest.
+  const stopka = pozaOknem
+    ? `<div class="sr-foot">+ ${pozaOknem} ${pozaOknem === 1 ? 'wcześniejszy etap' : 'wcześniejszych etapów'} sprzed okna wykresu</div>` : '';
+  const nSesji = s.punktow_okres || punkty.length;
+  return `<div class="sr-box">
+    <div class="sr-head"><span class="sr-tt">Saga na wykresie</span>`
+    + `<span class="sr-sym">${escHtml(sym)} · ${escHtml(s.nazwa || sym)} · ${nSesji} sesji</span></div>
+    <svg class="sr-svg" viewBox="0 0 ${SAGA_W} ${SAGA_H}" role="img" aria-label="Etapy wątku naniesione na wykres ${escAttr(sym)}">
+      <defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="${kolor}" stop-opacity=".22"/>
+        <stop offset="100%" stop-color="${kolor}" stop-opacity="0"/></linearGradient></defs>
+      <path d="${pod}" fill="url(#${gid})"/>
+      <path d="${d}" fill="none" stroke="${kolor}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+      ${kropki}
+    </svg>
+    <div class="sr-legenda">${legenda}</div>${stopka}
+  </div>`;
+}
+
 function expandBlock(item) {
   const slug = itemSlug(item.text);
   // Wpis z archiwum niesie _archiveDate/_dose — link MUSI wtedy prowadzić do konkretnego dnia,
@@ -935,6 +1032,7 @@ function expandBlock(item) {
       <div class="expand-article">${escHtml(item.article)}</div>
       ${impactHtml(item)}
       ${quotesHtml(item)}
+      ${sagaRynekHtml(item)}
       ${watekHtml(item)}
       <div class="expand-divider"></div>
       <div class="expand-source-row">
@@ -1140,6 +1238,7 @@ function expandBlockArchive(item, dateStr, dose) {
       <div class="expand-article">${escHtml(item.article)}</div>
       ${impactHtml(item)}
       ${quotesHtml(item)}
+      ${sagaRynekHtml(item)}
       ${watekHtml(item)}
       <div class="expand-divider"></div>
       <div class="expand-source-row">
@@ -2383,6 +2482,7 @@ function dtShowDetail(item) {
         : `<div class="dt-detail-no-article">Brak rozszerzonego artykułu dla tego wpisu.</div>`}
       ${impactHtml(item)}
       ${quotesHtml(item)}
+      ${sagaRynekHtml(item)}
       ${watekHtml(item)}
       <div class="dt-source-row">
         <div>

@@ -9,6 +9,12 @@ niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
+> ✅ **AKTUALIZACJA 2026-08-09:** punkt A ZBUDOWANY (front: `sagaRynekHtml` w tym PR; bot: `daty`
+> w `quotes.json` + retencja sag 30 dni / wątek gaśnie po 7 dniach ciszy — FinancialNewsBot#115).
+> Pomiar pokrycia z warunku wejścia: **93,9%** w briefs, **76,9%** w dawkach z 08.08 — sufit osiągnięty.
+> Punkt 4 (powody odrzuceń) też ZAMKNIĘTY — kody w polu `powod` lejka, front bez zmian.
+> Kropki pojawią się po pierwszym biegu bota z nowym kodem (stare serie nie mają `daty`).
+
 ## 🔴 A. „Saga × rynek" — ZAPROJEKTOWANA, CZEKA NA DANE (nie buduj przed czasem)
 
 Pomysł zaakceptowany przez właściciela („zajebiste"): pod „Wpływ na rynek" przy sadze z instrumentem
@@ -226,6 +232,30 @@ Pomiar offline w `financialnewsbot/CLAUDE.md` (sekcja „Filtr spójności klast
 | ⚠️ Wykresy notowań | `briefs.json`, pole `chart` | inne nazewnictwo Haiku może dać MNIEJ wykresów |
 | **Skuteczność fallbacku EN** | `brief_health` | `enrich_enfallback_z_oryginalu` vs `_sukces` |
 | **`poczekalnia_utknelo`** | `brief_health` | było **5 na 10** trafiających do poczekalni |
+| 🆕 **Amerykański wyścig wyborczy** | zakładka Lejek (Polymarket, Kalshi) | prawybory/kursy wyścigów mają być `odrzucony`; ustawy Kongresu mają PRZECHODZIĆ |
+
+---
+
+## ✅ Co zrobiono 2026-08-09 — amerykański wyścig wyborczy wypada z selekcji (bot, PR)
+
+Zgłoszenie właściciela ze zrzutów dawki porannej: *„zbyt mało istotne newsy z punktu widzenia
+Polaka/Europejczyka"* — prawybory na gubernatora Minnesoty i wyścig do Senatu z Teksasu, obok siebie.
+W `lejek.json` widać, że w oryginale to były **kursy zakładów** (Polymarket „55% chance", Kalshi
+„NEW FRONTRUNNER"), które selekcja przepisała na zdanie faktograficzne — a reguła o czystych
+prawdopodobieństwach celuje w FORMĘ zapisu (procent w nagłówku), nie w przedmiot newsa.
+Do tego dwa wyjątki działały jak przepustka: „kluczowe wybory federalne" (mandat federalny, ale
+wyścig stanowy) i „przełomowe sondaże UE/G7/G20" (mówi wprost „zmiana lidera rankingu", a nagłówek
+brzmiał „NEW FRONTRUNNER"; USA jest w G7/G20).
+
+Naprawa w `WSPOLNE_ODRZUCENIA` (nowa reguła + zawężone dwa wyjątki) i w promptach obu feedów,
+którymi to weszło. Zmierzone na 4885 opublikowanych pozycjach z 40 dni: **9 wydarzeń tej klasy**,
+plus **7 wpisów tej samej klasy w `rejected.json`** — właściciel kasuje je ręcznie od 01.07, ale to
+warstwa 40 przykładów, więc lipcowy wzorzec dawno z niej wypadł. Szczegóły i lista kontrolna
+„co ma dalej przechodzić" w `financialnewsbot/CLAUDE.md`, sekcja „Amerykański wyścig wyborczy jak sport".
+
+⚠️ **Dwa newsy ze zrzutów siedzą jeszcze w `briefs.json`** (dawka poranna, poz. 07 i 08) — reguła
+działa od najbliższego biegu po merge'u, danych wstecz nie ruszy. Do usunięcia z knagi przyciskiem
+„Usuń" (dopisze je przy okazji do `rejected.json`).
 
 ---
 
