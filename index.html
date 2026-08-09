@@ -1045,9 +1045,17 @@ function sagaRynekHtml(item){
   const stopka = pozaOknem
     ? `<div class="sr-foot">+ ${pozaOknem} ${pozaOknem === 1 ? 'wcześniejszy etap' : 'wcześniejszych etapów'} sprzed okna wykresu</div>` : '';
   const nSesji = s.punktow_okres || punkty.length;
+  // ⚠️ LEGENDA ZWINIĘTA, ROZSUWA JĄ DOPIERO KLIK W WYKRES (2026-08-09, życzenie właściciela ze zrzutem).
+  // Saga potrafi mieć 20 węzłów, a legenda to jeden wiersz na węzeł — przy sadze Ormuz (6 etapów, 20
+  // wierszy) lista była DŁUŻSZA niż cały artykuł, pod którym stoi, i spychała treść poza ekran.
+  // Wykres zostaje widoczny zawsze: on niesie sygnał („kiedy rynek się dowiedział"), lista to rozwinięcie.
+  const lid = 'srl-' + gid;
+  const nEtapow = etapy.reduce((a, g) => a + g.wezly.length, 0);
   return `<div class="sr-box">
     <div class="sr-head"><span class="sr-tt">Saga na wykresie</span>`
     + `<span class="sr-sym">${escHtml(sym)} · ${escHtml(s.nazwa || sym)} · ${nSesji} sesji</span></div>
+    <button type="button" class="sr-klik" aria-expanded="false" aria-controls="${lid}"
+            onclick="toggleSagaLegenda(this,'${lid}')">
     <svg class="sr-svg" viewBox="0 0 ${SAGA_W} ${SAGA_H}" role="img" aria-label="Etapy wątku naniesione na wykres ${escAttr(sym)}">
       <defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">
         <stop offset="0%" stop-color="${kolor}" stop-opacity=".22"/>
@@ -1056,8 +1064,24 @@ function sagaRynekHtml(item){
       <path d="${d}" fill="none" stroke="${kolor}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
       ${kropki}
     </svg>
-    <div class="sr-legenda">${legenda}</div>${stopka}
+      <span class="sr-hint"><span class="sr-hint-w">Kliknij wykres — ${nEtapow} ${odmianaEtap(nEtapow)} sagi</span>`
+    + `<span class="sr-hint-z">Zwiń etapy</span><i aria-hidden="true">▾</i></span>
+    </button>
+    <div class="sr-legenda" id="${lid}" hidden>${legenda}${stopka}</div>
   </div>`;
+}
+function odmianaEtap(n){
+  if (n === 1) return 'etap';
+  const d = n % 10, s = n % 100;
+  return (d >= 2 && d <= 4 && !(s >= 12 && s <= 14)) ? 'etapy' : 'etapów';
+}
+function toggleSagaLegenda(btn, id){
+  const el = document.getElementById(id);
+  if (!el) return;
+  const otwieramy = el.hidden;
+  el.hidden = !otwieramy;
+  btn.setAttribute('aria-expanded', otwieramy ? 'true' : 'false');
+  btn.classList.toggle('open', otwieramy);
 }
 
 function expandBlock(item) {
