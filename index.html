@@ -524,6 +524,10 @@ function itemSlug(text) {
 }
 
 async function shareItem(url, title) {
+  // Adres hashowy nie ma jak pokazać karty podglądu (fragment nie dociera do serwera) — patrz
+  // `linkUdostepnienia`. Podmiana TU, a nie w szablonach przycisków, bo dopiero tu znamy stan
+  // manifestu z chwili kliknięcia, a nie z chwili rysowania kafla.
+  url = linkUdostepnienia(url);
   if (navigator.share) {
     try {
       await navigator.share({ title: 'BrifUp', text: title, url });
@@ -664,6 +668,57 @@ async function refreshThreadsIfChanged(){
   const przed = THREADS && THREADS.generated_at;
   await loadThreads();
   return !!THREADS && THREADS.generated_at !== przed;
+}
+
+// ══ Link do udostępnienia — STUB, nie adres hashowy (2026-08-09) ══════════════
+// 🔴 Zgłoszenie właściciela: link wysłany na Messengera pokazywał kartę z samą domeną „brifup.com" —
+// bez tytułu i BEZ ŻADNEJ grafiki, nawet tej podstawowej. Przycisk „Udostępnij" wysyłał adres
+// HASHOWY (`brifup.com/#evening/<slug>`), a fragment po `#` nigdy nie dociera do serwera, więc
+// crawler Facebooka nie miał z czego zbudować karty. Knaga rozwiązała to dawno (`linkDoUdostepnienia`),
+// publiczny front nigdy tej poprawki nie dostał. Stub `s/<slug>.html` ma własne `og:*` i grafikę
+// z osią wątku — zmierzone: dla tego samego newsa stub oddawał 200 z poprawnym `og:title`/`og:image`.
+//
+// ⚠️ SPRAWDZENIE MUSI BYĆ SYNCHRONICZNE. Kuszące jest zrobić HEAD na stubie w chwili kliknięcia
+// (tak robi knaga), ale tam przycisk tylko wypełnia pole tekstowe. Tu wołamy `navigator.share`,
+// które wymaga świeżej aktywacji użytkownika — `await` przed nim zabiera ją na iOS i arkusz
+// udostępniania NIE OTWIERA SIĘ WCALE. Dlatego manifest `s/_index.json` wczytujemy z góry,
+// a przy kliknięciu robimy zwykły `Set.has`.
+//
+// 🔴 MANIFESTU `s/_index.json` NIE DA SIĘ ODCZYTAĆ Z DOMENY — zmierzone 2026-08-09:
+// `brifup.com/s/_index.json` oddaje **404**, podczas gdy `brifup.com/s/<slug>.html` oddaje 200.
+// Jekyll pomija pliki, których nazwa zaczyna się od `_`, więc manifest nigdy nie trafia do buildu
+// Pages. Plik JEST w repo i bot go utrzymuje (retencja 14 dni), ale front go nie zobaczy — pierwsza
+// wersja tej poprawki czytała właśnie jego i po cichu nie działała, bo `loadStuby` łapało 404
+// w `catch` i zostawiało pusty zbiór. **Nie odgrzewaj pomysłu „wczytajmy manifest"** bez wpisania
+// go wprost w `include:` w `_config.yml`.
+//
+// Zamiast tego pytamy o SAM STUB metodą HEAD — z wyprzedzeniem, w chwili OTWARCIA artykułu,
+// a nie kliknięcia „Udostępnij" (patrz `linkUdostepnienia`: przy kliknięciu musi być synchronicznie).
+// Koszt: jedno lekkie żądanie na otwarty artykuł, wynik zapamiętany na czas wizyty.
+const STUB_ZNANE = new Map();   // slug → bool
+function sprawdzStub(slug){
+  if (!slug || STUB_ZNANE.has(slug)) return;
+  STUB_ZNANE.set(slug, false);  // wstaw OD RAZU, żeby drugie otwarcie nie wysłało drugiego żądania
+  fetch(`https://brifup.com/s/${slug}.html`, { method:'HEAD' })
+    .then(r => { if (r.ok) STUB_ZNANE.set(slug, true); })
+    .catch(() => {});
+}
+// 🔴 PODMIANA W CHWILI KLIKNIĘCIA, nie przy renderze — i SYNCHRONICZNIE. Kuszące jest zrobić HEAD
+// dopiero po kliknięciu (tak robi knaga), ale tam przycisk wypełnia pole tekstowe, a tu wołamy
+// `navigator.share`, które wymaga świeżej aktywacji użytkownika: `await` przed nim zabiera ją na iOS
+// i arkusz udostępniania NIE OTWIERA SIĘ WCALE. Stąd podział: pytanie o stub leci przy otwarciu
+// artykułu (`sprawdzStub`), a kliknięcie robi zwykły odczyt z mapy.
+//
+// Slug bierzemy z ostatniego segmentu adresu — działa dla obu formatów naraz:
+// `#<dawka>/<slug>` i `#archive/<data>/<dawka>/<slug>`.
+//
+// Fallback na adres hashowy zostaje dla trzech realnych przypadków: (a) news sprzed chwili — stub
+// powstaje na KOŃCU biegu bota, a `briefs.json` na początku (zmierzone: mediana 5,2 min różnicy),
+// (b) news starszy niż 14 dni — retencja stubów, (c) news będący podpozycją klastra, dla którego bot
+// stuba nie tworzy. Gorsza karta jest lepsza niż link prowadzący w 404.
+function linkUdostepnienia(adresHashowy){
+  const slug = (adresHashowy || '').split('/').pop();
+  return (slug && STUB_ZNANE.get(slug)) ? `https://brifup.com/s/${slug}.html` : adresHashowy;
 }
 function watekWhen(node){
   const glyph = { morning:'☀', afternoon:'◑', evening:'☽' }[node.dose] || '·';
@@ -1015,6 +1070,7 @@ function expandBlock(item) {
   const shareUrl = (item._archiveDate && item._dose)
     ? `https://brifup.com/#archive/${item._archiveDate}/${item._dose}/${slug}`
     : `https://brifup.com/#${currentDose}/${slug}`;
+  sprawdzStub(slug);   // otwarty artykuł = kandydat do udostępnienia; pytamy ZANIM padnie klik
   const shareBtn = `<button class="expand-share-btn"
     onclick="event.stopPropagation();shareItem('${escAttr(esc(shareUrl))}','${escAttr(esc(item.text))}')"
     ><span class="expand-share-icon">↑</span>Udostępnij</button>`;
@@ -1223,6 +1279,7 @@ function expandBlockArchive(item, dateStr, dose) {
   const shareBtn = (dateStr && dose) ? (() => {
     const slug = itemSlug(item.text);
     const shareUrl = `https://brifup.com/#archive/${dateStr}/${dose}/${slug}`;
+    sprawdzStub(slug);
     return `<button class="expand-share-btn"
       onclick="event.stopPropagation();shareItem('${escAttr(esc(shareUrl))}','${escAttr(esc(item.text))}')"
       ><span class="expand-share-icon">↑</span>Udostępnij</button>`;
@@ -2489,6 +2546,7 @@ function dtShowDetail(item) {
   const shareUrl = (item._archiveDate && item._dose)
     ? `https://brifup.com/#archive/${item._archiveDate}/${item._dose}/${shareSlug}`
     : `https://brifup.com/#${currentDose}/${shareSlug}`;
+  sprawdzStub(shareSlug);
   const shareBtn = `<button class="dt-share-btn" onclick="shareItem('${escAttr(esc(shareUrl))}','${escAttr(esc(item.text))}')"><span class="dt-share-icon">↑</span>Udostępnij</button>`;
   const allItems = cache[currentDose] || [];
   const related = [];
@@ -2702,6 +2760,11 @@ async function liveTick() {
   // quotes.json bot zapisuje w tym samym biegu — notowania muszą nadążać za treścią, inaczej kafel
   // pokazuje cenę sprzed godzin przy świeżym newsie (ta sama pułapka co z mapą wątków).
   const notowaniaZmienione = await refreshQuotesIfChanged();
+  // Stuby bot dopisuje na KOŃCU tego samego biegu, więc dla newsa opublikowanego przed chwilą HEAD
+  // mógł wrócić z „nie ma". Czyścimy negatywne wpisy przy każdej realnej zmianie briefs.json —
+  // bez tego czytelnik siedzący w otwartej apce udostępniałby świeży news adresem hashowym
+  // (czyli bez karty) aż do przeładowania strony. Pozytywy zostają: stub nie znika w trakcie wizyty.
+  for (const [slug, jest] of STUB_ZNANE) if (!jest) STUB_ZNANE.delete(slug);
   const pobrano = await pollLiveUpdates(watkiZmienione || notowaniaZmienione);
   // `tag === null` = HEAD niedostępny; wtedy i tak lecimy pełnym pollem przy każdym tiku.
   if (pobrano) lastBriefsTag = tag;
