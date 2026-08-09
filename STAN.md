@@ -125,11 +125,30 @@ OneSignal (Settings → Web Configuration): czy domena to `brifup.com` i czy web
 
 ---
 
-## ✅ 3. GDELT — KRYTERIUM SPEŁNIONE (sprawdzone 2026-08-07), finder ZOSTAJE
+## ✅ 3. GDELT — ZOSTAJE, ale PRZESUNIĘTY NA KONIEC łańcucha (2026-08-09)
 
-**Rozstrzygnięte.** Zmierzone 2026-08-07 z serwera po tygodniu działania poprawki: sumy tygodniowe
-`finder_gdelt_fakty` **> 0** (PL 5, EN 26 — fallback EN dowozi więcej niż tor podstawowy). Kryterium
-z tego punktu („`finder_gdelt_fakty` przez dobę > 0 → zostaje") **spełnione — GDELT zostaje w łańcuchu.**
+**Rozstrzygnięte dwuetapowo.** 2026-08-07 kryterium („`finder_gdelt_fakty` przez dobę > 0") uznano
+za spełnione: tygodniowe sumy PL 5 / EN 26. 🔴 **2026-08-09 szersze okno pokazało, że werdykt był
+zbyt hojny wobec toru PODSTAWOWEGO.** Zmierzone na `brief_health.json`, 200 biegów (05.08 → 09.08):
+
+| tor | próby | fakty | sukcesy |
+|---|---|---|---|
+| `gdelt` (podstawowy, stał na **2. pozycji**) | 654 | 2 | **0** |
+| `gdelt_en` (awaryjny, stoi na końcu) | 304 | 24 | 7 (2,3%) |
+
+Dla porównania w tym samym oknie: `googlenews_en` 31,7%, `wiarygodne` 15,7%, `googlenewspl` 8,6%.
+
+🔴 **Kosztem była LATENCJA, nie tokeny:** `GdeltFindFacts` trzyma globalny `_gdeltLock` z odstępem
+5,5 s, więc 958 wywołań w 4 dni to do **~1,5 h czekania wciśniętego w ścieżkę publikacji** — za zero
+faktów na torze, który dostawał niemal każdy item. Finder **przesunięty na KONIEC** głównego łańcucha
+(FinancialNewsBot#120): odpala się tylko dla itemów, którym i tak nikt nie znalazł źródła. Tor EN
+nietknięty — tam dowozi 7 uratowanych newsów i już stoi ostatni.
+
+⚠️ **Do sprawdzenia po tygodniu:** czy `do_poczekalni` nie urosło (byłby to znak, że tor podstawowy
+jednak coś ratował, tylko liczniki tego nie pokazywały). ⚠️ Skuteczności finderów **nie porównuj
+wprost** — każdy widzi inną resztkę populacji zależnie od pozycji w łańcuchu; dla GDELT to bez
+znaczenia, bo zero jest zerem niezależnie od pozycji.
+
 Poniżej oryginalny zapis dochodzenia dla kontekstu.
 
 ---
