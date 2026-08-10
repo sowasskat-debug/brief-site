@@ -17,8 +17,15 @@
   --violet: #6d28d9;
   --top-h:  58px;
   --tab-h:  44px;
+  /* 🔴 `color-scheme` MUSI być zadeklarowany, inaczej przeglądarka maluje elementy systemowe
+     (paski przewijania, pola formularzy, tło canvasa) w wariancie JASNYM niezależnie od naszych
+     zmiennych — w motywie ciemnym dawało to biały pasek przewijania przyklejony do czarnej treści
+     (zgłoszenie właściciela ze zrzutem, 2026-08-10). To nie jest kosmetyka CSS-a strony, tylko
+     informacja DLA przeglądarki; sam `background: var(--bg)` na kontenerze tego nie załatwia. */
+  color-scheme: light;
 }
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg:    #0f0f0f;
   --gray1: #191919;
   --gray2: #222222;
@@ -1222,3 +1229,34 @@ html, body {
 .watek-last .watek-metaline { color: #b91c1c; }
 [data-theme="dark"] .watek-last .watek-metaline { color: #f87171; }
 .watek-when { text-transform: uppercase; }
+
+/* ── Paski przewijania (2026-08-10, zgłoszenie właściciela: „pasek na nocnym wygląda chujowo") ──
+   `color-scheme` wyżej naprawia SAM WARIANT (jasny/ciemny) i to jest naprawa właściwa — poniżej
+   tylko dopasowanie do gazetowej estetyki: cienki, bez strzałek, kciuk w kolorze linii (`--rule`),
+   czyli tego samego, którym rozdzielamy wpisy. Dzięki zmiennym motyw ciemny obsługuje się sam.
+   ⚠️ Celowo TYLKO na kontenerach desktopowych i nakładkach — na telefonie pasek jest nakładkowy
+   (znika sam) i stylowanie go potrafi zrobić z niego stale widoczną kreskę. */
+.dt-index, .dt-feed-list, .dt-detail, .archive-body {
+  scrollbar-width: thin;                       /* Firefox */
+  scrollbar-color: var(--rule) transparent;
+}
+.dt-index::-webkit-scrollbar,
+.dt-feed-list::-webkit-scrollbar,
+.dt-detail::-webkit-scrollbar,
+.archive-body::-webkit-scrollbar { width: 10px; }
+.dt-index::-webkit-scrollbar-track,
+.dt-feed-list::-webkit-scrollbar-track,
+.dt-detail::-webkit-scrollbar-track,
+.archive-body::-webkit-scrollbar-track { background: transparent; }
+.dt-index::-webkit-scrollbar-thumb,
+.dt-feed-list::-webkit-scrollbar-thumb,
+.dt-detail::-webkit-scrollbar-thumb,
+.archive-body::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border-radius: 6px;
+  border: 3px solid var(--bg);                 /* wcięcie: kciuk nie dotyka krawędzi treści */
+}
+.dt-index::-webkit-scrollbar-thumb:hover,
+.dt-feed-list::-webkit-scrollbar-thumb:hover,
+.dt-detail::-webkit-scrollbar-thumb:hover,
+.archive-body::-webkit-scrollbar-thumb:hover { background: var(--muted); }
