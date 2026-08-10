@@ -495,6 +495,14 @@ sam guard schematu inline. **ZASADA:** każdy nowy href z danych → przez `safe
   Poniżej 460 px nazwa chowa się całkiem (zostawała z niej sama wielokropkowa końcówka).
 - Wariant wizualny wybrany przez właściciela: **A (pasek gazetowy)**, nie ciemny kafel w stylu X.
 - Źródła danych i ich granice — patrz `financialnewsbot/CLAUDE.md`, sekcja „Notowania".
+- 🔴 **KLUCZE SERII ROPY ZMIENIONE `BNO`→`BRENT`, `USO`→`WTI` (2026-08-10).** Zgłoszenie właściciela: pod
+  artykułem „Brent przebyła 84 USD/bbl" stał kafel `BNO 46,93 USD`. Ropa jechała na funduszach ETF, a te
+  trzymają kontrakty terminowe — **nie ma mnożnika** na cenę baryłki, więc bot przeszedł na realne notowania
+  ze Stooq. **95 referencji `chart:[...]` w `briefs.json` i `archive/*.json` PRZEPIĘTE** w tym samym commicie
+  — bez tego pozycje z archiwum zostałyby z kluczem, którego `quotes.json` już nie zna, czyli bez wykresu.
+  ⚠️ **Dokładając instrument, którego klucz kiedykolwiek trzeba będzie zmienić, licz się z migracją archiwum**
+  — front dopasowuje serię po kluczu DOSŁOWNIE. Przy XAU dlatego klucz zamrożono; tu zmieniał się instrument,
+  nie jednostka, a **na telefonie (<460 px) `.q-name` jest ukryta**, więc czytelnik widziałby sam ticker `BNO`.
 
 ## Udostępnij na X — ✅ W PANELU (2026-08-01), ⚠️ na `index.html` DALEJ NIEZAIMPLEMENTOWANE
 Życzenie właściciela: wrzucać 3-4 najlepsze newsy dziennie na X. Wybrany wariant: **właściciel sam wybiera
