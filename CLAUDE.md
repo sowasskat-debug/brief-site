@@ -595,6 +595,21 @@ bez tytułu i **bez żadnej grafiki, nawet tej podstawowej**.
 - **Fallback na adres hashowy zostaje** dla trzech realnych przypadków: news sprzed chwili (stub
   powstaje na końcu biegu bota, mediana 5,2 min), news starszy niż 14 dni (retencja stubów),
   podpozycja klastra (bot stuba nie tworzy). Gorsza karta jest lepsza niż link w 404.
+- 🔴 **`sprawdzStub` woła `setCardOpen`, NIE `expandBlock` (2026-08-10).** Wywołanie siedziało w
+  `expandBlock`/`expandBlockArchive`, czyli w funkcjach **generujących HTML** — a te lecą dla każdego
+  kafla, bohatera i podpozycji przy KAŻDYM renderze, nie przy otwarciu artykułu (jak twierdził
+  komentarz obok `sprawdzStub`). 📊 Zmierzone w Chromium na produkcyjnym wydaniu, widok telefonu:
+  **26 równoległych żądań HEAD do brifup.com w chwili wczytania → 0 po poprawce**, a otwarcie karty
+  daje **dokładnie jedno**, o własny slug. Render bez zmian (hero + 22 kafle), zero błędów JS,
+  podmiana linku na stub dalej synchroniczna (warunek `navigator.share` na iOS).
+  ⚠️ Serię pogarszał `liveTick`: kasuje negatywne wpisy z `STUB_ZNANE` przy każdej zmianie
+  `briefs.json`, więc całe 26 odpalało się OD NOWA po każdym zapisie bota (~co 30 min przy otwartej
+  karcie). **ZASADA: nic sieciowego w funkcjach budujących HTML** — one wyglądają jak „render
+  jednego kafla", a wołane są dla wszystkich naraz.
+  ⚠️ `.card-expand` jest **rodzeństwem** karty, nie dzieckiem — wiązanie po `parentElement` trafiłoby
+  w cudzy kafel; `setCardOpen` szuka po id (`item-<id>`/`group-<id>` → `exp-<id>`).
+  ⚠️ Desktopowy `dtShowDetail` woła `sprawdzStub` dalej wprost i **tak ma zostać** — tam otwarcie
+  panelu to realne otwarcie jednego artykułu, czyli jedno żądanie na klik.
 - **Negatywne wpisy w `STUB_ZNANE` czyszczone przy każdej realnej zmianie `briefs.json`** — bez tego
   czytelnik siedzący w otwartej apce udostępniałby świeży news bez karty aż do przeładowania.
   Pozytywy zostają: stub nie znika w trakcie wizyty.
