@@ -361,6 +361,29 @@ function todayLocalISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+// Offset strefy Europe/Warsaw ('+02:00' latem, '+01:00' zimą) DLA PODANEJ DATY, nie dla „teraz".
+// 🔴 Do JSON-LD `datePublished`. Było tam zaszyte na sztywno `+02:00` — od ostatniej niedzieli
+// października Warszawa wraca na CET i wszystkie daty strukturalne szłyby do Google o godzinę
+// za wysokie. Liczymy z bazy stref przeglądarki, więc zmiana czasu obsługuje się sama, a wpisy
+// z archiwum sprzed przestawienia dostają SWÓJ offset, nie dzisiejszy.
+// FAIL-SAFE: przy dacie w nieoczekiwanym formacie wracamy do '+02:00' — zachowanie sprzed zmiany.
+// ⚠️ Sprawdzamy KSZTAŁT regexem, a NIE `isNaN(new Date(...))`. Zmierzone: `new Date('smiec:00Z')`
+//    nie daje Invalid Date, tylko 1 stycznia 2000 (silnik parsuje pobłażliwie) — czyli guard na
+//    isNaN przepuszczał śmieć i zwracał styczniowe '+01:00'. Format z bota to zawsze 'YYYY-MM-DD HH:MM'.
+function offsetWarszawy(addedAt) {
+  try {
+    if (!/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(addedAt || '')) return '+02:00';
+    const d = new Date(addedAt.replace(' ', 'T') + ':00Z');
+    if (isNaN(d)) return '+02:00';
+    // Ta sama chwila opisana w UTC i w Warszawie — różnica to szukany offset.
+    const wWarszawie = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Warsaw' }));
+    const wUtc = new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const minuty = Math.round((wWarszawie - wUtc) / 60000);
+    const znak = minuty < 0 ? '-' : '+';
+    const abs = Math.abs(minuty);
+    return `${znak}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
+  } catch (e) { return '+02:00'; }
+}
 // Czy oglądana dawka to jeszcze wczorajsze wydanie (dzisiejsze jeszcze nie powstało)?
 function isPrevEdition(dose) {
   const d = doseDates[dose];
@@ -1516,7 +1539,13 @@ function updatePageMeta(dose, cfg, items) {
         ...(it.article ? { description: it.article } : {}),
         ...(it.source_url && it.source_url !== '#' ? { url: it.source_url } : {}),
         ...(it.source_name ? { publisher: { '@type': 'Organization', name: it.source_name } } : {}),
-        ...(it.added_at ? { datePublished: it.added_at.replace(' ', 'T') + ':00+02:00' } : {}),
+        // 🔴 OFFSET LICZONY, NIE ZASZYTY (2026-08-10). Było tu na sztywno `+02:00`, czyli czas LETNI.
+        // `added_at` jest warszawski, więc od ostatniej niedzieli października (powrót na CET, +01:00)
+        // WSZYSTKIE daty strukturalne szłyby do Google o godzinę za wysokie — po cichu, bo JSON-LD
+        // nikt nie ogląda gołym okiem. To ta sama klasa pułapki co `SupabaseTs` w bocie: znacznik bez
+        // offsetu plus zgadywana strefa. Offset bierzemy z bazy stref przeglądarki DLA TEJ KONKRETNEJ
+        // DATY (nie dla „teraz"), żeby wpisy z archiwum sprzed zmiany czasu też miały swój własny.
+        ...(it.added_at ? { datePublished: it.added_at.replace(' ', 'T') + ':00' + offsetWarszawy(it.added_at) } : {}),
       }
     }))
   };
