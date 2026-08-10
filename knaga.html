@@ -375,8 +375,9 @@ input[type=password], input[type=text], input[type=email] {
     <div class="x-licznik" id="xLicznik"></div>
     <div class="x-modal-akcje">
       <button class="btn" id="xOtworz" onclick="wyslijNaX()">Otwórz X z tą treścią</button>
-      <button class="btn" id="xKarta" onclick="pobierzKarte(false)">Pobierz kartę</button>
-      <button class="btn" id="xKartaWatek" onclick="pobierzKarte(true)" style="display:none">Pobierz kartę wątku</button>
+      <button class="btn" id="xKarta" onclick="pobierzKarte('')">Pobierz kartę</button>
+      <button class="btn" id="xKartaKlaster" onclick="pobierzKarte('k')" style="display:none">Pobierz kartę klastra</button>
+      <button class="btn" id="xKartaWatek" onclick="pobierzKarte('w')" style="display:none">Pobierz kartę wątku</button>
     </div>
     <div class="x-modal-info">
       <b>Kartę</b> dołącz do posta jako obrazek — link idzie dopiero w komentarzu, więc podgląd linku
@@ -631,6 +632,14 @@ async function otworzX(slug) {
     if (infoW) infoW.style.display = w ? '' : 'none';
   });
 
+  // Karta klastra ma sens tylko dla grupy. Kotwica klastra niesie `subItems`; pojedynczy news nie.
+  const pod = Array.isArray(item.subItems) ? item.subItems.filter((x) => x && x.text) : [];
+  const btnK = document.getElementById('xKartaKlaster');
+  if (btnK) {
+    btnK.style.display = pod.length ? '' : 'none';
+    btnK.textContent = `Pobierz kartę klastra (${pod.length} newsy)`;
+  }
+
   const pole = document.getElementById('xTresc');
   const otworz = document.getElementById('xOtworz');
 
@@ -647,7 +656,12 @@ async function otworzX(slug) {
   otworz.disabled = true;
   try {
     const { data, error } = await supa.functions.invoke('gotowiec-x', {
-      body: { text: item.text, article: item.article, impact: item.impact },
+      // Przy klastrze dokładamy WSZYSTKIE ujęcia — funkcja pisze wtedy jeden post spinający całość,
+      // zamiast streszczać samą kotwicę (która przy grupie bywa parasolem bez artykułu).
+      body: {
+        text: item.text, article: item.article, impact: item.impact,
+        ...(pod.length ? { pozycje: pod.map((x) => ({ text: x.text, article: x.article })) } : {}),
+      },
     });
     if (error) throw error;
 
@@ -734,13 +748,15 @@ async function zaladujWatki() {
   return WATKI;
 }
 
-async function pobierzKarte(watek) {
+// `rodzaj`: '' = karta nagłówkowa, 'w' = oś wątku, 'k' = klaster (2026-08-10).
+// Dawniej parametr był boolem „czy wątek" — trzeci rodzaj karty się w to nie mieścił.
+async function pobierzKarte(rodzaj) {
   if (!xBiezacy) return;
   const item = xBiezacy.item;
   const slug = itemSlug(String(item.text || ''));
   const url = `${SUPABASE_URL}/functions/v1/og?d=${encodeURIComponent(currentDose)}&s=${encodeURIComponent(slug)}`
-            + (watek ? '&w=1' : '');
-  const btn = document.getElementById(watek ? 'xKartaWatek' : 'xKarta');
+            + (rodzaj ? `&${rodzaj}=1` : '');
+  const btn = document.getElementById(rodzaj === 'w' ? 'xKartaWatek' : rodzaj === 'k' ? 'xKartaKlaster' : 'xKarta');
   const etykieta = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Pobieram…'; }
   try {
@@ -750,7 +766,7 @@ async function pobierzKarte(watek) {
     if (!blob.type.startsWith('image/')) throw new Error('to nie obrazek');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `brifup-${slug}${watek ? '-watek' : ''}.png`;
+    a.download = `brifup-${slug}${rodzaj === 'w' ? '-watek' : rodzaj === 'k' ? '-klaster' : ''}.png`;
     document.body.appendChild(a);
     a.click();
     a.remove();
