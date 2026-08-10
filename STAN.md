@@ -1,11 +1,72 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-09 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-10 (rano)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 > 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
 > w `_config.yml`). Dalej widać je w PUBLICZNYM repo na GitHubie — to nie są pliki tajne, tylko zdjęte
 > z domeny produktu i z Google. Edytuj normalnie.
+
+---
+
+## 🔴🔴 NAJPILNIEJSZE — TRZY KOMENDY CZEKAJĄ NA WŁAŚCICIELA (stan 10.08 rano)
+
+Cała noc 09/10.08 skończyła się kodem, który **jest zmergowany, ale NIE DZIAŁA bez tych komend**.
+Właściciel był na telefonie i wróci do komputera — to jest pierwsza rzecz do przypomnienia.
+
+```
+echo 'export EIA_API_KEY=<klucz>' >> /root/bot_secrets.env
+supabase functions deploy og --no-verify-jwt --project-ref utmvokfjvrthvcmxzowc
+supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc
+```
+
+1. **Klucz EIA** — bez niego ropa nie ma wykresu (fail-safe, reszta notowań działa).
+   Właściciel wkleił klucz do czatu, więc ma go wygenerować NA NOWO.
+   ⚠️ Sprawdzenie: `bash -c 'set -a; source /root/bot_secrets.env; set +a; env | grep -c "^EIA_API_KEY="'` → `1`.
+2. **Deploy `og`** — załatwia naraz przywróconą kartę wątku (#121) i nową kartę klastra (#123).
+   🔴 **NIE wdrażaj z kopii innej niż repo** — dokładnie tak zniknął układ karty wątku 07.08.
+3. **Deploy `gotowiec-x`** — gotowiec spinający klaster (#123).
+
+## 🔴 Co obejrzeć PO deployu (to są pomiary, nie kosmetyka)
+
+- **`brief_health.json` → notatka `eia_BRENT`** niesie datę najnowszego odczytu, czyli **REALNE
+  opóźnienie EIA** — jedyna liczba, której nie dało się poznać przed wdrożeniem (sandbox blokuje
+  `api.eia.gov`). 3-4 dni = temat zamknięty. Znacznie więcej = kafel pokaże cenę odstającą od
+  nagłówka i wracamy do wyboru źródła (płatne Databento jest jedynym czystym wariantem z ceną bieżącą).
+- **Karta wątku na X** — logo ma być w prawym górnym rogu. Stare linki mogą trzymać się cache'u.
+- **Karta klastra** — knaga, przycisk „Pobierz kartę klastra (N newsy)" przy grupie.
+- **BBC Science po zawężeniu reguły (#128)** — jeśli przez tydzień dowiezie ~0 newsów, to znak, że
+  feed nie zarabia na siebie. ⚠️ Właściciel powiedział „wybacz BBC Science", czyli **feed ZOSTAJE** —
+  nie proponuj ponownie jego usunięcia.
+- **Chrome/VPN** — po poprawce #120 (26 żądań HEAD przy wczytaniu → 0) właściciel miał sprawdzić,
+  czy wraca problem „po wejściu na brifup nie mogę wejść na inne strony". **Brak odpowiedzi.**
+  Jeśli wróci: test raz BEZ VPN-a rozstrzyga, czy przyczyna jest w stronie, czy w tunelu.
+
+## ✅ Co zrobiono w nocy 09/10.08
+
+- **Ropa: `BNO`/`USO` → `BRENT`/`WTI`** (FinancialNewsBot#123). Fundusze ETF nie są ceną baryłki
+  i nie ma mnożnika — potrzebne było inne źródło. **95 referencji `chart` w briefs+archiwum przepięte.**
+- **Stooq WYKLUCZONY DWUKROTNIE** — notowania (#125, #126) i newsy (#129, #130). Oddaje HTTP 200
+  ze stroną „This site requires JavaScript to verify your browser" na **całej domenie**, obu domenach
+  (`.pl` i `.com`). Bramka antybotowa; **nie obchodzimy jej headless-przeglądarką.**
+  ⛔ Nie proponuj Stooq ponownie w żadnej formie bez sprawdzenia, czy bramkę zdjęli.
+- **Ropa jedzie z EIA** (#127) — `RBRTE`/`RWTC`, domena publiczna. `stan_na` tej serii to **data
+  odczytu, nie czas biegu**, bo EIA publikuje raz w tygodniu.
+- **`NotujDiag` → notatki TEKSTOWE w `brief_health.json`** (#126). To dzięki temu poznaliśmy przyczynę
+  awarii Stooq bez logowania na serwer. 📌 **Wzorzec do powtarzania:** gdy ani sandbox, ani właściciel
+  nie mogą czegoś sprawdzić — niech sprawdzi to produkcja.
+  🔴 Przy okazji: `AktualizujNotowaniaNaSite` przesunięte PRZED zapis health, bo licznik dokładany do
+  etapu biegnącego PO zapisie **nie istnieje** (notatki żyją w pamięci procesu).
+- **Karta wątku `og?w=1` przywrócona** (#121) — logo w prawym górnym rogu. 🔴 Ten układ **nigdy nie był
+  w repo**, żył tylko we wdrożonej funkcji i zginął przy deployu #101/#109. Teraz jest w repo.
+- **Karta klastra `og?k=1` + gotowiec spinający** (#123) — parametr `k` **dopisany do `ZNANE_PARAMY`**.
+- **26 żądań HEAD przy każdym wczytaniu strony → 0** (#120). `sprawdzStub` siedziało w funkcji
+  GENERUJĄCEJ HTML. **ZASADA: nic sieciowego w funkcjach budujących HTML.**
+- **BBC Science: zawężona klauzula „decyzja klimatyczna z kwotami"** (#128) — reguła sama otwierała
+  furtkę. Zakres naprawy z pomiaru: wzorzec „pieniądze + środowisko" ma **0 trafień na 4936 pozycjach**,
+  więc poszła do promptu JEDNEGO feedu, nie do `WSPOLNE_ODRZUCENIA`.
+- **Karta nagłówkowa (bez `w=1`/`k=1`) ZOSTAJE z logo po lewej** — świadoma decyzja właściciela:
+  „do zwykłych postów ma być z logiem po lewej, a do wątków bez". ⛔ Nie wyrównuj ich „dla spójności".
 
 ---
 
