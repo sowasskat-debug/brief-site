@@ -1094,8 +1094,10 @@ function expandBlock(item) {
   const shareUrl = (item._archiveDate && item._dose)
     ? `https://brifup.com/#archive/${item._archiveDate}/${item._dose}/${slug}`
     : `https://brifup.com/#${currentDose}/${slug}`;
-  sprawdzStub(slug);   // otwarty artykuł = kandydat do udostępnienia; pytamy ZANIM padnie klik
-  const shareBtn = `<button class="expand-share-btn"
+  // Slug jedzie w `data-stub`, a o stub pyta `setCardOpen` przy REALNYM otwarciu karty. Tu NIE
+  // wolno go pytać: ta funkcja generuje HTML dla każdego kafla przy renderze, więc wywołanie
+  // w tym miejscu robiło serię ~26 równoległych HEAD-ów przy wczytaniu strony.
+  const shareBtn = `<button class="expand-share-btn" data-stub="${escAttr(slug)}"
     onclick="event.stopPropagation();shareItem('${escAttr(esc(shareUrl))}','${escAttr(esc(item.text))}')"
     ><span class="expand-share-icon">↑</span>Udostępnij</button>`;
 
@@ -1303,8 +1305,8 @@ function expandBlockArchive(item, dateStr, dose) {
   const shareBtn = (dateStr && dose) ? (() => {
     const slug = itemSlug(item.text);
     const shareUrl = `https://brifup.com/#archive/${dateStr}/${dose}/${slug}`;
-    sprawdzStub(slug);
-    return `<button class="expand-share-btn"
+    // jak w `expandBlock` — pytanie o stub przenieśli do `setCardOpen`, tu tylko slug w atrybucie
+    return `<button class="expand-share-btn" data-stub="${escAttr(slug)}"
       onclick="event.stopPropagation();shareItem('${escAttr(esc(shareUrl))}','${escAttr(esc(item.text))}')"
       ><span class="expand-share-icon">↑</span>Udostępnij</button>`;
   })() : '';
@@ -1522,6 +1524,30 @@ function updatePageMeta(dose, cfg, items) {
 function setCardOpen(el, isOpen) {
   el.classList.toggle('open', isOpen);
   el.setAttribute('aria-expanded', String(isOpen));
+  // 🔴 TU pytamy o stub — przy REALNYM otwarciu karty (2026-08-10). Wywołanie siedziało wcześniej
+  // w `expandBlock`/`expandBlockArchive`, czyli w funkcjach GENERUJĄCYCH HTML, a te lecą dla
+  // KAŻDEGO kafla, bohatera i podpozycji przy każdym renderze — nie przy otwarciu artykułu, jak
+  // twierdził komentarz obok `sprawdzStub`. Zmierzone na produkcyjnym wydaniu: **26 równoległych
+  // żądań HEAD do brifup.com w jednej chwili po wczytaniu strony**, a `liveTick` kasuje negatywne
+  // wpisy z `STUB_ZNANE` przy każdej zmianie briefs.json, więc cała seria odpalała się OD NOWA po
+  // każdym zapisie bota (~co 30 min przy otwartej karcie). Teraz: jedno żądanie na faktycznie
+  // otwarty artykuł, czyli tyle, ile pierwotnie zakładał projekt.
+  // ⚠️ Moment jest wciąż WYSTARCZAJĄCO WCZESNY: przycisk „Udostępnij" jest wewnątrz rozwiniętej
+  // karty, więc czytelnik musi ją najpierw otworzyć. HEAD kończy się, zanim znajdzie przycisk,
+  // a `linkUdostepnienia` dalej czyta z mapy SYNCHRONICZNIE — czego wymaga `navigator.share`
+  // na iOS (await przed nim zabiera aktywację użytkownika i arkusz nie otwiera się wcale).
+  // ⚠️ `.card-expand` jest RODZEŃSTWEM karty, nie jej dzieckiem — szukanie po `parentElement`
+  // trafiłoby w pierwszy lepszy kafel w kontenerze i pytało o CUDZY slug. Wiążemy po id:
+  // karta to `item-<id>`/`group-<id>`, jej rozwinięcie to `exp-<id>`. Klaster nie ma `exp-`
+  // (ma `subc-`), więc dostajemy null i nic się nie dzieje — pytanie poleci przy otwarciu
+  // konkretnej podpozycji, czyli dokładnie wtedy, kiedy jest czego udostępniać.
+  if (isOpen) {
+    try {
+      const exp = document.getElementById('exp-' + el.id.replace(/^(item|group|hero)-/, ''));
+      const btn = exp && exp.querySelector('.expand-share-btn[data-stub]');
+      if (btn) sprawdzStub(btn.dataset.stub);
+    } catch (_) {}
+  }
 }
 
 // Karty (.hero-card, .news-item, .sub-item) mają role="button" + tabindex, więc łapią fokus
