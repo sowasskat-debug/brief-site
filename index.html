@@ -1002,8 +1002,16 @@ function sagaRynekHtml(item){
   };
   const kluczBiez = watekKluczBiezacego(item, t);
   const grupy = new Map();            // indeks sesji → { i, wezly:[] }
-  let pozaOknem = 0;
+  let pozaOknem = 0, innyInstrument = 0;
   t.nodes.forEach(n => {
+    // 🔴 Kropka trafia na wykres TYLKO gdy etap ma TEN instrument we własnym `chart` (2026-08-10,
+    // zgłoszenie właściciela: saga „Rekordy w USA i Polsce" nanosiła etapy o S&P 500 na wykres
+    // polskiego rynku — „w sadze powinny być newsy do tickerów, które realnie mają wpływ").
+    // `chart` węzła kopiuje bot z pola itemu, a to pochodzi z linii WPŁYWU — więc etap o Iranie
+    // bez słowa „ropa" w nagłówku i tak ląduje na wykresie BRENT. Węzeł bez pola = item bez
+    // wpływu na żaden instrument (albo zabytek sprzed backfillu) = kropka nigdzie.
+    // Pełna, niefiltrowana oś sagi jest dalej w „Wątku tematu" — tu tniemy tylko KROPKI.
+    if (!Array.isArray(n.chart) || !n.chart.includes(sym)) { innyInstrument++; return; }
     const i = doIndeksu(sagaDataWezla(n));
     if (i < 0) { pozaOknem++; return; }
     if (!grupy.has(i)) grupy.set(i, { i, wezly: [] });
@@ -1041,9 +1049,13 @@ function sagaRynekHtml(item){
               +  `<span class="sr-leg-tx">${escHtml(n.text || '')}</span></a>`;
     });
   });
-  // Etapy sprzed okna wykresu NIE są przemilczane — inaczej saga wyglądałaby na krótszą, niż jest.
-  const stopka = pozaOknem
-    ? `<div class="sr-foot">+ ${pozaOknem} ${pozaOknem === 1 ? 'wcześniejszy etap' : 'wcześniejszych etapów'} sprzed okna wykresu</div>` : '';
+  // Etapy pominięte NIE są przemilczane — inaczej saga wyglądałaby na krótszą, niż jest.
+  // Osobno: sprzed okna wykresu (pasują do instrumentu, ale są za stare) i spoza instrumentu
+  // (odfiltrowane, bo ich linia wpływu nie wymienia rysowanej serii — pełna oś w „Wątku tematu").
+  const czesciStopki = [];
+  if (pozaOknem) czesciStopki.push(`+ ${pozaOknem} ${pozaOknem === 1 ? 'wcześniejszy etap' : 'wcześniejszych etapów'} sprzed okna wykresu`);
+  if (innyInstrument) czesciStopki.push(`+ ${innyInstrument} ${odmianaEtap(innyInstrument)} sagi bez wpływu na ${escHtml(sym)} — pełna oś w „Wątku tematu"`);
+  const stopka = czesciStopki.length ? `<div class="sr-foot">${czesciStopki.join('<br>')}</div>` : '';
   const nSesji = s.punktow_okres || punkty.length;
   // ⚠️ LEGENDA ZWINIĘTA, ROZSUWA JĄ DOPIERO KLIK W WYKRES (2026-08-09, życzenie właściciela ze zrzutem).
   // Saga potrafi mieć 20 węzłów, a legenda to jeden wiersz na węzeł — przy sadze Ormuz (6 etapów, 20
