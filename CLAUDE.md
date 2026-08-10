@@ -997,3 +997,37 @@ artykułu (`location.hash` → `routeHashDeepLink` robi resztę, także dla podp
 - **PILNE nie ma osobnego pola w `briefs.json`** — selekcja wyraża je WYŁĄCZNIE flagą 🚨 (kontrakt bota).
 - Bez świeżego 🚨 pastylka wraca do oryginalnego markupu (`pilneDomyslne`), więc zero regresji.
 - Wariant mobilny: czerwone tło + biały tekst. Desktopowy: stonowany, nagłówek ucinany przy 340 px.
+
+## Zdjęcia artykułów ładowane DOPIERO PRZY OTWARCIU karty — `data-src` (2026-08-10) 🔴
+Zgłoszenie właściciela, powtarzane od tygodni: *„po tym, jak wchodzę na brifup, nie mogę wejść na inne
+strony — nawet jak wyłączę VPN; muszę wyczyścić pamięć podręczną Chrome i dopiero wtedy działa"*.
+Wcześniej podejrzewaliśmy VPN i serię 26 HEAD-ów (#120). **Przyczyna była inna i leżała we froncie.**
+
+- 🔴 **`loading="lazy"` na `.expand-image` NIC NIE ODRACZAŁO.** `.card-expand` ma `display:none`, więc
+  obrazek nie ma pudełka layoutu; przeglądarka nie potrafi zmierzyć odległości od ekranu i pobiera go
+  **natychmiast**. Atrybut wyglądał jak zabezpieczenie i nim nie był — przez cały czas.
+- 📊 **Zmierzone w Chromium na produkcyjnym wydaniu (widok telefonu):** 44 `<img>` w DOM, **33 zdjęcia
+  z ~25 OBCYCH domen pobierane w chwili wczytania strony**, przy 44 różnych hostach w całej dawce
+  (78 adresów zdjęć). Czytelnik nie otworzył wtedy ANI JEDNEGO artykułu. Otwarcie nakładki archiwum
+  dokładało kolejne 27 (zmierzone na 09.08).
+- 🔴 **DLACZEGO TO PSUŁO CAŁĄ PRZEGLĄDARKĘ, nie tylko naszą kartę:** pula gniazd i pamięć podręczna DNS
+  w Chrome są **wspólne dla profilu**, nie per zakładka. Ćwierć setki pierwszych kontaktów z obcymi
+  CDN-ami naraz (DNS + TLS), w dodatku przez tunel VPN, zapycha tę pulę — i inne strony nie mają czym
+  się połączyć. **Wyłączenie VPN-a nie pomaga**, bo nieudane wpisy DNS i zajęte gniazda siedzą dalej
+  w pamięci Chrome; pomaga dopiero „wyczyść dane przeglądania", które czyści host cache i gniazda.
+  Dokładnie ten opis objawu podawał właściciel.
+- **Poprawka:** `expandBlock`/`expandBlockArchive` renderują `data-src`, a `setCardOpen` podstawia
+  `src` przy **faktycznym otwarciu karty** (i kasuje `data-src`, żeby drugie otwarcie nic nie robiło).
+  To ten sam hook i ta sama logika co przy `sprawdzStub` — obie połowy tej samej pomyłki.
+  📊 Po poprawce: **0 obcych hostów przy wczytaniu** (zostają tylko fonty Google + OneSignal),
+  a otwarcie artykułu daje **dokładnie jedno** zdjęcie, swoje. Zweryfikowane na trzech ścieżkach:
+  feed główny, podpozycja klastra, nakładka archiwum.
+- ⚠️ **`loading="lazy"` USUNIĘTY z markupu.** Po podstawieniu `src` obrazek jest już widoczny, więc
+  atrybut i tak nic nie odracza, a sugerowałby ochronę, której nie daje. Shimmer w `.expand-image`
+  (07.08) zostaje i dopiero teraz robi to, po co powstał.
+- ⚠️ **Desktopowy `.dt-detail-image` zostaje z `src`** — tam render panelu to już otwarcie JEDNEGO
+  artykułu, czyli jedno zdjęcie na kliknięcie. Ta sama granica co przy `sprawdzStub` i `dtShowDetail`.
+- **ZASADA (rozszerzenie tej z #120):** *nic sieciowego w funkcjach budujących HTML* dotyczy nie tylko
+  jawnych `fetch`, ale też **atrybutów, które sieć wywołują** (`src`, `srcset`, `poster`, `<link
+  rel=preload>`). Wyglądają jak treść, a są żądaniem. Przy zdjęciach z OBCYCH domen koszt nie kończy
+  się na naszej stronie — płaci nim cała przeglądarka czytelnika.

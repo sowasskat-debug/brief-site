@@ -38,9 +38,18 @@ Zostały wyłącznie zadania, które da się zacząć od zera — lista w punkta
 - **BBC Science po zawężeniu reguły (#128)** — jeśli przez tydzień dowiezie ~0 newsów, to znak, że
   feed nie zarabia na siebie. ⚠️ Właściciel powiedział „wybacz BBC Science", czyli **feed ZOSTAJE** —
   nie proponuj ponownie jego usunięcia.
-- **Chrome/VPN** — po poprawce #120 (26 żądań HEAD przy wczytaniu → 0) właściciel miał sprawdzić,
-  czy wraca problem „po wejściu na brifup nie mogę wejść na inne strony". **Brak odpowiedzi.**
-  Jeśli wróci: test raz BEZ VPN-a rozstrzyga, czy przyczyna jest w stronie, czy w tunelu.
+- 🔴 **Chrome/VPN — PRZYCZYNA ZNALEZIONA I NAPRAWIONA 10.08 wieczorem, ZOSTAJE DO POTWIERDZENIA
+  NA ŻYWEJ STRONIE.** Właściciel zgłosił, że problem wraca mimo poprawki #120 i mimo wyłączonego
+  VPN-a. Przyczyną nie były HEAD-y ani tunel: **`loading="lazy"` na zdjęciach artykułów nic nie
+  odraczało**, bo `.card-expand` ma `display:none` (obrazek bez pudełka layoutu jest pobierany od
+  razu). Zmierzone na produkcji: **33 zdjęcia z ~25 obcych domen w chwili wczytania strony**, przy
+  44 hostach w całej dawce. Pula gniazd i DNS w Chrome są wspólne dla profilu, więc to zapychało
+  całą przeglądarkę, a wyłączenie VPN-a nie czyściło ani gniazd, ani nieudanych wpisów DNS —
+  robiło to dopiero „wyczyść dane przeglądania". Poprawka: `data-src` + podstawienie `src`
+  w `setCardOpen` (0 obcych hostów przy wczytaniu, jedno zdjęcie na otwarty artykuł).
+  Szczegóły i zasada: `CLAUDE.md`, sekcja „Zdjęcia artykułów ładowane DOPIERO PRZY OTWARCIU karty".
+  ⚠️ **Do sprawdzenia przez właściciela:** czy po tym wydaniu (SW v93) problem znika BEZ czyszczenia
+  cache'u. Jeśli wróci mimo tego — kolejnym podejrzanym jest OneSignal, nie zdjęcia.
 
 ---
 
