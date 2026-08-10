@@ -1193,7 +1193,7 @@ function expandBlock(item) {
       ? `<a class="expand-read-btn" href="${readUrl}" target="_blank" rel="noopener">Czytaj →</a>`
       : '';
     const imgHtml = item.image_url
-      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
+      ? `<img class="expand-image" data-src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
       : '';
     return `
       ${imgHtml}
@@ -1400,7 +1400,7 @@ function expandBlockArchive(item, dateStr, dose) {
     const readBtn = safeUrl(item.source_url)
       ? `<a class="expand-read-btn" href="${safeUrl(item.source_url)}" target="_blank" rel="noopener">Czytaj →</a>` : '';
     const imgHtml = item.image_url
-      ? `<img class="expand-image" src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
+      ? `<img class="expand-image" data-src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
       : '';
     return `
       ${imgHtml}
@@ -1636,11 +1636,34 @@ function setCardOpen(el, isOpen) {
   // karta to `item-<id>`/`group-<id>`, jej rozwinięcie to `exp-<id>`. Klaster nie ma `exp-`
   // (ma `subc-`), więc dostajemy null i nic się nie dzieje — pytanie poleci przy otwarciu
   // konkretnej podpozycji, czyli dokładnie wtedy, kiedy jest czego udostępniać.
+  // 🔴 TU TEŻ podstawiamy ADRES ZDJĘCIA (2026-08-10) — z dokładnie tego samego powodu, co stub wyżej,
+  // i to jest DRUGA połowa tej samej pomyłki. `expandBlock` renderowało `<img src=...>` dla KAŻDEGO
+  // kafla, a `loading="lazy"` tego NIE ratowało: `.card-expand` ma `display:none`, więc obrazek nie ma
+  // pudełka layoutu, przeglądarka nie potrafi zmierzyć odległości od ekranu i pobiera go OD RAZU.
+  // Atrybut wyglądał jak zabezpieczenie i nim nie był. 📊 Zmierzone w Chromium na produkcyjnym wydaniu:
+  // **33 zdjęcia z ~25 OBCYCH domen pobierane w chwili wczytania strony** (44 `<img>` w DOM, 44 różne
+  // hosty w całej dawce) — a czytelnik nie otworzył ani jednego artykułu.
+  // 🔴 DLACZEGO TO BOLAŁO POZA STRONĄ: pula gniazd i pamięć podręczna DNS w Chrome są WSPÓLNE DLA CAŁEJ
+  // PRZEGLĄDARKI, nie per karta. Ćwierć setki pierwszych kontaktów z obcymi CDN-ami naraz (DNS + TLS),
+  // przez VPN, zapycha tę pulę — i INNE strony przestają się otwierać. Wyłączenie VPN-a nie pomaga, bo
+  // nieudane wpisy DNS siedzą dalej w pamięci Chrome; pomaga dopiero „wyczyść dane przeglądania", które
+  // czyści też host cache i gniazda. Zgłaszane przez właściciela wielokrotnie („po wejściu na brifup nie
+  // mogę wejść na inne strony"), diagnozowane wcześniej jako wina VPN-a.
+  // Teraz: 0 obcych hostów przy wczytaniu, jedno zdjęcie przy faktycznie otwartym artykule.
+  // ⚠️ `loading="lazy"` USUNIĘTY z markupu — po podstawieniu `src` obrazek jest już widoczny, więc
+  // atrybut i tak nic by nie odroczył, a sugerowałby ochronę, której nie daje. Shimmer w `.expand-image`
+  // zostaje i dopiero teraz robi to, po co powstał: pokazuje ładowanie w chwili otwarcia karty.
+  // ⚠️ Desktopowy `.dt-detail-image` zostaje z `src` — tam render panelu to już otwarcie JEDNEGO
+  // artykułu, czyli jedno zdjęcie na kliknięcie (ta sama granica co przy `sprawdzStub`).
   if (isOpen) {
     try {
       const exp = document.getElementById('exp-' + el.id.replace(/^(item|group|hero)-/, ''));
       const btn = exp && exp.querySelector('.expand-share-btn[data-stub]');
       if (btn) sprawdzStub(btn.dataset.stub);
+      if (exp) exp.querySelectorAll('img[data-src]').forEach((im) => {
+        im.src = im.dataset.src;
+        im.removeAttribute('data-src');   // drugie otwarcie nie ustawia src ponownie
+      });
     } catch (_) {}
   }
 }

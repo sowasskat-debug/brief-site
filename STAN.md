@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-10 (rano)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-10 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 > 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
@@ -9,38 +9,103 @@ niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
-## 🔴🔴 NAJPILNIEJSZE — TRZY KOMENDY CZEKAJĄ NA WŁAŚCICIELA (stan 10.08 rano)
+## ✅ TRZY KOMENDY Z 10.08 RANO — WYKONANE
 
-Cała noc 09/10.08 skończyła się kodem, który **jest zmergowany, ale NIE DZIAŁA bez tych komend**.
-Właściciel był na telefonie i wróci do komputera — to jest pierwsza rzecz do przypomnienia.
+Klucz EIA wpisany (plik sekretów 17→18 linii, z `export`, więc `set -a` go podnosi), obie funkcje
+Edge wdrożone z repo: `og` v16 i `gotowiec-x` v6, obie 10.08 o 19:37 UTC. Zweryfikowane na żywym
+endpoincie: karta klastra `og?k=1` oddaje PNG dla wszystkich kotwic z dawki, karta wątku `og?w=1`
+ma logo w prawym górnym rogu (układ z #121).
+⚠️ Wcześniejszy wniosek „`&k=1` → 302, czyli funkcja nie zna `k`" był **błędny** — 302 brało się
+stąd, że testowany news nie był klastrem. Diagnozując te karty, sprawdzaj NAJPIERW, czy news
+ma `subItems` (dla `k`) i czy należy do sagi (dla `w`) — inaczej fail-safe zwraca grafikę zapasową
+i wygląda to jak awaria deployu.
 
-```
-echo 'export EIA_API_KEY=<klucz>' >> /root/bot_secrets.env
-supabase functions deploy og --no-verify-jwt --project-ref utmvokfjvrthvcmxzowc
-supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc
-```
+## 🔴🔴 NAJPILNIEJSZE — NIC nie czeka na komendę (stan 10.08 wieczór)
 
-1. **Klucz EIA** — bez niego ropa nie ma wykresu (fail-safe, reszta notowań działa).
-   Właściciel wkleił klucz do czatu, więc ma go wygenerować NA NOWO.
-   ⚠️ Sprawdzenie: `bash -c 'set -a; source /root/bot_secrets.env; set +a; env | grep -c "^EIA_API_KEY="'` → `1`.
-2. **Deploy `og`** — załatwia naraz przywróconą kartę wątku (#121) i nową kartę klastra (#123).
-   🔴 **NIE wdrażaj z kopii innej niż repo** — dokładnie tak zniknął układ karty wątku 07.08.
-3. **Deploy `gotowiec-x`** — gotowiec spinający klaster (#123).
+Wszystkie PR-y z 10.08 zmergowane (bot #131–#137), front wypchnięty na produkcję.
+Zostały wyłącznie zadania, które da się zacząć od zera — lista w punktach 2, 7 i 8 niżej.
 
-## 🔴 Co obejrzeć PO deployu (to są pomiary, nie kosmetyka)
+## 🔴 Co obejrzeć po najbliższych biegach (to są pomiary, nie kosmetyka)
 
-- **`brief_health.json` → notatka `eia_BRENT`** niesie datę najnowszego odczytu, czyli **REALNE
-  opóźnienie EIA** — jedyna liczba, której nie dało się poznać przed wdrożeniem (sandbox blokuje
-  `api.eia.gov`). 3-4 dni = temat zamknięty. Znacznie więcej = kafel pokaże cenę odstającą od
-  nagłówka i wracamy do wyboru źródła (płatne Databento jest jedynym czystym wariantem z ceną bieżącą).
-- **Karta wątku na X** — logo ma być w prawym górnym rogu. Stare linki mogą trzymać się cache'u.
-- **Karta klastra** — knaga, przycisk „Pobierz kartę klastra (N newsy)" przy grupie.
+- **`przyrost_WIG20` w `brief_health`** — notatka z liczbą punktów serii. Ma rosnąć o 1 dziennie.
+  Jeśli stoi na 1 przez kilka dni: albo Yahoo przestał oddawać `WIG20.WA`, albo scalanie nie
+  widzi starego `quotes.json`. Pełny wykres (30 sesji) dopiero ok. 20.09 — **do tego czasu kafla
+  WIG20 NIE MA i to jest zapowiedziany koszt, nie usterka** (front wymaga ≥2 punktów).
+- **Reguła postaci-topki (#134)** — czy nie zaczęły przechodzić plotki o miliarderach spoza
+  biznesu. Jeśli tak: **zawęź listę nazwisk, nie kasuj wyjątku**.
+- **Kody odrzuceń po #133** — czy zniknęły kody `tech-nowinka`/`ciekawostka` (to były nazwy
+  kategorii MILE WIDZIANYCH użyte jako powód odrzucenia) i czy duże premiery przechodzą.
 - **BBC Science po zawężeniu reguły (#128)** — jeśli przez tydzień dowiezie ~0 newsów, to znak, że
   feed nie zarabia na siebie. ⚠️ Właściciel powiedział „wybacz BBC Science", czyli **feed ZOSTAJE** —
   nie proponuj ponownie jego usunięcia.
 - **Chrome/VPN** — po poprawce #120 (26 żądań HEAD przy wczytaniu → 0) właściciel miał sprawdzić,
   czy wraca problem „po wejściu na brifup nie mogę wejść na inne strony". **Brak odpowiedzi.**
   Jeśli wróci: test raz BEZ VPN-a rozstrzyga, czy przyczyna jest w stronie, czy w tunelu.
+
+---
+
+## ✅ Co zrobiono 2026-08-10 (dzień + wieczór) — duża sesja notowań i higieny
+
+**Notowania przestały jechać na funduszach zastępczych.** Zgłoszenia właściciela: „wig20 to jest
+epol, a nie powinien tak być", „index nasdaq to qqq też nie powinien być", „nie znalazło akcji
+GameStopu". Mapa instrumentów podstawiała ETF-y pod indeksy, bo Alpaca oddaje wyłącznie papiery
+z USA. Nowe źródło **Yahoo** (bez klucza, testowane Z HETZNERA) zdjęło to ograniczenie:
+- spółki GPW w złotych (Orlen, KGHM, PGE, Tauron, PKO BP, Pekao, PZU, CD Projekt, Dino),
+- indeksy WPROST: KOSPI, Hang Seng, Nikkei 225, DAX, FTSE 100, Shanghai (były EWY/EWJ/EWG/ASHR),
+- Samsung i SK Hynix (Seul), plus brakujące spółki z USA (Boeing, Berkshire, GameStop, eBay,
+  Chevron, Visa, Archer) — te istniejącą ścieżką Alpaki.
+📊 Pokrycie artykułów z linią wpływu **82,8% → 88,8%**, 28 pozycji zyskało wykres, **0 straciło**,
+zero fałszywych trafień na 25 nowych haseł (skan całego archiwum).
+
+🔴 **ROPA ZJECHAŁA Z EIA NA YAHOO tego samego dnia.** Warunek ze `STAN.md` brzmiał „3-4 dni =
+temat zamknięty" — pierwszy pomiar dał **7 DNI** (`stan_na 2026-08-03` przy biegu 10.08), czyli
+kafel pokazywał 88,90 USD pod artykułem o 84. Kontrakty `BZ=F`/`CL=F` to dokładnie to, co cytują
+nagłówki (EIA podaje spot FOB). **Klucze serii `BRENT`/`WTI` bez zmian → zero migracji.**
+EIA został **fallbackiem**: gdy Yahoo padnie, seria idzie z niego, ale podpisana jako EIA
+z `stan_na` = data odczytu, żeby kafel nie udawał świeżości.
+⚠️ Sprawdzone i odrzucone przy okazji: FRED (to przepakowane EIA, ta sama data), repo
+`datasets/oil-prices` (też z EIA), OilPriceAPI (darmowy plan „internal use only" — publiczne
+wyświetlanie zabronione), oilprice.com (feed Barchart, **bez historii**, tylko ostatnia cena;
+pokazuje te same liczby co Yahoo co do centa — to potwierdziło wybór).
+
+**WIG20 — jedyny instrument bez dostępnej historii.** Yahoo zna `WIG20.WA` i oddaje prawdziwy
+poziom w złotych, ale **1 bar niezależnie od zakresu**; gpw.pl i gpwbenchmark.pl oddają
+`Connection reset` z serwera, Stooq ma bramkę antybotową. Decyzja właściciela: **zbieramy historię
+sami** (`_symboleAkumulowane` + `DopiszDoSeriiPrzyrostowej` w bocie). 7 referencji `EPOL`
+przepiętych na `WIG20`.
+
+**Kropki „Sagi na wykresie" tylko dla etapów z wpływem na rysowany instrument.** Zgłoszenie ze
+zrzutem: saga „Rekordy giełdowe w USA i Polsce" nanosiła etapy o Dow Jonesie i S&P 500 na wykres
+polskiego rynku. Węzeł sagi niesie teraz własny `chart` (bot go MIAŁ i wyrzucał — ta sama klasa co
+`published_at`), a front filtruje po nim. Backfill 131/300 istniejących węzłów.
+⚠️ Pełna, niefiltrowana oś została w „Wątku tematu" — tniemy WYŁĄCZNIE kropki.
+
+**Trzy newsy uratowane ręcznie przez poczekalnię + trwałe reguły do bota:**
+- GPT-5.6-Cyber i dwa inne duże premiery AI odrzucone kodem `tech-nowinka` — czyli nazwą kategorii
+  z BIAŁEJ listy. Pole na kod (wdrożone 09.08) stworzyło pułapkę semantyczną: wypełniona rubryka
+  wygląda modelowi na uzasadnione odrzucenie. Kontrakt mówi teraz wprost, że kod nazywa REGUŁĘ (#133).
+- Burry o Berkshire/Ablu (kod `plotka/opinia`) i Bezos × Liverpool FC (`popkultura/sport`) → nowy
+  wyjątek **postaci-topki** (#134) w 3 miejscach: stała + oba feedy, którymi to weszło.
+
+**Front — cztery rzeczy widoczne dla czytelnika:**
+- **Zdjęcia artykułów na DESKTOPIE** — nigdy nie istniały (`image_url` był tylko w ścieżkach
+  mobilnych), a 99% pozycji z artykułem ma zdjęcie.
+- **`watki.html` dostało tagi `og:`/`twitter:` + canonical** — podstrona istniała od 07.08 z ZEREM
+  tagów, więc udostępniony link dawał gołą kartę.
+- **Paski przewijania** — brakowało deklaracji `color-scheme`, więc w motywie ciemnym przeglądarka
+  malowała biały systemowy pasek. To naprawa dla PRZEGLĄDARKI, nie styl elementu.
+- **Pastylka LIVE → kanał PILNE** — była czysto dekoracyjna; teraz przy świeżym (≤4 h) newsie
+  z flagą 🚨 zmienia się w klikalny pasek prowadzący do artykułu.
+
+**Diagnostyka przestała jechać do publicznego repo** (#137) — 802 663 bajty (`lejek.json` 474 KB
+z 1417 ocenionymi nagłówkami i 13 feedami źródłowymi, `deepseek_usage` 165 KB, `brief_health`
+107 KB, `bot_health` 56 KB) usunięte. Dane żyją w Supabase — **zweryfikowane przed odcięciem**
+kluczem bota z serwera: `lejek` 800 wierszy, snapshoty po 200, wszystkie z ostatniego biegu.
+⚠️ Bezpiecznik: bez `SUPABASE_SERVICE_KEY` pliki wracają jako jedyna droga.
+
+**Bomba z opóźnionym zapłonem rozbrojona:** JSON-LD `datePublished` miał zaszyte `+02:00`, więc od
+ostatniej niedzieli października wszystkie daty strukturalne szłyby do Google o godzinę za wysokie.
+Offset liczy się teraz z bazy stref DLA DANEJ DATY.
 
 ## ✅ Co zrobiono w nocy 09/10.08
 
@@ -362,6 +427,31 @@ Pomiar offline w `financialnewsbot/CLAUDE.md` (sekcja „Filtr spójności klast
 
 ---
 
+## 🔴 7. Otwarte po sesji 10.08 — od tego zacząć
+
+Wszystkie cztery są SAMODZIELNE, nic nie czeka na nic innego.
+
+1. **Przycisk „Udostępnij na X" dla czytelników na `index.html`** — knaga go ma, publiczny front NIE.
+   Cała infrastruktura (stuby, funkcja `og`, deep-linki, `shareItem`) już działa; brakuje samego
+   guzika w 3 miejscach: `expandBlock`, `expandBlockArchive`, `dtShowDetail`. To najkrótsza droga
+   do widocznego efektu z całej listy.
+2. **Stuby archiwalne nie przekazują `a=<data>`** — `BudujStubHtml(it, dawka, obraz)` nie ma
+   parametru daty, więc karta-obrazek newsa z archiwum wraca do grafiki zapasowej. Front ma
+   fallback routingu (#100), obrazek nie.
+3. **`fb:app_id`** — czeka na App ID właściciela z developers.facebook.com/apps. Nie jest przyczyną
+   braku grafiki (to było naprawione 09.08), służy statystykom udostępnień.
+4. **WIG20 przez ~6 tygodni bez kafla** — patrz `przyrost_WIG20` wyżej. Gdyby okazało się to zbyt
+   długie, jedyną alternatywą z ceną bieżącą I historią jest płatne źródło (Databento).
+
+## 📊 8. Pomiary, które WYPADŁY DOBRZE (10.08) — nie badać ponownie bez powodu
+
+Trzy obawy zapisane w tym pliku sprawdzone na licznikach i **niepotwierdzone**:
+- `published_at` ma **92% pokrycia** (108/117) — warunek wejścia „Sagi × rynek" spełniony z zapasem
+- **recall dopięć do sag 75%** (`watki_dopiete` 3 vs `watki_nowy_watek` 1) — punkt „Recall dopięć"
+  bał się ~10%; `watki_przemianowane: 0`, czyli prompt nie mieli nazw sag co bieg
+- `do_poczekalni: 1` — przesunięcie GDELT na koniec łańcucha (#120) niczego nie zepsuło
+- `data_z_artykulu_wygrala: 9` / `odrzucona: 1` — guard 48 h dobrze wykalibrowany
+
 ## 📊 6. Do obejrzenia
 
 | Co | Gdzie | Punkt odniesienia |
@@ -586,7 +676,20 @@ biegami). Angielski oryginał karmi `DeepSeekWyszukiwarkaQueryEN` zamiast być o
     ⚠️ Diagnozując „nie generuje podglądu" sprawdź NAJPIERW, czy news jest top-level, a nie sub-itemem.
     Lek: rozdzielić klaster — stub odtworzy się sam w kolejnym biegu (mechanizm jest samoleczący).
     ⚠️ Stubów **nie dopisuj ręcznie** (patrz `CLAUDE.md`) — bot i tak odtwarza stan z `briefs.json`.
-18. 🔴 **Nowy plik wewnętrzny → dopisz go do `exclude` w `_config.yml`.** GitHub Pages serwuje
+18. 🔴 **`exclude` w `_config.yml` NIE wystarcza — repo jest PUBLICZNE.** Pliki zdjęte z domeny 07.08
+    dalej leżały na GitHubie do przejrzenia (802 KB diagnostyki). Zamknięte 10.08 od strony ŹRÓDŁA:
+    bot przestał je pisać, gdy działa Supabase. **Wnioskując o „ukryciu" pliku, rozróżniaj domenę
+    od repo** — to dwie różne drogi i `exclude` zamyka tylko pierwszą.
+19. 🔴 **`new Date('smiec')` NIE zawsze daje Invalid Date.** Zmierzone: `new Date('smiec:00Z')`
+    parsuje się na 1 stycznia 2000, więc guard na `isNaN(new Date(x))` **przepuszcza śmieć**.
+    Walidując datę, sprawdzaj KSZTAŁT regexem. Złapane testem przy poprawce stref, nie recenzją kodu.
+20. 🔴 **Element systemowy ≠ styl elementu.** Biały pasek przewijania w motywie ciemnym brał się
+    z braku `color-scheme`, a nie ze złych stylów — `background: var(--bg)` na kontenerze tego nie
+    naprawia. Ta sama klasa dotyczy pól formularzy i tła canvasa.
+21. ⚠️ **Karta `og?k=1`/`og?w=1` wraca grafiką zapasową także dla POPRAWNIE wdrożonej funkcji** —
+    gdy news nie jest klastrem (`k`) albo nie należy do sagi (`w`). Wygląda to jak nieudany deploy.
+    Sprawdź `subItems`/przynależność do wątku ZANIM zaczniesz podejrzewać wdrożenie.
+22. 🔴 **Nowy plik wewnętrzny → dopisz go do `exclude` w `_config.yml`.** GitHub Pages serwuje
     DOMYŚLNIE każdy plik z repo. Dokumenty, diagnostyka, źródła funkcji są zdejmowane WYŁĄCZNIE przez
     listę `exclude` — plik spoza niej wyląduje pod brifup.com. ⚠️ `exclude` chowa z domeny i z Google,
     ale NIE z publicznego repo na GitHubie.

@@ -637,7 +637,7 @@ bez tytułu i **bez żadnej grafiki, nawet tej podstawowej**.
   na zawsze. Wymuszenie: Sharing Debugger → „Scrape Again".
 - ⚠️ Uzupełnienie po stronie bota: `og:url`/`canonical` stuba wskazują teraz sam stub (FinancialNewsBot#119).
   Bez tego FB kanonizował obiekt pod adres hashowy i karta i tak wychodziła pusta.
-- ⚠️ **`watki.html` NIE MA tagów `og:`** — udostępnienie podstrony Wątków daje gołą kartę. Otwarte.
+- ✅ **`watki.html` DOSTAŁO tagi `og:` 2026-08-10** — punkt zamknięty, szczegóły w sekcji „`watki.html` — tagi `og:`" niżej.
 
 ## Ruch: powroty, sesje, pory dnia (2026-08-05) ⚠️
 Życzenie właściciela: *„bardziej szczegółowy panel z wyświetleniami, np. ile razy ktoś wracał
@@ -931,3 +931,69 @@ a procent obok to zmiana SESYJNA — stąd zielony procent bywa przy opadającej
 `loading="lazy"` + wolne łącze zostawiały **180 px gołej dziury** — białej w motywie jasnym, czarnej
 w ciemnym — którą właściciel zgłosił jako „zdjęcie, które się nie załadowało". `onerror` chowa obrazek
 dopiero po BŁĘDZIE; ładowanie trwające sekundy nie jest błędem i wcześniej nie miało żadnej reprezentacji.
+
+## Zdjęcia artykułów na DESKTOPIE — `.dt-detail-image` (2026-08-10)
+Zgłoszenie właściciela: „na wersji desktopowej nie ma zdjęć z artykułów". To **nie była regresja** —
+funkcja nigdy tam nie istniała: `image_url` występowało WYŁĄCZNIE w `expandBlock` i `expandBlockArchive`
+(obie ścieżki mobilne), a `dtShowDetail` go nie renderował wcale. 📊 Zmierzone: **99% pozycji z artykułem
+ma zdjęcie** (109/110 w bieżących dawkach, 93% w sierpniowym archiwum) — brakowało go praktycznie zawsze.
+- Wstawiane między metką czasu a treścią, czyli w tej samej kolejności co na mobile (pod nagłówkiem).
+- Pełna szerokość panelu: `calc(100% + 52px)` i marginesy `-26px` (padding `.dt-detail-content` to 26px).
+- **Tylko gdy JEST artykuł** — zdjęcie nad komunikatem „brak rozszerzonego artykułu" byłoby mylące.
+- Placeholder z shimmerem i wariant ciemny jak przy `.expand-image` (bez niego wolne łącze zostawia
+  180 px gołej dziury — osobne zgłoszenie z 07.08).
+
+## `color-scheme` — biały pasek przewijania w motywie ciemnym (2026-08-10) 🔴
+Zgłoszenie ze zrzutem: „pasek na nocnym wygląda chujowo". **Przyczyna NIE była w stylach paska, tylko
+w braku deklaracji `color-scheme`.** Strona nie mówiła przeglądarce, że jest ciemna, więc elementy
+SYSTEMOWE (paski przewijania, pola formularzy, tło canvasa) malowały się w wariancie jasnym niezależnie
+od naszych zmiennych. `background: var(--bg)` na kontenerze tego NIE załatwia — to informacja **dla
+przeglądarki**, nie styl naszego elementu.
+- `:root { color-scheme: light }` + `[data-theme="dark"] { color-scheme: dark }` — to jest naprawa właściwa.
+- Dodatkowo stonowany kciuk w kolorze `--rule` (ta sama linia, którą rozdzielamy wpisy), wcięcie 3 px.
+- ⚠️ **Stylowanie TYLKO kontenerów desktopowych i nakładki archiwum.** Na telefonie pasek jest
+  nakładkowy (znika sam) i ostylowanie zrobiłoby z niego stale widoczną kreskę — `.scroll-area`
+  celowo zostaje na `scrollbar-width: auto`.
+
+## JSON-LD: offset strefy LICZONY, nie zaszyty — `offsetWarszawy` (2026-08-10) 🔴
+W `datePublished` siedziało na sztywno `+02:00`, czyli czas LETNI. `added_at` jest warszawski, więc
+**od ostatniej niedzieli października** (powrót na CET) wszystkie daty strukturalne szłyby do Google
+o godzinę za wysokie — po cichu, bo JSON-LD nikt nie ogląda gołym okiem. Ta sama klasa co `SupabaseTs`
+w bocie: znacznik bez offsetu plus zgadywana strefa.
+- Offset liczony z bazy stref przeglądarki **DLA DANEJ DATY**, nie dla „teraz" — wpisy z archiwum
+  sprzed przestawienia zegarków dostają swój własny.
+- 🔴 **Guard sprawdza KSZTAŁT regexem, NIE `isNaN(new Date(...))`.** Zmierzone: `new Date('smiec:00Z')`
+  nie daje Invalid Date, tylko 1 stycznia 2000 (silnik parsuje pobłażliwie) — pierwsza wersja fail-safe
+  przepuszczała śmieć i zwracała styczniowe `+01:00`. **Złapane testem, nie recenzją kodu.**
+- Zweryfikowane na 9 przypadkach: obie strony OBU zmian czasu (marzec i październik), śmieć, pusty, null.
+
+## `watki.html` — tagi `og:` (2026-08-10)
+Podstrona istniała od 07.08 i jest w `sitemap.xml`, ale miała **ZERO tagów `og:`**, więc wysłany link
+dawał kartę z samą domeną. Stub `s/<slug>.html` jest tu **niepotrzebny**: adres NIE jest hashowy, więc
+crawler dostaje statyczny HTML wprost.
+- ⚠️ Wartości celowo **STAŁE**, nie generowane z `threads.json` — scraper nie wykonuje JS, więc cokolwiek
+  dopisałby skrypt, i tak by tego nie zobaczył.
+- `canonical` i `og:url` bez ukośnika na końcu — inaczej FB kanonizuje dwa obiekty.
+
+## Kropki „Sagi na wykresie" filtrowane po instrumencie ETAPU (2026-08-10) 🔴
+Zgłoszenie ze zrzutem: saga „Rekordy giełdowe w USA i Polsce" nanosiła etapy o Dow Jonesie i S&P 500
+na wykres polskiego rynku. Właściciel: *„w sadze powinny się znajdować newsy do tickerów, które
+NAPRAWDĘ REALNIE mają wpływ na dany ticker"*.
+- `sagaRynekHtml` bierze kropkę tylko gdy `n.chart.includes(sym)`. Pole `chart` węzła kopiuje bot
+  z itemu, a ono pochodzi z **linii WPŁYWU** — więc etap o Iranie bez słowa „ropa" w nagłówku i tak
+  ląduje na wykresie BRENT (to było wprost pytanie właściciela).
+- Odfiltrowane etapy są **policzone w stopce**, nie przemilczane („+ N etapów sagi bez wpływu na SYM").
+- ⚠️ **Pełna, niefiltrowana oś zostaje w „Wątku tematu"** — tniemy WYŁĄCZNIE kropki na wykresie.
+- Węzeł bez pola `chart` (item bez wpływu na żaden instrument albo zabytek sprzed backfillu) = kropka
+  nigdzie. Sekcja znika, gdy po filtrze zostaje <2 kropki — „jedna kropka nie opowiada historii".
+
+## Pastylka LIVE = kanał PILNE (2026-08-10)
+`LIVE` była czysto dekoracyjna (statyczna kropka, niepodpięta do niczego). Gdy bieżąca dawka ma
+**ŚWIEŻY** news z flagą 🚨, pastylka zmienia się w klikalny pasek `PILNE · <nagłówek>` prowadzący do
+artykułu (`location.hash` → `routeHashDeepLink` robi resztę, także dla podpozycji klastrów).
+- 🔴 **Okno 4 h (`PILNE_OKNO_MS`) jest warunkiem sensu, nie kosmetyką** — 🚨 pojawia się kilka razy
+  dziennie (zmierzone: 209 itemów w 40 dniach archiwum), więc bez okna pastylka krzyczałaby cały
+  wieczór o porannym wydarzeniu i sygnał spowszedniałby natychmiast.
+- **PILNE nie ma osobnego pola w `briefs.json`** — selekcja wyraża je WYŁĄCZNIE flagą 🚨 (kontrakt bota).
+- Bez świeżego 🚨 pastylka wraca do oryginalnego markupu (`pilneDomyslne`), więc zero regresji.
+- Wariant mobilny: czerwone tło + biały tekst. Desktopowy: stonowany, nagłówek ucinany przy 340 px.
