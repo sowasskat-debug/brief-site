@@ -2625,6 +2625,9 @@ function dtShowDetail(item) {
       <div class="dt-detail-badges"><span class="dt-detail-badge">${cat.toUpperCase()}</span>${srcBadge(item)}</div>
       <div class="dt-detail-headline">${escHtml(item.text)}</div>
       <div class="dt-detail-time">${time||'—'}</div>
+      ${item.article && item.image_url
+        ? `<img class="dt-detail-image" src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
+        : ''}
       ${item.article
         ? `<div class="dt-detail-body">${escHtml(item.article)}</div>`
         : `<div class="dt-detail-no-article">Brak rozszerzonego artykułu dla tego wpisu.</div>`}
