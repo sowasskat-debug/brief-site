@@ -173,69 +173,64 @@ function karta(naglowek: string, kicker: string, poprzedni: { kiedy: string; tex
 // Bot trzyma do 20 węzłów na wątek, więc nagłówek mówi wprost „OSTATNIE 4 Z 12", żeby nie sugerować,
 // że to cała saga. Najnowszy etap NA GÓRZE (zmiana 2026-08-07, spójnie z /watki i osią pod postem).
 function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[], ile: number) {
-  // ⚠️ Lewa kolumna WĘŻSZA niż na karcie nagłówkowej (250 zamiast 330) — życzenie właściciela
-  // 2026-08-02: „przesuń kreskę w lewo, żeby się więcej zmieściło". Oś wątku ma cztery etapy po
-  // dwie linie, więc każdy piksel szerokości realnie skraca zawijanie; lewa kolumna niosła tylko
-  // logo i dwa wiersze podpisu i miała nadmiar miejsca.
-  // 🔴 Zmieniając `width` lewej, MUSISZ zmienić `width` prawej o tyle samo (330+2+868 = 250+2+948
-  // = 1200). Satori NIE wylicza tego sam — patrz komentarz przy karcie nagłówkowej.
-  // Logo zeszło 62→58, bo przy 48 px wcięcia „Brif.up" w 62 px zostawiało ~10 px zapasu do krawędzi
-  // kolumny; zawinięcie logo na dwie linie byłoby brzydsze niż ta różnica wielkości.
-  const lewa = el('div', {
-    display: 'flex', flexDirection: 'column', justifyContent: 'center',
-    width: 250, padding: '56px 0 56px 48px', boxSizing: 'border-box', flexShrink: 0,
-  }, [
-    el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 58, color: '#111' }, [
-      el('span', {}, 'Brif'), el('span', { color: CZERWONY }, '.up'),
-    ]),
-    el('div', {
-      display: 'flex', flexDirection: 'column', fontFamily: 'SM', fontSize: 12, fontWeight: 700,
-      letterSpacing: 2.6, color: '#8f8f8f', marginTop: 20, lineHeight: 2,
-    }, ['JAK ROZWIJAŁ SIĘ', 'TEN TEMAT'].map((t) => el('div', {}, t))),
-  ]);
-  const kreska = el('div', { width: 2, backgroundColor: '#111', margin: '56px 0', flexShrink: 0 });
-
+  // 🔴 UKŁAD PRZYWRÓCONY 2026-08-10 — logo w PRAWYM GÓRNYM rogu, treść na PEŁNĄ SZEROKOŚĆ.
+  // Zgłoszenie właściciela ze zrzutem: „tak wyglądało wcześniej, nie wiem po co się zmieniło".
+  // Miał rację, a przyczyna jest pouczająca: **tego układu NIGDY NIE BYŁO W REPO**. Wszystkie
+  // wersje tego pliku od pierwszej (02.08 10:17) miały lewą kolumnę z logo 58-62 px i pionową
+  // kreską; wariant pełnoszerokościowy żył WYŁĄCZNIE we wdrożonej funkcji, wgrany ręcznie i nigdy
+  // niezacommitowany. 07.08 poszły dwa deploye z repo (#101 bramki wejścia, #109 najnowszy etap
+  // na górze) i każdy z nich nadpisał go układem z repo.
+  // ⚠️ **DLATEGO TEN UKŁAD MUSI ŻYĆ W REPO.** Deploy funkcji nie idzie przez git
+  // (`supabase functions deploy og --no-verify-jwt`), więc wygląd trzymany tylko na serwerze ginie
+  // przy pierwszej zmianie czegokolwiek innego. Nie wdrażaj tej funkcji z kopii innej niż repo.
+  //
+  // Zysk uboczny: bez lewej kolumny wiersz osi jest o ~250 px szerszy, więc limit znaków na etap
+  // idzie 104 → 118 i typowe nagłówki przestają się urywać wielokropkiem w pół zdania
+  // (drugie zgłoszenie właściciela z tego samego dnia).
   const naglowek = ile > wezly.length
     ? `OŚ WĄTKU · OSTATNIE ${wezly.length} Z ${ile} ETAPÓW`
     : `OŚ WĄTKU · ${ile} ${ile === 1 ? 'ETAP' : (ile < 5 ? 'ETAPY' : 'ETAPÓW')}`;
 
+  // Najnowszy etap jest PIERWSZY (caller robi `.reverse()`), więc wyróżniamy `i === 0` — spójnie
+  // z /watki.html i osią pod postem (decyzja właściciela z 2026-08-07).
   const wiersze = wezly.map((w, i) => {
-    const ostatni = i === 0; // najnowszy NA GÓRZE — wezly przychodzą już odwrócone
-    return el('div', { display: 'flex', marginTop: i === 0 ? 0 : 16 }, [
-      // Kolumna osi: kropka + pionowa kreska. Bieżący (ostatni) etap wyróżniony czerwienią i rozmiarem.
-      el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', width: 22, flexShrink: 0 }, [
+    const akt = i === 0;
+    const ostatni = i === wezly.length - 1;
+    return el('div', { display: 'flex', marginTop: i === 0 ? 0 : 13, flexShrink: 0 }, [
+      el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', width: 24, flexShrink: 0 }, [
         el('div', {
-          width: ostatni ? 13 : 9, height: ostatni ? 13 : 9, borderRadius: 999, marginTop: ostatni ? 3 : 5,
-          backgroundColor: ostatni ? CZERWONY : '#c9c9c9',
+          width: akt ? 14 : 10, height: akt ? 14 : 10, borderRadius: 999, marginTop: akt ? 4 : 6,
+          backgroundColor: akt ? CZERWONY : '#c9c9c9',
         }),
-        // Kreska łączy w DÓŁ — znika przy OSTATNIM WIERSZU (najstarszym), nie przy czerwonym.
-        ...(i === wezly.length - 1 ? [] : [el('div', { width: 2, flexGrow: 1, marginTop: 4, backgroundColor: '#e4e4e4' })]),
+        // Kreska łączy w DÓŁ — znika przy ostatnim (najstarszym) wierszu, nie przy czerwonym.
+        ...(ostatni ? [] : [el('div', { width: 2, flexGrow: 1, marginTop: 5, backgroundColor: '#e4e4e4' })]),
       ]),
-      el('div', { display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, paddingLeft: 12 }, [
-        el('div', { display: 'flex', fontFamily: 'SM', fontSize: 12, fontWeight: 700, letterSpacing: 1.4, color: ostatni ? CZERWONY : '#9a9a9a' }, w.kiedy),
-        // 96→104: szersza kolumna mieści więcej w tych samych DWÓCH liniach, więc podniesienie limitu
-        // odzyskuje tekst, który wcześniej ginął w „…". ⚠️ Nie podnoś dalej bez sprawdzenia kadru —
-        // trzecia linia w każdym z czterech etapów wypchnęłaby oś poza 630 px (zapas to ~57 px).
-        el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 21, color: ostatni ? '#111' : '#4a4a4a', lineHeight: 1.25, marginTop: 3 }, tnij(w.text, 104)),
+      el('div', { display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, paddingLeft: 14 }, [
+        el('div', { display: 'flex', fontFamily: 'SM', fontSize: 13, fontWeight: 700, letterSpacing: 1.6, color: akt ? CZERWONY : '#9a9a9a' }, w.kiedy),
+        el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 23, color: akt ? '#111' : '#3d3d3d', lineHeight: 1.22, marginTop: 3 }, tnij(w.text, 118)),
       ]),
     ]);
   });
 
-  // 948 = 1200 − 250 (lewa) − 2 (kreska). Wcięcie od kreski 48→44, prawy margines 62 bez zmian.
-  // Realna szerokość tekstu osi rośnie z 758 do 842 px (+11%).
-  const prawa = el('div', {
-    display: 'flex', flexDirection: 'column', justifyContent: 'center', flexGrow: 1,
-    padding: '52px 62px 52px 44px', width: 948, boxSizing: 'border-box', minWidth: 0,
-  }, [
-    el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 15, letterSpacing: 3.4, color: CZERWONY }, naglowek),
-    el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 30, color: '#111', lineHeight: 1.15, marginTop: 10 }, tnij(tytulWatku, 62)),
-    el('div', { display: 'flex', flexDirection: 'column', borderTop: '1.5px solid #111', marginTop: 18, paddingTop: 18 }, wiersze),
-  ]);
-
+  // 🔴 ROZMIARY ZMIERZONE NA PRZYPADKU SKRAJNYM, nie dobrane na oko: cztery etapy po pełnym limicie
+  // 118 znaków (każdy zawija się na dwie linie) + tytuł. Pierwsze podejście (tytuł 46 px, etap 25 px)
+  // WYCHODZIŁO POZA KADR — czwarty etap był ucięty dolną krawędzią. Przy 38/23 px mieści się z zapasem.
+  // ⚠️ Podnosząc którykolwiek rozmiar albo limit `tnij`, przerenderuj przypadek skrajny, nie typowy.
+  // ⚠️ `flexShrink: 0` na nagłówku, tytule i bloku osi jest OBOWIĄZKOWE: bez tego satori przy nadmiarze
+  // treści ściska pudełko tytułu i pozioma kreska wjeżdża w litery (złapane na podglądzie).
   return el('div', {
-    display: 'flex', width: 1200, height: 630, backgroundColor: '#fff', color: '#111',
-    boxSizing: 'border-box', overflow: 'hidden',
-  }, [lewa, kreska, prawa]);
+    display: 'flex', flexDirection: 'column', width: 1200, height: 630, backgroundColor: '#fff',
+    color: '#111', boxSizing: 'border-box', padding: '54px 62px 50px', overflow: 'hidden',
+  }, [
+    el('div', { display: 'flex', flexShrink: 0, alignItems: 'flex-start', justifyContent: 'space-between' }, [
+      el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 15, letterSpacing: 3.4, color: CZERWONY, paddingTop: 8 }, naglowek),
+      el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 40, color: '#111', flexShrink: 0 }, [
+        el('span', {}, 'Brif'), el('span', { color: CZERWONY }, '.up'),
+      ]),
+    ]),
+    el('div', { display: 'flex', flexShrink: 0, fontFamily: 'DMS', fontSize: 38, color: '#111', lineHeight: 1.12, marginTop: 10, paddingBottom: 2 }, tnij(tytulWatku, 54)),
+    el('div', { display: 'flex', flexDirection: 'column', flexShrink: 0, borderTop: '2px solid #111', marginTop: 12, paddingTop: 18 }, wiersze),
+  ]);
 }
 
 function zapasowa() {

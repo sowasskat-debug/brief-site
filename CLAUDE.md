@@ -147,6 +147,26 @@ druga ścieżka zapisu `rejected.json` (cap 200 obok knagowego 150) — teraz na
   Po spłaszczeniu podpozycja dziedziczy też wątek po kotwicy (`_kotwica`), spójnie z frontem.
   ⚠️ Kolejność w spłaszczonej liście: **najpierw top-level**, więc przy hipotetycznej kolizji slugów
   wygrywa kotwica (zmierzone na 4434 pozycjach z briefs+archiwum: 0 kolizji).
+- 🔴 **UKŁAD KARTY WĄTKU PRZYWRÓCONY 2026-08-10 — i to jest ostrzeżenie, nie notatka kosmetyczna.**
+  Zgłoszenie właściciela ze zrzutem: „tak wyglądało wcześniej, nie wiem po co się zmieniło". Miał rację.
+  **Tego układu (logo w PRAWYM GÓRNYM rogu, treść na pełną szerokość) NIGDY NIE BYŁO W REPO** — wszystkie
+  8 commitów `og/index.ts`, od pierwszego z 02.08 10:17, miały lewą kolumnę z logo i pionową kreską.
+  Wariant pełnoszerokościowy żył WYŁĄCZNIE we wdrożonej funkcji, wgrany ręcznie i niezacommitowany.
+  07.08 poszły dwa deploye z repo (#101 bramki wejścia 18:14, #109 kolejność etapów 21:10) i każdy
+  nadpisał go tym, co było w repo. Zrzut właściciela ma najnowszy etap na dole, czyli sprzed #109 —
+  zgadza się co do godziny.
+  ⚠️ **ZASADA: wygląd trzymany tylko na serwerze NIE ISTNIEJE.** Deploy `og` nie idzie przez git, więc
+  każda zmiana czegokolwiek innego w tym pliku kasuje niezacommitowany wygląd. Nie wdrażaj tej funkcji
+  z kopii innej niż repo.
+  📊 Rozmiary (tytuł 38 px, etap 23 px, limit `tnij` 118) **zmierzone na przypadku skrajnym** — cztery
+  etapy po pełnym limicie, każdy zawijany na dwie linie. Pierwsze podejście (46/25 px) wychodziło poza
+  kadr i ucinało czwarty etap. Podnosząc cokolwiek, przerenderuj przypadek SKRAJNY, nie typowy.
+  ⚠️ `flexShrink: 0` na nagłówku, tytule i bloku osi jest obowiązkowe — bez tego satori przy nadmiarze
+  treści ściska pudełko tytułu i pozioma kreska wjeżdża w litery.
+  ✅ Zysk uboczny: bez lewej kolumny wiersz jest o ~250 px szerszy, limit znaków 104 → 118, więc typowe
+  nagłówki przestały się urywać wielokropkiem (drugie zgłoszenie z tego samego dnia).
+  ⚠️ **Karta NAGŁÓWKOWA (`karta`, bez `w=1`) DALEJ MA LEWĄ KOLUMNĘ** — nie było dla niej wzorca, więc
+  jej nie ruszałem. Obie karty idą w jednej nitce na X, więc wyglądają teraz różnie.
 - `supabase/functions/og/index.ts` — generator obrazka karty 1200×630 (nagłówek + poprzedni etap + pasek
   ciągłości sagi). Wołany WYŁĄCZNIE przez scrapery przy wysyłce linku. ⚠️ Deploy **musi** iść
   z `--no-verify-jwt` (scraper nie ma tokenu). FAIL-SAFE: każdy błąd = przekierowanie na `og-image.png`,
