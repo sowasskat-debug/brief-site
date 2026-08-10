@@ -96,7 +96,9 @@ Deno.serve(async (req) => {
   }
 
   // ── Wejście ───────────────────────────────────────────────────────────────
-  let body: { text?: string; article?: string; impact?: string };
+  // `pozycje` = tryb KLASTRA (2026-08-10, życzenie właściciela „udostępnij cały klaster"): kotwica plus
+  // wszystkie podpozycje. Bez tego pola funkcja działa dokładnie jak dotąd — pojedynczy news.
+  let body: { text?: string; article?: string; impact?: string; pozycje?: Array<{ text?: string; article?: string }> };
   try {
     body = await req.json();
   } catch {
@@ -108,9 +110,23 @@ Deno.serve(async (req) => {
   const impact = String(body.impact ?? '').trim();
   if (!text) return json({ blad: 'Brak pola text' }, 400);
 
+  const pozycje = Array.isArray(body.pozycje)
+    ? body.pozycje.map((p) => ({ text: String(p?.text ?? '').trim(), article: String(p?.article ?? '').trim() }))
+                  .filter((p) => p.text.length > 0).slice(0, 6)
+    : [];
+  const klaster = pozycje.length > 0;
+
+  // MATERIAŁ = wszystko, z czego wolno czerpać liczby. Przy klastrze kotwica bywa PARASOLEM bez
+  // artykułu (tytuł zbiorczy nadany przez bota), więc treść siedzi wyłącznie w podpozycjach —
+  // gdyby bramka pokrycia patrzyła dalej tylko na `article`, odrzucałaby każdą liczbę jako zmyśloną.
+  const material = klaster
+    ? [text, article, ...pozycje.flatMap((p) => [p.text, p.article])].filter(Boolean).join('\n')
+    : `${text}\n${article}`;
+
   // Brak artykułu = nie ma z czego wziąć liczb i nie ma czego sprawdzić bramką.
   // Zwracamy null zamiast zmyślać — front podstawi sam nagłówek.
-  if (!article) {
+  // ⚠️ Przy klastrze artykuł kotwicy NIE jest wymagany: materiałem są podpozycje.
+  if (!article && !klaster) {
     return json({ post: null, powod: 'Brak treści artykułu — nie ma z czego zbudować gotowca' });
   }
 
@@ -124,17 +140,27 @@ Deno.serve(async (req) => {
         role: 'system',
         content:
           'Piszesz krótki post na X po polsku na podstawie newsa finansowo-politycznego. ' +
-          `Struktura: linia 1 to HOOK — nagłówek przerobiony tak, by konkret był na przodzie. ` +
-          'Potem JEDNO zdanie z artykułu, złożone z samych twardych faktów i liczb. ' +
+          (klaster
+            ? 'MATERIAŁ TO KLASTER: jedno wydarzenie opisane przez kilka źródeł, każde dokładające inny szczegół. ' +
+              'Napisz JEDEN post spinający całość — nie streszczaj pozycji po kolei i nie wymieniaj ich listą. ' +
+              'Linia 1 to HOOK z najmocniejszym konkretem, potem jedno zdanie łączące pozostałe ujęcia. ' +
+              'Pomiń ujęcia, które powtarzają to samo. '
+            : 'Struktura: linia 1 to HOOK — nagłówek przerobiony tak, by konkret był na przodzie. ' +
+              'Potem JEDNO zdanie z artykułu, złożone z samych twardych faktów i liczb. ') +
           `TWARDY LIMIT: ${MAX_ZNAKOW} znaków łącznie. ` +
           'ZAKAZANE: zmyślanie jakichkolwiek liczb — każda liczba w poście MUSI dosłownie występować ' +
-          'w artykule albo w nagłówku. Jeśli artykuł nie podaje liczb, napisz post bez liczb. ' +
+          'w materiale źródłowym. Jeśli materiał nie podaje liczb, napisz post bez liczb. ' +
           'Zero hashtagów, zero emoji, zero linków, zero clickbaitu, zero pytań retorycznych. ' +
           'Nie dopisuj komentarza od siebie. Zwróć WYŁĄCZNIE treść posta.',
       },
       {
         role: 'user',
-        content: `NAGŁÓWEK:\n${text}\n\nARTYKUŁ:\n${article}` +
+        content: `NAGŁÓWEK:\n${text}` +
+                 (article ? `\n\nARTYKUŁ:\n${article}` : '') +
+                 (klaster
+                   ? `\n\nPOZOSTAŁE UJĘCIA TEGO SAMEGO WYDARZENIA:\n` +
+                     pozycje.map((p, i) => `${i + 1}. ${p.text}${p.article ? `\n   ${p.article}` : ''}`).join('\n')
+                   : '') +
                  (impact ? `\n\nWPŁYW NA RYNEK:\n${impact}` : ''),
       },
     ],
@@ -164,7 +190,7 @@ Deno.serve(async (req) => {
   if (!post) return json({ post: null, powod: 'Model zwrócił pustą odpowiedź' });
 
   // ── Bramki ────────────────────────────────────────────────────────────────
-  const { ok, brakuje } = pokrycieOk(post, `${text}\n${article}`);
+  const { ok, brakuje } = pokrycieOk(post, material);
   if (!ok) {
     // Świadomie NIE próbujemy ratować gotowca (obcinać/poprawiać) — zmyślona
     // liczba w poście finansowym to gorsza szkoda niż brak gotowca.

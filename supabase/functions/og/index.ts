@@ -233,6 +233,46 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
   ]);
 }
 
+// Karta KLASTRA (`k=1`) — 2026-08-10, życzenie właściciela: „chcę udostępnić cały klaster".
+// Klaster to jedno wydarzenie opisane przez kilka źródeł, a dotąd „WRZUĆ NA X" na grupie brało tekst
+// samej kotwicy i gubiło całą jego wartość. Układ CELOWO taki sam jak karta wątku (logo w prawym górnym
+// rogu, treść pełną szerokością) — obie lądują w tej samej nitce i mają wyglądać jak jedna rodzina.
+// ⚠️ BEZ NAZW REDAKCJI (wybór właściciela): „3 ŹRÓDŁA" brzmi jak argument, dopóki nie przeczyta się
+// jakie — realny klaster z tego dnia miał Wealth Professional, InvestmentNews i KELO-AM (lokalna stacja
+// radiowa). Kicker mówi więc o LICZBIE NEWSÓW, nie o wiarygodności, której te nazwy nie dowożą.
+// ⚠️ Trzy pozycje to granica kadru — czwarta wypycha oś poza 630 px (ta sama arytmetyka co przy karcie
+// wątku: tytuł 38 px + pozycje 23 px w dwóch liniach). Nagłówek mówi „3 Z N", gdy jest ich więcej.
+const MAX_POZYCJI_KLASTRA = 3;
+
+function kartaKlastra(tytul: string, pozycje: string[], ile: number) {
+  const naglowek = ile > pozycje.length
+    ? `JEDEN TEMAT · ${pozycje.length} Z ${ile} NEWSÓW`
+    : `JEDEN TEMAT · ${ile} ${ile === 1 ? 'NEWS' : (ile < 5 ? 'NEWSY' : 'NEWSÓW')}`;
+
+  const wiersze = pozycje.map((t, i) =>
+    el('div', { display: 'flex', marginTop: i === 0 ? 0 : 15, flexShrink: 0 }, [
+      el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', width: 24, flexShrink: 0 }, [
+        el('div', { width: 10, height: 10, borderRadius: 999, marginTop: 9, backgroundColor: CZERWONY }),
+      ]),
+      el('div', { display: 'flex', flexGrow: 1, minWidth: 0, paddingLeft: 14, fontFamily: 'DMS', fontSize: 23, color: '#222', lineHeight: 1.22 },
+         tnij(t, 118)),
+    ]));
+
+  return el('div', {
+    display: 'flex', flexDirection: 'column', width: 1200, height: 630, backgroundColor: '#fff',
+    color: '#111', boxSizing: 'border-box', padding: '54px 62px 50px', overflow: 'hidden',
+  }, [
+    el('div', { display: 'flex', flexShrink: 0, alignItems: 'flex-start', justifyContent: 'space-between' }, [
+      el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 15, letterSpacing: 3.4, color: CZERWONY, paddingTop: 8 }, naglowek),
+      el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 40, color: '#111', flexShrink: 0 }, [
+        el('span', {}, 'Brif'), el('span', { color: CZERWONY }, '.up'),
+      ]),
+    ]),
+    el('div', { display: 'flex', flexShrink: 0, fontFamily: 'DMS', fontSize: 38, color: '#111', lineHeight: 1.12, marginTop: 10, paddingBottom: 2 }, tnij(tytul, 54)),
+    el('div', { display: 'flex', flexDirection: 'column', flexShrink: 0, borderTop: '2px solid #111', marginTop: 12, paddingTop: 18 }, wiersze),
+  ]);
+}
+
 function zapasowa() {
   return new Response(null, { status: 302, headers: { Location: ZAPASOWY_OBRAZEK, 'Cache-Control': 'public, max-age=300' } });
 }
@@ -244,7 +284,9 @@ function zapasowa() {
 const DAWKI = new Set(['morning', 'afternoon', 'evening']);
 const WZORZEC_SLUGU = /^[a-z0-9]{1,16}$/;     // itemSlug: djb2-xor → base36
 const WZORZEC_DATY  = /^\d{4}-\d{2}-\d{2}$/;
-const ZNANE_PARAMY  = new Set(['s', 'd', 'a', 'w']);
+// 🔴 `k` DOPISANE 2026-08-10 razem z kartą klastra. Nieznany parametr wraca `zapasowa()`, więc
+// dodanie go do adresu BEZ dopisania tutaj zamieniłoby każdą kartę w statyczną grafikę.
+const ZNANE_PARAMY  = new Set(['s', 'd', 'a', 'w', 'k']);
 
 // Pamięć podręczna w instancji funkcji. Kilkanaście kart z jednej dawki (typowa wrzutka na X,
 // albo pętla nadużycia) pobierało briefs.json + threads.json ZA KAŻDYM RAZEM — po ~360 KB
@@ -333,6 +375,30 @@ Deno.serve(async (req) => {
     }
 
     const kiedy = (a: string) => { const s = a || ''; return `${s.slice(8, 10)}.${s.slice(5, 7)} ${s.slice(11, 16)}`; };
+
+    // `k=1` → karta KLASTRA: kotwica plus ujęcia pozostałych źródeł tego samego wydarzenia.
+    // Slug może wskazywać KOTWICĘ albo dowolną PODPOZYCJĘ — w obu przypadkach rysujemy całą grupę,
+    // bo właściciel udostępnia klaster jako jedną rzecz, niezależnie od tego, w co kliknął.
+    if (u.searchParams.get('k') === '1') {
+      const kotwica = item.subItems?.length
+        ? item
+        : items.find((t: any) => (t?.subItems ?? []).some((x: any) => x?.text && itemSlug(x.text) === slug));
+      const pod = (kotwica?.subItems ?? []).map((x: any) => String(x?.text ?? '').trim()).filter(Boolean);
+      // Brak podpozycji = to nie jest klaster i nie ma czego rysować. Knaga pokazuje ten przycisk
+      // tylko dla grup, więc to zabezpieczenie drugiej warstwy (wzorzec z `w=1`).
+      if (!kotwica || pod.length === 0) return zapasowa();
+      const svgK = await satori(kartaKlastra(kotwica.text, pod.slice(0, MAX_POZYCJI_KLASTRA), pod.length) as any,
+                                { width: 1200, height: 630, fonts: await fonty() });
+      await wasmInit();
+      const pngK = new Resvg(svgK, { fitTo: { mode: 'width', value: 1200 } }).render().asPng();
+      return new Response(pngK, {
+        headers: {
+          'Content-Type': 'image/png',
+          'Cache-Control': 'public, max-age=1800, s-maxage=3600',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
 
     // `w=1` → druga karta: oś ostatnich etapów, do wklejenia w KOMENTARZU pod postem.
     // Gdy news nie należy do żadnego wątku, nie ma czego rysować — wracamy do statycznej grafiki

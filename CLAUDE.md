@@ -807,6 +807,32 @@ Właściciel wrzuca na X **post samym tekstem**, w 1. komentarzu kartę z osią 
   tylko otwiera obrazek). FAIL-SAFE: przy błędzie karta otwiera się w nowej zakładce.
 - 🔴 **Deploy funkcji NIE idzie przez git** — `supabase functions deploy og --no-verify-jwt --project-ref …`.
 
+## Udostępnianie CAŁEGO KLASTRA — karta `og?k=1` + gotowiec spinający (2026-08-10)
+Życzenie właściciela: *„chcę ulepszyć to, jak jadę «udostępnij cały klaster» — z tekstem generowanym
+pod postami oraz grafiką"*. Dotąd „WRZUĆ NA X" na grupie brało tekst samej kotwicy i **gubiło całą
+wartość klastra** — że to jedno wydarzenie opisane przez kilka źródeł, każde z innym szczegółem.
+- **Karta klastra** (`og?k=1` → `kartaKlastra`): kotwica jako tytuł, pod kreską do 3 ujęć.
+  🔴 **Układ CELOWO identyczny z kartą wątku** (logo w prawym górnym rogu, pełna szerokość) — obie
+  lądują w tej samej nitce na X i mają wyglądać jak jedna rodzina. Zmieniając jedną, zmień drugą.
+  ⚠️ **BEZ nazw redakcji — wybór właściciela po zobaczeniu podglądu.** „3 ŹRÓDŁA" brzmi jak argument,
+  dopóki nie przeczyta się jakie: realny klaster z tego dnia miał Wealth Professional, InvestmentNews
+  i KELO-AM (lokalna stacja radiowa). Kicker mówi więc o LICZBIE NEWSÓW, nie o wiarygodności.
+  ⚠️ Cap 3 pozycje (`MAX_POZYCJI_KLASTRA`); przy większym klastrze nagłówek mówi „3 Z N".
+  Zweryfikowane renderem realnej funkcji z pliku, łącznie z przypadkiem skrajnym (3 × pełny limit).
+  🔴 Parametr `k` **dopisany do `ZNANE_PARAMY`** — bez tego nieznany parametr wraca `zapasowa()`
+  i KAŻDA karta stałaby się statyczną grafiką. To nie jest formalność, tylko warunek działania.
+- **Gotowiec spinający** (`gotowiec-x`, pole `pozycje`): przy klastrze funkcja dostaje kotwicę
+  i wszystkie podpozycje, a prompt każe napisać JEDEN post łączący ujęcia, nie streszczenie po kolei.
+  ⚠️ **Bramka pokrycia liczb patrzy teraz na CAŁY materiał**, nie na sam artykuł kotwicy — przy
+  klastrze kotwica bywa parasolem bez artykułu, więc stara wersja odrzucałaby każdą liczbę jako
+  zmyśloną. Z tego samego powodu wymóg „musi być artykuł" nie obowiązuje w trybie klastra.
+  Bez pola `pozycje` funkcja zachowuje się dokładnie jak dotąd — zero regresji dla pojedynczych newsów.
+- **Knaga:** przycisk „Pobierz kartę klastra (N newsy)" pokazywany tylko dla pozycji z `subItems`.
+  `pobierzKarte` przyjmuje teraz RODZAJ (`''` / `'w'` / `'k'`) zamiast boola „czy wątek" — trzeci
+  rodzaj karty się w boola nie mieścił.
+- ⚠️ **Wymaga deployu OBU funkcji** (`og` i `gotowiec-x`) — nie idą przez git. Do czasu deployu knaga
+  pokaże przycisk, ale karta wróci jako grafika zapasowa, a gotowiec będzie jak dotąd.
+
 ## Post na X: jedna flaga, zero emoji w treści (2026-08-02) ⚠️
 **X przy „Boost" odrzuca posty z więcej niż jednym emoji** — potwierdzone przez właściciela na żywym
 poście, nie teoria. Konsekwencje w `knaga.html`:
