@@ -384,6 +384,57 @@ function offsetWarszawy(addedAt) {
     return `${znak}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
   } catch (e) { return '+02:00'; }
 }
+// ── LIVE jako kanał PILNE (2026-08-10, wybór właściciela z burzy pomysłów) ─────────────────
+// Pastylka LIVE była czysto dekoracyjna — statyczna kropka, niepodpięta do niczego. Teraz gdy
+// bieżąca dawka ma ŚWIEŻY news z flagą 🚨 (selekcja nadaje ją tylko „absolutnym trzęsieniom
+// ziemi"), pastylka zmienia się w klikalny pasek `PILNE · <nagłówek>` prowadzący do artykułu.
+// 🔴 OKNO ŚWIEŻOŚCI 4 h jest warunkiem sensu tej funkcji, nie kosmetyką: 🚨 pojawia się parę
+//    razy dziennie (zmierzone: 209 itemów w 40 dniach archiwum), więc bez okna pastylka
+//    krzyczałaby cały wieczór o porannym wydarzeniu i sygnał spowszedniałby natychmiast.
+// PILNE nie ma osobnego pola w briefs.json — selekcja wyraża je WYŁĄCZNIE flagą 🚨 (kontrakt
+// z bota: „na stronie flaga pilnego = 🚨"). Klik ustawia hash — routeHashDeepLink robi resztę
+// (mobile: scroll+rozwinięcie, desktop: dtPickItem), także dla podpozycji klastrów.
+const PILNE_OKNO_MS = 4 * 3600 * 1000;
+let pilneDomyslne = null;   // oryginalny markup pastylek, do przywrócenia gdy PILNE wygaśnie
+function aktualizujPilne(items) {
+  const mobilna = document.querySelector('.live-pill');
+  const desktopowa = document.querySelector('.dt-live');
+  if (!mobilna && !desktopowa) return;
+  if (!pilneDomyslne) pilneDomyslne = {
+    m: mobilna ? mobilna.innerHTML : '', d: desktopowa ? desktopowa.innerHTML : ''
+  };
+  const kandydaci = [];
+  const zbierz = it => {
+    if ((it.flag || '').includes('🚨')) kandydaci.push(it);
+    (it.subItems || []).forEach(zbierz);
+  };
+  (items || []).forEach(zbierz);
+  const teraz = Date.now();
+  const swieze = kandydaci
+    .map(it => ({ it, ts: itemTimestamp(it) }))
+    .filter(x => x.ts > 0 && (teraz - x.ts) <= PILNE_OKNO_MS)
+    .sort((a, b) => b.ts - a.ts);
+  const ustaw = (el, klasa, html, tytul, slug) => {
+    if (!el) return;
+    el.classList.toggle(klasa, !!slug);
+    el.innerHTML = html;
+    el.title = tytul;
+    el.onclick = slug ? () => { location.hash = `#${currentDose}/${slug}`; } : null;
+  };
+  if (!swieze.length) {
+    ustaw(mobilna, 'pilne', pilneDomyslne.m, '', null);
+    ustaw(desktopowa, 'pilne', pilneDomyslne.d, '', null);
+    return;
+  }
+  const { it } = swieze[0];
+  const slug = itemSlug(it.text);
+  ustaw(mobilna, 'pilne',
+    `<div class="live-dot"></div><span class="pilne-tag">PILNE</span><span class="pilne-txt">${escHtml(it.text)}</span>`,
+    it.text, slug);
+  ustaw(desktopowa, 'pilne',
+    `<div class="dt-live-dot"></div><span class="pilne-tag">PILNE</span><span class="pilne-txt">${escHtml(it.text)}</span>`,
+    it.text, slug);
+}
 // Czy oglądana dawka to jeszcze wczorajsze wydanie (dzisiejsze jeszcze nie powstało)?
 function isPrevEdition(dose) {
   const d = doseDates[dose];
@@ -1399,6 +1450,9 @@ function renderDose(dose, items) {
   // na feedzie). Wcześniej renderDesktop dostawał już przefiltrowaną listę → filtr aplikował się DRUGI raz
   // (przy 50% widać było ~25% newsów) + zaniżone liczniki i niepełny dtAllItems.
   const fullItems = items;
+  // Pastylka LIVE→PILNE liczy się z PEŁNEJ listy (suwak jakości nie może schować breaking newsa),
+  // a renderDose to jedyny wspólny przystanek wszystkich ścieżek: start, zmiana dawki, live-tick.
+  aktualizujPilne(fullItems);
   items = filterByCatMeat(items);
   const hero = items[0];
   const isHeroGroup = hero.subItems && hero.subItems.length > 0;
