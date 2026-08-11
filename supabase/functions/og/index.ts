@@ -89,6 +89,18 @@ const MAX_KROPEK = 12;
 // tekst musiałby zejść poniżej 13 px albo urywać się w pół zdania. Bot trzyma do 20 węzłów na wątek,
 // więc nagłówek karty mówi wprost „OSTATNIE 4 Z N", żeby nie sugerować, że to cała saga.
 const MAX_WEZLOW_NA_KARCIE = 4;
+// 🔴 KARTA KWADRATOWA (`w=1&pelna=1`) — cała historia wątku do DRUGIEGO posta w nitce (2026-08-11,
+// życzenie właściciela: „pierwszy wątek w tekście, potem w obrazku historia wątku").
+// ⚠️ DLACZEGO KWADRAT, A NIE „DŁUGI" OBRAZEK: twardy limit X to 4096×4096 px i 5 MB, ale realnym
+// ograniczeniem jest KADR W OSI CZASU — pojedynczy obrazek dostaje pełną szerokość kolumny, a wszystko
+// wyższe niż mniej więcej 1:1 jest przycinane w feedzie i widoczne w całości dopiero po kliknięciu.
+// 1200×1200 to więc maksimum, które czytelnik zobaczy CAŁE, bez wchodzenia w obrazek.
+// 📊 Ile etapów wchodzi: kadr rośnie 630 → 1200 px, czyli ~570 px zapasu przy ~105 px na wiersz
+// w przypadku SKRAJNYM (każdy etap zawinięty na dwie linie) → 4 + 5 = 9. Bierzemy 8, żeby przypadek
+// skrajny miał margines — tak samo jak przy karcie 630, gdzie pierwsze podejście wychodziło poza kadr.
+// Górna granica etapów na karcie kwadratowej. To NIE jest liczba etapów, które realnie wejdą —
+// tę wylicza `ileWezlowNaKarte` z wysokości, bo długie nagłówki zajmują dwie linie, a krótkie jedną.
+const MAX_WEZLOW_KARTA_KWADRAT = 12;
 
 // satori nie zna `text-transform` ani `-webkit-line-clamp` — wersaliki i skracanie robimy w kodzie.
 const el = (type: string, style: any, children: any = null) => ({ type, props: { style, children } });
@@ -172,7 +184,37 @@ function karta(naglowek: string, kicker: string, poprzedni: { kiedy: string; tex
 // schodzi poniżej granicy czytelności (tekst musiałby zejść pod 13 px albo urywać się w pół zdania).
 // Bot trzyma do 20 węzłów na wątek, więc nagłówek mówi wprost „OSTATNIE 4 Z 12", żeby nie sugerować,
 // że to cała saga. Najnowszy etap NA GÓRZE (zmiana 2026-08-07, spójnie z /watki i osią pod postem).
-function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[], ile: number) {
+// 🔴 WYSOKOŚĆ KARTY PEŁNEJ OSI LICZONA Z TREŚCI (2026-08-11, uwaga właściciela: „długość zależna
+// od liczby etapów, żeby nie zostało białe tło na dole"). Sztywne 1200 px przy sadze o 3 etapach
+// dawało pół obrazka pustej płachty.
+// ⚠️ SUFIT 1200 = kadr X: wszystko wyższe niż ~1:1 jest przycinane w osi czasu i widoczne w całości
+// dopiero po kliknięciu. PODŁOGA 600 = 2:1, poniżej tego obrazek robi się paskiem i też bywa kadrowany.
+// Liczby ze zmierzonego układu karty 630: szkielet (paddingi + nagłówek + tytuł + kreska) ~224 px,
+// wiersz etapu = data 16 + odstęp 3 + linie tekstu po 28 px (23 px × lineHeight 1,22) + 13 px między
+// wierszami. Limit `tnij` to 118 znaków, a przy ~1050 px szerokości w linię wchodzi ~62 znaki,
+// więc etap zajmuje jedną albo dwie linie — nigdy więcej.
+function wysokoscKartyWatku(wezly: { kiedy: string; text: string }[]) {
+  const SZKIELET = 224, LINIA = 28, NA_LINIE = 62;
+  let h = SZKIELET;
+  wezly.forEach((w, i) => {
+    const dl = Math.min((w.text || '').length, 118);
+    const linie = Math.min(2, Math.max(1, Math.ceil(dl / NA_LINIE)));
+    h += 16 + 3 + linie * LINIA + (i ? 13 : 0);
+  });
+  return Math.max(600, Math.min(1200, Math.round(h)));
+}
+
+// Ile etapów realnie wejdzie pod sufit 1200 px. Zdejmujemy NAJSTARSZE, aż się zmieści — bo karta i tak
+// pokazuje „OSTATNIE N Z M", a najnowszy etap jest najważniejszy.
+// 🔴 BEZ TEGO SUFIT BY CIĄŁ TREŚĆ: `overflow: hidden` na kadrze oznacza, że przy 12 długich etapach
+// (~1244 px wyliczonego) dwunasty zostałby po prostu obcięty dolną krawędzią, bez żadnego sygnału.
+function ileWezlowNaKarte(wezly: { kiedy: string; text: string }[]) {
+  let ile = Math.min(wezly.length, MAX_WEZLOW_KARTA_KWADRAT);
+  while (ile > 1 && wysokoscKartyWatku(wezly.slice(0, ile)) >= 1200) ile--;
+  return ile;
+}
+
+function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[], ile: number, wysokosc = 630, rozciagnij = false) {
   // 🔴 UKŁAD PRZYWRÓCONY 2026-08-10 — logo w PRAWYM GÓRNYM rogu, treść na PEŁNĄ SZEROKOŚĆ.
   // Zgłoszenie właściciela ze zrzutem: „tak wyglądało wcześniej, nie wiem po co się zmieniło".
   // Miał rację, a przyczyna jest pouczająca: **tego układu NIGDY NIE BYŁO W REPO**. Wszystkie
@@ -219,7 +261,7 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
   // ⚠️ `flexShrink: 0` na nagłówku, tytule i bloku osi jest OBOWIĄZKOWE: bez tego satori przy nadmiarze
   // treści ściska pudełko tytułu i pozioma kreska wjeżdża w litery (złapane na podglądzie).
   return el('div', {
-    display: 'flex', flexDirection: 'column', width: 1200, height: 630, backgroundColor: '#fff',
+    display: 'flex', flexDirection: 'column', width: 1200, height: wysokosc, backgroundColor: '#fff',
     color: '#111', boxSizing: 'border-box', padding: '54px 62px 50px', overflow: 'hidden',
   }, [
     el('div', { display: 'flex', flexShrink: 0, alignItems: 'flex-start', justifyContent: 'space-between' }, [
@@ -229,7 +271,14 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
       ]),
     ]),
     el('div', { display: 'flex', flexShrink: 0, fontFamily: 'DMS', fontSize: 38, color: '#111', lineHeight: 1.12, marginTop: 10, paddingBottom: 2 }, tnij(tytulWatku, 54)),
-    el('div', { display: 'flex', flexDirection: 'column', flexShrink: 0, borderTop: '2px solid #111', marginTop: 12, paddingTop: 18 }, wiersze),
+    // ⚠️ `rozciagnij` = kadr jest WYŻSZY niż treść, bo wysokość uderzyła w podłogę 600 px (proporcja 2:1,
+    // poniżej której X zaczyna kadrować). Zamiast zostawiać pas bieli na dole, rozkładamy nadmiar RÓWNO
+    // między etapy — uwaga właściciela: „żeby nie zostało białe tło na dole bez sensu".
+    el('div', {
+      display: 'flex', flexDirection: 'column', flexShrink: 0, borderTop: '2px solid #111',
+      marginTop: 12, paddingTop: 18,
+      ...(rozciagnij ? { flexGrow: 1, justifyContent: 'space-between' } : {}),
+    }, wiersze),
   ]);
 }
 
@@ -286,7 +335,9 @@ const WZORZEC_SLUGU = /^[a-z0-9]{1,16}$/;     // itemSlug: djb2-xor → base36
 const WZORZEC_DATY  = /^\d{4}-\d{2}-\d{2}$/;
 // 🔴 `k` DOPISANE 2026-08-10 razem z kartą klastra. Nieznany parametr wraca `zapasowa()`, więc
 // dodanie go do adresu BEZ dopisania tutaj zamieniłoby każdą kartę w statyczną grafikę.
-const ZNANE_PARAMY  = new Set(['s', 'd', 'a', 'w', 'k']);
+// 🔴 KAŻDY NOWY PARAMETR MUSI TU WEJŚĆ — nieznany parametr wraca `zapasowa()`, czyli KAŻDA karta
+// zamieniłaby się w statyczną grafikę. To nie formalność, tylko warunek działania (lekcja z `k=1`).
+const ZNANE_PARAMY  = new Set(['s', 'd', 'a', 'w', 'k', 'pelna']);
 
 // Pamięć podręczna w instancji funkcji. Kilkanaście kart z jednej dawki (typowa wrzutka na X,
 // albo pętla nadużycia) pobierało briefs.json + threads.json ZA KAŻDYM RAZEM — po ~360 KB
@@ -405,10 +456,17 @@ Deno.serve(async (req) => {
     // (knaga i tak pokazuje ten przycisk tylko dla newsów z sagą, to jest zabezpieczenie drugiej warstwy).
     if (u.searchParams.get('w') === '1') {
       if (!pelnyWatek) return zapasowa();
-      const ostatnie = pelnyWatek.nodes.slice(-MAX_WEZLOW_NA_KARCIE).reverse()
+      // `pelna=1` → kwadrat 1200×1200 z całą osią (do 8 etapów). Bez niej klasyczne 1200×630 z 4 etapami.
+      const pelna = u.searchParams.get('pelna') === '1';
+      const wszystkie = pelnyWatek.nodes.slice(-MAX_WEZLOW_KARTA_KWADRAT).reverse()
         .map((n: any) => ({ kiedy: kiedy(n?.added_at), text: n?.text || '' }));
-      const svgW = await satori(kartaWatku(pelnyWatek.tytul, ostatnie, pelnyWatek.nodes.length) as any,
-                               { width: 1200, height: 630, fonts: await fonty() });
+      const ostatnie = pelna ? wszystkie.slice(0, ileWezlowNaKarte(wszystkie))
+                             : wszystkie.slice(0, MAX_WEZLOW_NA_KARCIE);
+      const wys = pelna ? wysokoscKartyWatku(ostatnie) : 630;
+      // Policzona wysokość uderzyła w PODŁOGĘ (treść niższa niż 600 px) → rozciągamy odstępy zamiast bielić dół.
+      const rozciagnij = pelna && wysokoscKartyWatku(ostatnie) === 600 && ostatnie.length < 7;
+      const svgW = await satori(kartaWatku(pelnyWatek.tytul, ostatnie, pelnyWatek.nodes.length, wys, rozciagnij) as any,
+                               { width: 1200, height: wys, fonts: await fonty() });
       await wasmInit();
       const pngW = new Resvg(svgW, { fitTo: { mode: 'width', value: 1200 } }).render().asPng();
       return new Response(pngW, {
