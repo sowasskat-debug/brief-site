@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-10 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-11 (noc)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 > 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
@@ -20,10 +20,87 @@ stąd, że testowany news nie był klastrem. Diagnozując te karty, sprawdzaj NA
 ma `subItems` (dla `k`) i czy należy do sagi (dla `w`) — inaczej fail-safe zwraca grafikę zapasową
 i wygląda to jak awaria deployu.
 
-## 🔴🔴 NAJPILNIEJSZE — NIC nie czeka na komendę (stan 10.08 wieczór)
+## 🔴🔴 NAJPILNIEJSZE — NIC nie czeka na komendę (stan 11.08 noc)
 
-Wszystkie PR-y z 10.08 zmergowane (bot #131–#137), front wypchnięty na produkcję.
-Zostały wyłącznie zadania, które da się zacząć od zera — lista w punktach 2, 7 i 8 niżej.
+Wszystkie PR-y z 11.08 zmergowane: **bot #141–#146**, **front #129–#137**. Nic nie wisi.
+Zostały wyłącznie obserwacje po najbliższych biegach (blok niżej) i zadania z punktów 2, 7 i 8.
+
+## 🔴 CO OBEJRZEĆ PO NAJBLIŻSZYCH BIEGACH — z sesji 11.08
+
+- 🔴 **BIAŁY EKRAN PWA — poprawka jest na produkcji, ale ZADZIAŁA DOPIERO po zainstalowaniu SW v94+.**
+  Właściciel zgłosił: „czasami po otwarciu apki na Androidzie muszę zrestartować". Przyczyna
+  udowodniona eksperymentem: gałąź nawigacyjna SW oddawała `undefined` (pusty cache + padnięta sieć),
+  a `respondWith` z czymś, co nie jest `Response`, kończy nawigację BŁĘDEM — w PWA to czysta biel bez
+  żadnego skryptu, który mógłby ją naprawić (watchdog siedzi w `index.html`, którego nie ma).
+  **Jeśli biel wróci PO wejściu v94+, kolejnym podejrzanym jest OneSignal**, nie service worker.
+- **Liczniki nowych bramek w `brief_health`** — `bramka_wyniki_kwartalne_w_metrykach`,
+  `bramka_prognoza_wyborcza`, `naglowek_zajawka_zdjeta`, `impact_spacex_prywatny_zdjety`.
+  ⚠️ Ten ostatni jest **testem warstwy promptowej**: jeśli rośnie tak samo szybko jak przed wdrożeniem,
+  znaczy że model ignoruje „FAKT AKTUALNY" o giełdowym SpaceX i problem jest w prompcie, nie w bramce.
+- **`quotes.json`: SPCX, PALLAD, PLATYNA** — serie dopisałem RĘCZNIE danymi z Alpaki/Yahoo, żeby kafle
+  były widoczne od razu. Bot nadpisze plik przy pierwszym biegu z nową mapą; sprawdzić, czy nie zniknęły
+  (zniknięcie = symbol nie trafił do `potrzebne`, czyli coś jest nie tak z mapą, nie z danymi).
+- **Baner instalacji na iPhonie** — gałąź iOS jest nowa i nietestowana na realnym Safari (panel podglądu
+  nie obsługuje instalacji PWA). Sprawdzić na telefonie: od DRUGIEGO wejścia ma wyskoczyć pasek
+  „Udostępnij → Do ekranu początkowego", bez przycisku „Dodaj".
+
+## ✅ Co zrobiono 2026-08-11 (wieczór i noc) — sesja zgłoszeń właściciela
+
+Dziewięć zmian na produkcji, wszystkie ze zgłoszeń „to mi nie pasuje". Kolejność jak w rozmowie.
+
+**Kafle notowań przestały pokazywać nie ten instrument.**
+- **Para walutowa musi być TEMATEM newsa** (bot #141). Pod newsem o rosyjskim ataku na hutę stał wykres
+  EUR/PLN, bo linia wpływu kończyła się dopiskiem „polska waluta słabnie na niepewności". 📊 Zmierzone:
+  **17 z 76 linii wpływu ze SpaceX** i **133 ze 222 par walutowych** to taki dopisek, nie wskazanie
+  instrumentu (Geopolityka 62, Wojna w Iranie 12, Wojna na Ukrainie 8). Kryterium: waluta musi paść
+  w nagłówku albo artykule; bezpiecznik na NBP/EBC/RPP/stopy ratuje newsy monetarne bez nazwy waluty.
+- **Ticker SpaceX `SPCX`** (bot #142) — to było **sprostowanie faktu, nie poszerzenie mapy**: komentarz
+  z 07.08 wykluczał SpaceX zdaniem „spółka jest prywatna", a **nasze własne archiwum** opisało jej debiut
+  12.06.2026 i wejście do Nasdaq-100. 82 pozycje zyskały trafniejszy instrument, zero straciło.
+- **„(private)" przy SpaceX zdejmowane z linii wpływu** (bot #143) — 17 z 76 wzmianek, w 14 wariantach.
+  Prompt + bramka, bo sam prompt nie wystarcza.
+- **Pallad i platyna** (`PA=F`, `PL=F`) oraz **polska odmiana w mapie** (bot #144) — news o wierceniach
+  w złożu palladu dostawał wykres ZŁOTA, bo mapa znała z trzech metali tylko złoto. Przy okazji: news
+  o kursie FRANKA dostawał EUR/PLN, bo słownik zna wyłącznie formę podstawową.
+
+**Bramki na klasy, które przeciekały mimo reguł** (bot #145, #146) — wyniki kwartalne w metrykach
+i prognozy wyborcze. Szczegóły i wyjątki: `FinancialNewsBot/CLAUDE.md`. **16 odrzuceń na 5012 nagłówków.**
+
+**Front.**
+- **Biały ekran PWA** (#132, SW v94) — patrz blok „CO OBEJRZEĆ" wyżej.
+- **Baner instalacji: iOS + termin ważności „Nie teraz"** (#135, v95). Na iPhonie nie było ŻADNEJ
+  podpowiedzi, bo `beforeinstallprompt` to API Chromium. „Nie teraz" wyciszało baner na zawsze — teraz
+  30 dni, a zabytek `'1'` przepisujemy na DZIŚ, żeby nie wrócił wszystkim naraz.
+- **Wątek na X** (#136 v96, #137 v97) — kwadratowa karta `w=1&pelna=1` z historią sagi (wysokość liczona
+  z treści, liczba etapów dobierana do sufitu 1200 px), tekst do pierwszego posta składany
+  deterministycznie z `threads.json`, oraz **linki do 1. etapu i do całej sagi**.
+- **Dane dzisiejszych dawek** przepięte na nowe reguły (#129, #130, #131, #133, #134).
+
+## ⚠️ PUŁAPKI ZŁAPANE 11.08 — nie wdepnij drugi raz
+
+- 🔴 **Porównuj KOD Z KODEM, nie kod z zapisanymi danymi.** Pierwszy pomiar instrumentów pokazał 32 zyski
+  i wyglądał świetnie — porównywał nowy kod z polem `chart` zapisanym w archiwum, czyli z wynikiem sprzed
+  WSZYSTKICH zmian tego dnia. Uczciwe porównanie stary vs nowy `Bot.dll` dało **2 zmiany, zero strat**.
+- 🔴 **Tekst węzła sagi NIE JEST kluczem trwałym.** Zmierzone na czterech sagach: dla jednej slug policzony
+  z tekstu węzła **nie istnieje w archiwum żadnej dawki** — bot przepisuje nagłówki po publikacji, a węzeł
+  zachowuje tekst z chwili dopięcia. Cokolwiek adresujesz slugiem z `threads.json`, **sprawdź istnienie**.
+- 🔴 **Panel podglądu ZAMRAŻA animacje CSS** — `getComputedStyle` zwracał wartość początkową nawet po
+  ustawieniu `transform` inline. To nie kaskada, tylko strona w tle. Diagnozując: najpierw `transition: none`.
+- ⚠️ **`w=1&pelna=1` wymaga deployu funkcji `og`** (`supabase functions deploy og --no-verify-jwt
+  --project-ref utmvokfjvrthvcmxzowc`) — nie idzie przez git. Wdrożone z repo 11.08.
+
+## ❌ ODRZUCONE 11.08 — zmierzone i NIE warte robienia (nie odgrzewaj)
+
+- **Polskie nazwy walut jako osobne klucze mapy** — „frank" 0 wystąpień w liniach wpływu, „korona" 0,
+  „funt" 4, z czego **dwa to funt LIBAŃSKI**. Zrobione mimo to na życzenie właściciela, ale wartość
+  jest w ścieżce fallbacku na tytuł, nie w liniach wpływu.
+- **Zdejmowanie sufiksu portalu z nagłówka** („| ITReseller") — **3 realne przypadki wobec 24 atrybucji**,
+  których ruszyć nie wolno („– Ushakov", „– NYT", „– KCNA" mówią KTO to powiedział).
+- **Łapanie duplikatu między dawkami przez próg podobieństwa** — para „Bank centralny Rosji zezwala na
+  handel Bitcoinem" × „Rosja zezwoliła na regulowany obrót kryptowalutami" ma **0,133** przy progu 0,18.
+  Zmierzone lekarstwa: próg 0,13 = **+163% wywołań modelu**; miara zawierania ≥0,60 = tania (+1%), ale
+  **tej pary nie łapie** (0,40). Te nagłówki dzielą dwa rdzenie — żadna miara leksykalna tego nie złapie
+  za rozsądną cenę. Realnym lekarstwem byłby sygnał semantyczny, czyli decyzja o koszcie na każdy bieg.
 
 ## 🔴 Co obejrzeć po najbliższych biegach (to są pomiary, nie kosmetyka)
 
