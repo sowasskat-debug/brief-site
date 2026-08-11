@@ -8,8 +8,7 @@
 try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js'); }
 catch (e) { /* push niedostępny, reszta SW działa */ }
 
-const CACHE_NAME = 'brifup-cache-v93';
-// UWAGA: index.html NIE jest tu precache'owany — patrz komentarz przy jego fetch-handlerze niżej.
+const CACHE_NAME = 'brifup-cache-v94';
 const STATIC_ASSETS = [
   './manifest.json',
   './icon-192.png',
@@ -18,10 +17,58 @@ const STATIC_ASSETS = [
   './styles.css',
 ];
 
+// 🔴 STRONA AWARYJNA — ostatnia deska ratunku dla NAWIGACJI (2026-08-11, zgłoszenie właściciela:
+// „czasami po otwarciu apki na Androidzie muszę zrestartować, żeby się odpalił brifup", zrzut czystej bieli).
+// Gałąź nawigacyjna potrafiła oddać `undefined` (pusty cache + padnięta sieć), a `respondWith` z czymś,
+// co nie jest Response, kończy nawigację BŁĘDEM. Zweryfikowane eksperymentem w Chromium na odtworzonej
+// gałęzi: `chrome-error://chromewebdata/`, dokument 39 znaków, zero treści. W zwykłej karcie przeglądarka
+// dorysowuje swój komunikat — w PWA (standalone) nie ma ani paska, ani strony błędu, więc zostaje BIEL.
+// 🔴 I to jest powód, dla którego watchdog z `index.html` nie ratował: pusty dokument = żaden skrypt się
+// nie wykonuje, a watchdog siedzi WEWNĄTRZ strony, której nie ma. Jedynym wyjściem był restart apki.
+// Ta strona sama próbuje wrócić (3 podejścia z rosnącą przerwą), a potem daje przycisk — czyli nawet
+// przy trwałym braku sieci czytelnik widzi komunikat, nie białą płachtę.
+const STRONA_AWARYJNA = `<!doctype html><html lang="pl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Brif.up</title>
+<style>:root{color-scheme:light dark}body{margin:0;min-height:100vh;display:flex;align-items:center;
+justify-content:center;background:#fbfbf9;color:#111;font:16px/1.5 system-ui,-apple-system,sans-serif;
+text-align:center;padding:24px}@media(prefers-color-scheme:dark){body{background:#101014;color:#e7e7ea}}
+.b{font:700 30px Georgia,serif;letter-spacing:-.5px}.b i{color:#e01f0f;font-style:normal}
+p{color:#6b7280;max-width:20rem;margin:14px auto 22px}
+button{font:600 15px system-ui;padding:11px 22px;border:1px solid #e01f0f;background:#e01f0f;color:#fff;
+border-radius:8px;cursor:pointer}</style></head><body><div>
+<div class="b">Brif<i>.</i>up</div>
+<p id="m">Nie udało się wczytać wydania. Próbuję ponownie…</p>
+<button onclick="sessionStorage.removeItem('brifup_retry');location.reload()">Spróbuj ponownie</button>
+</div><script>
+// Auto-powrót: 3 podejścia (1,5 s / 3 s / 6 s). Licznik w sessionStorage, żeby przy trwałej awarii
+// nie wpaść w nieskończone przeładowania — po trzecim zostaje przycisk.
+var n = parseInt(sessionStorage.getItem('brifup_retry') || '0', 10);
+if (n < 3) { sessionStorage.setItem('brifup_retry', String(n + 1));
+  setTimeout(function(){ location.reload(); }, 1500 * Math.pow(2, n)); }
+else { document.getElementById('m').textContent = 'Brak połączenia z siecią. Sprawdź internet i spróbuj ponownie.'; }
+</script></body></html>`;
+
+const odpowiedzAwaryjna = () => new Response(STRONA_AWARYJNA, {
+  status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }
+});
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll(STATIC_ASSETS);
+    // 🔴 POWŁOKA PRECACHE'OWANA JUŻ PRZY INSTALACJI (2026-08-11) — to druga połowa naprawy białego ekranu.
+    // `activate` kasuje cache o innej nazwie, więc po KAŻDYM bumpie `CACHE_NAME` cache powłoki był PUSTY,
+    // a `index.html` świadomie nie był precache'owany. Pierwsze otwarcie apki po deployu szło więc wyłącznie
+    // z sieci — i wystarczyło, żeby Android wstający z uśpienia nie dowiózł pierwszego żądania. Przy tempie
+    // deployów tego projektu to okno wypadało kilka razy dziennie.
+    // ⚠️ OSOBNO od `addAll`, we własnym try: `addAll` jest wszystko-albo-nic, więc nieudane pobranie powłoki
+    // wywaliłoby CAŁĄ instalację SW (czyli i offline, i push). Brak powłoki w cache = zachowanie jak dotąd.
+    // ⚠️ Świeżość bez zmian: pilnują jej dalej stale-while-revalidate + `checkAppShellUpdate` (ETag).
+    try {
+      const powloka = await fetch('./index.html', { cache: 'reload' });
+      if (powloka.ok) await cache.put('./index.html', powloka);
+    } catch (_) { /* brak sieci przy instalacji — powłoka dojdzie przy pierwszej udanej nawigacji */ }
+  })());
   self.skipWaiting();
 });
 
@@ -97,8 +144,13 @@ self.addEventListener('fetch', (event) => {
         if (cached && !cached.ok) { cached = undefined; cache.delete('./index.html'); }
         const siec = fetch(event.request, { cache: 'reload' })
           .then((response) => { if (response.ok) cache.put('./index.html', response.clone()); return response; })
-          .catch(() => cached);
-        return cached || siec;   // jest DOBRY cache → oddaj OD RAZU (sieć odświeża w tle); brak → czekaj na sieć
+          .catch(() => null);
+        // 🔴 `respondWith` MUSI dostać Response. Wcześniej `.catch(() => cached)` przy pustym cache oddawał
+        // `undefined` → nawigacja kończyła się błędem → w PWA czysta biel bez żadnego skryptu, który mógłby
+        // to naprawić (patrz STRONA_AWARYJNA). Teraz każda ścieżka kończy się realną odpowiedzią.
+        // ⚠️ Strony awaryjnej NIGDY nie zapisujemy do cache — wylądowałaby tam jako powłoka i apka
+        // startowałaby z niej przy każdym otwarciu. To ta sama pułapka co „zatruty cache" z 17.07.
+        return cached || (await siec) || odpowiedzAwaryjna();
       })
     );
     return;
