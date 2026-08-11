@@ -998,6 +998,43 @@ artykułu (`location.hash` → `routeHashDeepLink` robi resztę, także dla podp
 - Bez świeżego 🚨 pastylka wraca do oryginalnego markupu (`pilneDomyslne`), więc zero regresji.
 - Wariant mobilny: czerwone tło + biały tekst. Desktopowy: stonowany, nagłówek ucinany przy 340 px.
 
+## Baner instalacji: iOS dostał podpowiedź, „Nie teraz" dostało termin (2026-08-11)
+Pytanie właściciela: *„czy nowi użytkownicy widzą powiadomienie, żeby zainstalować stronę jako aplikację?"*.
+Odpowiedź brzmiała: **przy pierwszej wizycie NIE** (twardy warunek `_visits >= 2`), a **na iPhonie NIGDY**.
+Decyzja właściciela: próg drugiej wizyty ZOSTAJE, dochodzi iOS i termin ważności wyciszenia.
+- 🔴 **iOS nie ma `beforeinstallprompt` i nigdy nie będzie miał** — to API Chromium. Cały baner wisiał
+  na tym zdarzeniu, więc użytkownik Safari nie dostawał ŻADNEJ podpowiedzi (zmierzone: zero wystąpień
+  `iPhone`/`iPad`/`navigator.standalone` w `index.html`). Osobna gałąź pokazuje ten sam baner **bez
+  przycisku „Dodaj"** (nie ma czego wywołać programowo) i z instrukcją „Udostępnij → «Do ekranu
+  początkowego»" zamiast obietnicy.
+- ⚠️ **iPadOS 13+ PODAJE SIĘ ZA MACA** w `userAgent` — sam test na „iPad" go nie łapie. Stąd drugi
+  warunek: `platform === 'MacIntel' && maxTouchPoints > 1`. `czyIOS(ua, platforma, dotyk)` jest
+  **funkcją czystą**, żeby dało się ją sprawdzić na cudzym UA bez podmieniania przeglądarki —
+  zweryfikowane na 7 UA: iPhone/iPad/iPadOS 13+/Chrome iOS → true, Android/Mac bez dotyku/Windows → false.
+- **Gałąź iOS odpala się 1,5 s po `load` i ustępuje Chromium** (`if (deferredInstallPrompt) return`),
+  żeby przy przeglądarce mającej prawdziwe zdarzenie wygrał wariant z działającym przyciskiem.
+- 🔴 **„Nie teraz" ma teraz TERMIN WAŻNOŚCI (30 dni).** Dotąd zapisywało `'1'` bez daty, czyli JEDNO
+  kliknięcie wyciszało baner NA ZAWSZE. ⚠️ Zabytek `'1'` przepisujemy na **DZIŚ**, nie na przeszłość —
+  inaczej wszyscy, którzy kiedykolwiek kliknęli, zobaczyliby baner od razu po wdrożeniu.
+- **Instalacja = cisza na zawsze**, nie na 30 dni: `appinstalled` oraz `outcome === 'accepted'` ustawiają
+  `brifup_install_done`. Do tego `instalacjaZbedna()` sprawdza trzy niezależne sygnały, bo żaden nie działa
+  wszędzie: `display-mode: standalone` (Chromium), `navigator.standalone` (iOS), własna flaga.
+- ✅ Zweryfikowane w przeglądarce na 6 stanach `localStorage`: brak wpisu → baner wolno pokazać; zabytek
+  `'1'` → ukryty i przepisany na dziś; kliknięte przed chwilą i 29 dni temu → ukryty; **31 dni temu →
+  baner wraca**; śmieć (`'NaN'`) → traktowany jak świeże kliknięcie (fail-safe: nie zasypujemy banerem).
+- ⚠️ **`brifup_visits` liczy ZAŁADOWANIA, nie wizyty** — rośnie też przy przeładowaniach, które apka robi
+  sobie sama (nowa powłoka, `controllerchange`, watchdog). Próg „drugiej wizyty" bywa więc osiągany
+  w pierwszej minucie. Działa to na korzyść baneru, ale przypadkiem — nie opieraj na tym liczniku niczego,
+  co ma mierzyć realne wizyty (od tego jest beacon licznika, patrz sekcja „Wejście ≠ wznowienie apki").
+
+## ⚠️ Panel podglądu ZAMRAŻA animacje CSS (2026-08-11)
+Baner instalacji dostawał klasę `.show`, a `getComputedStyle` uparcie zwracał `translateY(100%)` —
+także po ustawieniu `transform` **inline**, co wygląda na niemożliwe. Przyczyna nie jest w CSS: gdy
+panel Browser jest schowany, strona idzie w tło i **przejścia CSS się nie wykonują**, więc computed
+style zostaje na wartości początkowej. Diagnozując „styl się nie stosuje", najpierw wyłącz przejście
+(`el.style.transition = 'none'`) i dopiero wtedy mierz — po tym baner od razu pokazał
+`translateY(0)` i poprawną pozycję przy dolnej krawędzi.
+
 ## BIAŁY EKRAN PRZY STARCIE PWA — `respondWith(undefined)` (2026-08-11) 🔴
 Zgłoszenie właściciela ze zrzutem czystej bieli: *„czasami takie coś się zdarza po otwarciu aplikacji
 na Androidzie, muszę zrestartować, żeby się odpalił brifup"*.
