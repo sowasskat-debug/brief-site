@@ -395,6 +395,21 @@ input[type=password], input[type=text], input[type=email] {
         <button class="x-btn" onclick="kopiujLinkX()">Kopiuj</button>
       </div>
       <div id="xLinkStatus" class="x-link-status" style="display:none"></div>
+      <!-- Linki WĄTKOWE (2026-08-11) — widoczne tylko dla newsa należącego do sagi. -->
+      <div id="xLinkiWatku" style="display:none;margin-top:14px">
+        <div class="field-label">Link do 1. etapu wątku — od czego się zaczęło</div>
+        <div class="x-link-row">
+          <input type="text" id="xLinkPierwszy" readonly>
+          <button class="x-btn" onclick="kopiujPole('xLinkPierwszy')">Kopiuj</button>
+        </div>
+        <div id="xLinkPierwszyStatus" class="x-link-status" style="display:none"></div>
+        <div class="field-label" style="margin-top:10px">Link do CAŁEGO wątku — strona sagi</div>
+        <div class="x-link-row">
+          <input type="text" id="xLinkWatek" readonly>
+          <button class="x-btn" onclick="kopiujPole('xLinkWatek')">Kopiuj</button>
+        </div>
+        <div id="xLinkWatekStatus" class="x-link-status" style="display:none"></div>
+      </div>
       <div class="x-modal-info">
         Link świadomie NIE idzie w treść posta: X obcina za niego 30-50% zasięgu, a na koncie
         bez Premium takie posty mają praktycznie zerowe zaangażowanie. Główny post zbiera zasięg,
@@ -674,6 +689,7 @@ async function otworzX(slug) {
     const warto = w && w.ile > 4;
     if (btnWP) { btnWP.style.display = warto ? '' : 'none'; btnWP.textContent = `Pobierz oś wątku — pełna (${Math.min(w ? w.ile : 0, 8)} z ${w ? w.ile : 0})`; }
     if (btnWT) { btnWT.style.display = w ? '' : 'none'; }
+    ustawLinkiWatku(w);
   });
 
   // Karta klastra ma sens tylko dla grupy. Kotwica klastra niesie `subItems`; pojedynczy news nie.
@@ -749,6 +765,99 @@ function xPolicz() {
   el.classList.toggle('zaduzo', n > X_TEXT_MAX);
 }
 
+// 🔴 DWA ADRESY WĄTKU (2026-08-11, życzenie właściciela: „żeby generowało link do 1 posta z wątku
+// oraz link do całego wątku"). To NIE to samo co link pod postem — tamten prowadzi do JEDNEGO newsa.
+//  • 1. etap  → od czego saga się zaczęła. Prawie zawsze leży już w ARCHIWUM, więc adres musi być
+//    postaci `#archive/<data>/<dawka>/<slug>`; forma `#<dawka>/<slug>` działa tylko dla dzisiejszej
+//    dawki (front ma wprawdzie skan archiwum wstecz, ale po co go zmuszać, skoro znamy datę z węzła).
+//  • cały wątek → `w/<slug>.html`, statyczna strona sagi, którą bot generuje raz na dobę. Ma własne
+//    tagi `og:`, więc na X renderuje kartę — inaczej niż adres hashowy.
+// ⚠️ Strona sagi POWSTAJE RAZ NA DOBĘ, więc świeża saga może jej jeszcze nie mieć. Sprawdzamy HEAD-em
+// i przy braku wracamy do `watki.html` (lista sag) — gorszy adres jest lepszy niż link w 404.
+// To ta sama zasada i ten sam wzorzec co przy stubach `s/<slug>.html`.
+// 🔴 ADRES 1. ETAPU MUSI BYĆ ZWERYFIKOWANY, NIE ZBUDOWANY W CIEMNO. Zmierzone na trzech realnych
+// sagach: dla jednej z nich slug policzony z tekstu węzła NIE ISTNIEJE w archiwum żadnej dawki tego
+// dnia ani następnego — tekst węzła rozjechał się z opublikowanym nagłówkiem (bot przepisuje tytuły:
+// eskalacja, tytuł z polskiego źródła, clickbait; klaster też bywa przebudowany po publikacji).
+// Link zbudowany z samego węzła prowadziłby więc czasem w pustkę, a to gorsze niż brak linku.
+// Dlatego: szukamy slugu we WSZYSTKICH dawkach tego dnia (węzeł deklaruje `dose`, ale ta też bywa
+// nieaktualna), a gdy go nie ma — oddajemy pustkę, a caller wraca do strony sagi.
+function zawieraSlug(items, slug) {
+  for (const it of items || []) {
+    if (itemSlug(String(it?.text || '')) === slug) return true;
+    if (Array.isArray(it?.subItems) && zawieraSlug(it.subItems, slug)) return true;
+  }
+  return false;
+}
+
+async function ustalLinkPierwszegoEtapu(w) {
+  const n = w && w.wezly && w.wezly.length ? w.wezly[0] : null;   // węzły przychodzą od NAJSTARSZEGO
+  if (!n || !n.text) return '';
+  const slug = itemSlug(String(n.text));
+  const data = String(n.added_at || '').slice(0, 10);
+  const dzis = new Date().toLocaleDateString('sv-SE');   // lokalne YYYY-MM-DD, jak todayLocalISO na froncie
+  // Dzisiejszy etap żyje w bieżącym `briefs.json` — adres bez archiwum, front sam go znajdzie.
+  if (!data || data === dzis) return `https://brifup.com/#${n.dose || 'morning'}/${slug}`;
+  try {
+    const r = await fetch(`/archive/${data}.json?_=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) return '';
+    const j = await r.json();
+    for (const d of ['morning', 'afternoon', 'evening']) {
+      if (zawieraSlug((j[d] && j[d].items) || [], slug)) return `https://brifup.com/#archive/${data}/${d}/${slug}`;
+    }
+  } catch (_) {}
+  return '';
+}
+
+async function ustawLinkiWatku(w) {
+  const blok = document.getElementById('xLinkiWatku');
+  if (!blok) return;
+  blok.style.display = w ? '' : 'none';
+  if (!w) return;
+  const poleP = document.getElementById('xLinkPierwszy');
+  const statusP = document.getElementById('xLinkPierwszyStatus');
+  poleP.value = 'sprawdzam…';
+  ustalLinkPierwszegoEtapu(w).then((adres) => {
+    if (adres) { poleP.value = adres; if (statusP) statusP.style.display = 'none'; return; }
+    // Nagłówek 1. etapu nie istnieje już w archiwum pod tym slugiem — kierujemy na stronę sagi,
+    // gdzie ten etap i tak jest widoczny na osi. Lepszy trafiony adres niż dokładny, ale martwy.
+    poleP.value = w.slug ? `https://brifup.com/w/${w.slug}.html` : 'https://brifup.com/watki.html';
+    if (statusP) { statusP.style.display = ''; statusP.textContent = 'Nagłówek 1. etapu zmienił się po publikacji — link prowadzi do strony sagi.'; }
+  });
+  const status = document.getElementById('xLinkWatekStatus');
+  const pole = document.getElementById('xLinkWatek');
+  const lista = 'https://brifup.com/watki.html';
+  if (!w.slug) { pole.value = lista; status.style.display = ''; status.textContent = 'Ta saga nie ma jeszcze własnej strony — link prowadzi do listy wątków.'; return; }
+  const adres = `https://brifup.com/w/${w.slug}.html`;
+  pole.value = adres;
+  status.style.display = 'none';
+  try {
+    const r = await fetch(adres, { method: 'HEAD', cache: 'no-store' });
+    if (!r.ok) throw new Error(String(r.status));
+  } catch (e) {
+    pole.value = lista;
+    status.style.display = '';
+    status.textContent = 'Strona sagi jeszcze nie powstała (bot generuje ją raz na dobę) — link prowadzi do listy wątków.';
+  }
+}
+
+// Kopiator dowolnego pola z adresem — ta sama obsługa braku Clipboard API co w `kopiujLinkX`
+// (bez HTTPS albo przy odmowie uprawnień zaznaczamy tekst, zamiast zostawić użytkownika z niczym).
+async function kopiujPole(id) {
+  const pole = document.getElementById(id);
+  if (!pole || !pole.value) { showToast('Brak adresu'); return; }
+  try {
+    await navigator.clipboard.writeText(pole.value);
+    showToast('Link skopiowany');
+  } catch (e) {
+    pole.removeAttribute('readonly');
+    pole.select();
+    document.execCommand && document.execCommand('copy');
+    pole.setAttribute('readonly', '');
+    showToast('Zaznaczono adres — skopiuj ręcznie');
+  }
+}
+
 async function kopiujLinkX() {
   if (!xBiezacy) return;
   try {
@@ -786,7 +895,7 @@ async function zaladujWatki() {
     for (const t of th?.threads ?? []) {
       const n = t?.nodes ?? [];
       if (n.length < 2) continue;   // front i karta renderują tylko sagi ≥2 węzły
-      for (const w of n) if (!WATKI.has(norm(w?.text))) WATKI.set(norm(w?.text), { tytul: t.title || '', ile: n.length, memo: t.memo || '', wezly: n });
+      for (const w of n) if (!WATKI.has(norm(w?.text))) WATKI.set(norm(w?.text), { tytul: t.title || '', ile: n.length, memo: t.memo || '', wezly: n, slug: t.slug || '' });
     }
   } catch (_) { /* zostaje pusta mapa */ }
   return WATKI;
