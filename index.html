@@ -120,9 +120,9 @@
 </div>
 <div class="toast" id="toast"></div>
 <div class="install-banner" id="installBanner">
-  <div class="install-text">Dodaj BrifUp do ekranu głównego</div>
+  <div class="install-text" id="installText">Dodaj BrifUp do ekranu głównego</div>
   <div class="install-actions">
-    <button class="install-btn-add" onclick="installApp()">Dodaj</button>
+    <button class="install-btn-add" id="installAddBtn" onclick="installApp()">Dodaj</button>
     <button class="install-btn-dismiss" onclick="dismissInstall()">Nie teraz</button>
   </div>
 </div>
@@ -2007,26 +2007,90 @@ let deferredInstallPrompt = null;
 const _visits = (parseInt(localStorage.getItem('brifup_visits'), 10) || 0) + 1;
 localStorage.setItem('brifup_visits', _visits);
 
+// 🔴 „NIE TERAZ" MA TERMIN WAŻNOŚCI (2026-08-11, decyzja właściciela). Dotąd zapisywało '1' bez daty,
+// więc JEDNO kliknięcie wyciszało baner NA ZAWSZE — także u kogoś, kto po prostu nie miał wtedy głowy
+// do instalowania. Teraz zapisujemy znacznik czasu i milczymy INSTALL_UKRYCIE_DNI dni.
+const INSTALL_UKRYCIE_DNI = 30;
+
+// ⚠️ Zabytek '1' (sprzed tej zmiany) przepisujemy na DZIŚ, nie na przeszłość — inaczej wszyscy, którzy
+// kiedykolwiek kliknęli „Nie teraz", zobaczyliby baner od razu po wdrożeniu. 30 dni liczy się im od teraz.
+function instalacjaUkryta() {
+  const v = localStorage.getItem('brifup_install_dismissed');
+  if (!v) return false;
+  let ts = parseInt(v, 10);
+  if (!Number.isFinite(ts) || ts < 1e12) { ts = Date.now(); localStorage.setItem('brifup_install_dismissed', String(ts)); }
+  return (Date.now() - ts) < INSTALL_UKRYCIE_DNI * 86400000;
+}
+function ukryjInstalacjeNaJakisCzas() { localStorage.setItem('brifup_install_dismissed', String(Date.now())); }
+
+// Apka JUŻ zainstalowana = baner nie ma o co prosić. Trzy niezależne sygnały, bo żaden nie działa wszędzie:
+// `display-mode` (Chromium), `navigator.standalone` (iOS Safari) i własna flaga z `appinstalled`.
+function instalacjaZbedna() {
+  try {
+    if (localStorage.getItem('brifup_install_done')) return true;
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+    if (navigator.standalone === true) return true;
+  } catch (_) {}
+  return false;
+}
+window.addEventListener('appinstalled', () => {
+  localStorage.setItem('brifup_install_done', '1');
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+// 🔴 iOS NIE MA `beforeinstallprompt` — i nigdy nie będzie miał (to API Chromium). Na iPhonie instalacja
+// to ręczne „Udostępnij → Do ekranu początkowego", więc dotąd użytkownik Safari NIE DOSTAWAŁ ŻADNEJ
+// podpowiedzi. Stąd osobna gałąź: ten sam baner, ale bez przycisku „Dodaj" (nie ma czego wywołać
+// programowo) i z instrukcją zamiast obietnicy.
+// ⚠️ iPadOS 13+ PODAJE SIĘ ZA MACA w `userAgent` — sam test na „iPad" go nie złapie. Stąd drugi warunek:
+// platforma Maca + ekran dotykowy. Funkcja jest CZYSTA (dostaje wszystko z zewnątrz), żeby dało się ją
+// sprawdzić na cudzym UA bez podmieniania przeglądarki.
+function czyIOS(ua, platforma, dotyk) {
+  if (/iPad|iPhone|iPod/.test(ua)) return true;
+  return platforma === 'MacIntel' && dotyk > 1;   // iPadOS 13+
+}
+
+function pokazBanerInstalacji(tryb) {
+  const baner = document.getElementById('installBanner');
+  if (!baner) return;
+  if (tryb === 'ios') {
+    document.getElementById('installText').textContent = 'Dodaj Brif.up do ekranu: Udostępnij → „Do ekranu początkowego”';
+    document.getElementById('installAddBtn').style.display = 'none';   // na iOS nie ma czego wywołać
+  }
+  setTimeout(() => baner.classList.add('show'), 2000);
+}
+
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  if (_visits >= 2 && !localStorage.getItem('brifup_install_dismissed')) {
-    setTimeout(() => document.getElementById('installBanner').classList.add('show'), 2000);
-  }
+  if (_visits >= 2 && !instalacjaUkryta() && !instalacjaZbedna()) pokazBanerInstalacji('chromium');
+});
+
+// Gałąź iOS odpala się z opóźnieniem: gdyby przeglądarka jednak miała `beforeinstallprompt` (Chrome na
+// Androidzie z UA udającym iOS-a, przyszłe Safari), pierwszeństwo ma wariant z prawdziwym przyciskiem.
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    if (deferredInstallPrompt) return;                       // Chromium już obsłużył
+    if (!czyIOS(navigator.userAgent, navigator.platform, navigator.maxTouchPoints || 0)) return;
+    if (_visits < 2 || instalacjaUkryta() || instalacjaZbedna()) return;
+    pokazBanerInstalacji('ios');
+  }, 1500);
 });
 
 async function installApp() {
   document.getElementById('installBanner').classList.remove('show');
   if (!deferredInstallPrompt) return;
   deferredInstallPrompt.prompt();
-  await deferredInstallPrompt.userChoice;
+  const wybor = await deferredInstallPrompt.userChoice;
   deferredInstallPrompt = null;
-  localStorage.setItem('brifup_install_dismissed', '1');
+  // Zainstalował → cisza na zawsze. Odmówił w oknie systemowym → cisza na INSTALL_UKRYCIE_DNI dni.
+  if (wybor && wybor.outcome === 'accepted') localStorage.setItem('brifup_install_done', '1');
+  else ukryjInstalacjeNaJakisCzas();
 }
 
 function dismissInstall() {
   document.getElementById('installBanner').classList.remove('show');
-  localStorage.setItem('brifup_install_dismissed', '1');
+  ukryjInstalacjeNaJakisCzas();
 }
 
 // ══ PWA — rejestracja Service Workera ════════════════
