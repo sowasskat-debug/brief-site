@@ -998,6 +998,45 @@ artykułu (`location.hash` → `routeHashDeepLink` robi resztę, także dla podp
 - Bez świeżego 🚨 pastylka wraca do oryginalnego markupu (`pilneDomyslne`), więc zero regresji.
 - Wariant mobilny: czerwone tło + biały tekst. Desktopowy: stonowany, nagłówek ucinany przy 340 px.
 
+## Wątek na X: tekst w poście, pełna oś w obrazku — `w=1&pelna=1` (2026-08-11)
+Życzenie właściciela: *„panel udostępnienia wątków na X — pierwszy wątek będzie w tekście, a później
+w obrazku historia wątku"*. Nitka wygląda teraz tak: **post 1 = tekst sagi**, **komentarz 1 = kwadratowa
+oś z historią**, komentarz 2 = link (podgląd renderuje się sam).
+
+### Jak wysoki może być obrazek na X — ODPOWIEDŹ, bo ona wyznacza projekt
+Twardy limit platformy to **4096×4096 px i 5 MB**. Ale realnym ograniczeniem jest **kadr w osi czasu**:
+pojedynczy obrazek dostaje pełną szerokość kolumny, a wszystko **wyższe niż ~1:1 jest przycinane**
+i widoczne w całości dopiero po kliknięciu. W drugą stronę tak samo: **poniżej 2:1** (czyli obrazek
+bardzo szeroki i niski) X też kadruje. Stąd granice karty: **szerokość 1200 stała, wysokość 600–1200**.
+- ⚠️ Nie ma sensu robić „długiego" obrazka z całą sagą — czytelnik zobaczy w feedzie tylko jego środek.
+
+### Wysokość LICZONA Z TREŚCI, liczba etapów DOBIERANA DO SUFITU
+Dwie osobne rzeczy, obie wymuszone uwagą właściciela („żeby nie zostało białe tło na dole"):
+- **`wysokoscKartyWatku`** — szkielet ~224 px + wiersz etapu (data 16 + 3 + linie po 28 px + 13 px
+  odstępu). Etap zajmuje jedną albo dwie linie, bo `tnij` ucina na 118 znakach, a w linię wchodzi ~62.
+- **`ileWezlowNaKarte`** — zdejmuje NAJSTARSZE etapy, dopóki wyliczona wysokość nie zejdzie pod 1200.
+  🔴 Bez tego sufit CIĄŁBY treść: kadr ma `overflow: hidden`, więc dwunasty etap zniknąłby bez śladu.
+- **`rozciagnij`** — gdy treść jest NIŻSZA niż podłoga 600 px, nadmiar rozkładamy równo między etapy
+  (`flexGrow` + `justifyContent: space-between`) zamiast zostawiać pas bieli.
+- 📊 **Zweryfikowane na WDROŻONEJ funkcji, nie na szacunku:** saga 29-etapowa → `1200×1155`, pokazane
+  **12 z 29**, ostatni wiersz cały, nic nie ucięte; saga 3-etapowa → `1200×600` z równo rozłożonymi
+  odstępami i bez białego pasa. Rozmiary plików 66 i 156 KB, czyli daleko od limitu 5 MB.
+- ⚠️ `MAX_WEZLOW_KARTA_KWADRAT = 12` to GÓRNA GRANICA, nie liczba realnie pokazanych etapów — tę
+  wylicza `ileWezlowNaKarte`, bo długie nagłówki zajmują dwa razy więcej miejsca niż krótkie.
+- 🔴 **`pelna` DOPISANE do `ZNANE_PARAMY`** — bez tego nieznany parametr wraca `zapasowa()` i KAŻDA
+  karta stałaby się statyczną grafiką (ta sama pułapka co przy `k=1`).
+
+### Panel w knadze
+- **„Wstaw wątek jako tekst"** (`xWatekTekst`) — składany **deterministycznie z `threads.json`**, zero
+  tokenów: najnowszy etap + tytuł sagi + memo (dokładane tylko, gdy realnie mieści się w 300 znakach)
+  + stopka „Oś wątku: N etapów". Model tu nie jest potrzebny — tytuł i memo SĄ już streszczeniem,
+  a `gotowiec-x` opisuje POJEDYNCZY news, nie sagę.
+- **„Pobierz oś wątku — pełna (N z M)"** — pokazywana **dopiero od 5 etapów**: przy czterech i mniej
+  klasyczna karta 630 niesie to samo, a kwadrat zajmowałby dwa razy więcej miejsca w nitce.
+- ⚠️ **Deploy funkcji `og` NIE idzie przez git** (`supabase functions deploy og --no-verify-jwt
+  --project-ref utmvokfjvrthvcmxzowc`). Wdrożone z repo — patrz ostrzeżenie „wygląd trzymany tylko
+  na serwerze NIE ISTNIEJE".
+
 ## Baner instalacji: iOS dostał podpowiedź, „Nie teraz" dostało termin (2026-08-11)
 Pytanie właściciela: *„czy nowi użytkownicy widzą powiadomienie, żeby zainstalować stronę jako aplikację?"*.
 Odpowiedź brzmiała: **przy pierwszej wizycie NIE** (twardy warunek `_visits >= 2`), a **na iPhonie NIGDY**.
