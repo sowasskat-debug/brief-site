@@ -998,6 +998,48 @@ artykułu (`location.hash` → `routeHashDeepLink` robi resztę, także dla podp
 - Bez świeżego 🚨 pastylka wraca do oryginalnego markupu (`pilneDomyslne`), więc zero regresji.
 - Wariant mobilny: czerwone tło + biały tekst. Desktopowy: stonowany, nagłówek ucinany przy 340 px.
 
+## BIAŁY EKRAN PRZY STARCIE PWA — `respondWith(undefined)` (2026-08-11) 🔴
+Zgłoszenie właściciela ze zrzutem czystej bieli: *„czasami takie coś się zdarza po otwarciu aplikacji
+na Androidzie, muszę zrestartować, żeby się odpalił brifup"*.
+- 🔴 **Przyczyna — gałąź nawigacyjna SW potrafiła oddać `undefined` zamiast strony:**
+  ```js
+  const siec = fetch(...).catch(() => cached);   // cached bywa undefined
+  return cached || siec;                         // → undefined
+  ```
+  `respondWith` z czymś, co nie jest `Response`, **kończy nawigację BŁĘDEM**. 📊 Zweryfikowane
+  EKSPERYMENTEM w Chromium na odtworzonej gałęzi (nie z lektury kodu): nawigacja ląduje na
+  `chrome-error://chromewebdata/`, dokument ma **39 znaków HTML-a, zero treści**. W zwykłej karcie
+  przeglądarka dorysowuje własny komunikat — **w PWA (standalone) nie ma ani paska, ani strony błędu,
+  więc zostaje BIEL**.
+- 🔴 **Dlatego watchdog nie ratował.** Watchdog „8 s białego ekranu" (17.07) siedzi w `index.html` —
+  a przy pustym dokumencie **żaden skrypt się nie wykonuje**. Zabezpieczenie było wewnątrz strony,
+  której nie ma. Restart apki był jedynym wyjściem i to się zgadza ze zgłoszeniem.
+- 🔴 **KIEDY cache powłoki bywał pusty — to nie był rzadki zbieg okoliczności:** `activate` kasuje
+  cache o innej nazwie, a `index.html` **świadomie nie był precache'owany**. Czyli po KAŻDYM bumpie
+  `CACHE_NAME` pierwsze otwarcie apki szło wyłącznie z sieci. Wystarczyło, że Android wstający
+  z uśpienia nie dowiózł pierwszego żądania. Przy tempie deployów tego projektu okno wypadało
+  kilka razy dziennie.
+- **Naprawa dwuczęściowa (SW v94):**
+  1. `return cached || (await siec) || odpowiedzAwaryjna()` — każda ścieżka kończy się realną
+     odpowiedzią. `.catch(() => null)` zamiast `.catch(() => cached)`.
+  2. **`index.html` precache'owany przy `install`**, OSOBNO od `addAll` i we własnym `try` — `addAll`
+     jest wszystko-albo-nic, więc nieudane pobranie powłoki wywaliłoby CAŁĄ instalację SW (razem
+     z offline i pushem). Brak powłoki = zachowanie jak dotąd.
+- **`STRONA_AWARYJNA`** — samodzielny HTML w SW (logo, komunikat, przycisk). Sama próbuje wrócić:
+  **3 podejścia z rosnącą przerwą** (1,5 / 3 / 6 s, licznik w `sessionStorage`), potem zostaje przycisk.
+  Bez licznika trwała awaria sieci dałaby nieskończoną pętlę przeładowań.
+  ⚠️ **Strony awaryjnej NIGDY nie zapisujemy do cache** — wylądowałaby tam jako powłoka i apka
+  startowałaby z niej przy każdym otwarciu. To ta sama pułapka co „zatruty cache" z 17.07.
+- ✅ Zweryfikowane w Chromium REALNYM kodem strony awaryjnej: po poprawce nawigacja **udaje się**
+  (adres docelowy, tytuł „Brif.up", widoczny komunikat i przycisk), licznik prób zatrzymuje się na 3.
+  Kontrola normalnej ścieżki: apka wstaje, 50 kafli, `index.html` obecny w `brifup-cache-v94`,
+  w konsoli tylko OneSignal (na localhoście nie ma konfiguracji push).
+- ⚠️ **Świeżość powłoki bez zmian** — pilnują jej dalej stale-while-revalidate + `checkAppShellUpdate`
+  (ETag). Precache dokłada tylko DOLNĄ granicę: zawsze jest co pokazać.
+- ⚠️ **ZASADA: w `fetch`-handlerze SW każda gałąź musi kończyć się `Response`.** `respondWith` nie
+  wybacza `undefined`/`null` — a skutek widzi użytkownik jako białą stronę bez żadnego komunikatu,
+  więc jest to najgorsza możliwa awaria do zdiagnozowania ze zgłoszenia.
+
 ## Zdjęcia artykułów ładowane DOPIERO PRZY OTWARCIU karty — `data-src` (2026-08-10) 🔴
 Zgłoszenie właściciela, powtarzane od tygodni: *„po tym, jak wchodzę na brifup, nie mogę wejść na inne
 strony — nawet jak wyłączę VPN; muszę wyczyścić pamięć podręczną Chrome i dopiero wtedy działa"*.
