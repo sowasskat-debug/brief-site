@@ -1026,6 +1026,24 @@ Dwie osobne rzeczy, obie wymuszone uwagą właściciela („żeby nie zostało b
 - 🔴 **`pelna` DOPISANE do `ZNANE_PARAMY`** — bez tego nieznany parametr wraca `zapasowa()` i KAŻDA
   karta stałaby się statyczną grafiką (ta sama pułapka co przy `k=1`).
 
+### Dwa adresy wątku: 1. etap i CAŁA saga
+Życzenie właściciela: *„żeby generowało link do 1 posta z wątku oraz link do całego wątku"*.
+- **Link do całego wątku JUŻ ISTNIAŁ** — bot generuje statyczne strony sag `w/<slug>.html` (57 sztuk
+  na dziś), z własnymi tagami `og:`, więc na X renderują kartę. Panel po prostu ich nie oferował.
+  Slug bierzemy z pola `slug` wątku w `threads.json` (ZAMROŻONE przy założeniu sagi — patrz
+  „Tytuł sagi ODŚWIEŻANY" w repo bota; liczenie go z tytułu przeniosłoby stronę pod nowy adres).
+- ⚠️ **Strona sagi powstaje RAZ NA DOBĘ**, więc świeża saga może jej jeszcze nie mieć → sprawdzamy
+  HEAD-em i przy braku wracamy do `watki.html`. Ten sam wzorzec co przy stubach `s/<slug>.html`.
+- 🔴 **ADRES 1. ETAPU MUSI BYĆ ZWERYFIKOWANY, NIE ZBUDOWANY W CIEMNO.** Zmierzone na czterech realnych
+  sagach: dla jednej slug policzony z tekstu węzła **nie istnieje w archiwum żadnej dawki** tego dnia
+  ani następnego. Powód: bot PRZEPISUJE nagłówki po publikacji (eskalacja, tytuł z polskiego źródła,
+  clickbait) i przebudowuje klastry, a węzeł sagi zachowuje tekst z chwili dopięcia. `ustalLinkPierwszegoEtapu`
+  szuka slugu we WSZYSTKICH dawkach dnia (pole `dose` węzła też bywa nieaktualne), a gdy go nie ma —
+  oddaje pustkę i panel kieruje na stronę sagi, gdzie ten etap i tak jest na osi.
+  **Trafiony adres jest lepszy niż dokładny, ale martwy.**
+- ⚠️ To jest **klasa do zapamiętania: tekst węzła sagi nie jest kluczem trwałym.** Cokolwiek adresujesz
+  slugiem liczonym z `threads.json`, sprawdź istnienie, zanim pokażesz.
+
 ### Panel w knadze
 - **„Wstaw wątek jako tekst"** (`xWatekTekst`) — składany **deterministycznie z `threads.json`**, zero
   tokenów: najnowszy etap + tytuł sagi + memo (dokładane tylko, gdy realnie mieści się w 300 znakach)
