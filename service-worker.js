@@ -8,7 +8,7 @@
 try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js'); }
 catch (e) { /* push niedostępny, reszta SW działa */ }
 
-const CACHE_NAME = 'brifup-cache-v97';
+const CACHE_NAME = 'brifup-cache-v98';
 const STATIC_ASSETS = [
   './manifest.json',
   './icon-192.png',
