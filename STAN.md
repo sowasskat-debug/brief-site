@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-11 (noc)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-12 (po północy)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 > 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
@@ -27,6 +27,15 @@ Zostały wyłącznie obserwacje po najbliższych biegach (blok niżej) i zadania
 
 ## 🔴 CO OBEJRZEĆ PO NAJBLIŻSZYCH BIEGACH — z sesji 11.08
 
+- 🔴 **SPCX tylko przy realnych newsach SpaceX** (bot #148). FAKT AKTUALNY o tickerze SPCX w promptach
+  impactu zadziałał jak PRIMING — pierwszy bieg po deployu (11.08 23:10) dokleił „↑ SPCX, ↑ Nasdaq 100"
+  do newsa o ANTHROPICU i trzech kolejnych (CoreWeave, Golden Dome ×2). Dane naprawione ręcznie
+  (`0b9e77b1`), bramka `SpacexJestTematemNewsa` wdrożona. Sprawdzić w nowych dawkach: SPCX ma się
+  pojawiać wyłącznie, gdy spacex/starlink/starship/grok pada w nagłówku albo artykule.
+- **Strony sag `w/` przepiszą się przy najbliższym NOWYM dniu archiwum** (~57 plików jednym commitem —
+  to OCZEKIWANE po #147, nie awaria). Po przepisaniu tapnąć etap na dowolnej stronie sagi: ma się
+  rozsunąć skrót ze źródłem i przyciskiem „Otwórz news →", nie przekierować do archiwum.
+
 - 🔴 **BIAŁY EKRAN PWA — poprawka jest na produkcji, ale ZADZIAŁA DOPIERO po zainstalowaniu SW v94+.**
   Właściciel zgłosił: „czasami po otwarciu apki na Androidzie muszę zrestartować". Przyczyna
   udowodniona eksperymentem: gałąź nawigacyjna SW oddawała `undefined` (pusty cache + padnięta sieć),
@@ -43,6 +52,17 @@ Zostały wyłącznie obserwacje po najbliższych biegach (blok niżej) i zadania
 - **Baner instalacji na iPhonie** — gałąź iOS jest nowa i nietestowana na realnym Safari (panel podglądu
   nie obsługuje instalacji PWA). Sprawdzić na telefonie: od DRUGIEGO wejścia ma wyskoczyć pasek
   „Udostępnij → Do ekranu początkowego", bez przycisku „Dodaj".
+
+## ✅ Co zrobiono 2026-08-11/12 (druga sesja nocna) — wątki + luka SPCX
+
+- **Wątki chronologicznie od góry** (front #140, SW v98): `watki.html` zaczyna każdą oś od NAJSTARSZEGO
+  etapu; zwijany jest ŚRODEK osi (widoczny początek + 2 najnowsze etapy + znacznik „… N etapów pośrodku").
+  ⚠️ To ODWRACA decyzję z 07.08 „najnowszy na górze" — ale tylko dla `watki.html` i strony sagi;
+  oś pod postem i karta `og?w=1` zostają z najnowszym na górze.
+- **Strona sagi `w/<slug>.html`: klik w etap rozsuwa skrót** (bot #147) — `<details>`/`<summary>`,
+  zero JS; skróty dociągane z archiwum raz na dobę (`WczytajDzienArchiwum` + `SkrotEtapu` z regułą
+  kotwicy klastra). Link do pełnego newsa został W ŚRODKU rozsuniętego bloku.
+- **Luka SPCX zamknięta** (bot #148 + dane `0b9e77b1`) — szczegóły w bloku „CO OBEJRZEĆ" wyżej.
 
 ## ✅ Co zrobiono 2026-08-11 (wieczór i noc) — sesja zgłoszeń właściciela
 

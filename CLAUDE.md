@@ -904,11 +904,18 @@ pokazują TE SAME dane w TEJ SAMEJ konwencji — zmieniając jedną, sprawdź po
   renderowało się inaczej na każdym systemie i było kolorową plamą w monochromatycznym UI.
   Używaj stałej, nie wklejaj SVG drugi raz; osobne kopie są tylko w statycznym HTML (topbar, pasek).
 
-### Chronologia: NAJNOWSZY ETAP NA GÓRZE — we WSZYSTKICH trzech miejscach
-Decyzja właściciela 2026-08-07. Dotyczy `watki.html`, osi pod postem (`watekHtml`) i karty
-podglądu `og?w=1`. Węzły w `threads.json` przychodzą od bota **od najstarszego**, więc każde z tych
-miejsc odwraca listę u siebie — zmieniając jedno, zmień pozostałe, inaczej ta sama saga czyta się
-w dwie różne strony.
+### Chronologia osi — DWIE konwencje, wybór po tym, SKĄD przychodzi czytelnik (od 2026-08-12) 🔴
+Do 11.08 wszystkie trzy miejsca miały najnowszy etap na górze (decyzja z 07.08). Życzenie właściciela
+z 11.08 („udostępnij wątek ma być od góry do dołu chronologicznie") ZAWĘZIŁO tamtą decyzję do powierzchni
+śledzenia bieżącej dawki. Obowiązuje podział wg tego, skąd przychodzi czytelnik:
+- **Z UDOSTĘPNIONEGO LINKU → chronologicznie, najstarszy na górze:** `watki.html` (front #140)
+  i strona sagi `w/<slug>.html` (bot). Historię czyta się od początku; obie powierzchnie dostaje
+  ten sam odbiorca tego samego linku, więc MUSZĄ czytać się w tę samą stronę.
+  ⚠️ `watki.html` zwija ŚRODEK osi, nie ogon (początek + 2 najnowsze + znacznik „… N etapów pośrodku") —
+  pokazywanie „pierwszych trzech" chowałoby najnowszy etap, czyli to, po co ktoś wchodzi w świeży link.
+- **W APCE, przy bieżącej dawce → najnowszy na górze:** oś pod postem (`watekHtml`) i karta `og?w=1`.
+Węzły w `threads.json` przychodzą od bota **od najstarszego** — miejsca z drugiej grupy odwracają
+listę u siebie. Zmieniając konwencję któregokolwiek miejsca, sprawdź jego grupę.
 - `watekHtml`: pełne kropki, największa i czerwona na PIERWSZYM (najnowszym) wierszu, metka
   „MM-DD · dawka → relacja". „TEN NEWS" zostaje jako czerwony pierścień, gdy bieżący news nie jest
   najnowszym etapem — na podstronie nie ma odpowiednika tej informacji.
