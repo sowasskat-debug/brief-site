@@ -117,6 +117,18 @@
        odświeżania). Poza #content, żeby przeżywał re-render dawki. -->
   <a id="watkiStrip" href="watki.html"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" style="flex:0 0 auto"><path d="M12 3v18"/><circle cx="6.5" cy="6" r="2.2"/><path d="M8.7 6H12"/><circle cx="17.5" cy="12" r="2.2"/><path d="M12 12h3.3"/><circle cx="6.5" cy="18" r="2.2" fill="currentColor" stroke="none"/><path d="M8.7 18H12"/></svg><span id="watkiStripTxt">Wątki dnia</span><span class="ws-arr">→</span></a>
   <div id="content"></div>
+  <!-- 🔴 STOPKA Z LINKAMI STATYCZNYMI (2026-08-12) — to jest ścieżka INDEKSACJI, nie ozdoba.
+       Zmierzone przed dodaniem: cała apka miała JEDEN crawlowalny `<a href>` (do watki.html),
+       a 42 strony dzienne `d/` i 64 strony sag `w/` NIE MIAŁY ANI JEDNEGO linku z serwisu —
+       Google mógł je znaleźć wyłącznie przez sitemap.xml. Strona-sierota bez linków wewnętrznych
+       jest crawlowana rzadko i nisko rankowana, więc SEO stron dziennych stało na jednej nodze.
+       ⚠️ To MUSI być statyczny markup, nie link generowany JS-em: crawler renderuje SPA
+       z opóźnieniem i traktuje takie odnośniki słabiej niż zwykłe `<a href>` w HTML-u. -->
+  <nav class="brif-footer">
+    <a href="d/">Archiwum dzienne</a>
+    <a href="w/">Wątki tematyczne</a>
+    <a href="watki.html">Wątki na żywo</a>
+  </nav>
 </div>
 <div class="toast" id="toast"></div>
 <div class="install-banner" id="installBanner">

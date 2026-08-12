@@ -1301,3 +1301,21 @@ html, body {
 }
 .live-pill.pilne .pilne-txt { color: #fff; }
 .dt-live.pilne .pilne-txt { color: var(--text); text-transform: none; letter-spacing: .2px; }
+
+/* ── Stopka z linkami statycznymi (2026-08-12) ──────────────────────────────
+   Powstała pod INDEKSACJĘ: `d/` i `w/` nie miały wcześniej ani jednego linku
+   z serwisu (tylko sitemap). Stonowana, żeby nie konkurowała z treścią —
+   ma być drogą dla crawlera i dla czytelnika, który dojechał na koniec dawki. */
+.brif-footer {
+  display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: center;
+  padding: 22px 16px 34px; border-top: 1px solid var(--rule); background: var(--bg);
+}
+.brif-footer a {
+  font-family: 'Space Mono', ui-monospace, monospace; font-size: 10.5px;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  text-decoration: none; border-bottom: 1px solid transparent;
+}
+.brif-footer a:hover { color: var(--red); border-bottom-color: var(--red); }
+/* Na desktopie feed ma własny, przewijany panel — stopka wjeżdżałaby w środek układu.
+   ⚠️ Zostaje w DOM (crawler ją widzi), znika tylko wizualnie w szerokim widoku. */
+@media (min-width: 1024px) { .brif-footer { display: none; } }
