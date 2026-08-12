@@ -1106,41 +1106,31 @@ function wpKotwice(){
   if (feed) poz.push(Math.round(area.scrollTop + feed.getBoundingClientRect().top - gora));
   return poz;
 }
-// ⚠️ Saga z ROZSUNIĘTĄ osią bywa dużo wyższa niż ekran (30 etapów ≈ kilka ekranów), więc stepper
-// NIE MOŻE przeskakiwać zawsze — przeskoczyłby nad treścią, której czytelnik nie zdążył zobaczyć.
-// Skaczemy dopiero, gdy widać krawędź bieżącej sagi w stronę ruchu; wcześniej gest oddajemy
-// natywnemu przewijaniu. Krótkie sagi mieszczą się w całości, więc dla nich to zawsze prawda.
-function wpBiezacaSaga(){
-  const area = document.getElementById('scrollArea');
-  if (!area) return null;
-  const gora = area.getBoundingClientRect().top + 4;
-  return [...document.querySelectorAll('#watkiPanelBody .wp-saga')]
-    .find(el => { const r = el.getBoundingClientRect(); return r.top <= gora && r.bottom > gora; }) || null;
-}
-// ⚠️ Gest steruje dziś WYŁĄCZNIE kierunkiem -1 (w górę listy) — gałąź `+1` zostaje, bo reguła
-// kierunku już raz się zmieniła, a bez niej wróciłaby cicha pułapka przy ewentualnym powrocie.
-function wpMoznaSkoczyc(kierunek){
-  const area = document.getElementById('scrollArea');
-  const saga = wpBiezacaSaga();
-  if (!area || !saga) return true;
-  const r = saga.getBoundingClientRect(), a = area.getBoundingClientRect();
-  return kierunek === 1 ? r.bottom <= a.bottom + 4    // widać koniec sagi → wolno skoczyć do nowszej
-                        : r.top >= a.top - 4;          // widać początek → wolno skoczyć do starszej
-}
+// 🔴 SKOK W GÓRĘ DZIAŁA ZAWSZE, także ze ŚRODKA wątku (zgłoszenie właściciela 2026-08-13: „jesteśmy
+// już na drugim wątku, daję scroll w dół — ok, przewija się normalnie — ale jak chcę iść dalej
+// w górę, to przeskok już nie działa"). Dotąd bramka `wpMoznaSkoczyc` wyłączała stepper, gdy początek
+// bieżącej sagi był poza ekranem: po każdym zjeździe w dół trzeba było ręcznie doscrollować do góry,
+// żeby gest znów zadziałał. Teraz obowiązuje reguła jak w kartkowaniu:
+//   • stoimy w ŚRODKU wątku → pierwszy skok wraca na jego POCZĄTEK,
+//   • stoimy na początku    → skok idzie do wątku POPRZEDNIEGO (starszego).
+// Dzięki temu gest zawsze coś robi i nigdy nie przeskakuje nad nieprzeczytaną treścią — bo do
+// przodu (ku nowszym i ku newsom) czyta się natywnym przewijaniem, którego stepper nie dotyka.
 function wpSkok(kierunek){
   const area = document.getElementById('scrollArea');
   const poz = wpKotwice();
   if (!area || !poz.length) return;
-  // 🔴 Kotwica, na której stoimy = OSTATNIA nie niżej niż my, a NIE najbliższa. Przy sadze wyższej
-  // od ekranu (rozsunięta oś ≈ 2,5 tys. px) „najbliższa" wskazuje już NASTĘPNY wątek, więc skok
-  // w przód przeskakiwał go w całości — zmierzone: z 1791 leciało na 2996 zamiast na 2577.
+  // Kotwica, na której stoimy = OSTATNIA nie niżej niż my, a NIE najbliższa. Przy sadze wyższej
+  // od ekranu (rozsunięta oś ≈ 2,5 tys. px) „najbliższa" wskazuje już NASTĘPNY wątek.
   // Tolerancja 4 px na subpiksele i na pasek adresu, który zmienia wysokość widoku między skokami.
   let i = 0;
   for (let k = 0; k < poz.length; k++) if (poz[k] <= area.scrollTop + 4) i = k;
-  const cel = Math.max(0, Math.min(poz.length - 1, i + kierunek));
+  // W górę ze środka wątku = najpierw jego początek (patrz komentarz wyżej).
+  const cel = (kierunek === -1 && area.scrollTop > poz[i] + 4)
+    ? i
+    : Math.max(0, Math.min(poz.length - 1, i + kierunek));
   // ⚠️ NATYCHMIAST, bez `behavior:'smooth'` (życzenie właściciela: „ma szybciej przeskakiwać, tak
-  // szybko jak za pierwszym razem"). Pierwszy skok — ten przy otwarciu panelu — ustawia `scrollTop`
-  // wprost i to jego tempo jest wzorcem; animacja przeglądarki była wyraźnie wolniejsza.
+  // szybko jak za pierwszym razem"). Animacja trwała dłużej niż odstęp między machnięciami, więc
+  // kolejny gest łapał ją w locie — zmierzone: 1 trafienie na 5 zamiast 5 na 5.
   area.scrollTop = poz[cel];
 }
 (function(){
@@ -1148,15 +1138,11 @@ function wpSkok(kierunek){
   const area = document.getElementById('scrollArea');
   if (!panel || !area) return;
   const PROG_SKOKU = 30;         // krótsze przeciągnięcie = drgnięcie palca, nie polecenie skoku
-  let y0 = 0, aktywny = false, blokuje = false, wolno = false;
+  let y0 = 0, aktywny = false, blokuje = false;
   panel.addEventListener('touchstart', e => {
     blokuje = false;
     aktywny = watkiPanelOtwarty && e.touches.length === 1;
-    if (!aktywny) return;
-    y0 = e.touches[0].clientY;
-    // 🔴 Czy w ogóle wolno blokować, ustalamy JUŻ TU — przy pierwszym pikselu ruchu nie ma czasu
-    // liczyć geometrii, a decyzja musi zapaść, zanim przeglądarka zacznie przewijać (patrz niżej).
-    wolno = wpMoznaSkoczyc(-1);
+    if (aktywny) y0 = e.touches[0].clientY;
   }, { passive: true });
   panel.addEventListener('touchmove', e => {
     if (!aktywny) return;
@@ -1169,7 +1155,6 @@ function wpSkok(kierunek){
       // a raz zwykłe przewinięcie. Slop dotyku (~8 px) daje na to zapas, ale tylko jeśli
       // zareagujemy natychmiast.
       if (dy <= 2) { if (dy < -6) aktywny = false; return; }   // palec w GÓRĘ = przewijanie natywne
-      if (!wolno) { aktywny = false; return; }                 // wysoka saga: pozwól ją doczytać
       blokuje = true;
     }
     if (e.cancelable) e.preventDefault();

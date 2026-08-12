@@ -1016,13 +1016,18 @@ Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same w�
     przepuścimy bez blokady, przeglądarka zdąży uznać gest za przewijanie i od tej chwili kolejne
     zdarzenia są `cancelable:false` — nasz `preventDefault` staje się bezsilny, raz wychodził skok,
     a raz zwykłe przewinięcie. Slop dotyku (~8 px) daje na to zapas tylko przy natychmiastowej reakcji.
-    Dlatego `wpMoznaSkoczyc` liczone jest już w `touchstart` — przy pierwszym pikselu nie ma czasu
-    na geometrię.
   - ⚠️ Listener wisi na **panelu**, nie na `.scroll-area` — w feedzie palec ma przewijać normalnie.
   - ⚠️ Ruch w GÓRĘ (`dy < -6`) wyłącza stepper na cały gest → natywne przewijanie ku newsom.
-  - 🔴 **Saga z rozsuniętą osią bywa wyższa niż ekran** (30 etapów ≈ 2555 px przy widoku 742 px) —
-    stepper przeskoczyłby nad treścią. `wpMoznaSkoczyc` puszcza gest do natywnego przewijania,
-    dopóki nie widać początku bieżącej sagi.
+  - 🔴 **SKOK DZIAŁA TAKŻE ZE ŚRODKA WĄTKU** (zgłoszenie: „jesteśmy już na drugim wątku, daję scroll
+    w dół — ok — ale jak chcę iść dalej w górę, to przeskok już nie działa"). Wcześniejsza bramka
+    `wpMoznaSkoczyc` wyłączała stepper, gdy początek bieżącej sagi był poza ekranem, więc po KAŻDYM
+    zjeździe w dół trzeba było ręcznie doscrollować do góry, żeby gest odżył. Obowiązuje teraz reguła
+    kartkowania: **w środku wątku pierwszy skok wraca na jego początek, dopiero kolejny idzie do
+    wątku starszego.** Gest zawsze coś robi, a nad nieprzeczytaną treścią nic nie przeskakuje —
+    do przodu czyta się natywnym przewijaniem, którego stepper nie dotyka.
+    ⚠️ To ZASTĘPUJE dawną ochronę wysokich sag (rozsunięta oś ≈ 2555 px przy widoku 742 px):
+    czytanie w dół dalej jest płynne, a powrót w górę jednym skokiem wraca na początek tej sagi.
+    Zmierzone: z głębokości 30/80/150/260/380 px wewnątrz wątku — 5/5 powrotów na jego kotwicę.
   - 🔴 **Bieżąca kotwica = OSTATNIA nie niżej niż my, nie „najbliższa".** Przy wysokiej sadze
     najbliższa wskazuje już NASTĘPNY wątek i skok przeskakiwał go w całości — zmierzone: z 1791
     leciało na 2996 zamiast na 2577.
