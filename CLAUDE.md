@@ -984,6 +984,14 @@ Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same w�
   która wtedy kłamie. Nazwy dawek jak na MOBILNYCH zakładkach („południowa", nie „popołudniowe").
 - **Pusty panel MUSI się otworzyć i powiedzieć dlaczego** — gest, po którym nic się nie dzieje, czyta
   się jak zepsuta apka (ta sama zasada co karta „dawka w przygotowaniu").
+- 🔴 **ZMIANA DAWKI ZAMYKA PANEL** (życzenie właściciela: „jak przeskakuję na poranną, to ma być
+  schowane — dopiero jak w danej dawce pójdę w górę, ma się pokazać"). Pierwsza wersja przerysowywała
+  go i zostawiała otwarty, więc kliknięcie w zakładkę wrzucało czytelnika w środek listy wątków
+  zamiast na feed nowej dawki. Panel wraca **wyłącznie gestem**, już z wątkami nowej dawki.
+  ⚠️ To jest ODWROTNIE niż „panel szczegółów na PC zostaje przy zmianie dawki" — tam wybór artykułu
+  jest stanem czytelnika, tu panel jest doraźnym podglądem wywołanym gestem. Nie ujednolicaj tego.
+  ⚠️ Treść panelu zostaje w DOM po zamknięciu (stara belka, stare sagi) — jest niewidoczna, a przy
+  otwarciu i tak leci `renderWatkiPanel`. Nie diagnozuj tego jako „panel pokazuje złą dawkę".
 - 🔴 **`data-bez-wykresu` na wierszu etapu to nie ozdoba.** `sagaToggleSkrot`/`sagaPodswietlKropke`
   szukają legendy `.sr-box` W GÓRĘ drzewa, a panel i `#content` siedzą w tej samej `.scroll-area` —
   bez znacznika tap w panelu przestawiałby kropkę na wykresie OTWARTEGO ARTYKUŁU pod spodem
