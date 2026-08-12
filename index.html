@@ -1061,7 +1061,6 @@ function renderWatkiPanel(){
 // NAJNOWSZA saga (dół panelu), a starsze zostały wyżej do doscrollowania. Bez tego czytelnik
 // wylądowałby na początku listy, czyli na najstarszym wątku — odwrotnie do zamówienia.
 function wpPrzewinDoNajnowszej(){
-  wpKlamraAktywna = false;    // programowe przewinięcie nie może walczyć z klamrą z poprzedniego gestu
   const area = document.getElementById('scrollArea');
   const ost = document.querySelector('#watkiPanelBody .wp-saga:last-child, #watkiPanelBody .wp-pusto');
   if (!area || !ost) return;
@@ -1137,14 +1136,9 @@ function wpGornaGranicaWatku(){
   for (const k of poz) if (k <= area.scrollTop + 4) g = k;
   return g;
 }
-// Stan klamry granicy wątku (opis przy obsłudze gestu niżej). Trzymany na poziomie modułu, bo
-// zwalniają go też `wpSkok` i otwarcie panelu — każde programowe przewinięcie musi ją wyłączyć,
-// inaczej listener `scroll` ściągnąłby widok z powrotem na starą krawędź.
-let wpKlamra = 0, wpKlamraAktywna = false;
 function wpSkok(kierunek){
   const area = document.getElementById('scrollArea');
   const poz = wpKotwice();
-  wpKlamraAktywna = false;
   if (!area || !poz.length) return;
   // Kotwica, na której stoimy = OSTATNIA nie niżej niż my, a NIE najbliższa. Przy sadze wyższej
   // od ekranu (rozsunięta oś ≈ 2,5 tys. px) „najbliższa" wskazuje już NASTĘPNY wątek.
@@ -1167,56 +1161,59 @@ function wpSkok(kierunek){
   const area = document.getElementById('scrollArea');
   if (!area) return;
   const PROG_SKOKU = 30;         // krótsze przeciągnięcie = drgnięcie palca, nie polecenie skoku
-  let y0 = 0, aktywny = false, blokuje = false, granica = 0, naGranicy = false;
-  // 🔴 KLAMRA na górnej granicy wątku (2026-08-13, czwarta tura — życzenie właściciela: „jak
-  // przesunąłeś w dół i jesteś wciąż w wątku, to przewijanie w górę też ma być klasyczne, dopóki
-  // granicy wątku nie spotkamy"). W ŚRODKU wątku NIE przejmujemy gestu — przewijanie zostaje
-  // natywne, z prawdziwą bezwładnością — a krawędź wątku pilnuje listener `scroll`, który przycina
-  // pozycję do `klamra`. Poprzednia wersja emulowała ruch 1:1 z dokładanym rozpędem i przez to
-  // traciła feel systemowego przewijania; tu mamy jedno i drugie.
-  area.addEventListener('scroll', () => {
-    // Klamra żyje tylko do NASTĘPNEGO dotknięcia — inaczej blokowałaby przewijanie na zawsze.
-    if (wpKlamraAktywna && watkiPanelOtwarty && area.scrollTop < wpKlamra) area.scrollTop = wpKlamra;
-  }, { passive: true });
+  let y0 = 0, aktywny = false, blokuje = false, startScroll = 0, granica = 0, naGranicy = false;
+  let ostY = 0, ostT = 0, predkosc = 0;      // do rozpędu — patrz `touchend`
   area.addEventListener('touchstart', e => {
     blokuje = false;
-    wpKlamraAktywna = false;
     aktywny = watkiPanelOtwarty && e.touches.length === 1 && wpWPanelu();
     if (!aktywny) return;
     y0 = e.touches[0].clientY;
-    // 🔴 GÓRNA GRANICA WĄTKU, w którym stoimy — sedno reguły: „możemy scrollować w dół i w górę,
-    // dopóki nie dojedziemy do górnej granicy wątku, a w momencie kiedy dotkniemy górną granicę,
-    // to wtedy dopiero przeskok się uruchamia".
-    // Liczona RAZ na gest, bo w trakcie przewijania kotwice zmieniają się względem widoku.
+    startScroll = area.scrollTop;
+    // 🔴 GÓRNA GRANICA WĄTKU, w którym stoimy — sedno reguły z 2026-08-13 (druga tura):
+    // „możemy scrollować w dół i w górę, dopóki nie dojedziemy do górnej granicy wątku, a w momencie
+    // kiedy dotkniemy górną granicę, to wtedy dopiero przeskok się uruchamia".
+    // Liczone RAZ na gest, bo w trakcie przewijania kotwice zmieniają się względem widoku.
     granica = wpGornaGranicaWatku();
-    naGranicy = area.scrollTop <= granica + 4;
-    // W środku wątku uzbrajamy klamrę i oddajemy przewijanie przeglądarce (razem z inercją, która
-    // trwa PO puszczeniu palca — dlatego klamra zostaje aktywna aż do kolejnego dotknięcia).
-    if (!naGranicy) { wpKlamra = granica; wpKlamraAktywna = true; }
+    naGranicy = startScroll <= granica + 4;
+    ostY = y0; ostT = e.timeStamp; predkosc = 0;
   }, { passive: true });
   area.addEventListener('touchmove', e => {
-    if (!aktywny || !naGranicy) return;   // w środku wątku gest zostaje natywny
+    if (!aktywny) return;
     const dy = e.touches[0].clientY - y0;
     if (!blokuje) {
-      // 🔴 BLOKUJEMY OD PIERWSZYCH PIKSELI, nie po progu 8 px — to była naprawa „czasem nie działa".
-      // Gdy pierwsze zdarzenia przepuścimy bez `preventDefault`, przeglądarka zdąży uznać gest za
-      // PRZEWIJANIE i od tej chwili kolejne `touchmove` są `cancelable:false` — nasz `preventDefault`
-      // staje się bezsilny, więc raz wychodził skok, a raz zwykłe przewinięcie. Slop dotyku (~8 px)
-      // daje na to zapas, ale tylko przy natychmiastowej reakcji.
+      // 🔴 BLOKUJEMY OD PIERWSZYCH PIKSELI, nie po progu 8 px — i to jest naprawa „czasem nie działa"
+      // (zgłoszenie właściciela 2026-08-13). Gdy pierwsze zdarzenia przepuścimy bez `preventDefault`,
+      // przeglądarka zdąży uznać gest za PRZEWIJANIE i od tej chwili kolejne `touchmove` są
+      // `cancelable:false` — nasz `preventDefault` staje się bezsilny, więc raz wychodził skok,
+      // a raz zwykłe przewinięcie. Slop dotyku (~8 px) daje na to zapas, ale tylko jeśli
+      // zareagujemy natychmiast.
       if (dy <= 2) { if (dy < -6) aktywny = false; return; }   // palec w GÓRĘ = przewijanie natywne
       blokuje = true;
     }
     if (e.cancelable) e.preventDefault();
+    // W ŚRODKU wątku palec zwyczajnie przewija (1:1), ale ZATRZYMUJE SIĘ na jego górnej granicy —
+    // bez tego natywne przewijanie przelatywało nad krawędzią w poprzedni wątek i stepper nie miał
+    // się od czego odbić. Na granicy nic nie ruszamy; skok robi dopiero `touchend`.
+    if (!naGranicy) area.scrollTop = Math.max(granica, startScroll - dy);
+    const dt = e.timeStamp - ostT;
+    if (dt > 0) { predkosc = (e.touches[0].clientY - ostY) / dt; ostY = e.touches[0].clientY; ostT = e.timeStamp; }
   }, { passive: false });
   area.addEventListener('touchend', e => {
     if (!aktywny || !blokuje) { aktywny = false; return; }
     const dy = e.changedTouches[0].clientY - y0;
     aktywny = false; blokuje = false;
     // 🔴 TYLKO W GÓRĘ LISTY (decyzja właściciela): palec w dół = treść w dół = starszy wątek.
-    // Powrót ku newsom zostaje zwykłym przewijaniem — dlatego kierunku +1 tu nie ma.
-    // 🔴 I TYLKO Z GÓRNEJ GRANICY WĄTKU: ze środka gest jest natywny i zatrzymuje go klamra,
-    // a przeskok odpala dopiero następne przeciągnięcie, już z krawędzi.
-    if (naGranicy && dy >= PROG_SKOKU) wpSkok(-1);   // `wpSkok` sam zwalnia klamrę
+    // Powrót ku newsom zostaje zwykłym, płynnym przewijaniem — dlatego kierunku +1 tu nie ma.
+    // 🔴 I TYLKO Z GÓRNEJ GRANICY WĄTKU: ze środka ten sam gest dojeżdża do krawędzi (wyżej),
+    // a przeskok odpala dopiero następny — „jak dotkniemy górną granicę, wtedy się uruchamia".
+    if (naGranicy && dy >= PROG_SKOKU) { wpSkok(-1); return; }
+    // ⚠️ ROZPĘD po machnięciu w środku wątku. Przejmując gest, tracimy natywną bezwładność —
+    // a rozsunięta oś ma ~2555 px, więc powrót do jej początku wymagałby kilkunastu przeciągnięć
+    // palcem 1:1. Doliczamy więc drogę z prędkości ostatniego ruchu, DALEJ przycinając do granicy
+    // wątku: flick dojeżdża do krawędzi, ale nigdy jej nie przekracza.
+    if (!naGranicy && predkosc > 0.35) {
+      area.scrollTop = Math.max(granica, area.scrollTop - Math.min(1200, predkosc * 260));
+    }
   }, { passive: true });
 })();
 

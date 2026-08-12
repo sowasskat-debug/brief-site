@@ -1039,19 +1039,20 @@ Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same w�
     widocznym początku sagi) **zabijała gest po każdym zjeździe** — natywne przewijanie przelatywało
     nad krawędzią, więc warunek już nigdy nie był spełniony; wariant „ze środka skacz od razu na
     początek wątku" z kolei zabierał kontrolę nad czytaniem. Przystanek na krawędzi godzi jedno z drugim.
-    🔴 **W ŚRODKU WĄTKU GEST ZOSTAJE NATYWNY** (życzenie właściciela, czwarta tura: „jak przesunąłeś
-    w dół i jesteś wciąż w wątku, to przewijanie w górę też ma być klasyczne, dopóki granicy wątku
-    nie spotkamy"). Nie przejmujemy tam gestu wcale — przewijanie ma prawdziwą bezwładność systemu —
-    a krawędzi pilnuje listener `scroll`, który przycina pozycję do `wpKlamra`. Wcześniejsza wersja
-    emulowała ruch 1:1 z DOKŁADANYM rozpędem (`predkosc * 260`) i to właśnie odbierało systemowy feel.
-    ⚠️ Klamra jest uzbrajana w `touchstart` i żyje **do następnego dotknięcia**, bo inercja trwa PO
-    puszczeniu palca; gdyby została na stałe, zablokowałaby przewijanie na zawsze.
-    ⚠️ **Każde programowe przewinięcie musi ją zwolnić** — `wpSkok` i `wpPrzewinDoNajnowszej` robią to
-    same, inaczej listener ściągałby widok z powrotem na starą krawędź. Zamknięcie panelu jest
-    bezpieczne, bo handler sprawdza `watkiPanelOtwarty`, a `zamknijWatkiPanel` zeruje tę flagę PRZED
-    ustawieniem `scrollTop`.
-    📊 Zmierzone: mocny flick z +600/+900/+1500 px w środku wątku zatrzymuje się dokładnie na krawędzi
-    (2174, 2569, 2569), zjazd w dół nietknięty, a kolejne przeciągnięcie z krawędzi skacze (12/12).
+    🔴 **NIE PRÓBUJ ZOSTAWIĆ TU NATYWNEGO PRZEWIJANIA I PRZYCINAĆ GO W `scroll`** — próbowane
+    2026-08-13 (PR #161, wycofane tego samego wieczoru PR #162). Wyglądało czysto: w środku wątku
+    zero `preventDefault`, a krawędzi pilnuje listener `scroll` ustawiający `scrollTop` z powrotem
+    na granicę. Na telefonie dało to **wibrację** — zgłoszenie właściciela: „wibruje, skacze szybko
+    góra-dół, aż się robi ekran nieczytelny". Przyczyna: inercja dotyku żyje w kompozytorze i NIE
+    kończy się po ustawieniu `scrollTop`, więc co klatkę inercja ciągnie w górę, a klamra wpycha
+    z powrotem — klasyczna pętla sprzężenia. **Zmierzone w sandboxie tego NIE łapie**: syntetyczny
+    dotyk z CDP ma inną inercję niż palec i tam wszystko wychodziło idealnie (flick z +1500 px stawał
+    dokładnie na krawędzi). Jedyny bezpieczny sposób zatrzymania ruchu na krawędzi to przejęcie gestu
+    (`preventDefault`) i własny rozpęd — czyli to, co jest niżej.
+    ⚠️ **ROZPĘD dokładany ręcznie** (`predkosc * 260`, cap 1200 px, dalej przycięty do granicy):
+    przejmując gest tracimy natywną bezwładność, a rozsunięta oś ma ~2555 px — bez rozpędu powrót
+    do jej początku wymagałby kilkunastu machnięć. Zmierzone: 1267 → 1002 → 609 → 224 → 22 (cztery
+    machnięcia zamiast dziewięciu), z zatrzymaniem dokładnie na granicy.
     📊 Zmierzone: zjazd na +185 od granicy → dwa machnięcia dowożą do krawędzi (878), dopiero trzecie
     skacze na 460, czwarte na 22; z samej granicy **12/12** wariantów gestu skacze.
   - 🔴 **Bieżąca kotwica = OSTATNIA nie niżej niż my, nie „najbliższa".** Przy wysokiej sadze
