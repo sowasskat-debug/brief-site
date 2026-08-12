@@ -3,6 +3,7 @@
   <url><loc>https://brifup.com/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>
   <url><loc>https://brifup.com/watki.html</loc><changefreq>hourly</changefreq><priority>0.8</priority></url>
   <url><loc>https://brifup.com/d/</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://brifup.com/w/</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://brifup.com/d/2026-08-11.html</loc><lastmod>2026-08-11</lastmod><changefreq>never</changefreq><priority>0.5</priority></url>
   <url><loc>https://brifup.com/d/2026-08-10.html</loc><lastmod>2026-08-10</lastmod><changefreq>never</changefreq><priority>0.5</priority></url>
   <url><loc>https://brifup.com/d/2026-08-09.html</loc><lastmod>2026-08-09</lastmod><changefreq>never</changefreq><priority>0.5</priority></url>
@@ -86,6 +87,7 @@
   <url><loc>https://brifup.com/w/1yrm49a.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://brifup.com/w/1yu11uq.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://brifup.com/w/4340y7.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://brifup.com/w/5ii0kw.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://brifup.com/w/5xsm7k.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://brifup.com/w/60sose.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://brifup.com/w/78tt4v.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
