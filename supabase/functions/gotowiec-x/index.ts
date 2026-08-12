@@ -20,6 +20,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const OWNER_EMAIL = (Deno.env.get('OWNER_EMAIL') ?? 'sowass@outlook.com').toLowerCase();
 const DEEPSEEK_KEY = Deno.env.get('DEEPSEEK_KEY') ?? '';
 
+// Druga droga uwierzytelnienia: BOT (2026-08-12).
+// Automat publikujący na X potrzebuje tego samego gotowca co knaga, ale nie ma i nie może mieć
+// sesji właściciela — jest procesem cronowym na Hetznerze. Bez tej ścieżki dostawałby 403.
+// ⚠️ ŚWIADOMIE nie budujemy drugiego generatora w bocie: dokładnie ten błąd wycofaliśmy 02.08
+// (pole `x_post`), bo dwa generatory rozjeżdżają się i panel zaczyna produkować inny post niż automat.
+// Klucz `SUPABASE_SERVICE_ROLE_KEY` Supabase wstrzykuje sam — nie trzeba zakładać nowego sekretu.
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
 // Budżet treści: 300 zn. (podniesione z 250 na życzenie właściciela 2026-08-04 — „często ucina").
 // Stare 250 zakładało link w treści (280 − 23 na t.co), ale link idzie do KOMENTARZA, nie do posta.
 // ⚠️ Standardowe konto X ma twardy limit 280; 300 wymaga Premium. Ta sama wartość co X_TEXT_MAX
@@ -79,18 +87,26 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get('Authorization') ?? '';
   if (!authHeader.startsWith('Bearer ')) return json({ blad: 'Brak autoryzacji' }, 401);
 
-  const supa = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    { global: { headers: { Authorization: authHeader } } },
-  );
+  // Bot przedstawia się kluczem service_role. Porównanie długości PRZED treścią, żeby nie
+  // przepuścić pustego klucza (gdyby zmiennej zabrakło, `'' === ''` wpuściłoby każdego z gołym
+  // „Bearer "). Klucz service_role ma wyłącznie bot — knaga go nigdy nie widzi.
+  const token = authHeader.slice(7).trim();
+  const odBota = SERVICE_KEY.length > 20 && token === SERVICE_KEY;
 
-  const { data: userData, error: userErr } = await supa.auth.getUser();
-  const email = (userData?.user?.email ?? '').toLowerCase();
-  if (userErr || !email) return json({ blad: 'Nieprawidłowa sesja' }, 401);
-  if (email !== OWNER_EMAIL) return json({ blad: 'Brak dostępu' }, 403);
+  if (!odBota) {
+    const supa = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } },
+    );
 
-  // Dopiero tu, gdy już wiadomo, że pyta właściciel.
+    const { data: userData, error: userErr } = await supa.auth.getUser();
+    const email = (userData?.user?.email ?? '').toLowerCase();
+    if (userErr || !email) return json({ blad: 'Nieprawidłowa sesja' }, 401);
+    if (email !== OWNER_EMAIL) return json({ blad: 'Brak dostępu' }, 403);
+  }
+
+  // Dopiero tu, gdy już wiadomo, że pyta właściciel ALBO bot.
   if (!DEEPSEEK_KEY) {
     return json({ blad: 'Brak sekretu DEEPSEEK_KEY w konfiguracji funkcji' }, 500);
   }
@@ -98,7 +114,7 @@ Deno.serve(async (req) => {
   // ── Wejście ───────────────────────────────────────────────────────────────
   // `pozycje` = tryb KLASTRA (2026-08-10, życzenie właściciela „udostępnij cały klaster"): kotwica plus
   // wszystkie podpozycje. Bez tego pola funkcja działa dokładnie jak dotąd — pojedynczy news.
-  let body: { text?: string; article?: string; impact?: string; pozycje?: Array<{ text?: string; article?: string }> };
+  let body: { text?: string; article?: string; impact?: string; maxZnakow?: number; pozycje?: Array<{ text?: string; article?: string }> };
   try {
     body = await req.json();
   } catch {
@@ -109,6 +125,17 @@ Deno.serve(async (req) => {
   const article = String(body.article ?? '').trim();
   const impact = String(body.impact ?? '').trim();
   if (!text) return json({ blad: 'Brak pola text' }, 400);
+
+  // Budżet znaków może nadpisać WOŁAJĄCY (2026-08-12). Powód: knaga wkleja treść do composera X,
+  // który sam pilnuje limitu i nie da wysłać za długiego — a bot publikuje przez API, gdzie za długi
+  // post wraca BŁĘDEM i news po prostu nie idzie.
+  // ✅ Konto @brifup MA PREMIUM (potwierdzone przez właściciela 2026-08-12), więc 300 jest bezpieczne
+  // i domyślne dla obu ścieżek. ⚠️ Nie podnoś wyżej bez powodu: X zwija w osi czasu wszystko powyżej
+  // ~280 pod „Pokaż więcej", więc dłuższy post czytelnik widzi jako URWANY. Premium daje tu swobodę
+  // od twardego limitu, nie zachętę do dłuższych postów.
+  const maxZnakow = Number.isFinite(Number(body.maxZnakow))
+    ? Math.min(MAX_ZNAKOW, Math.max(120, Math.floor(Number(body.maxZnakow))))
+    : MAX_ZNAKOW;
 
   const pozycje = Array.isArray(body.pozycje)
     ? body.pozycje.map((p) => ({ text: String(p?.text ?? '').trim(), article: String(p?.article ?? '').trim() }))
@@ -147,7 +174,7 @@ Deno.serve(async (req) => {
               'Pomiń ujęcia, które powtarzają to samo. '
             : 'Struktura: linia 1 to HOOK — nagłówek przerobiony tak, by konkret był na przodzie. ' +
               'Potem JEDNO zdanie z artykułu, złożone z samych twardych faktów i liczb. ') +
-          `TWARDY LIMIT: ${MAX_ZNAKOW} znaków łącznie. ` +
+          `TWARDY LIMIT: ${maxZnakow} znaków łącznie. ` +
           'ZAKAZANE: zmyślanie jakichkolwiek liczb — każda liczba w poście MUSI dosłownie występować ' +
           'w materiale źródłowym. Jeśli materiał nie podaje liczb, napisz post bez liczb. ' +
           'Zero hashtagów, zero emoji, zero linków, zero clickbaitu, zero pytań retorycznych. ' +
@@ -201,12 +228,12 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (post.length > MAX_ZNAKOW) {
+  if (post.length > maxZnakow) {
     // Przycinamy na granicy zdania, nie w połowie słowa.
-    const doKropki = post.slice(0, MAX_ZNAKOW).lastIndexOf('.');
-    const przyciety = doKropki > MAX_ZNAKOW * 0.6
+    const doKropki = post.slice(0, maxZnakow).lastIndexOf('.');
+    const przyciety = doKropki > maxZnakow * 0.6
       ? post.slice(0, doKropki + 1)
-      : post.slice(0, MAX_ZNAKOW - 1).trimEnd() + '…';
+      : post.slice(0, maxZnakow - 1).trimEnd() + '…';
     return json({ post: przyciety, przyciety: true, dlugosc: przyciety.length });
   }
 
