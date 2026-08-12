@@ -112,10 +112,24 @@
 <div class="mob-edge-grip" id="mobEdgeGrip" onclick="mobSwpOpen()" title="Tematy / dawka"></div>
 
 <div class="scroll-area" id="scrollArea">
-  <div id="ptr"><span class="ptr-arrow">↓ Odśwież</span></div>
-  <!-- Pasek Wątków: domyślnie SCHOWANY; odsłania go pociągnięcie w dół (płytsze niż próg
-       odświeżania). Poza #content, żeby przeżywał re-render dawki. -->
-  <a id="watkiStrip" href="watki.html"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" style="flex:0 0 auto"><path d="M12 3v18"/><circle cx="6.5" cy="6" r="2.2"/><path d="M8.7 6H12"/><circle cx="17.5" cy="12" r="2.2"/><path d="M12 12h3.3"/><circle cx="6.5" cy="18" r="2.2" fill="currentColor" stroke="none"/><path d="M8.7 18H12"/></svg><span id="watkiStripTxt">Wątki dnia</span><span class="ws-arr">→</span></a>
+  <div id="ptr"><span class="ptr-arrow">↓ Wątki tej dawki</span></div>
+  <!-- 🔴 PANEL WĄTKÓW nad feedem (2026-08-13, życzenie właściciela) — zastąpił cienki pasek-link
+       do watki.html. Pociągnięcie w dół rozwija PEŁNE wątki tej dawki (jak na /watki), zamiast
+       odsyłać na podstronę. Poza #content, żeby przeżywał re-render dawki (ten sam powód co pasek).
+       ⚠️ KOLEJNOŚĆ ODWRÓCONA WZGLĘDEM /watki: najnowszy wątek na DOLE, tuż nad feedem, starsze
+       wyżej — panel wysuwa się nad treścią, więc „im wyżej, tym starsze" (decyzja właściciela).
+       Wewnątrz JEDNEJ sagi oś zostaje jak wszędzie: najnowszy etap na górze.
+       ⚠️ Belka jest na DOLE panelu, bo to ona ląduje pod ręką po geście — nagłówek u góry
+       byłby o kilka ekranów stąd. -->
+  <section id="watkiPanel" hidden aria-label="Wątki tej dawki">
+    <div class="wp-gora" hidden>Od najstarszych ↓ do najnowszych</div>
+    <div id="watkiPanelBody"></div>
+    <div class="wp-belka">
+      <span class="wp-belka-l"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" style="flex:0 0 auto"><path d="M12 3v18"/><circle cx="6.5" cy="6" r="2.2"/><path d="M8.7 6H12"/><circle cx="17.5" cy="12" r="2.2"/><path d="M12 12h3.3"/><circle cx="6.5" cy="18" r="2.2" fill="currentColor" stroke="none"/><path d="M8.7 18H12"/></svg><span id="watkiPanelTytul">Wątki tej dawki</span></span>
+      <a class="wp-belka-all" href="watki.html">Wszystkie →</a>
+      <button class="wp-belka-zwin" onclick="zamknijWatkiPanel()">Zwiń ▴</button>
+    </div>
+  </section>
   <div id="content"></div>
   <!-- 🔴 STOPKA Z LINKAMI STATYCZNYMI (2026-08-12) — to jest ścieżka INDEKSACJI, nie ozdoba.
        Zmierzone przed dodaniem: cała apka miała JEDEN crawlowalny `<a href>` (do watki.html),
@@ -721,6 +735,7 @@ async function loadThreads(){
   try {
     const r = await fetch(`./threads.json?_=${Date.now()}`, { cache:'no-store' });
     if (!r.ok) return;
+    const poprzedniStempel = THREADS && THREADS.generated_at;
     THREADS = await r.json();
     const map = new Map();
     (THREADS.threads||[]).forEach(t => {
@@ -728,18 +743,17 @@ async function loadThreads(){
       t.nodes.forEach(n => { if (n && n.text) map.set(normThreadKey(n.text), t); });
     });
     THREAD_BY_TEXT = map;
-    aktualizujWatkiStrip();
+    aktualizujLicznikWatkow();
+    // Panel przerysowujemy TYLKO przy realnej zmianie wątków. `loadThreads` leci przy każdym zapisie
+    // bota (~30 min), a re-render zwija rozwinięty skrót — czytelnikowi znikałby tekst spod palca
+    // bez powodu, skoro sagi się nie zmieniły.
+    if (watkiPanelOtwarty && THREADS.generated_at !== poprzedniStempel) renderWatkiPanel();
   } catch(_){}
 }
-// Pasek Wątków nad feedem: schowany do pierwszego pociągnięcia w dół (patrz pull-to-refresh).
-// Odsłonięty zostaje do końca wizyty — kolejne re-rendery go nie chowają (żyje poza #content).
-function odslonWatkiStrip(){ const el = document.getElementById('watkiStrip'); if (el) el.classList.add('show'); }
-function aktualizujWatkiStrip(){
+function aktualizujLicznikWatkow(){
   if (!THREADS) return;
   const n = (THREADS.threads||[]).filter(t => t.nodes && t.nodes.length >= 2).length;
   if (n <= 0) return;
-  const el = document.getElementById('watkiStripTxt');
-  if (el) el.textContent = `Śledzimy ${n} historii · Wątki`;
   const dt = document.getElementById('dtWatkiCnt');
   if (dt) dt.textContent = n;
 }
@@ -943,6 +957,134 @@ function renderWatkiOverlay(){
     </div>`;
   }).join('');
 }
+// ══ PANEL WĄTKÓW nad feedem — pełne sagi tej dawki (2026-08-13) ═════════════════
+// Zastąpił cienki pasek-link do /watki (07.08). Życzenie właściciela: „zamiast odświeżania i tego
+// małego panelu wątku — niech pojawią się wątki w całości, tak jak na osobnym linku, i tylko te,
+// które matchują z porannym/wieczornym".
+//
+// 🔴 GEST PRZEJĄŁ CAŁE POCIĄGNIĘCIE W DÓŁ — odświeżanie zeszło z gestu (decyzja właściciela).
+// Zostaje przycisk ↻ w topbarze oraz live-tick co 60 s, który i tak dociąga zmiany sam, więc
+// czytelnik nie traci dostępu do świeżych danych; traci wyłącznie skrót gestem.
+//
+// 🔴 KOLEJNOŚĆ SAG ODWROTNA NIŻ NA /watki, i to jest zamierzone: panel wysuwa się NAD feedem,
+// więc najnowszy wątek stoi na jego DOLE (pierwszy pod ręką po geście), a im wyżej przewijasz,
+// tym starsze — przewijanie w górę = cofanie się w czasie. Wewnątrz JEDNEJ sagi oś zostaje
+// zgodna z konwencją całego serwisu: najnowszy etap na górze (patrz `watekHtml`, /watki,
+// `w/<slug>.html`, karta `og?w=1`).
+//
+// Dane: wyłącznie wczytany już `threads.json` + `briefs.json` z cache — 0 dodatkowych fetchy
+// przy otwarciu. Skrót etapu dociąga się leniwie, dopiero po tapnięciu (`sagaToggleSkrot`).
+let watkiPanelOtwarty = false;
+
+// Wątek wchodzi do panelu, gdy ma etap Z TEJ DAWKI i z dnia, który ta dawka realnie pokazuje.
+// ⚠️ Dzień bierzemy z `doseDates` (data treści dawki wg briefs.json), nie z zegara — po północy,
+// zanim bot założy nową dawkę, feed pokazuje WCZORAJSZE wydanie i panel musi mówić o tym samym dniu.
+function watkiDlaDawki(dose){
+  const dzien = doseDates[dose] || todayLocalISO();
+  return ((THREADS && THREADS.threads) || [])
+    .filter(t => t.nodes && t.nodes.length >= 2
+      && t.nodes.some(n => n.dose === dose && (n.added_at||'').slice(0,10) === dzien))
+    .map(t => ({ t, last: t.nodes.reduce((m,n) => (n.added_at||'') > m ? n.added_at : m, '') }))
+    // ROSNĄCO po ostatnim etapie: najstarsza saga pierwsza w tablicy = najwyżej na ekranie,
+    // najnowsza ostatnia = tuż nad feedem. To jest ta odwrócona kolejność z komentarza wyżej.
+    .sort((a,b) => (a.last||'').localeCompare(b.last||''));
+}
+function wpSlowoEtap(n){ return n === 1 ? 'etap' : (n < 5 ? 'etapy' : 'etapów'); }
+function watkiPanelSagaHtml({ t, last }, poz){
+  const ti = indeksWatku(t);
+  const N = t.nodes.length;
+  const najnowszy = N - 1;                                   // bot podaje węzły OD NAJSTARSZEGO
+  const idx = Array.from({ length: N }, (_, i) => N - 1 - i); // wyświetlanie: od najnowszego
+  // ⚠️ `data-ni` to indeks w ORYGINALNEJ tablicy `t.nodes` — po nim sięga `sagaToggleSkrot`.
+  // Kolejność wyświetlania trzymamy w osobnej tablicy indeksów, nigdy przez reverse() na danych.
+  // `data-bez-wykresu` mówi `sagaToggleSkrot`, że ten wiersz nie ma legendy wykresu: bez tego
+  // funkcja szukałaby `.sr-box` w GÓRĘ drzewa i trafiła w wykres otwartego artykułu w feedzie.
+  const wezel = i => {
+    const n = t.nodes[i];
+    const rel = n.relacja ? `<span class="watek-sep"></span><span class="watek-rel">→ ${escHtml(n.relacja)}</span>` : '';
+    return `<div class="watek-node${i === najnowszy ? ' watek-last' : ''}" data-ti="${ti}" data-ni="${i}" data-bez-wykresu="1"
+         onclick="event.stopPropagation();sagaToggleSkrot(this)">
+        <span class="watek-dot"></span>
+        <div class="watek-metaline"><span class="watek-when">${escHtml((n.added_at||'').slice(5,10))} · ${escHtml(n.dose||'')}</span>${rel}</div>
+        <div class="watek-head">${escHtml(n.text)}</div>
+      </div><div class="saga-ex" hidden></div>`;
+  };
+  // Zwijamy ŚRODEK osi, nie ogon — zostają OBA końce (dwa najnowsze etapy u góry i początek historii
+  // na dole). Ta sama reguła co na /watki: pokazanie „trzech od góry" ucięłoby początek sagi.
+  const ukryte = N > 4 ? N - 3 : 0;
+  const os = ukryte
+    ? idx.slice(0, 2).map(wezel).join('')
+      + `<div class="wp-gap" onclick="wpToggleSaga(this)">… ${ukryte} ${wpSlowoEtap(ukryte)} pośrodku ▾</div>`
+      + `<div class="wp-srodek">${idx.slice(2, N - 1).map(wezel).join('')}</div>`
+      + wezel(idx[N - 1])
+    : idx.map(wezel).join('');
+  return `<article class="wp-saga" id="wp-saga-${poz}">
+    <div class="wp-saga-head" onclick="wpToggleSaga(this)">
+      <div class="wp-meta">${WATEK_ICN} ${N} ${wpSlowoEtap(N)} · ost. ${escHtml((last||'').slice(5,16))}</div>
+      <div class="wp-title">${escHtml(t.title || 'Wątek')}</div>
+      ${t.memo ? `<div class="wp-memo">${escHtml(t.memo)}</div>` : ''}
+    </div>
+    <div class="watek-timeline"><div class="watek-spine"></div>${os}</div>
+    ${ukryte ? `<div class="wp-toggle" onclick="wpToggleSaga(this)"><span class="wp-more">Rozsuń pełną oś · ${N} ${wpSlowoEtap(N)} ▾</span><span class="wp-less">Zwiń oś ▴</span></div>` : ''}
+  </article>`;
+}
+function wpToggleSaga(el){
+  const saga = el.closest('.wp-saga');
+  if (saga) saga.classList.toggle('open');
+}
+function renderWatkiPanel(){
+  const body = document.getElementById('watkiPanelBody');
+  if (!body) return;
+  const sagi = watkiDlaDawki(currentDose);
+  // ⚠️ Etykieta KRÓTKA — zmierzone na 390 px: „4 wątki dawki wieczornej" nie mieści się w belce
+  // obok „Wszystkie →" i „Zwiń ▴" i jest ucinana w połowie słowa (czyli z odmianą, która wtedy kłamie).
+  // Nazwy jak na MOBILNYCH zakładkach dawek („POŁUDNIOWA", nie desktopowe „POPOŁUDNIOWE") — panel
+  // jest wyłącznie mobilny, a dłuższy wariant nie mieści się w belce na 360 px.
+  const nazwa = { morning:'poranna', afternoon:'południowa', evening:'wieczorna' }[currentDose] || '';
+  const tytul = document.getElementById('watkiPanelTytul');
+  if (tytul) tytul.textContent = sagi.length
+    ? `${sagi.length} ${sagi.length === 1 ? 'wątek' : (sagi.length < 5 ? 'wątki' : 'wątków')} · ${nazwa}`
+    : `Wątki · ${nazwa}`;
+  // Pusty panel MUSI się otworzyć i powiedzieć dlaczego — gest, po którym nic się nie dzieje,
+  // czyta się jak zepsuta apka (ta sama zasada co karta „dawka w przygotowaniu").
+  body.innerHTML = sagi.length
+    ? sagi.map((s, i) => watkiPanelSagaHtml(s, i)).join('')
+    : `<div class="wp-pusto">W tej dawce żaden news nie jest jeszcze kolejnym etapem znanej historii.<br>
+        <a href="watki.html">Zobacz wszystkie wątki →</a></div>`;
+  // Napis o kolejności ma sens dopiero, gdy jest co porządkować — przy jednym wątku (albo pustym
+  // panelu) byłby opisem nieistniejącej listy.
+  const gora = document.querySelector('#watkiPanel .wp-gora');
+  if (gora) gora.hidden = sagi.length < 2;
+  document.getElementById('watkiPanel').dataset.ile = sagi.length;
+}
+// Panel wchodzi NAD feed, więc po otwarciu ustawiamy przewinięcie tak, żeby pod ręką była
+// NAJNOWSZA saga (dół panelu), a starsze zostały wyżej do doscrollowania. Bez tego czytelnik
+// wylądowałby na początku listy, czyli na najstarszym wątku — odwrotnie do zamówienia.
+function wpPrzewinDoNajnowszej(){
+  const area = document.getElementById('scrollArea');
+  const ost = document.querySelector('#watkiPanelBody .wp-saga:last-child, #watkiPanelBody .wp-pusto');
+  if (!area || !ost) return;
+  requestAnimationFrame(() => {
+    area.scrollTop += ost.getBoundingClientRect().top - area.getBoundingClientRect().top - 6;
+  });
+}
+function otworzWatkiPanel(){
+  const p = document.getElementById('watkiPanel');
+  if (!p) return;
+  renderWatkiPanel();
+  p.hidden = false;
+  watkiPanelOtwarty = true;
+  wpPrzewinDoNajnowszej();
+}
+function zamknijWatkiPanel(){
+  const p = document.getElementById('watkiPanel');
+  if (!p) return;
+  p.hidden = true;
+  watkiPanelOtwarty = false;
+  const area = document.getElementById('scrollArea');
+  if (area) area.scrollTop = 0;
+}
+
 function watekHtml(item){
   const t = threadForItem(item);
   if (!t) return '';
@@ -1046,6 +1188,10 @@ function sagaSkrotHtml(node, t){
 // ⚠️ Zasięg to NAJBLIŻSZY przodek zawierający wykres — na desktopie i mobile w DOM bywa kilka
 // otwartych kart naraz, a podświetlenie ma ruszać tylko wykres tej, w której klikamy.
 function sagaPodswietlKropke(el, wybieramy){
+  // 🔴 Wiersz z panelu wątków nie ma własnego wykresu, a szukanie `.sr-box` W GÓRĘ drzewa trafiłoby
+  // w legendę OTWARTEGO ARTYKUŁU w feedzie (panel i #content siedzą w tej samej .scroll-area) —
+  // czyli tap w panelu przestawiałby kropkę na cudzym wykresie. Stąd jawny znacznik na wierszu.
+  if (el.dataset.bezWykresu) return;
   let root = el.parentElement;
   while (root && !root.querySelector('.sr-box')) root = root.parentElement;
   const box = root && root.querySelector('.sr-box');
@@ -1070,8 +1216,11 @@ function sagaToggleSkrot(el){
   // Jeden rozwinięty etap naraz — inaczej kropka pokazywałaby ostatnio kliknięty, a otwartych
   // opisów byłoby kilka, więc wykres przestałby odpowiadać na pytanie „gdzie jestem".
   if (otwieramy) {
-    let root = el.parentElement;
-    while (root && !root.querySelector('.sr-box')) root = root.parentElement;
+    // Zasięg „jednego otwartego naraz": dla panelu wątków to sam panel — inaczej wyszukiwanie
+    // `.sr-box` w górę drzewa objęłoby całą .scroll-area i tap w panelu zamykałby skrót
+    // rozwinięty w artykule pod spodem (i odwrotnie).
+    let root = el.dataset.bezWykresu ? el.closest('#watkiPanel') : null;
+    if (!root) { root = el.parentElement; while (root && !root.querySelector('.sr-box')) root = root.parentElement; }
     (root || document).querySelectorAll('.saga-ex:not([hidden])').forEach(x => {
       x.hidden = true;
       if (x.previousElementSibling) x.previousElementSibling.classList.remove('exopen');
@@ -1946,7 +2095,14 @@ function switchDose(dose) {
   scrollArea.classList.remove('tabs-hidden');
   tabsHidden = false;
   lastScrollY = 0;
-  loadDose(dose);
+  const ladowanie = loadDose(dose);
+  // Panel wątków należy do DAWKI, więc przy przełączeniu przerysowujemy go razem z feedem.
+  // Dwa razy świadomie: od razu (żeby nie został z cudzymi wątkami na czas pobierania) i po
+  // wczytaniu — dopiero wtedy `doseDates[dose]` zna realną datę treści tej dawki.
+  if (watkiPanelOtwarty) {
+    renderWatkiPanel();
+    Promise.resolve(ladowanie).then(() => { if (watkiPanelOtwarty) { renderWatkiPanel(); wpPrzewinDoNajnowszej(); } });
+  }
   if (prevDose === 'afternoon' && dose === 'morning') setTimeout(mobGripPulse, 320);
 }
 
@@ -2167,24 +2323,29 @@ function toggleTheme() {
   if (metaTheme) metaTheme.setAttribute('content', next === 'dark' ? '#0f0f0f' : '#ffffff');
 }
 
-// ══ Pull-to-refresh ════════════════════════════════════
+// ══ Pociągnięcie w dół = WĄTKI TEJ DAWKI (2026-08-13) ═══════════════════════════
+// 🔴 Gest NIE ODŚWIEŻA JUŻ TREŚCI (decyzja właściciela): rozwija panel z pełnymi wątkami dawki.
+// Odświeżanie zostaje pod przyciskiem ↻ w topbarze, a live-tick (60 s) i tak dociąga zmiany sam,
+// więc jedyne, co znika, to skrót gestem — nie dostęp do świeżych danych.
+// Jeden próg zamiast dawnych dwóch (24 px pasek / 60 px odświeżanie): panel jest dużym elementem,
+// więc otwieranie go w trakcie ruchu palca szarpałoby widokiem — otwiera się na PUSZCZENIE.
 (function() {
   const ptr = document.getElementById('ptr');
   const area = document.getElementById('scrollArea');
-  let startY = 0, pulling = false, refreshing = false;
+  const PROG = 60;
+  let startY = 0, pulling = false;
 
   area.addEventListener('touchstart', e => {
     if (area.scrollTop === 0) { startY = e.touches[0].clientY; pulling = true; }
   }, { passive: true });
 
   area.addEventListener('touchmove', e => {
-    if (!pulling || refreshing) return;
+    if (!pulling) return;
     const dy = e.touches[0].clientY - startY;
     if (dy > 10) {
       ptr.classList.add('pulling');
-      ptr.innerHTML = dy > 60 ? '<span class="ptr-arrow">↑ Puść by odświeżyć</span>' : '<span class="ptr-arrow">↓ Odśwież</span>';
-      // Płytsze pociągnięcie odsłania pasek Wątków (zostaje widoczny); głębsze — jak dotąd — odświeża.
-      if (dy > 24) odslonWatkiStrip();
+      ptr.innerHTML = dy > PROG ? '<span class="ptr-arrow">↑ Puść, by pokazać wątki</span>'
+                                : '<span class="ptr-arrow">↓ Wątki tej dawki</span>';
     } else {
       ptr.classList.remove('pulling');
     }
@@ -2194,18 +2355,11 @@ function toggleTheme() {
     if (!pulling) return;
     const dy = e.changedTouches[0].clientY - startY;
     pulling = false;
-    if (dy > 60 && !refreshing) {
-      refreshing = true;
-      ptr.innerHTML = '<div class="ptr-spinner"></div>';
-      ptr.classList.add('refreshing');
-      refresh().then(() => {
-        ptr.classList.remove('pulling', 'refreshing');
-        ptr.innerHTML = '<span class="ptr-arrow">↓ Odśwież</span>';
-        refreshing = false;
-      });
-    } else {
-      ptr.classList.remove('pulling', 'refreshing');
-    }
+    ptr.classList.remove('pulling');
+    ptr.innerHTML = '<span class="ptr-arrow">↓ Wątki tej dawki</span>';
+    // Powtórzony gest przy JUŻ otwartym panelu (czytelnik doscrollował do samej góry) nie otwiera
+    // go drugi raz — wraca do najnowszej sagi, czyli tam, gdzie gest go stawia za pierwszym razem.
+    if (dy > PROG) { if (watkiPanelOtwarty) wpPrzewinDoNajnowszej(); else otworzWatkiPanel(); }
   }, { passive: true });
 })();
 
