@@ -798,8 +798,10 @@ Sesja mobilno-wizualna. Wszystko zmergowane do `main` i **zweryfikowane na produ
   desktop go nie pokazuje. **Zmiana dawki ZAMYKA panel** — wraca wyłącznie gestem, już z wątkami
   nowej dawki. **Przewijanie panelu idzie skokami po wątkach** — stepper w JS (`wpSkok`), NIE
   `scroll-snap`: snap tylko dociągał po płynnym przewijaniu i właściciel to odrzucił („nie
-  przeskakuje tak jak przy pierwszym"). Wewnątrz sagi wyższej niż ekran gest wraca do natywnego
-  przewijania, żeby dało się ją doczytać. Szczegóły i pułapki: `CLAUDE.md`, sekcja
+  przeskakuje tak jak przy pierwszym"). Skok działa **tylko w górę listy** (palec w dół, ku starszym)
+  i jest **natychmiastowy** — animacja trwała dłużej niż odstęp między machnięciami, więc kolejny gest
+  łapał ją w locie i lądował byle gdzie (stąd „czasem nie działa"; zmierzone A/B: 1 z 5 trafień vs 5 z 5).
+  Wewnątrz sagi wyższej niż ekran gest wraca do natywnego przewijania, żeby dało się ją doczytać. Szczegóły i pułapki: `CLAUDE.md`, sekcja
   „Panel wątków nad feedem".
 - **Desktop: przycisk „WĄTKI N"** obok zakładek dawek (PR #106), czerwony obrys (fiolet jest zajęty
   przez aktywną dawkę), licznik żywy z `threads.json`.

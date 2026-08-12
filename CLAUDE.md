@@ -1002,25 +1002,37 @@ Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same w�
   w sandboxie nie przewija wcale. `Input.dispatchTouchEvent` przewija i to ono nadaje się do testów.
   Teraz: listener na `#watkiPanel` (`touchmove` z `passive:false`) blokuje natywne przewijanie
   w pionie i na puszczenie woła `wpSkok(±1)` → `scrollTo({behavior:'smooth'})` do sąsiedniej kotwicy.
-  - ⚠️ Listener wisi na **panelu**, nie na `.scroll-area` — w feedzie palec ma przewijać normalnie,
-    a „ucieczka" z panelu robi się sama: ostatni skok stawia na `#content` i kolejne dotknięcia
-    trafiają już poza panel.
-  - ⚠️ **Ruch poziomy oddajemy dalej** (`|dx| > |dy}` → `aktywny = false`), bo na `.scroll-area`
-    wisi swipe zmiany dawki. Zweryfikowane: swipe w lewo w panelu przełącza dawkę.
+  - 🔴 **TYLKO W GÓRĘ LISTY** (decyzja właściciela 2026-08-13): palec w dół = treść w dół = starszy
+    wątek. Powrót ku newsom zostaje zwykłym, płynnym przewijaniem, więc kierunku `+1` w geście nie ma.
+  - 🔴 **SKOK JEST NATYCHMIASTOWY (`scrollTop = …`), nie `behavior:'smooth'`** — i to jest naprawa
+    zgłoszenia „nie za każdym razem to działa". Animacja trwała dłużej niż odstęp między machnięciami,
+    więc kolejny gest łapał ją w locie i lądował byle gdzie. 📊 Zmierzone A/B na tej samej serii
+    pięciu machnięć co 120 ms: **animowany 1706 → 1631 → 1292 → 902 → 341 → 0 (1 z 5 trafień
+    w kotwicę), natychmiastowy 1706 → 1292 → 878 → 460 → 22 (5 z 5)**. Ta sama seria z pauzą 900 ms
+    wychodziła w OBU wersjach 32/32 — czyli winna była nie logika, tylko czas dojścia animacji.
+    **ZASADA: gest powtarzany szybciej niż animacja to nie jest „rzadki przypadek", to normalne
+    użycie — mierz kadencją człowieka, nie jednym gestem z pauzą.**
+  - 🔴 **`preventDefault` od PIERWSZYCH pikseli, nie po progu 8 px.** Gdy pierwsze `touchmove`
+    przepuścimy bez blokady, przeglądarka zdąży uznać gest za przewijanie i od tej chwili kolejne
+    zdarzenia są `cancelable:false` — nasz `preventDefault` staje się bezsilny, raz wychodził skok,
+    a raz zwykłe przewinięcie. Slop dotyku (~8 px) daje na to zapas tylko przy natychmiastowej reakcji.
+    Dlatego `wpMoznaSkoczyc` liczone jest już w `touchstart` — przy pierwszym pikselu nie ma czasu
+    na geometrię.
+  - ⚠️ Listener wisi na **panelu**, nie na `.scroll-area` — w feedzie palec ma przewijać normalnie.
+  - ⚠️ Ruch w GÓRĘ (`dy < -6`) wyłącza stepper na cały gest → natywne przewijanie ku newsom.
   - 🔴 **Saga z rozsuniętą osią bywa wyższa niż ekran** (30 etapów ≈ 2555 px przy widoku 742 px) —
     stepper przeskoczyłby nad treścią. `wpMoznaSkoczyc` puszcza gest do natywnego przewijania,
-    dopóki nie widać krawędzi bieżącej sagi w stronę ruchu. Zmierzone: wewnątrz długiej sagi
-    przyrosty 105/176/174/179 px (czyta się normalnie), a na jej końcu skok trafia w kotwicę.
+    dopóki nie widać początku bieżącej sagi.
   - 🔴 **Bieżąca kotwica = OSTATNIA nie niżej niż my, nie „najbliższa".** Przy wysokiej sadze
     najbliższa wskazuje już NASTĘPNY wątek i skok przeskakiwał go w całości — zmierzone: z 1791
     leciało na 2996 zamiast na 2577.
-  - Próg 36 px: krótsze przeciągnięcie to drgnięcie palca, nie polecenie (zmierzone: 20 px = 0 ruchu).
+  - Próg 30 px: krótsze przeciągnięcie to drgnięcie palca (zmierzone: 18 px = 0 ruchu).
   - Gest pull-to-* jest **wyłączony przy otwartym panelu** — inaczej przeciągnięcie na jego górze
     odpalałoby oba naraz: skok o wątek i powrót na najnowszy.
-  - `wpPrzewinDoNajnowszej` celuje dokładnie w kotwicę (bez marginesu), żeby pierwszy skok nie
-    szarpnął o kilka pikseli różnicy.
-  📊 Zmierzone (`Input.dispatchTouchEvent`, 390 px): otwarcie na 1706, przeciągnięcia w dół
-  1706 → 1292 → 878 → 460 → 22, w górę tak samo aż do feedu (2221), potem przewijanie swobodne.
+  📊 Zmierzone (`Input.dispatchTouchEvent`, 390 px): **32/32 warianty gestu** (długość 40-170 px,
+  3-20 zdarzeń ruchu, tempo 4-30 ms, skos do 22 px) dały DOKŁADNIE jeden skok; 5/5 miejsc startu
+  (tytuł, memo, etap osi, krawędź) tak samo; seria 1706 → 1292 → 878 → 460 → 22; palec w górę
+  przewija płynnie (+105 px, poza kotwicą); drgnięcie 18 px nie rusza; tap dalej rozwija skrót.
 - 🔴 **`data-bez-wykresu` na wierszu etapu to nie ozdoba.** `sagaToggleSkrot`/`sagaPodswietlKropke`
   szukają legendy `.sr-box` W GÓRĘ drzewa, a panel i `#content` siedzą w tej samej `.scroll-area` —
   bez znacznika tap w panelu przestawiałby kropkę na wykresie OTWARTEGO ARTYKUŁU pod spodem

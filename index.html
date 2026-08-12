@@ -1117,6 +1117,8 @@ function wpBiezacaSaga(){
   return [...document.querySelectorAll('#watkiPanelBody .wp-saga')]
     .find(el => { const r = el.getBoundingClientRect(); return r.top <= gora && r.bottom > gora; }) || null;
 }
+// ⚠️ Gest steruje dziś WYŁĄCZNIE kierunkiem -1 (w górę listy) — gałąź `+1` zostaje, bo reguła
+// kierunku już raz się zmieniła, a bez niej wróciłaby cicha pułapka przy ewentualnym powrocie.
 function wpMoznaSkoczyc(kierunek){
   const area = document.getElementById('scrollArea');
   const saga = wpBiezacaSaga();
@@ -1136,38 +1138,49 @@ function wpSkok(kierunek){
   let i = 0;
   for (let k = 0; k < poz.length; k++) if (poz[k] <= area.scrollTop + 4) i = k;
   const cel = Math.max(0, Math.min(poz.length - 1, i + kierunek));
-  area.scrollTo({ top: poz[cel], behavior: 'smooth' });
+  // ⚠️ NATYCHMIAST, bez `behavior:'smooth'` (życzenie właściciela: „ma szybciej przeskakiwać, tak
+  // szybko jak za pierwszym razem"). Pierwszy skok — ten przy otwarciu panelu — ustawia `scrollTop`
+  // wprost i to jego tempo jest wzorcem; animacja przeglądarki była wyraźnie wolniejsza.
+  area.scrollTop = poz[cel];
 }
 (function(){
   const panel = document.getElementById('watkiPanel');
   const area = document.getElementById('scrollArea');
   if (!panel || !area) return;
-  const PROG_SKOKU = 36;         // krótsze przeciągnięcie = drgnięcie palca, nie polecenie skoku
-  let y0 = 0, x0 = 0, aktywny = false, blokuje = false;
+  const PROG_SKOKU = 30;         // krótsze przeciągnięcie = drgnięcie palca, nie polecenie skoku
+  let y0 = 0, aktywny = false, blokuje = false, wolno = false;
   panel.addEventListener('touchstart', e => {
-    aktywny = watkiPanelOtwarty && e.touches.length === 1;
     blokuje = false;
-    if (aktywny) { y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; }
+    aktywny = watkiPanelOtwarty && e.touches.length === 1;
+    if (!aktywny) return;
+    y0 = e.touches[0].clientY;
+    // 🔴 Czy w ogóle wolno blokować, ustalamy JUŻ TU — przy pierwszym pikselu ruchu nie ma czasu
+    // liczyć geometrii, a decyzja musi zapaść, zanim przeglądarka zacznie przewijać (patrz niżej).
+    wolno = wpMoznaSkoczyc(-1);
   }, { passive: true });
   panel.addEventListener('touchmove', e => {
     if (!aktywny) return;
-    const dy = e.touches[0].clientY - y0, dx = e.touches[0].clientX - x0;
+    const dy = e.touches[0].clientY - y0;
     if (!blokuje) {
-      if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;   // jeszcze nie wiadomo, czy to gest
-      // Poziomy ruch oddajemy dalej — na `.scroll-area` wisi swipe zmiany dawki.
-      if (Math.abs(dx) > Math.abs(dy)) { aktywny = false; return; }
-      // Wewnątrz sagi wyższej niż ekran przewijamy normalnie, dopóki nie dojedziemy do jej krawędzi.
-      if (!wpMoznaSkoczyc(dy > 0 ? -1 : 1)) { aktywny = false; return; }
+      // 🔴 BLOKUJEMY OD PIERWSZYCH PIKSELI, nie po progu 8 px — i to jest naprawa „czasem nie działa"
+      // (zgłoszenie właściciela 2026-08-13). Gdy pierwsze zdarzenia przepuścimy bez `preventDefault`,
+      // przeglądarka zdąży uznać gest za PRZEWIJANIE i od tej chwili kolejne `touchmove` są
+      // `cancelable:false` — nasz `preventDefault` staje się bezsilny, więc raz wychodził skok,
+      // a raz zwykłe przewinięcie. Slop dotyku (~8 px) daje na to zapas, ale tylko jeśli
+      // zareagujemy natychmiast.
+      if (dy <= 2) { if (dy < -6) aktywny = false; return; }   // palec w GÓRĘ = przewijanie natywne
+      if (!wolno) { aktywny = false; return; }                 // wysoka saga: pozwól ją doczytać
       blokuje = true;
     }
-    e.preventDefault();          // ⚠️ wymaga `passive:false`; bez tego palec przewijałby płynnie
+    if (e.cancelable) e.preventDefault();
   }, { passive: false });
   panel.addEventListener('touchend', e => {
     if (!aktywny || !blokuje) { aktywny = false; return; }
     const dy = e.changedTouches[0].clientY - y0;
     aktywny = false; blokuje = false;
-    // Palec w dół = treść w dół = cofamy się do STARSZEGO wątku (kierunek -1), i odwrotnie.
-    if (Math.abs(dy) >= PROG_SKOKU) wpSkok(dy > 0 ? -1 : 1);
+    // 🔴 TYLKO W GÓRĘ LISTY (decyzja właściciela): palec w dół = treść w dół = starszy wątek.
+    // Powrót ku newsom zostaje zwykłym, płynnym przewijaniem — dlatego kierunku +1 tu nie ma.
+    if (dy >= PROG_SKOKU) wpSkok(-1);
   }, { passive: true });
 })();
 
