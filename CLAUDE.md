@@ -992,24 +992,35 @@ Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same w�
   jest stanem czytelnika, tu panel jest doraźnym podglądem wywołanym gestem. Nie ujednolicaj tego.
   ⚠️ Treść panelu zostaje w DOM po zamknięciu (stara belka, stare sagi) — jest niewidoczna, a przy
   otwarciu i tak leci `renderWatkiPanel`. Nie diagnozuj tego jako „panel pokazuje złą dawkę".
-- 🔴 **PRZEWIJANIE SKOKAMI PO WĄTKACH — natywny `scroll-snap`, nie własny stepper** (życzenie
-  właściciela: „kolejne przeciągnięcie też tak przeskakuje, czyli co wątek przeskok"). Gest
-  pull-to-* działa WYŁĄCZNIE przy `scrollTop === 0`, a po zakotwiczeniu na najnowszej sadze jesteśmy
-  w środku panelu — drugie pociągnięcie nie miałoby jak się odpalić, a własna obsługa biłaby się
-  z natywnym przewijaniem palca. Stąd `.wp-snap` na `.scroll-area` + `scroll-snap-align: start`
-  i **`scroll-snap-stop: always`** na `.wp-saga` (bez tego szybki flick przelatuje kilka wątków).
-  ⚠️ Klasa dokładana TYLKO na czas otwartego panelu — `.scroll-area` jest kontenerem CAŁEJ apki.
-  ⚠️ **`proximity`, nigdy `mandatory`**: mandatory na kontenerze z długim feedem ściągałoby
-  czytelnika z powrotem do ostatniego punktu snapowania i utrudniało zjazd w newsy.
-  ⚠️ `#content` też jest punktem snapowania, żeby zjazd w dół kończył się równo na początku feedu.
-  📊 Zmierzone w Chromium: kolejne machnięcia dają dokładnie kotwice sag (1706 → 1292 → 878 → 460
-  → 22), powrót w dół tak samo, a po wjeździe w feed przewijanie jest już swobodne (2306 → 3206
-  → 4106 → 5006 przy maksimum 6470). Po zamknięciu panelu klasa znika i feed przewija się płynnie.
-  ⚠️ **Czego NIE dało się zmierzyć w sandboxie: uczucia realnego flicka palcem** —
-  `Input.synthesizeScrollGesture` (touch) w tym harnessie nie przewija wcale, pomiary są kółkiem
-  myszy. Wiadomo za to, że MAŁE przewinięcie (~160 px) snap cofa do bieżącego wątku, więc nieśmiałe
-  muśnięcie nic nie zrobi. Gdyby na telefonie wychodziło „lepkie", lekarstwem jest zdjęcie
-  `scroll-snap-stop: always` (miękkie przewijanie z dociąganiem) albo całej klasy `.wp-snap`.
+- 🔴 **PRZEWIJANIE SKOKAMI PO WĄTKACH — stepper w JS, po nieudanym podejściu przez `scroll-snap`.**
+  Życzenie: „kolejne przeciągnięcie też tak przeskakuje, czyli co wątek przeskok". Pierwsza wersja
+  dokładała `scroll-snap-type: proximity` + `scroll-snap-stop: always` i **na telefonie nie dała
+  tego efektu** („nie przeskakuje tak jak przy pierwszym"): snap tylko DOCIĄGA po zwykłym
+  przewijaniu palcem, więc ruch jest płynny i kończy się po wygaśnięciu inercji, a oczekiwany był
+  ten sam natychmiastowy skok co przy otwarciu panelu. **Pomiar kółkiem myszy pokazywał ładne
+  stopnie i mimo to mylił** — dotyk zachowuje się inaczej, a `Input.synthesizeScrollGesture` (touch)
+  w sandboxie nie przewija wcale. `Input.dispatchTouchEvent` przewija i to ono nadaje się do testów.
+  Teraz: listener na `#watkiPanel` (`touchmove` z `passive:false`) blokuje natywne przewijanie
+  w pionie i na puszczenie woła `wpSkok(±1)` → `scrollTo({behavior:'smooth'})` do sąsiedniej kotwicy.
+  - ⚠️ Listener wisi na **panelu**, nie na `.scroll-area` — w feedzie palec ma przewijać normalnie,
+    a „ucieczka" z panelu robi się sama: ostatni skok stawia na `#content` i kolejne dotknięcia
+    trafiają już poza panel.
+  - ⚠️ **Ruch poziomy oddajemy dalej** (`|dx| > |dy}` → `aktywny = false`), bo na `.scroll-area`
+    wisi swipe zmiany dawki. Zweryfikowane: swipe w lewo w panelu przełącza dawkę.
+  - 🔴 **Saga z rozsuniętą osią bywa wyższa niż ekran** (30 etapów ≈ 2555 px przy widoku 742 px) —
+    stepper przeskoczyłby nad treścią. `wpMoznaSkoczyc` puszcza gest do natywnego przewijania,
+    dopóki nie widać krawędzi bieżącej sagi w stronę ruchu. Zmierzone: wewnątrz długiej sagi
+    przyrosty 105/176/174/179 px (czyta się normalnie), a na jej końcu skok trafia w kotwicę.
+  - 🔴 **Bieżąca kotwica = OSTATNIA nie niżej niż my, nie „najbliższa".** Przy wysokiej sadze
+    najbliższa wskazuje już NASTĘPNY wątek i skok przeskakiwał go w całości — zmierzone: z 1791
+    leciało na 2996 zamiast na 2577.
+  - Próg 36 px: krótsze przeciągnięcie to drgnięcie palca, nie polecenie (zmierzone: 20 px = 0 ruchu).
+  - Gest pull-to-* jest **wyłączony przy otwartym panelu** — inaczej przeciągnięcie na jego górze
+    odpalałoby oba naraz: skok o wątek i powrót na najnowszy.
+  - `wpPrzewinDoNajnowszej` celuje dokładnie w kotwicę (bez marginesu), żeby pierwszy skok nie
+    szarpnął o kilka pikseli różnicy.
+  📊 Zmierzone (`Input.dispatchTouchEvent`, 390 px): otwarcie na 1706, przeciągnięcia w dół
+  1706 → 1292 → 878 → 460 → 22, w górę tak samo aż do feedu (2221), potem przewijanie swobodne.
 - 🔴 **`data-bez-wykresu` na wierszu etapu to nie ozdoba.** `sagaToggleSkrot`/`sagaPodswietlKropke`
   szukają legendy `.sr-box` W GÓRĘ drzewa, a panel i `#content` siedzą w tej samej `.scroll-area` —
   bez znacznika tap w panelu przestawiałby kropkę na wykresie OTWARTEGO ARTYKUŁU pod spodem
