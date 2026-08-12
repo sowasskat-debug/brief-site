@@ -81,7 +81,7 @@ h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; ma
 <div class="page-head">
   <div class="kicker"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v18"/><circle cx="6.5" cy="6" r="2.2"/><path d="M8.7 6H12"/><circle cx="17.5" cy="12" r="2.2"/><path d="M12 12h3.3"/><circle cx="6.5" cy="18" r="2.2" fill="currentColor" stroke="none"/><path d="M8.7 18H12"/></svg> Śledzimy dzień po dniu</div>
   <h1>Wątki</h1>
-  <div class="lead">Historie, które nie kończą się na jednym newsie — oś biegnie od początku, od góry do dołu. Tapnij wątek, żeby rozsunąć pełną oś; tapnij etap, żeby przeczytać skrót.</div>
+  <div class="lead">Historie, które nie kończą się na jednym newsie — u góry najnowszy etap, niżej wcześniejsze. Tapnij wątek, żeby rozsunąć pełną oś; tapnij etap, żeby przeczytać skrót.</div>
 </div>
 <div id="list"><div class="pusto">Wczytywanie wątków…</div></div>
 <script>
@@ -137,27 +137,28 @@ function nodeHtml(n, isNewest, ti, ni){
 }
 function render(){
   document.getElementById('list').innerHTML = THREADS.map((th, ti) => {
-    // 🔴 OŚ CZYTA SIĘ OD GÓRY CHRONOLOGICZNIE — najstarszy etap na górze (decyzja właściciela
-    // 2026-08-11, zastępuje odwracanie z 07.08). Powód: to jest strona, na którą trafia się
-    // z UDOSTĘPNIONEGO linku, a historię czyta się od początku, nie od końca. Ta sama konwencja
-    // co na stronie sagi `w/<slug>.html` (bot, `BudujStroneSagiHtml`) — obie powierzchnie dostaje
-    // ten sam odbiorca tego samego linku, więc MUSZĄ czytać się w tę samą stronę.
-    // ⚠️ Oś pod postem w apce (`watekHtml` w index.html) i karta `og?w=1` zostają z najnowszym
-    // na górze — tam czytelnik śledzi bieżącą dawkę i chce świeżości, nie początku historii.
+    // 🔴 NAJNOWSZY ETAP NA GÓRZE, niżej wcześniejsze (decyzja właściciela 2026-08-12: „miało być
+    // od góry do dołu, u góry najnowsze"). Zastępuje chronologię z 11.08. Ta sama konwencja
+    // obowiązuje na stronie sagi `w/<slug>.html` (bot, `BudujStroneSagiHtml`) — obie powierzchnie
+    // dostaje ten sam odbiorca tego samego linku, więc MUSZĄ czytać się w tę samą stronę;
+    // odwracając jedną, odwróć drugą. Oś pod postem w apce (`watekHtml`) już tak działa.
+    // ⚠️ `nodeHtml` indeksuje węzły ORYGINALNYM `ni` (klucz do `th.nodes` w `exToggle`), więc
+    // kolejność wyświetlania trzymamy w osobnej tablicy indeksów, a nie przez `reverse()` na danych.
     const nodes = th.nodes;                       // bot podaje je OD NAJSTARSZEGO
     const N = nodes.length;
     const najnowszy = N - 1;
     const ost = (nodes[najnowszy].added_at||'').slice(5,16).replace('T',' ');
-    // Zwijamy ŚRODEK, nie ogon: przy chronologii pokazanie „pierwszych trzech" schowałoby najnowszy
-    // etap, czyli dokładnie to, po co ktoś wchodzi na świeżo udostępniony wątek. Zostają więc oba
-    // końce — początek historii i dwa ostatnie ruchy — a środek chowa się za znacznikiem.
+    const idx = Array.from({length:N}, (_,i) => N-1-i);   // od najnowszego do najstarszego
+    const wezel = i => nodeHtml(nodes[i], i===najnowszy, ti, i);
+    // Zwijamy ŚRODEK, nie ogon: zostają oba końce — dwa ostatnie ruchy na górze i początek historii
+    // na dole — a środek chowa się za znacznikiem. Pokazanie „trzech od góry" ucięłoby początek sagi.
     const ukryte = N > 4 ? N - 3 : 0;
     const os = ukryte
-      ? nodeHtml(nodes[0], false, ti, 0)
+      ? idx.slice(0,2).map(wezel).join('')
         + `<div class="gap" onclick="document.getElementById('s${ti}').classList.toggle('open')">… ${ukryte} ${ukryte===1?'etap':(ukryte<5?'etapy':'etapów')} pośrodku ▾</div>`
-        + `<div class="hidden-nodes">${nodes.slice(1, N-2).map((n,i)=>nodeHtml(n, false, ti, i+1)).join('')}</div>`
-        + nodes.slice(N-2).map((n,i)=>nodeHtml(n, N-2+i===najnowszy, ti, N-2+i)).join('')
-      : nodes.map((n,i)=>nodeHtml(n, i===najnowszy, ti, i)).join('');
+        + `<div class="hidden-nodes">${idx.slice(2, N-1).map(wezel).join('')}</div>`
+        + wezel(idx[N-1])
+      : idx.map(wezel).join('');
     return `<article class="saga" id="s${ti}">
       <div class="saga-head" onclick="document.getElementById('s${ti}').classList.toggle('open')">
         <div class="saga-meta">${ICN} ${th.nodes.length} etapów · ost. ${ost}</div>
