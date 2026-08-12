@@ -856,6 +856,26 @@ wartość klastra** — że to jedno wydarzenie opisane przez kilka źródeł, k
 - ⚠️ **Wymaga deployu OBU funkcji** (`og` i `gotowiec-x`) — nie idą przez git. Do czasu deployu knaga
   pokaże przycisk, ale karta wróci jako grafika zapasowa, a gotowiec będzie jak dotąd.
 
+## Knaga otwiera się na AKTUALNEJ dawce — `dawkaZZegara()` (2026-08-12)
+Życzenie właściciela: *„muszę za każdym razem manualnie przeskakiwać"*. `currentDose` było zaszyte
+na `'morning'`, więc panel po każdym wejściu wymagał kliknięcia w zakładkę.
+- 🔴 **GODZINA LICZONA W `Europe/Warsaw`, NIE lokalnie w przeglądarce.** Dawka jest własnością DANYCH
+  (bot stempluje ją czasem warszawskim), a nie tego, kto patrzy. **Złapane przy weryfikacji tej
+  zmiany, nie w recenzji:** maszyna deweloperska chodziła na `Europe/London`, więc
+  `new Date().getHours()` dawało 19 przy warszawskiej 20. Przy granicy panel wybrałby POPOŁUDNIOWĄ,
+  gdy bot pisze już do WIECZORNEJ — rozjazd trwałby GODZINĘ przy każdej granicy, codziennie,
+  i wyglądał jak „panel pokazuje starą dawkę". Ta sama klasa co `SupabaseTs` w bocie i `offsetWarszawy`
+  w JSON-LD. FAIL-SAFE: gdy `Intl` zawiedzie → czas lokalny (przybliżenie lepsze niż wywalony panel).
+- ⚠️ **Granice muszą zostać zgodne z `getCurrentDose` w `index.html` i `doseKey` w bocie** —
+  `<11` / `<17` / reszta. Trzy miejsca, jedna reguła; rozjazd znaczyłby, że panel moderuje INNĄ dawkę,
+  niż widzi czytelnik.
+- ⚠️ **Ustawiane RAZ, przy wczytaniu — świadomie BEZ przełączania na żywo.** Panel bywa otwarty długo
+  w trakcie moderowania i wyrwanie zakładki spod ręki (o 11:00, w środku kasowania newsów z porannej)
+  byłoby gorsze niż jedno kliknięcie. Ten sam wybór co „panel szczegółów zostaje przy zmianie dawki".
+- ⚠️ **`getCurrentDose` w `index.html` ma ten sam mechanizm na czasie LOKALNYM** i dla czytelnika
+  spoza Polski wskaże nie tę dawkę co bot. Świadomie NIE ruszane przy tej zmianie (dotyczy publicznego
+  frontu, nie panelu) — ale to jest realny, otwarty ogon.
+
 ## Post na X: jedna flaga, zero emoji w treści (2026-08-02) ⚠️
 **X przy „Boost" odrzuca posty z więcej niż jednym emoji** — potwierdzone przez właściciela na żywym
 poście, nie teoria. Konsekwencje w `knaga.html`:
