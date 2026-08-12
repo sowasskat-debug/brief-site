@@ -408,13 +408,15 @@ function offsetWarszawy(addedAt) {
 // (mobile: scroll+rozwinięcie, desktop: dtPickItem), także dla podpozycji klastrów.
 const PILNE_OKNO_MS = 4 * 3600 * 1000;
 let pilneDomyslne = null;   // oryginalny markup pastylek, do przywrócenia gdy PILNE wygaśnie
+// 🔴 WYŁĄCZNIE DESKTOP (2026-08-12, decyzja właściciela: „usuń to na mobilnej, zrób jak było
+// wcześniej, na PC zostaw"). Mobilna pastylka `.live-pill` wraca do statycznego „Live" i NIE JEST
+// tu w ogóle dotykana — dlatego nie ma czego przywracać i `pilneDomyslne` trzyma już tylko desktop.
+// ⚠️ Nie chowaj mobilnego wariantu CSS-em: skoro JS podmieniał `innerHTML`, samo ukrycie zostawiłoby
+// pastylkę z treścią PILNE pod spodem. Jedyne czyste wyjście to nie ruszać tego elementu.
 function aktualizujPilne(items) {
-  const mobilna = document.querySelector('.live-pill');
   const desktopowa = document.querySelector('.dt-live');
-  if (!mobilna && !desktopowa) return;
-  if (!pilneDomyslne) pilneDomyslne = {
-    m: mobilna ? mobilna.innerHTML : '', d: desktopowa ? desktopowa.innerHTML : ''
-  };
+  if (!desktopowa) return;
+  if (!pilneDomyslne) pilneDomyslne = { d: desktopowa.innerHTML };
   const kandydaci = [];
   const zbierz = it => {
     if ((it.flag || '').includes('🚨')) kandydaci.push(it);
@@ -434,15 +436,11 @@ function aktualizujPilne(items) {
     el.onclick = slug ? () => { location.hash = `#${currentDose}/${slug}`; } : null;
   };
   if (!swieze.length) {
-    ustaw(mobilna, 'pilne', pilneDomyslne.m, '', null);
     ustaw(desktopowa, 'pilne', pilneDomyslne.d, '', null);
     return;
   }
   const { it } = swieze[0];
   const slug = itemSlug(it.text);
-  ustaw(mobilna, 'pilne',
-    `<div class="live-dot"></div><span class="pilne-tag">PILNE</span><span class="pilne-txt">${escHtml(it.text)}</span>`,
-    it.text, slug);
   ustaw(desktopowa, 'pilne',
     `<div class="dt-live-dot"></div><span class="pilne-tag">PILNE</span><span class="pilne-txt">${escHtml(it.text)}</span>`,
     it.text, slug);
