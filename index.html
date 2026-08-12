@@ -1064,11 +1064,15 @@ function wpPrzewinDoNajnowszej(){
   const area = document.getElementById('scrollArea');
   const ost = document.querySelector('#watkiPanelBody .wp-saga:last-child, #watkiPanelBody .wp-pusto');
   if (!area || !ost) return;
-  // Bez marginesu: pozycja po otwarciu MA być dokładnie tą samą kotwicą, do której skacze potem
-  // `wpSkok` — inaczej pierwszy skok szarpnąłby o te kilka pikseli różnicy.
-  requestAnimationFrame(() => {
-    area.scrollTop += ost.getBoundingClientRect().top - area.getBoundingClientRect().top;
-  });
+  // Bez marginesu: wątek ma stanąć równo przy górnej krawędzi widoku.
+  // 🔴 KOREKTA DWA RAZY, bo zakładki dawek potrafią właśnie wjeżdżać. `.dose-tabs` chowają się przy
+  // przewijaniu, a `.scroll-area` ma wtedy INNY `margin-top` i wysokość — zmieniane przejściem 0,25 s.
+  // Gest otwierający panel jest przewinięciem W GÓRĘ, więc sam wywołuje pokazanie zakładek: pomiar
+  // w `requestAnimationFrame` łapie layout w połowie animacji i wątek staje o kilkadziesiąt pikseli
+  // za wysoko (zmierzone: −28 px). Druga korekta po zakończeniu przejścia ustawia go równo.
+  const przyklej = () => { area.scrollTop += ost.getBoundingClientRect().top - area.getBoundingClientRect().top; };
+  requestAnimationFrame(przyklej);
+  setTimeout(przyklej, 320);
 }
 function otworzWatkiPanel(){
   const p = document.getElementById('watkiPanel');
@@ -1087,135 +1091,29 @@ function zamknijWatkiPanel(){
   if (area) area.scrollTop = 0;
 }
 
-// ══ Skok o JEDEN wątek — stepper przeciągnięcia w panelu (2026-08-13) ═══════════════
-// 🔴 Życzenie właściciela: „kolejne przeciągnięcie też tak przeskakuje, czyli co wątek przeskok",
-// a po pierwszym podejściu (CSS `scroll-snap`) — „nie przeskakuje tak jak przy pierwszym".
-// Snap tylko DOCIĄGA po zwykłym przewijaniu palcem: ruch jest płynny i kończy się po wygaśnięciu
-// inercji. Oczekiwany był ten sam natychmiastowy skok co przy otwarciu panelu, więc przewijaniem
-// WEWNĄTRZ panelu steruje teraz kod: `preventDefault` na pionowym ruchu + skok do sąsiedniej kotwicy.
-// ⚠️ Listener wisi na `#watkiPanel`, NIE na `.scroll-area` — dzięki temu w feedzie palec przewija
-// najzwyczajniej, a „ucieczka" z panelu w dół dzieje się sama: ostatni skok stawia nas na `#content`
-// i kolejne dotknięcia trafiają już poza panel.
-function wpKotwice(){
-  const area = document.getElementById('scrollArea');
-  if (!area) return [];
-  const gora = area.getBoundingClientRect().top;
-  const poz = [...document.querySelectorAll('#watkiPanelBody .wp-saga')]
-    .map(el => Math.round(area.scrollTop + el.getBoundingClientRect().top - gora));
-  const feed = document.getElementById('content');
-  if (feed) poz.push(Math.round(area.scrollTop + feed.getBoundingClientRect().top - gora));
-  return poz;
-}
-// 🔴 SKOK W GÓRĘ DZIAŁA ZAWSZE, także ze ŚRODKA wątku (zgłoszenie właściciela 2026-08-13: „jesteśmy
-// już na drugim wątku, daję scroll w dół — ok, przewija się normalnie — ale jak chcę iść dalej
-// w górę, to przeskok już nie działa"). Dotąd bramka `wpMoznaSkoczyc` wyłączała stepper, gdy początek
-// bieżącej sagi był poza ekranem: po każdym zjeździe w dół trzeba było ręcznie doscrollować do góry,
-// żeby gest znów zadziałał. Teraz obowiązuje reguła jak w kartkowaniu:
-//   • stoimy w ŚRODKU wątku → pierwszy skok wraca na jego POCZĄTEK,
-//   • stoimy na początku    → skok idzie do wątku POPRZEDNIEGO (starszego).
-// Dzięki temu gest zawsze coś robi i nigdy nie przeskakuje nad nieprzeczytaną treścią — bo do
-// przodu (ku nowszym i ku newsom) czyta się natywnym przewijaniem, którego stepper nie dotyka.
-// 🔴 Czy „rządzi" panel, czyli czy GÓRA WIDOKU jest jeszcze w wątkach (zgłoszenie właściciela
-// 2026-08-13: „przesuwam palcem na dole ekranu, tam gdzie są jeszcze normalne posty, i gest nie
-// działa — a w praktyce ludzie mają kciuk w dolnej części ekranu"). Listener wisiał na `#watkiPanel`,
-// więc liczyło się, CZEGO dotyka palec — a przy zakotwiczeniu na wątku dolna połowa ekranu to już
-// feed. Teraz liczy się POZYCJA, nie miejsce dotknięcia: dopóki góra widoku jest nad początkiem
-// feedu, gest należy do steppera, choćby kciuk leżał na newsach.
-function wpWPanelu(){
-  const area = document.getElementById('scrollArea');
-  const poz = wpKotwice();
-  if (!area || poz.length < 2) return false;      // brak wątków = sam feed, nie ma czym kartkować
-  return area.scrollTop < poz[poz.length - 1] - 4; // ostatnia kotwica to początek `#content`
-}
-// Górna granica wątku, w którym stoimy = ostatnia kotwica nie niżej niż bieżąca pozycja.
-function wpGornaGranicaWatku(){
-  const area = document.getElementById('scrollArea');
-  const poz = wpKotwice();
-  if (!area || !poz.length) return 0;
-  let g = poz[0];
-  for (const k of poz) if (k <= area.scrollTop + 4) g = k;
-  return g;
-}
-function wpSkok(kierunek){
-  const area = document.getElementById('scrollArea');
-  const poz = wpKotwice();
-  if (!area || !poz.length) return;
-  // Kotwica, na której stoimy = OSTATNIA nie niżej niż my, a NIE najbliższa. Przy sadze wyższej
-  // od ekranu (rozsunięta oś ≈ 2,5 tys. px) „najbliższa" wskazuje już NASTĘPNY wątek.
-  // Tolerancja 4 px na subpiksele i na pasek adresu, który zmienia wysokość widoku między skokami.
-  let i = 0;
-  for (let k = 0; k < poz.length; k++) if (poz[k] <= area.scrollTop + 4) i = k;
-  // W górę ze środka wątku = najpierw jego początek (patrz komentarz wyżej).
-  const cel = (kierunek === -1 && area.scrollTop > poz[i] + 4)
-    ? i
-    : Math.max(0, Math.min(poz.length - 1, i + kierunek));
-  // ⚠️ NATYCHMIAST, bez `behavior:'smooth'` (życzenie właściciela: „ma szybciej przeskakiwać, tak
-  // szybko jak za pierwszym razem"). Animacja trwała dłużej niż odstęp między machnięciami, więc
-  // kolejny gest łapał ją w locie — zmierzone: 1 trafienie na 5 zamiast 5 na 5.
-  area.scrollTop = poz[cel];
-}
-(function(){
-  // ⚠️ Listener na `.scroll-area`, NIE na `#watkiPanel` — o tym, czy gest należy do steppera,
-  // decyduje POZYCJA (`wpWPanelu`), a nie to, czego akurat dotyka palec. Przy zakotwiczeniu na
-  // wątku dolna połowa ekranu pokazuje już feed, a właśnie tam ludzie trzymają kciuk.
-  const area = document.getElementById('scrollArea');
-  if (!area) return;
-  const PROG_SKOKU = 30;         // krótsze przeciągnięcie = drgnięcie palca, nie polecenie skoku
-  let y0 = 0, aktywny = false, blokuje = false, startScroll = 0, granica = 0, naGranicy = false;
-  let ostY = 0, ostT = 0, predkosc = 0;      // do rozpędu — patrz `touchend`
-  area.addEventListener('touchstart', e => {
-    blokuje = false;
-    aktywny = watkiPanelOtwarty && e.touches.length === 1 && wpWPanelu();
-    if (!aktywny) return;
-    y0 = e.touches[0].clientY;
-    startScroll = area.scrollTop;
-    // 🔴 GÓRNA GRANICA WĄTKU, w którym stoimy — sedno reguły z 2026-08-13 (druga tura):
-    // „możemy scrollować w dół i w górę, dopóki nie dojedziemy do górnej granicy wątku, a w momencie
-    // kiedy dotkniemy górną granicę, to wtedy dopiero przeskok się uruchamia".
-    // Liczone RAZ na gest, bo w trakcie przewijania kotwice zmieniają się względem widoku.
-    granica = wpGornaGranicaWatku();
-    naGranicy = startScroll <= granica + 4;
-    ostY = y0; ostT = e.timeStamp; predkosc = 0;
-  }, { passive: true });
-  area.addEventListener('touchmove', e => {
-    if (!aktywny) return;
-    const dy = e.touches[0].clientY - y0;
-    if (!blokuje) {
-      // 🔴 BLOKUJEMY OD PIERWSZYCH PIKSELI, nie po progu 8 px — i to jest naprawa „czasem nie działa"
-      // (zgłoszenie właściciela 2026-08-13). Gdy pierwsze zdarzenia przepuścimy bez `preventDefault`,
-      // przeglądarka zdąży uznać gest za PRZEWIJANIE i od tej chwili kolejne `touchmove` są
-      // `cancelable:false` — nasz `preventDefault` staje się bezsilny, więc raz wychodził skok,
-      // a raz zwykłe przewinięcie. Slop dotyku (~8 px) daje na to zapas, ale tylko jeśli
-      // zareagujemy natychmiast.
-      if (dy <= 2) { if (dy < -6) aktywny = false; return; }   // palec w GÓRĘ = przewijanie natywne
-      blokuje = true;
-    }
-    if (e.cancelable) e.preventDefault();
-    // W ŚRODKU wątku palec zwyczajnie przewija (1:1), ale ZATRZYMUJE SIĘ na jego górnej granicy —
-    // bez tego natywne przewijanie przelatywało nad krawędzią w poprzedni wątek i stepper nie miał
-    // się od czego odbić. Na granicy nic nie ruszamy; skok robi dopiero `touchend`.
-    if (!naGranicy) area.scrollTop = Math.max(granica, startScroll - dy);
-    const dt = e.timeStamp - ostT;
-    if (dt > 0) { predkosc = (e.touches[0].clientY - ostY) / dt; ostY = e.touches[0].clientY; ostT = e.timeStamp; }
-  }, { passive: false });
-  area.addEventListener('touchend', e => {
-    if (!aktywny || !blokuje) { aktywny = false; return; }
-    const dy = e.changedTouches[0].clientY - y0;
-    aktywny = false; blokuje = false;
-    // 🔴 TYLKO W GÓRĘ LISTY (decyzja właściciela): palec w dół = treść w dół = starszy wątek.
-    // Powrót ku newsom zostaje zwykłym, płynnym przewijaniem — dlatego kierunku +1 tu nie ma.
-    // 🔴 I TYLKO Z GÓRNEJ GRANICY WĄTKU: ze środka ten sam gest dojeżdża do krawędzi (wyżej),
-    // a przeskok odpala dopiero następny — „jak dotkniemy górną granicę, wtedy się uruchamia".
-    if (naGranicy && dy >= PROG_SKOKU) { wpSkok(-1); return; }
-    // ⚠️ ROZPĘD po machnięciu w środku wątku. Przejmując gest, tracimy natywną bezwładność —
-    // a rozsunięta oś ma ~2555 px, więc powrót do jej początku wymagałby kilkunastu przeciągnięć
-    // palcem 1:1. Doliczamy więc drogę z prędkości ostatniego ruchu, DALEJ przycinając do granicy
-    // wątku: flick dojeżdża do krawędzi, ale nigdy jej nie przekracza.
-    if (!naGranicy && predkosc > 0.35) {
-      area.scrollTop = Math.max(granica, area.scrollTop - Math.min(1200, predkosc * 260));
-    }
-  }, { passive: true });
-})();
+// ⛔ STEPPER GESTU — ZBUDOWANY I USUNIĘTY tego samego dnia (2026-08-13). Decyzja właściciela po
+// serii prób: „zróbmy tak jak na początku, tylko pierwszy wątek się szybko pojawia, reszta to ma być
+// scroll zwykły". Zostaje więc WYŁĄCZNIE natychmiastowe zakotwiczenie na najnowszym wątku przy
+// otwarciu panelu (`wpPrzewinDoNajnowszej`) — to ono podobało się od początku („fajnie przeskakuje
+// od razu") — a całe przewijanie wewnątrz panelu jest znowu natywne.
+//
+// Czego NIE odgrzewać, gdyby temat wrócił (wszystko sprawdzone na żywym telefonie, nie w teorii):
+//  • **CSS `scroll-snap`** (PR #155) — tylko DOCIĄGA po płynnym przewijaniu, więc nie daje skoku:
+//    „nie przeskakuje tak jak przy pierwszym".
+//  • **Skok animowany** `behavior:'smooth'` (PR #156) — animacja trwa dłużej niż odstęp między
+//    machnięciami, więc kolejny gest łapie ją w locie. Zmierzone A/B przy kadencji co 120 ms:
+//    1 trafienie na 5 wobec 5 na 5 przy skoku natychmiastowym. Stąd brało się „nie za każdym razem działa".
+//  • **`preventDefault` po progu kilku pikseli** — przepuszczone pierwsze `touchmove` pozwalają
+//    przeglądarce uznać gest za przewijanie i od tej chwili zdarzenia są `cancelable:false`,
+//    czyli blokada przestaje cokolwiek znaczyć.
+//  • 🔴 **Natywne przewijanie przycinane w listenerze `scroll`** (PR #161, wycofane #162) — na telefonie
+//    dawało WIBRACJĘ („skacze szybko góra-dół, aż ekran robi się nieczytelny"): inercja dotyku żyje
+//    w kompozytorze i nie kończy się po ustawieniu `scrollTop`, więc co klatkę inercja ciągnie w jedną
+//    stronę, a klamra w drugą. **Sandbox tego nie łapie** — syntetyczny dotyk z CDP ma inną inercję
+//    niż palec i w pomiarach wszystko wychodziło idealnie.
+// Wniosek: zatrzymanie ruchu na krawędzi wymaga PRZEJĘCIA gestu; natywnego przewijania nie da się
+// bezpiecznie „przyciąć" po fakcie. A przejęcie gestu odbiera systemowy feel — dlatego właściciel
+// wybrał zwykły scroll.
 
 function watekHtml(item){
   const t = threadForItem(item);
@@ -2466,9 +2364,6 @@ function toggleTheme() {
   let startY = 0, pulling = false;
 
   area.addEventListener('touchstart', e => {
-    // Przy OTWARTYM panelu gest należy do steppera wątków (`wpSkok`) — inaczej przeciągnięcie
-    // na górze panelu odpalałoby oba naraz: skok o wątek i powrót na najnowszy.
-    if (watkiPanelOtwarty) { pulling = false; return; }
     if (area.scrollTop === 0) { startY = e.touches[0].clientY; pulling = true; }
   }, { passive: true });
 
@@ -2490,7 +2385,9 @@ function toggleTheme() {
     pulling = false;
     ptr.classList.remove('pulling');
     ptr.innerHTML = '<span class="ptr-arrow">↓ Wątki tej dawki</span>';
-    if (dy > PROG) otworzWatkiPanel();
+    // Powtórzony gest przy JUŻ otwartym panelu (czytelnik doscrollował do samej góry) nie otwiera
+    // go drugi raz — wraca na najnowszy wątek, czyli tam, gdzie gest stawia za pierwszym razem.
+    if (dy > PROG) { if (watkiPanelOtwarty) wpPrzewinDoNajnowszej(); else otworzWatkiPanel(); }
   }, { passive: true });
 })();
 
