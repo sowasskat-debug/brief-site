@@ -1278,37 +1278,37 @@ html, body {
 .dt-detail::-webkit-scrollbar-thumb:hover,
 .archive-body::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
-/* ── LIVE → PILNE (2026-08-10) ───────────────────────────────────────────────────────────
+/* ── LIVE → PILNE (2026-08-10) — ⚠️ TYLKO DESKTOP od 2026-08-12 ──────────────────────────
    Pastylka LIVE zamienia się w klikalny pasek breaking newsa, gdy w bieżącej dawce jest
    ŚWIEŻY item z flagą 🚨. Bez klasy `.pilne` wygląda i zachowuje się dokładnie jak dotąd —
-   zero regresji, gdy nic pilnego nie ma (a to jest stan domyślny przez większość doby). */
-/* 🔴 KURCZY JĄ FLEXBOX, nie dobrana ręcznie szerokość. Dwie regresje z rzędu, obie zmierzone
-   na 375 px i obie niewidoczne w pomiarze samej pastylki („mieści się" było prawdą i nie
-   wystarczało): (1) 46vw = 173 px wypychało datę w topbarze na TRZECIĄ linię, (2) 28vw = 105 px
-   naprawiło datę, ale wypchnęło ostatni przycisk 9 px POZA ekran (384 vs 375).
-   `flex: 0 1 auto` + `min-width: 0` sprawiają, że pastylka oddaje miejsce sama, na każdej
-   szerokości — bez zgadywania `vw`. Górny limit został tylko po to, żeby na desktopie nie
-   rozlała się na pół nagłówka. */
-.live-pill.pilne, .dt-live.pilne {
-  cursor: pointer; max-width: 40vw;
+   zero regresji, gdy nic pilnego nie ma (a to jest stan domyślny przez większość doby).
+   🔴 WARIANT MOBILNY USUNIĘTY (decyzja właściciela 12.08: „usuń to na mobilnej, zrób jak było
+   wcześniej, na PC zostaw"). `.live-pill` wróciła do statycznego „Live" i JS jej nie dotyka —
+   patrz `aktualizujPilne` w index.html. Reguł `.live-pill.pilne` nie ma tu już wcale, bo klasa
+   `.pilne` nie może na ten element trafić; martwy styl gorszy niż jego brak. */
+/* 🔴 KURCZENIE FLEXBOXEM ZOSTAJE, mimo że dotyczyło głównie mobilnej pastylki. Dwie regresje
+   z rzędu, obie zmierzone na 375 px i obie niewidoczne w pomiarze samej pastylki („mieści się"
+   było prawdą i nie wystarczało): (1) 46vw = 173 px wypychało datę w topbarze na TRZECIĄ linię,
+   (2) 28vw = 105 px naprawiło datę, ale wypchnęło ostatni przycisk 9 px POZA ekran (384 vs 375).
+   ⚠️ NIE USUWAM tych reguł razem z wariantem mobilnym: `.topbar-right { min-width: 0 }` i
+   `.topbar-date { white-space: nowrap }` opisują zachowanie CAŁEGO topbara przy ciasnocie, a nie
+   samej pastylki — ich skasowanie byłoby zmianą, której nikt nie prosił i której nie zmierzyłem. */
+.dt-live.pilne {
+  cursor: pointer; max-width: 340px;
   flex: 0 1 auto; min-width: 0; overflow: hidden;
 }
-/* 🔴 BEZ TEGO CAŁA RESZTA NIE DZIAŁA. `.topbar-right` jest elementem flex, a te mają domyślnie
-   `min-width: auto` — czyli NIE MOGĄ zejść poniżej szerokości swojej treści. Presja kurczenia
-   nigdy nie docierała do pastylki, więc `flex-shrink` na niej był martwy i pasek wypychał ostatni
-   przycisk poza ekran (zmierzone: 429 px przy ekranie 375). Zmierzone, nie wyczytane z kodu. */
+/* 🔴 `.topbar-right` jest elementem flex, a te mają domyślnie `min-width: auto` — czyli NIE MOGĄ
+   zejść poniżej szerokości swojej treści. Presja kurczenia nie docierała do pastylki, więc
+   `flex-shrink` na niej był martwy i pasek wypychał ostatni przycisk poza ekran (zmierzone:
+   429 px przy ekranie 375). Zmierzone, nie wyczytane z kodu. */
 .topbar-right { min-width: 0; }
-/* Data nigdy się nie łamie — przy ciasnocie kurczy się PASTYLKA, bo jej tekst ma ellipsis,
-   a data nie ma jak się skrócić bez utraty sensu. */
+/* Data nigdy się nie łamie — przy ciasnocie kurczy się to, co ma ellipsis, a data nie ma jak
+   się skrócić bez utraty sensu. */
 .topbar-date { white-space: nowrap; }
-.live-pill.pilne { background: var(--red); border-color: var(--red); gap: 6px; }
-.live-pill.pilne .live-dot { background: #fff; }
-.dt-live.pilne { max-width: 340px; }
 .pilne-tag {
   font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
   letter-spacing: 1.5px; flex-shrink: 0;
 }
-.live-pill.pilne .pilne-tag { color: #fff; }
 .dt-live.pilne .pilne-tag { color: var(--red); }
 /* ⚠️ Kurczy się WYŁĄCZNIE tekst nagłówka — etykieta „PILNE" i kropka niosą sygnał i nigdy
    nie mogą zostać wypchnięte (ta sama zasada co w `.watek-strip` i `.q-row`). */
@@ -1316,7 +1316,6 @@ html, body {
   font-family: 'Space Mono', monospace; font-size: 8.5px; letter-spacing: .3px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }
-.live-pill.pilne .pilne-txt { color: #fff; }
 .dt-live.pilne .pilne-txt { color: var(--text); text-transform: none; letter-spacing: .2px; }
 
 /* ── Stopka z linkami statycznymi (2026-08-12) ──────────────────────────────
