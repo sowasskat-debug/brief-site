@@ -583,6 +583,26 @@ const sessionNewThreshold = (function () {
   return raw === null ? Infinity : (parseFloat(raw) || 0);
 })();
 const _flashedItems = new Set(); // żeby ten sam item nie błyskał ponownie przy re-renderze / live-update
+// 🔴 KLUCZ MUSI PRZEŻYĆ RE-RENDER — inaczej strażnik nie strzeże niczego (naprawione 2026-08-12).
+// Zgłoszenie właściciela: „na PC cały czas mrugają te posty, co jakiś czas jakby się odświeżało
+// i na chwilę mruga jakby był nowy, a to fałszywy alarm".
+// PRZYCZYNA: `_flashedItems` trzymało `it.id`, a `pollLiveUpdates` nadaje itemom **nowe** `id: uid()`
+// przy KAŻDYM live-updacie (ta sama mapa co w `loadDose`). Po każdym zapisie bota cała dawka miała
+// więc świeże id-ki, `has(it.id)` nigdy nie trafiało i wszystko, co jest nowsze od progu sesji,
+// błyskało OD NOWA. Efekt narastał w czasie: `sessionNewThreshold` stoi na chwili wejścia, więc im
+// dłużej karta jest otwarta, tym więcej pozycji łapie się na „nowe" i tym więcej mruga naraz.
+// ⚠️ Drugie źródło tego samego objawu: `refreshThreadsIfChanged` woła `pollLiveUpdates(wymusRender=true)`,
+// co POMIJA porównanie `doseSignature` — więc re-render (i dawny fałszywy błysk) zdarzał się nawet
+// wtedy, gdy treść dawki w ogóle się nie zmieniła.
+// ⚠️ Kluczem jest SLUG (`itemSlug(text)`) — ta sama tożsamość, na której stoją deep linki i stuby,
+// stabilna między renderami. `it.id` zostaje WYŁĄCZNIE do znalezienia elementu w DOM, bo tam musi być
+// id z BIEŻĄCEGO renderu. Nie mieszaj tych dwóch ról.
+// ⚠️ ŚWIADOMY KOSZT: gdy bot przepisze nagłówek (eskalacja, tytuł z polskiego źródła), slug się zmienia
+// i taki news błyśnie drugi raz. To rzadkie i w gruncie rzeczy uczciwe — nagłówek REALNIE jest inny.
+const kluczBlysku = it => {
+  const t = String(it && it.text || '');
+  return t ? 's:' + itemSlug(t) : 'i:' + (it && it.id);
+};
 function markNewItems(items) {
   if (!items || !items.length) return;
   const desktop = (typeof isDesktop === 'function') && isDesktop();
@@ -590,11 +610,12 @@ function markNewItems(items) {
   items.forEach(it => {
     const ts = itemTimestamp(it);
     if (ts > maxTs) maxTs = ts;
-    if (ts > sessionNewThreshold && !_flashedItems.has(it.id)) {
+    const klucz = kluczBlysku(it);
+    if (ts > sessionNewThreshold && !_flashedItems.has(klucz)) {
       const prefix = desktop ? 'dti-' : (it.subItems && it.subItems.length ? 'group-' : 'item-');
       const el = document.getElementById(prefix + it.id);
       if (el) {
-        _flashedItems.add(it.id);
+        _flashedItems.add(klucz);
         el.classList.add('is-new');
         el.addEventListener('animationend', () => el.classList.remove('is-new'), { once: true });
       }
