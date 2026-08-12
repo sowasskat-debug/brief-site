@@ -795,7 +795,8 @@ Sesja mobilno-wizualna. Wszystko zmergowane do `main` i **zweryfikowane na produ
   treści** (decyzja właściciela) — od tego jest ↻ w topbarze i `liveTick`. Najnowsza saga na DOLE
   panelu, starsze wyżej (panel wysuwa się nad feedem, więc „im wyżej, tym starsze"); wewnątrz sagi
   oś bez zmian, najnowszy etap na górze. Panel żyje POZA `#content`, więc przeżywa re-rendery;
-  desktop go nie pokazuje. Szczegóły i pułapki: `CLAUDE.md`, sekcja „Panel wątków nad feedem".
+  desktop go nie pokazuje. **Zmiana dawki ZAMYKA panel** — wraca wyłącznie gestem, już z wątkami
+  nowej dawki. Szczegóły i pułapki: `CLAUDE.md`, sekcja „Panel wątków nad feedem".
 - **Desktop: przycisk „WĄTKI N"** obok zakładek dawek (PR #106), czerwony obrys (fiolet jest zajęty
   przez aktywną dawkę), licznik żywy z `threads.json`.
 

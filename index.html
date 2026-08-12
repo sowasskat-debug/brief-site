@@ -2095,14 +2095,12 @@ function switchDose(dose) {
   scrollArea.classList.remove('tabs-hidden');
   tabsHidden = false;
   lastScrollY = 0;
-  const ladowanie = loadDose(dose);
-  // Panel wątków należy do DAWKI, więc przy przełączeniu przerysowujemy go razem z feedem.
-  // Dwa razy świadomie: od razu (żeby nie został z cudzymi wątkami na czas pobierania) i po
-  // wczytaniu — dopiero wtedy `doseDates[dose]` zna realną datę treści tej dawki.
-  if (watkiPanelOtwarty) {
-    renderWatkiPanel();
-    Promise.resolve(ladowanie).then(() => { if (watkiPanelOtwarty) { renderWatkiPanel(); wpPrzewinDoNajnowszej(); } });
-  }
+  loadDose(dose);
+  // 🔴 Panel wątków ZAMYKA SIĘ przy zmianie dawki (życzenie właściciela 2026-08-13: „jak przeskakuję
+  // na poranną, to ma być schowane — dopiero jak w danej dawce pójdę w górę, ma się pokazać").
+  // Wcześniej przerysowywał się i zostawał otwarty, więc przełączenie zakładki wrzucało czytelnika
+  // w środek cudzej listy wątków, zamiast pokazać feed nowej dawki. Panel wraca gestem.
+  if (watkiPanelOtwarty) zamknijWatkiPanel();
   if (prevDose === 'afternoon' && dose === 'morning') setTimeout(mobGripPulse, 320);
 }
 
