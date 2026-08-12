@@ -1240,6 +1240,16 @@ rozwijać"* (dla OBU list: legendy „Sagi na wykresie" i osi „Wątek tematu")
   ⚠️ `r` to atrybut SVG, nie własność CSS — rozmiar ustawiamy przez `setAttribute`.
   ⚠️ **Jeden rozwinięty etap naraz** (akordeon w obrębie karty): przy kilku otwartych kropka
   pokazywałaby ostatnio kliknięty i wykres przestałby odpowiadać na pytanie „gdzie jestem".
+- 🔴 **PODETAPY JEDNEJ SESJI SĄ SCHOWANE** (życzenie właściciela: „te podkategorie mają być schowane,
+  dopiero po kliknięciu np. w wątek nr 2 się rozwijają"). Jedna kropka bywa wspólna dla kilku etapów
+  (weekend spada na piątkowe zamknięcie) i cztery wiersze jednej sesji rozpychały listę tak, że numery
+  ginęły w ścianie tekstu. Widać tylko wiersz-głowę z licznikiem **`+N`** przy numerze; klik wysuwa
+  resztę (`.sr-podetapy`) RAZEM z rozwinięciem skrótu głowy.
+  ⚠️ Licznik `+N` jest warunkiem odkrywalności — bez niego schowana treść nie istnieje dla czytelnika.
+  ⚠️ `.sr-podetapy` ma własne `display:flex`, więc potrzebuje JAWNEGO `[hidden]{display:none}` —
+  dokładnie ta sama pułapka co przy `.sr-legenda`.
+  ⚠️ Zwinięcie grupy zamyka też opisy jej podetapów: inaczej po ponownym rozwinięciu wyglądałoby to
+  na przypadkowo otwarty wiersz.
 - ⚠️ **Skąd brać treść skrótu:** `SAGA_ART` indeksuje bieżące dawki ORAZ doczytywane dni archiwum.
   Dwie pułapki, obie zmierzone i obie obsłużone:
   (a) `fetchFromBriefsJson` indeksuje **WSZYSTKIE dzisiejsze dawki**, nie tylko ładowaną — plik i tak

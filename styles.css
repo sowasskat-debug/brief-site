@@ -1162,6 +1162,14 @@ html, body {
    bez tego zmieniłby się wygląd DOMYŚLNY, o który nikt nie prosił: pełna czerwona kropka bieżącego
    newsa zostaje taka, jaka była. Przy wyborze bieżąca schodzi do obwódki, żeby nie było dwóch
    czerwonych plam i było widać, która jest chwilowym zaznaczeniem. */
+/* Podetapy jednej sesji: schowane, wysuwa je klik w numerowany wiersz grupy (2026-08-12).
+   ⚠️ Własna reguła `display` bije wbudowane `[hidden]{display:none}` — stąd jawny `[hidden]`,
+   dokładnie jak przy `.sr-legenda` wyżej. */
+.sr-podetapy{display:flex;flex-direction:column;gap:1px}
+.sr-podetapy[hidden]{display:none}
+/* „+N" przy numerze — bez tego schowane wiersze są nieodkrywalne. */
+.sr-leg-plus{font-size:8.5px;font-weight:700;color:var(--red,#e01f0f);margin-left:2px;vertical-align:1px}
+.sr-leg.exopen .sr-leg-plus{opacity:.45}
 .sr-dot.sel{fill:var(--red,#e01f0f);stroke:var(--red,#e01f0f)}
 .sr-dot.sel + .sr-num{fill:#fff}
 .sr-box.ma-wybor .sr-dot.on:not(.sel){fill:var(--bg,#fff);stroke:var(--red,#e01f0f);stroke-width:2.4}
