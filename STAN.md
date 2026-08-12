@@ -25,7 +25,7 @@ i wygląda to jak awaria deployu.
 Wszystkie PR-y z 11.08 zmergowane: **bot #141–#146**, **front #129–#137**. Nic nie wisi.
 Zostały wyłącznie obserwacje po najbliższych biegach (blok niżej) i zadania z punktów 2, 7 i 8.
 
-## 🔴 AUTOMAT PUBLIKUJĄCY NA X — ZACZĘTY 12.08, DOKOŃCZYĆ (sesja 12.08 wieczór)
+## 🔴 AUTOMAT PUBLIKUJĄCY NA X — punkty 1-5 GOTOWE 12.08, czeka na `X_AUTO=true` + punkt 6
 
 Właściciel: *„da rade zrobic skrypt zeby mi sam posty z brifup na x dawal?"*. Decyzja: **automat
 wybiera i publikuje sam**, plus osobno **przycisk na feedzie tylko dla właściciela**.
@@ -46,15 +46,48 @@ Format posta: **B+C** — nagłówek + jedno konkretne zdanie z artykułu + lini
   wszystko powyżej ~280 pod „Pokaż więcej".
 - **Kredyt kupiony.** Wydane dotąd $0,02. Minimalne doładowanie $10, bez abonamentu, kredyty nie wygasają.
 
+### ✅ PUNKTY 1-5 ZROBIONE 12.08 WIECZOREM (bot #157) — zostaje sam punkt 6
+Wybór kandydata, bramka różnorodności, `wyslane_na_x.txt`, bezpieczniki i pomiar na archiwum —
+wszystko w `Runner.cs`, szczegóły w `FinancialNewsBot/CLAUDE.md`, sekcja „Automat publikujący
+na X — warstwa druga". Kadencja wg decyzji właściciela: **4 posty/dobę, max 1 na bieg**, odstęp 150 min.
+
+🔴 **AUTOMAT JEST DOMYŚLNIE WYŁĄCZONY — włącza `X_AUTO=true` w `/root/bot_secrets.env`.**
+Merge do `main` = deploy na Hetzner przy najbliższym biegu, więc bez tej bramki sam merge zacząłby
+publikować pod marką właściciela. **Kolejność uruchamiania: najpierw `X_SUCHY=true` z serwera
+(pokazuje wybrany post, nic nie wysyła), dopiero potem `X_AUTO=true`.**
+
+📊 **Pomiar z punktu 5 — 42 dni archiwum, 124 posty w każdym wariancie:**
+
+| wariant | najdłuższa seria o tym samym temacie | najpodobniejsza para sąsiadów |
+|---|---|---|
+| BAZA — top story każdej dawki | **4** (Iran/Ormuz) | J = **1,000** |
+| KONTROLA — sam ranking, BEZ bramki | **2** | J = 0,571 |
+| REGUŁA — ranking + bramka | **1** | J = 0,091 |
+
+Czyli **tak, seria spada z 4 do 1**. 🔴 Ale wariant KONTROLNY zmienia interpretację: serię łamie
+głównie **ranking po całej dawce** (4→2), a bramka domyka resztę (2→1) — odrzuca tylko 8 kandydatów
+na 124 sloty. Domyka za to dosłownie obawę właściciela: „xAI zmienia nazwę na SpaceXAI" × „SpaceX
+przejmuje xAI i zmienia nazwę na SpaceXAI". Harness zwalidowany bazą — odtworzył pomiar z 12.08
+co do liczby (124 posty, seria 4, ta sama para o Ormuzie).
+
+⚠️ **DO OBEJRZENIA PO TYGODNIU PRODUKCJI — reguła zmienia PROFIL postów, nie tylko serię:**
+pilnych (🚨) **24 → 70** (56% postów), pozycji z wykresem (`chart`) **17 → 10**, krajowych 5,6% → 11,3%.
+To skutek tego, że `pilne` jest PIERWSZYM kluczem rankingu (tak brzmiała specyfikacja). Jeśli
+właścicielowi nie będzie odpowiadał automat wrzucający głównie newsy pilne — **przestaw kolejność
+kluczy rankingu, nie ruszaj bramki**.
+
+⚠️ Próg tekstowy bramki zjechał **0,18 → 0,10** (0,18 nie odrzucał niczego, patrz pomiary niżej),
+ale z warunkiem wspólnego rdzenia NOŚNEGO — bez niego dwa dowolne newsy „o pieniądzach" blokowałyby
+się przez `dolar`/`wzrosł`.
+
+⚠️ Przy okazji: **`Senat` wyrzucony ze słownika „krajowych"** — na 4490 itemach dał 6 trafień
+i wszystkie dotyczyły Senatu USA. Ta sama klasa co znany zakaz `PO`/`KO`.
+
 ### ⬜ CO ZOSTAŁO
-1. **Wybór kandydata** — cała dawka (~20 pozycji), ranking `pilne` → `reach` → wielkość klastra → pozycja.
-2. **Bramka różnorodności** — patrz pomiary niżej.
-3. **`wyslane_na_x.txt`** — lokalny stan per-serwer (jak `wyslane.txt`), NIE w gicie.
-4. **Bezpieczniki** — dzienny limit postów, dedup, liczniki w `brief_health`.
-5. **Pomiar reguły na 43 dniach archiwum PRZED wdrożeniem** — czy seria spada z 4 do 1.
 6. **Przycisk na feedzie** (`index.html`, bramka właściciela jak przy `adminDeleteItem`) + publikacja
-   przez Edge Function. ⚠️ Schowanie przycisku to NIE zabezpieczenie — klucze X nie mogą trafić
-   do przeglądarki.
+   przez **NOWĄ** Edge Function. ⚠️ Schowanie przycisku to NIE zabezpieczenie — klucze X nie mogą
+   trafić do przeglądarki, więc sama funkcja jest tu połową roboty (`gotowiec-x` tylko GENERUJE
+   treść, nie publikuje). Automat z punktów 1-5 tego nie obejmuje i nie zastępuje.
 
 ### 📊 POMIARY, KTÓRE ZDECYDOWAŁY O PROJEKCIE (nie licz ich od nowa)
 - **Symulacja „publikuj top story każdej dawki" na 43 dniach = 124 posty:** najdłuższa seria o tym
