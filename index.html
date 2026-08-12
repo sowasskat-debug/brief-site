@@ -1019,12 +1019,48 @@ function sagaSkrotHtml(node, t){
     <div class="saga-ex-foot"><span class="saga-ex-src">${escHtml(zrodlo)}</span>`
     + `<a class="saga-ex-open" href="${escAttr(watekNodeLink(node))}">Otwórz news →</a></div>`;
 }
+// 🔴 KROPKA IDZIE ZA KLIKNIĘTYM ETAPEM (2026-08-12, doprecyzowanie właściciela: „po kliknięciu
+// w dany tytuł kropka powinna się przesuwać w zależności gdzie klikniesz"). Domyślnie czerwona
+// jest kropka BIEŻĄCEGO newsa (`.on`); wybór etapu przenosi podświetlenie na jego kropkę (`.sel`),
+// a zwinięcie przywraca stan wyjściowy. To wyłącznie warstwa WIZUALNA — nigdzie nie nawigujemy,
+// więc nie wraca problem „przeskakuje z 6 na 2" (tamten brał się z przełączania całej karty).
+// ⚠️ Zasięg to NAJBLIŻSZY przodek zawierający wykres — na desktopie i mobile w DOM bywa kilka
+// otwartych kart naraz, a podświetlenie ma ruszać tylko wykres tej, w której klikamy.
+function sagaPodswietlKropke(el, wybieramy){
+  let root = el.parentElement;
+  while (root && !root.querySelector('.sr-box')) root = root.parentElement;
+  const box = root && root.querySelector('.sr-box');
+  if (!box) return;
+  const ni = el.dataset.ni;
+  box.querySelectorAll('.sr-dot').forEach(c => {
+    c.classList.remove('sel');
+    c.setAttribute('r', c.classList.contains('on') ? 6.5 : 5);   // `r` to atrybut SVG, nie styl
+  });
+  box.classList.remove('ma-wybor');
+  if (!wybieramy) return;
+  const cel = [...box.querySelectorAll('.sr-dot')]
+    .find(c => (c.dataset.nis || '').split(',').includes(ni));
+  // Etap spoza wykresu (inny instrument albo sprzed okna) nie ma kropki — wtedy nic nie
+  // podświetlamy i bieżąca zostaje czerwona. Lepiej nic niż wskazanie nie tego punktu.
+  if (cel) { cel.classList.add('sel'); cel.setAttribute('r', 6.5); box.classList.add('ma-wybor'); }
+}
 function sagaToggleSkrot(el){
   const box = el.nextElementSibling;
   if (!box || !box.classList.contains('saga-ex')) return;
   const otwieramy = box.hidden;
+  // Jeden rozwinięty etap naraz — inaczej kropka pokazywałaby ostatnio kliknięty, a otwartych
+  // opisów byłoby kilka, więc wykres przestałby odpowiadać na pytanie „gdzie jestem".
+  if (otwieramy) {
+    let root = el.parentElement;
+    while (root && !root.querySelector('.sr-box')) root = root.parentElement;
+    (root || document).querySelectorAll('.saga-ex:not([hidden])').forEach(x => {
+      x.hidden = true;
+      if (x.previousElementSibling) x.previousElementSibling.classList.remove('exopen');
+    });
+  }
   box.hidden = !otwieramy;
   el.classList.toggle('exopen', otwieramy);
+  sagaPodswietlKropke(el, otwieramy);
   if (!otwieramy || box.dataset.gotowe) return;
   const t = THREADS && THREADS.threads && THREADS.threads[+el.dataset.ti];
   const node = t && t.nodes && t.nodes[+el.dataset.ni];
@@ -1219,7 +1255,10 @@ function sagaRynekHtml(item){
   etapy.forEach((g, nr) => {
     const teraz = g.wezly.some(n => normThreadKey(n.text) === kluczBiez);
     const x = X(g.i), y = Y(punkty[g.i]);
-    kropki += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${teraz ? 6.5 : 5}" class="sr-dot${teraz ? ' on' : ''}"/>`
+    // `data-nis` = indeksy węzłów tej kropki w `t.nodes` (jedna sesja bywa wspólna dla kilku etapów).
+    // Po tym polu wiersz listy odnajduje SWOJĄ kropkę — patrz `sagaPodswietlKropke`.
+    const nis = g.wezly.map(n => t.nodes.indexOf(n)).join(',');
+    kropki += `<circle data-nis="${nis}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${teraz ? 6.5 : 5}" class="sr-dot${teraz ? ' on' : ''}"/>`
            +  `<text x="${x.toFixed(1)}" y="${(y + 2.8).toFixed(1)}" class="sr-num">${nr+1}</text>`;
   });
   // 🔴 LEGENDA OD NAJNOWSZEGO (2026-08-12, życzenie właściciela: „w sadze ma też być kolejność

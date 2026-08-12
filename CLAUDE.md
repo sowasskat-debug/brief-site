@@ -1227,6 +1227,19 @@ rozwijać"* (dla OBU list: legendy „Sagi na wykresie" i osi „Wątek tematu")
   w lewo→prawo i odwrócić się jej nie da — lista czyta się więc `5 → 1` w dół i to jest zamierzone:
   najnowszy etap jest zarazem najwyżej i najbardziej na prawo. W grupie (kilka etapów tej samej
   sesji) też najnowszy pierwszy, kolejne z „↳".
+- 🔴 **KROPKA IDZIE ZA KLIKNIĘTYM ETAPEM** (doprecyzowanie właściciela: „po kliknięciu w dany tytuł
+  kropka powinna się przesuwać w zależności gdzie klikniesz"). Domyślnie czerwona jest kropka
+  BIEŻĄCEGO newsa (`.on`); wybór wiersza przenosi podświetlenie na jego kropkę (`.sel`), a zwinięcie
+  przywraca stan wyjściowy. To warstwa WYŁĄCZNIE wizualna — nadal nigdzie nie nawigujemy, więc nie
+  wraca „przeskakuje z 6 na 2" (tamto brało się z przełączania całej karty).
+  ⚠️ Wiersz odnajduje swoją kropkę po `data-nis` (indeksy węzłów grupy w `t.nodes`), bo JEDNA kropka
+  bywa wspólna dla kilku etapów tej samej sesji. Etap spoza wykresu (inny instrument, sprzed okna)
+  kropki nie ma — wtedy nic nie podświetlamy, zamiast wskazywać nie ten punkt.
+  ⚠️ Reguły odsuwające „ten news" wiszą na `.sr-box.ma-wybor`, więc **wygląd DOMYŚLNY jest nietknięty**;
+  dopiero przy wyborze bieżąca kropka schodzi do obwódki, żeby nie było dwóch czerwonych plam.
+  ⚠️ `r` to atrybut SVG, nie własność CSS — rozmiar ustawiamy przez `setAttribute`.
+  ⚠️ **Jeden rozwinięty etap naraz** (akordeon w obrębie karty): przy kilku otwartych kropka
+  pokazywałaby ostatnio kliknięty i wykres przestałby odpowiadać na pytanie „gdzie jestem".
 - ⚠️ **Skąd brać treść skrótu:** `SAGA_ART` indeksuje bieżące dawki ORAZ doczytywane dni archiwum.
   Dwie pułapki, obie zmierzone i obie obsłużone:
   (a) `fetchFromBriefsJson` indeksuje **WSZYSTKIE dzisiejsze dawki**, nie tylko ładowaną — plik i tak
