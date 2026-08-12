@@ -796,7 +796,9 @@ Sesja mobilno-wizualna. Wszystko zmergowane do `main` i **zweryfikowane na produ
   panelu, starsze wyżej (panel wysuwa się nad feedem, więc „im wyżej, tym starsze"); wewnątrz sagi
   oś bez zmian, najnowszy etap na górze. Panel żyje POZA `#content`, więc przeżywa re-rendery;
   desktop go nie pokazuje. **Zmiana dawki ZAMYKA panel** — wraca wyłącznie gestem, już z wątkami
-  nowej dawki. Szczegóły i pułapki: `CLAUDE.md`, sekcja „Panel wątków nad feedem".
+  nowej dawki. **Przewijanie panelu idzie skokami po wątkach** (`scroll-snap` + `scroll-snap-stop`,
+  klasa `.wp-snap` tylko na czas otwartego panelu). Szczegóły i pułapki: `CLAUDE.md`, sekcja
+  „Panel wątków nad feedem".
 - **Desktop: przycisk „WĄTKI N"** obok zakładek dawek (PR #106), czerwony obrys (fiolet jest zajęty
   przez aktywną dawkę), licznik żywy z `threads.json`.
 

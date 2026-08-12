@@ -1206,6 +1206,21 @@ html, body {
    najnowszy etap na górze. Desktop panelu nie pokazuje (ma przycisk WĄTKI w nagłówku). */
 #watkiPanel { background: var(--gray1); border-bottom: 2px solid var(--text); }
 #watkiPanel[hidden] { display: none; }
+/* 🔴 PRZEWIJANIE SKOKAMI PO WĄTKACH (2026-08-13, życzenie właściciela: „kolejne przeciągnięcie też
+   tak przeskakuje, czyli co wątek przeskok"). Natywny scroll-snap, NIE własna obsługa gestu —
+   gest pull-to-* działa tylko przy `scrollTop === 0`, a po zakotwiczeniu na najnowszej sadze
+   jesteśmy w środku panelu, więc drugie pociągnięcie nie miałoby jak się odpalić; własny stepper
+   biłby się z natywnym przewijaniem palca.
+   ⚠️ Klasa dokładana TYLKO na czas otwartego panelu (`otworzWatkiPanel`/`zamknijWatkiPanel`) —
+   `.scroll-area` jest kontenerem CAŁEJ apki i snapowanie na stałe zmieniałoby zachowanie feedu.
+   ⚠️ `proximity`, nie `mandatory`: mandatory ściągałoby czytelnika z powrotem do panelu, gdy chce
+   po prostu zjechać w newsy.
+   ⚠️ `#content` też jest punktem snapowania, żeby zjazd w dół kończył się równo na początku feedu,
+   a nie „przyklejał" do ostatniej sagi. */
+.scroll-area.wp-snap { scroll-snap-type: y proximity; }
+/* `scroll-snap-stop: always` = machnięcie zatrzymuje się na NAJBLIŻSZYM wątku, zamiast przelatywać
+   przez kilka — to jest właśnie „co wątek przeskok". Bez tego szybki flick przewijałby pół listy. */
+.wp-snap .wp-saga, .wp-snap #content { scroll-snap-align: start; scroll-snap-stop: always; }
 .wp-gora {
   font-family: 'Space Mono', monospace; font-size: 8.5px; letter-spacing: 2px;
   text-transform: uppercase; color: var(--muted); text-align: center; padding: 12px 16px 0;

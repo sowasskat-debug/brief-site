@@ -992,6 +992,24 @@ Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same w�
   jest stanem czytelnika, tu panel jest doraźnym podglądem wywołanym gestem. Nie ujednolicaj tego.
   ⚠️ Treść panelu zostaje w DOM po zamknięciu (stara belka, stare sagi) — jest niewidoczna, a przy
   otwarciu i tak leci `renderWatkiPanel`. Nie diagnozuj tego jako „panel pokazuje złą dawkę".
+- 🔴 **PRZEWIJANIE SKOKAMI PO WĄTKACH — natywny `scroll-snap`, nie własny stepper** (życzenie
+  właściciela: „kolejne przeciągnięcie też tak przeskakuje, czyli co wątek przeskok"). Gest
+  pull-to-* działa WYŁĄCZNIE przy `scrollTop === 0`, a po zakotwiczeniu na najnowszej sadze jesteśmy
+  w środku panelu — drugie pociągnięcie nie miałoby jak się odpalić, a własna obsługa biłaby się
+  z natywnym przewijaniem palca. Stąd `.wp-snap` na `.scroll-area` + `scroll-snap-align: start`
+  i **`scroll-snap-stop: always`** na `.wp-saga` (bez tego szybki flick przelatuje kilka wątków).
+  ⚠️ Klasa dokładana TYLKO na czas otwartego panelu — `.scroll-area` jest kontenerem CAŁEJ apki.
+  ⚠️ **`proximity`, nigdy `mandatory`**: mandatory na kontenerze z długim feedem ściągałoby
+  czytelnika z powrotem do ostatniego punktu snapowania i utrudniało zjazd w newsy.
+  ⚠️ `#content` też jest punktem snapowania, żeby zjazd w dół kończył się równo na początku feedu.
+  📊 Zmierzone w Chromium: kolejne machnięcia dają dokładnie kotwice sag (1706 → 1292 → 878 → 460
+  → 22), powrót w dół tak samo, a po wjeździe w feed przewijanie jest już swobodne (2306 → 3206
+  → 4106 → 5006 przy maksimum 6470). Po zamknięciu panelu klasa znika i feed przewija się płynnie.
+  ⚠️ **Czego NIE dało się zmierzyć w sandboxie: uczucia realnego flicka palcem** —
+  `Input.synthesizeScrollGesture` (touch) w tym harnessie nie przewija wcale, pomiary są kółkiem
+  myszy. Wiadomo za to, że MAŁE przewinięcie (~160 px) snap cofa do bieżącego wątku, więc nieśmiałe
+  muśnięcie nic nie zrobi. Gdyby na telefonie wychodziło „lepkie", lekarstwem jest zdjęcie
+  `scroll-snap-stop: always` (miękkie przewijanie z dociąganiem) albo całej klasy `.wp-snap`.
 - 🔴 **`data-bez-wykresu` na wierszu etapu to nie ozdoba.** `sagaToggleSkrot`/`sagaPodswietlKropke`
   szukają legendy `.sr-box` W GÓRĘ drzewa, a panel i `#content` siedzą w tej samej `.scroll-area` —
   bez znacznika tap w panelu przestawiałby kropkę na wykresie OTWARTEGO ARTYKUŁU pod spodem

@@ -1074,6 +1074,10 @@ function otworzWatkiPanel(){
   renderWatkiPanel();
   p.hidden = false;
   watkiPanelOtwarty = true;
+  // Snapowanie po wątkach włączamy DOPIERO z panelem (patrz `.wp-snap` w styles.css) — `.scroll-area`
+  // jest kontenerem całej apki, więc na stałe zmieniałoby zachowanie przewijania feedu.
+  const area = document.getElementById('scrollArea');
+  if (area) area.classList.add('wp-snap');
   wpPrzewinDoNajnowszej();
 }
 function zamknijWatkiPanel(){
@@ -1082,7 +1086,7 @@ function zamknijWatkiPanel(){
   p.hidden = true;
   watkiPanelOtwarty = false;
   const area = document.getElementById('scrollArea');
-  if (area) area.scrollTop = 0;
+  if (area) { area.classList.remove('wp-snap'); area.scrollTop = 0; }
 }
 
 function watekHtml(item){
@@ -3231,6 +3235,10 @@ function logoDoAktualnejDawki() {
     const top = (cache[teraz] || [])[0];
     if (top && dtItemsMap[top.id]) dtPickItem(top.id);
   }
+
+  // Logo = „wróć na początek", więc panel wątków też się chowa. Bez tego płynny scroll do zera
+  // zostawiałby czytelnika NAD najstarszym wątkiem, z feedem kilka ekranów niżej.
+  if (watkiPanelOtwarty) zamknijWatkiPanel();
 
   scrollArea?.scrollTo({ top: 0, behavior: 'smooth' });
   document.getElementById('dtFeedList')?.scrollTo({ top: 0 });
