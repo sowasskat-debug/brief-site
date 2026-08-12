@@ -1157,6 +1157,15 @@ html, body {
 .sr-num{font-family:'Space Mono',monospace;font-size:7px;font-weight:700;text-anchor:middle;
   fill:var(--muted,#6b7280)}
 .sr-dot.on + .sr-num{fill:#fff}
+/* Wybrany etap (2026-08-12): kropka podąża za klikniętym wierszem listy.
+   ⚠️ Reguły odsuwające „ten news" działają WYŁĄCZNIE gdy coś jest wybrane (`.ma-wybor` na pudełku) —
+   bez tego zmieniłby się wygląd DOMYŚLNY, o który nikt nie prosił: pełna czerwona kropka bieżącego
+   newsa zostaje taka, jaka była. Przy wyborze bieżąca schodzi do obwódki, żeby nie było dwóch
+   czerwonych plam i było widać, która jest chwilowym zaznaczeniem. */
+.sr-dot.sel{fill:var(--red,#e01f0f);stroke:var(--red,#e01f0f)}
+.sr-dot.sel + .sr-num{fill:#fff}
+.sr-box.ma-wybor .sr-dot.on:not(.sel){fill:var(--bg,#fff);stroke:var(--red,#e01f0f);stroke-width:2.4}
+.sr-box.ma-wybor .sr-dot.on:not(.sel) + .sr-num{fill:var(--red,#e01f0f)}
 .sr-legenda{display:flex;flex-direction:column;gap:1px;margin-top:6px}
 /* 🔴 KONIECZNE: selektor klasy bije wbudowane `[hidden]{display:none}`, więc bez tej linii legenda
    rysowała się mimo atrybutu (`el.hidden === true`, a lista na ekranie). Ta sama pułapka czeka
