@@ -1205,3 +1205,35 @@ Zgłoszenie właściciela (zrzut z Google dla „brifup com"): w wynikach jest s
   konta GSC nie ma w repo. Bez tego świeże adresy czekają na crawl tygodniami.
 - 📊 Zweryfikowane renderem w Chromium: stopka jest w DOM z linkami `d/`, `w/`, `watki.html`,
   zawija się na szerokości telefonu (358 px → dwie linie), zero błędów JS.
+
+## Etap sagi ROZSUWA SKRÓT zamiast wyrzucać do innego newsa (2026-08-12) 🔴
+Dwa zgłoszenia właściciela tego samego dnia okazały się jedną sprawą:
+*„po kliknięciu w dany wątek przeskakuje czerwone kółko np. z 6 na 2"* oraz *„a także ma się opis
+rozwijać"* (dla OBU list: legendy „Sagi na wykresie" i osi „Wątek tematu").
+- 🔴 **Przyczyna skaczącej kropki:** wiersz legendy był `<a href>` do INNEGO newsa. Tap przełączał
+  całą kartę, wykres stawał się wykresem tamtego artykułu, a czerwona kropka — która znaczy
+  **„ten news"**, nie „najnowszy" — siadała na jego etapie. Do tego numery są liczone **per wykres**,
+  po etapach mających dany instrument we własnym `chart` (w sadze o Ormuzie: 10 z 29 węzłów na BRENT,
+  reszta na USDPLN/XAU albo bez wykresu), więc ten sam etap bywa raz „5", a raz zupełnie czym innym.
+- **Naprawa: `sagaToggleSkrot` + `sagaSkrotHtml`** — tap rozsuwa skrót W MIEJSCU, a wyjście do newsa
+  zostaje linkiem „Otwórz news →" WEWNĄTRZ bloku. Nigdzie nie nawigujemy, więc nic nie przeskakuje.
+  Mechanika 1:1 jak `exToggle` na `watki.html` i `<details>` na stronach sag — łącznie z pułapką
+  kotwicy klastra (podpozycja, której NIE MA na osi jako osobny etap).
+- **Wiersze osi „Wątek tematu" też są klikalne** — do 12.08 były martwym tekstem (ani linku, ani
+  rozwijania). `data-ni` to indeks w ORYGINALNEJ tablicy `t.nodes` (od najstarszego); lista jest
+  odwracana wyłącznie na potrzeby wyświetlania.
+- 🔴 **LEGENDA WYKRESU TEŻ OD NAJNOWSZEGO** (życzenie: „w sadze ma też być kolejność najnowsze od
+  góry"). **NUMERY zostają chronologiczne**, bo przywiązują wiersz do KROPKI, a oś czasu biegnie
+  w lewo→prawo i odwrócić się jej nie da — lista czyta się więc `5 → 1` w dół i to jest zamierzone:
+  najnowszy etap jest zarazem najwyżej i najbardziej na prawo. W grupie (kilka etapów tej samej
+  sesji) też najnowszy pierwszy, kolejne z „↳".
+- ⚠️ **Skąd brać treść skrótu:** `SAGA_ART` indeksuje bieżące dawki ORAZ doczytywane dni archiwum.
+  Dwie pułapki, obie zmierzone i obie obsłużone:
+  (a) `fetchFromBriefsJson` indeksuje **WSZYSTKIE dzisiejsze dawki**, nie tylko ładowaną — plik i tak
+      jest sparsowany, więc to zero dodatkowej sieci; bez tego 3 z 6 etapów pokazywały „Pełna treść
+      w wydaniu z tego dnia", bo dzisiejszego dnia nie ma jeszcze w `archive/`;
+  (b) data etapu pochodzi z `published_at` (czas ŹRÓDŁA), a news leży w archiwum dnia NASZEJ
+      publikacji → przy pudle sięgamy po dzień **±1** (na stronach sag ta sama klasa to 18 z 68 braków).
+- 📊 Zweryfikowane w Chromium na produkcyjnych danych: 10 rozwiniętych wierszy w obu listach,
+  **2 z fallbackiem** (etapy, których tytuł przepisano po publikacji — znana klasa), **0 błędów JS**;
+  kolejność legendy `5, 4, ↳, ↳, ↳, 3, 2, 1` przy datach `12.08 → 06.08`.

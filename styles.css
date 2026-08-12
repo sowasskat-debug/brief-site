@@ -1319,3 +1319,25 @@ html, body {
 /* Na desktopie feed ma własny, przewijany panel — stopka wjeżdżałaby w środek układu.
    ⚠️ Zostaje w DOM (crawler ją widzi), znika tylko wizualnie w szerokim widoku. */
 @media (min-width: 1024px) { .brif-footer { display: none; } }
+
+/* ── Skrót etapu rozsuwany w miejscu: oś sagi + legenda wykresu (2026-08-12) ────────────────
+   Wiersz etapu przestał być linkiem do innego newsa — tap rozwija skrót tutaj, a wyjście do
+   pełnego artykułu siedzi w środku bloku. Ta sama mechanika co na /watki i stronach sag. */
+.saga-ex {
+  margin: -2px 0 10px 0; padding: 10px 12px 11px;
+  border-left: 2px solid var(--red); background: rgba(0,0,0,.028);
+}
+[data-theme="dark"] .saga-ex { background: rgba(255,255,255,.05); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .saga-ex { background: rgba(255,255,255,.05); }
+}
+.saga-ex-art { font-family: Georgia, 'Times New Roman', serif; font-size: 13.5px; line-height: 1.55; color: var(--text); }
+.saga-ex-foot {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 8px;
+  font-family: 'Space Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+}
+.saga-ex-src { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.saga-ex-open { color: var(--red); text-decoration: none; flex: 0 0 auto; }
+/* Sygnał „to się klika" — bez tego wiersz wygląda jak zwykły tekst (tak było do 12.08). */
+.watek-node, .sr-leg { cursor: pointer; }
+.watek-node.exopen .watek-head, .sr-leg.exopen .sr-leg-tx { color: var(--red); }

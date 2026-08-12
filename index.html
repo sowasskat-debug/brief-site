@@ -479,6 +479,11 @@ async function fetchFromBriefsJson(dose) {
     const r = await fetch(`./briefs.json?_=${Date.now()}`, { cache: 'no-store' });
     if (!r.ok) return null;
     const d = await r.json();
+    // Indeksujemy WSZYSTKIE dzisiejsze dawki, nie tylko ładowaną — plik i tak jest już sparsowany,
+    // więc to zero dodatkowej sieci. Bez tego skrót etapu z dawki, której czytelnik nie otworzył,
+    // pokazywał „Pełna treść w wydaniu z tego dnia" (zmierzone: 3 z 6 etapów w sadze o Ormuzie),
+    // bo dzisiejszego dnia nie ma jeszcze w `archive/`.
+    try { sagaIndeksujDawki(d); } catch(_) {}
     const doseData = d?.[dose];
     if (!doseData) return null;
     doseDates[dose] = doseData.date || null;   // data treści tej dawki (do oznaczenia starego wydania)
@@ -926,16 +931,23 @@ function watekHtml(item){
   // Styl i chronologia jak na /watki (życzenie właściciela 2026-08-07): NAJNOWSZY etap na górze
   // z pełną czerwoną kropką, metka „MM-DD · dawka → relacja". „TEN NEWS" zostaje — na podstronie
   // nie ma odpowiednika, a tu mówi, gdzie w sadze jesteś.
+  // ⚠️ Wiersz osi ROZSUWA SKRÓT (2026-08-12, życzenie właściciela „tak samo ma być tam") — dotąd
+  // był martwym tekstem: ani kliknąć, ani rozwinąć. Ten sam mechanizm co w legendzie wykresu
+  // i na /watki; `data-ni` to indeks w ORYGINALNEJ tablicy `t.nodes` (od najstarszego), bo po niej
+  // sięga `sagaToggleSkrot` — sama lista jest odwrócona tylko na potrzeby wyświetlania.
+  const ti = indeksWatku(t);
   const rows = t.nodes.slice().reverse().map((node, i) => {
     const cur = normThreadKey(node.text) === curKey;
     const sep = '<span class="watek-sep"></span>';
     const rel = node.relacja ? `${sep}<span class="watek-rel">→ ${escHtml(node.relacja)}</span>` : '';
     const ten = cur ? `${sep}<span class="watek-rel">ten news</span>` : '';
-    return `<div class="watek-node${i===0?' watek-last':''}${cur?' watek-cur':''}">
+    const ni = t.nodes.length - 1 - i;
+    return `<div class="watek-node${i===0?' watek-last':''}${cur?' watek-cur':''}" data-ti="${ti}" data-ni="${ni}"
+         onclick="event.stopPropagation();sagaToggleSkrot(this)">
       <span class="watek-dot"></span>
       <div class="watek-metaline"><span class="watek-when">${(node.added_at||'').slice(5,10)} · ${escHtml(node.dose||'')}</span>${rel}${ten}</div>
       <div class="watek-head">${escHtml(node.text)}</div>
-    </div>`;
+    </div><div class="saga-ex" hidden></div>`;
   }).join('');
   // Klaster otwiera się z osią JUŻ ROZWINIĘTĄ (życzenie właściciela 2026-08-07): kotwica klastra
   // to zwykle węzeł sagi, a dodatkowy tap w „Wątek tematu" był zbędnym krokiem. Pojedynczy news
@@ -951,6 +963,90 @@ function toggleWatek(btn){
   const willOpen = tl.hidden;
   tl.hidden = !willOpen;
   btn.classList.toggle('open', willOpen);
+}
+
+// ══ Skrót etapu rozsuwany W MIEJSCU — oś sagi i legenda wykresu (2026-08-12) ═══════════════
+// Życzenie właściciela: „a także ma się opis rozwijać", dla OBU list. To zamyka też drugie
+// zgłoszenie z tego samego dnia („przeskakuje czerwone kółko np. z 6 na 2"): wiersz legendy był
+// LINKIEM do innego newsa, więc tap przełączał całą kartę, wykres stawał się wykresem tamtego
+// artykułu, a czerwona kropka — która znaczy „ten news" — siadała na jego etapie. Teraz nigdzie
+// nie nawigujemy, więc nic nie przeskakuje; wyjście do newsa zostaje linkiem WEWNĄTRZ skrótu.
+// Mechanika 1:1 jak `exToggle` na /watki i `<details>` na stronach sag `w/<slug>.html`.
+const SAGA_ART = {};                 // znormalizowany tekst → item (bieżące dawki + doczytane dni)
+const SAGA_DNI_POBIERANE = {};       // data → obietnica pobrania; nie ponawiamy tego samego dnia
+function indeksWatku(t){ return (THREADS && THREADS.threads) ? THREADS.threads.indexOf(t) : -1; }
+function sagaIndeksujDawki(zrodlo){
+  Object.values(zrodlo || {}).forEach(d => {
+    const lista = Array.isArray(d) ? d : (d && d.items) || [];
+    lista.forEach(it => {
+      if (!it || !it.text) return;
+      SAGA_ART[normThreadKey(it.text)] = it;
+      (it.subItems || []).forEach(s => { if (s && s.text) SAGA_ART[normThreadKey(s.text)] = s; });
+    });
+  });
+}
+// Etap z DZIŚ jest w pamięci (cache dawek); starszy trzeba dociągnąć z archiwum — jeden fetch na
+// datę, wynik wpada do wspólnego `archiveDayCache`, z którego korzysta też nakładka archiwum.
+function sagaZapewnijDzien(data){
+  sagaIndeksujDawki(cache);
+  if (!data || data === todayLocalISO()) return Promise.resolve();
+  if (archiveDayCache[data]) { sagaIndeksujDawki(archiveDayCache[data]); return Promise.resolve(); }
+  if (!SAGA_DNI_POBIERANE[data]) {
+    SAGA_DNI_POBIERANE[data] = fetch(`./archive/${data}.json`)
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { if (j) { archiveDayCache[data] = j; sagaIndeksujDawki(j); } })
+      .catch(() => {});
+  }
+  return SAGA_DNI_POBIERANE[data];
+}
+// ⚠️ Kotwica klastra bywa zbiorcza — bez własnego `article`; treść niosą podpozycje. Wtedy bierzemy
+// pierwszą podpozycję, której NIE MA na osi jako osobnego etapu (bug „Trump o kryptowalutach"
+// z 08.08: dwa etapy pokazywały ten sam artykuł). Fallback na „pierwszą z artykułem", gdyby
+// wszystkie już na osi stały — powtórzony fragment jest lepszy niż żaden.
+function sagaSkrotHtml(node, t){
+  const it = SAGA_ART[normThreadKey(node.text)];
+  let src = it;
+  if (it && !it.article && it.subItems && it.subItems.length) {
+    const naOsi = new Set((t && t.nodes || []).filter(x => x !== node).map(x => normThreadKey(x.text)));
+    src = it.subItems.find(s => s.article && !naOsi.has(normThreadKey(s.text)))
+       || it.subItems.find(s => s.article) || it;
+  }
+  const art = src && src.article;
+  const skrot = art ? (art.length > 300 ? art.slice(0, 300) + '…' : art)
+                    : 'Pełna treść w wydaniu z tego dnia.';
+  const zrodlo = (src && src.source_name) || (it && it.source_name) || 'Brif.up';
+  return `<div class="saga-ex-art">${escHtml(skrot)}</div>
+    <div class="saga-ex-foot"><span class="saga-ex-src">${escHtml(zrodlo)}</span>`
+    + `<a class="saga-ex-open" href="${escAttr(watekNodeLink(node))}">Otwórz news →</a></div>`;
+}
+function sagaToggleSkrot(el){
+  const box = el.nextElementSibling;
+  if (!box || !box.classList.contains('saga-ex')) return;
+  const otwieramy = box.hidden;
+  box.hidden = !otwieramy;
+  el.classList.toggle('exopen', otwieramy);
+  if (!otwieramy || box.dataset.gotowe) return;
+  const t = THREADS && THREADS.threads && THREADS.threads[+el.dataset.ti];
+  const node = t && t.nodes && t.nodes[+el.dataset.ni];
+  if (!node) { box.innerHTML = '<div class="saga-ex-art">Pełna treść w wydaniu z tego dnia.</div>'; return; }
+  box.innerHTML = '<div class="saga-ex-art">Wczytywanie…</div>';
+  const data = sagaDataWezla(node);
+  // ⚠️ Data etapu bierze się z `published_at` (czas ŹRÓDŁA), a news leży w archiwum dnia NASZEJ
+  // publikacji — przy newsie ze źródła sprzed północy to sąsiedni plik. Zmierzone na stronach sag:
+  // 18 z 68 braków skrótu to dokładnie ten rozjazd. Dlatego przy pudle sięgamy po dzień ±1,
+  // zamiast od razu pokazywać „Pełna treść w wydaniu z tego dnia".
+  const sasiedni = k => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data || '')) return null;
+    const d = new Date(data + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + k);
+    return d.toISOString().slice(0, 10);
+  };
+  const pokaz = () => { box.innerHTML = sagaSkrotHtml(node, t); box.dataset.gotowe = '1'; };
+  const mam = () => !!(SAGA_ART[normThreadKey(node.text)] || {}).article;
+  sagaZapewnijDzien(data)
+    .then(() => mam() ? null : sagaZapewnijDzien(sasiedni(-1)))
+    .then(() => mam() ? null : sagaZapewnijDzien(sasiedni(1)))
+    .then(pokaz)
+    .catch(pokaz);
 }
 loadThreads().then(() => {
   // threads.json dociąga się równolegle z pierwszym renderem — po załadowaniu odśwież widoki,
@@ -1119,20 +1215,36 @@ function sagaRynekHtml(item){
   const pod = `${d} L${X(punkty.length-1).toFixed(1)} ${SAGA_H} L${X(0).toFixed(1)} ${SAGA_H} Z`;
   const gid = 'sr' + Math.random().toString(36).slice(2,8);
 
-  let kropki = '', legenda = '';
+  let kropki = '';
   etapy.forEach((g, nr) => {
     const teraz = g.wezly.some(n => normThreadKey(n.text) === kluczBiez);
     const x = X(g.i), y = Y(punkty[g.i]);
     kropki += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${teraz ? 6.5 : 5}" class="sr-dot${teraz ? ' on' : ''}"/>`
            +  `<text x="${x.toFixed(1)}" y="${(y + 2.8).toFixed(1)}" class="sr-num">${nr+1}</text>`;
-    g.wezly.forEach((n, j) => {
+  });
+  // 🔴 LEGENDA OD NAJNOWSZEGO (2026-08-12, życzenie właściciela: „w sadze ma też być kolejność
+  // najnowsze od góry") — spójnie z osią pod postem, /watki i stronami sag. NUMERY zostają
+  // chronologiczne, bo przywiązują wiersz do KROPKI na wykresie, a oś czasu biegnie w lewo→prawo
+  // i odwrócić się jej nie da. Lista czyta się więc 5→1 w dół i to jest zamierzone: najnowszy
+  // etap jest zarazem najwyżej i najbardziej na prawo.
+  const ti = indeksWatku(t);
+  let legenda = '';
+  [...etapy].reverse().forEach(g => {
+    const nr = etapy.indexOf(g) + 1;
+    const teraz = g.wezly.some(n => normThreadKey(n.text) === kluczBiez);
+    [...g.wezly].reverse().forEach((n, j) => {
       const dataPL = (sagaDataWezla(n) || '').slice(5).split('-').reverse().join('.');
+      const ni = t.nodes.indexOf(n);
       // Kilka etapów tej samej sesji dzieli JEDNĄ kropkę (weekend spada na piątkowe zamknięcie).
       // Kolejne wiersze dostają „↳", a nie pusty numer — pusta komórka czytała się jak brakujące dane.
-      legenda += `<a class="sr-leg${teraz ? ' on' : ''}" href="${escAttr(watekNodeLink(n))}">`
-              +  `<span class="sr-leg-nr">${j === 0 ? (nr+1) : '<i>↳</i>'}</span>`
+      // ⚠️ Wiersz NIE JEST JUŻ LINKIEM: tap rozsuwa skrót w miejscu (patrz `sagaToggleSkrot`),
+      // a wyjście do newsa siedzi w rozsuniętym bloku.
+      legenda += `<div class="sr-leg${teraz ? ' on' : ''}" data-ti="${ti}" data-ni="${ni}"`
+              +  ` onclick="event.stopPropagation();sagaToggleSkrot(this)">`
+              +  `<span class="sr-leg-nr">${j === 0 ? nr : '<i>↳</i>'}</span>`
               +  `<span class="sr-leg-dt">${escHtml(dataPL)}</span>`
-              +  `<span class="sr-leg-tx">${escHtml(n.text || '')}</span></a>`;
+              +  `<span class="sr-leg-tx">${escHtml(n.text || '')}</span></div>`
+              +  `<div class="saga-ex" hidden></div>`;
     });
   });
   // Etapy pominięte NIE są przemilczane — inaczej saga wyglądałaby na krótszą, niż jest.
