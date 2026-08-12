@@ -1002,69 +1002,21 @@ Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same w�
   w sandboxie nie przewija wcale. `Input.dispatchTouchEvent` przewija i to ono nadaje się do testów.
   Teraz: listener na `#watkiPanel` (`touchmove` z `passive:false`) blokuje natywne przewijanie
   w pionie i na puszczenie woła `wpSkok(±1)` → `scrollTo({behavior:'smooth'})` do sąsiedniej kotwicy.
-  - 🔴 **TYLKO W GÓRĘ LISTY** (decyzja właściciela 2026-08-13): palec w dół = treść w dół = starszy
-    wątek. Powrót ku newsom zostaje zwykłym, płynnym przewijaniem, więc kierunku `+1` w geście nie ma.
-  - 🔴 **SKOK JEST NATYCHMIASTOWY (`scrollTop = …`), nie `behavior:'smooth'`** — i to jest naprawa
-    zgłoszenia „nie za każdym razem to działa". Animacja trwała dłużej niż odstęp między machnięciami,
-    więc kolejny gest łapał ją w locie i lądował byle gdzie. 📊 Zmierzone A/B na tej samej serii
-    pięciu machnięć co 120 ms: **animowany 1706 → 1631 → 1292 → 902 → 341 → 0 (1 z 5 trafień
-    w kotwicę), natychmiastowy 1706 → 1292 → 878 → 460 → 22 (5 z 5)**. Ta sama seria z pauzą 900 ms
-    wychodziła w OBU wersjach 32/32 — czyli winna była nie logika, tylko czas dojścia animacji.
-    **ZASADA: gest powtarzany szybciej niż animacja to nie jest „rzadki przypadek", to normalne
-    użycie — mierz kadencją człowieka, nie jednym gestem z pauzą.**
-  - 🔴 **`preventDefault` od PIERWSZYCH pikseli, nie po progu 8 px.** Gdy pierwsze `touchmove`
-    przepuścimy bez blokady, przeglądarka zdąży uznać gest za przewijanie i od tej chwili kolejne
-    zdarzenia są `cancelable:false` — nasz `preventDefault` staje się bezsilny, raz wychodził skok,
-    a raz zwykłe przewinięcie. Slop dotyku (~8 px) daje na to zapas tylko przy natychmiastowej reakcji.
-  - 🔴 **LICZY SIĘ POZYCJA, NIE MIEJSCE DOTKNIĘCIA** (zgłoszenie właściciela 2026-08-13: „przesuwam
-    palcem na dole ekranu, tam gdzie są jeszcze normalne posty, i gest nie działa — a w praktyce
-    ludzie mają kciuk w dolnej części ekranu"). Listener wisiał na `#watkiPanel`, więc gest budził się
-    tylko wtedy, gdy palec trafił w panel — a przy zakotwiczeniu na wątku **dolna połowa ekranu to już
-    feed** (zmierzone: `elementFromPoint(195, 760)` zwraca element z `#content`). Teraz listener jest
-    na `.scroll-area`, a bramką jest `wpWPanelu()`: dopóki GÓRA WIDOKU stoi nad początkiem `#content`,
-    gest należy do steppera, choćby kciuk leżał na newsach. Zmierzone: kciuk na y=700/760/800 → 3/3
-    skoki; z pozycji dokładnie na początku feedu i niżej → przewijanie natywne.
-  - ⚠️ Na `.scroll-area` wiszą jeszcze DWA gesty i oba dalej działają: pull-to-* (sam wychodzi przy
-    otwartym panelu) i swipe zmiany dawki (nasz `preventDefault` go nie dotyczy, bo tamten czyta
-    współrzędne z `touchstart`/`touchend`, a przy ruchu poziomym `dy` nie dobija do progu skoku).
-    Zweryfikowane: swipe w lewo w panelu przełącza dawkę i chowa panel.
-  - ⚠️ Ruch w GÓRĘ (`dy < -6`) wyłącza stepper na cały gest → natywne przewijanie ku newsom.
-  - 🔴 **GÓRNA GRANICA WĄTKU JEST PRZYSTANKIEM** (życzenie właściciela, trzecia tura: „możemy
-    scrollować w dół i w górę, dopóki nie dojedziemy do górnej granicy wątku, a w momencie kiedy
-    dotkniemy górną granicę, to wtedy dopiero przeskok się uruchamia"). W ŚRODKU wątku gest przewija
-    1:1 i **zatrzymuje się na jego górnej krawędzi**; skok robi dopiero NASTĘPNE przeciągnięcie,
-    już z granicy. `granica`/`naGranicy` liczone RAZ w `touchstart` (w trakcie ruchu kotwice
-    zmieniają położenie względem widoku).
-    ⚠️ Wcześniejsze podejścia obu skrajności zawiodły: bramka `wpMoznaSkoczyc` (skok tylko przy
-    widocznym początku sagi) **zabijała gest po każdym zjeździe** — natywne przewijanie przelatywało
-    nad krawędzią, więc warunek już nigdy nie był spełniony; wariant „ze środka skacz od razu na
-    początek wątku" z kolei zabierał kontrolę nad czytaniem. Przystanek na krawędzi godzi jedno z drugim.
-    🔴 **NIE PRÓBUJ ZOSTAWIĆ TU NATYWNEGO PRZEWIJANIA I PRZYCINAĆ GO W `scroll`** — próbowane
-    2026-08-13 (PR #161, wycofane tego samego wieczoru PR #162). Wyglądało czysto: w środku wątku
-    zero `preventDefault`, a krawędzi pilnuje listener `scroll` ustawiający `scrollTop` z powrotem
-    na granicę. Na telefonie dało to **wibrację** — zgłoszenie właściciela: „wibruje, skacze szybko
-    góra-dół, aż się robi ekran nieczytelny". Przyczyna: inercja dotyku żyje w kompozytorze i NIE
-    kończy się po ustawieniu `scrollTop`, więc co klatkę inercja ciągnie w górę, a klamra wpycha
-    z powrotem — klasyczna pętla sprzężenia. **Zmierzone w sandboxie tego NIE łapie**: syntetyczny
-    dotyk z CDP ma inną inercję niż palec i tam wszystko wychodziło idealnie (flick z +1500 px stawał
-    dokładnie na krawędzi). Jedyny bezpieczny sposób zatrzymania ruchu na krawędzi to przejęcie gestu
-    (`preventDefault`) i własny rozpęd — czyli to, co jest niżej.
-    ⚠️ **ROZPĘD dokładany ręcznie** (`predkosc * 260`, cap 1200 px, dalej przycięty do granicy):
-    przejmując gest tracimy natywną bezwładność, a rozsunięta oś ma ~2555 px — bez rozpędu powrót
-    do jej początku wymagałby kilkunastu machnięć. Zmierzone: 1267 → 1002 → 609 → 224 → 22 (cztery
-    machnięcia zamiast dziewięciu), z zatrzymaniem dokładnie na granicy.
-    📊 Zmierzone: zjazd na +185 od granicy → dwa machnięcia dowożą do krawędzi (878), dopiero trzecie
-    skacze na 460, czwarte na 22; z samej granicy **12/12** wariantów gestu skacze.
-  - 🔴 **Bieżąca kotwica = OSTATNIA nie niżej niż my, nie „najbliższa".** Przy wysokiej sadze
-    najbliższa wskazuje już NASTĘPNY wątek i skok przeskakiwał go w całości — zmierzone: z 1791
-    leciało na 2996 zamiast na 2577.
-  - Próg 30 px: krótsze przeciągnięcie to drgnięcie palca (zmierzone: 18 px = 0 ruchu).
-  - Gest pull-to-* jest **wyłączony przy otwartym panelu** — inaczej przeciągnięcie na jego górze
-    odpalałoby oba naraz: skok o wątek i powrót na najnowszy.
-  📊 Zmierzone (`Input.dispatchTouchEvent`, 390 px): **32/32 warianty gestu** (długość 40-170 px,
-  3-20 zdarzeń ruchu, tempo 4-30 ms, skos do 22 px) dały DOKŁADNIE jeden skok; 5/5 miejsc startu
-  (tytuł, memo, etap osi, krawędź) tak samo; seria 1706 → 1292 → 878 → 460 → 22; palec w górę
-  przewija płynnie (+105 px, poza kotwicą); drgnięcie 18 px nie rusza; tap dalej rozwija skrót.
+  - 🔴 **PRZEWIJANIE W PANELU JEST ZWYKŁE** (ostateczna decyzja właściciela 2026-08-13, po serii prób:
+    „zróbmy tak jak na początku, tylko pierwszy wątek się szybko pojawia, reszta to ma być scroll
+    zwykły"). Zostaje WYŁĄCZNIE natychmiastowe zakotwiczenie na najnowszym wątku przy otwarciu panelu
+    — to ono podobało się od początku („fajnie przeskakuje od razu") — a stepper gestu został
+    usunięty. Czego nie odgrzewać i dlaczego: patrz blok komentarza `⛔ STEPPER GESTU` w `index.html`
+    (scroll-snap nie daje skoku, animowany skok gubi się przy szybkiej kadencji, `preventDefault` po
+    progu jest bezsilny, a przycinanie natywnego przewijania w `scroll` WIBRUJE na telefonie).
+  - 🔴 **KOTWICA KOREGOWANA DWA RAZY — inaczej wątek staje krzywo.** `.dose-tabs` chowają się przy
+    przewijaniu, a `.scroll-area` ma wtedy inny `margin-top` i wysokość, zmieniane przejściem 0,25 s.
+    Gest otwierający panel jest przewinięciem W GÓRĘ, więc SAM wywołuje powrót zakładek: pomiar
+    w `requestAnimationFrame` łapie layout w połowie animacji. Zmierzone: wątek stawał **−28 px**
+    za wysoko. Druga korekta po 320 ms (koniec przejścia) daje **0 px** we wszystkich trzech
+    sytuacjach: zakładki widoczne, zakładki wjeżdżające, zakładki schowane.
+  - Powtórzony gest przy samej górze panelu wraca na najnowszy wątek (skrót zamiast przewijania
+    przez całą listę).
 - 🔴 **`data-bez-wykresu` na wierszu etapu to nie ozdoba.** `sagaToggleSkrot`/`sagaPodswietlKropke`
   szukają legendy `.sr-box` W GÓRĘ drzewa, a panel i `#content` siedzą w tej samej `.scroll-area` —
   bez znacznika tap w panelu przestawiałby kropkę na wykresie OTWARTEGO ARTYKUŁU pod spodem
