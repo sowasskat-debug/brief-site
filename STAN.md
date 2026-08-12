@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-12 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-12 (późny wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 > 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
@@ -20,12 +20,20 @@ stąd, że testowany news nie był klastrem. Diagnozując te karty, sprawdzaj NA
 ma `subItems` (dla `k`) i czy należy do sagi (dla `w`) — inaczej fail-safe zwraca grafikę zapasową
 i wygląda to jak awaria deployu.
 
-## 🔴🔴 NAJPILNIEJSZE — NIC nie czeka na komendę (stan 11.08 noc)
+## 🔴🔴 NAJPILNIEJSZE — NIC nie czeka na komendę (stan 12.08 późny wieczór)
 
-Wszystkie PR-y z 11.08 zmergowane: **bot #141–#146**, **front #129–#137**. Nic nie wisi.
-Zostały wyłącznie obserwacje po najbliższych biegach (blok niżej) i zadania z punktów 2, 7 i 8.
+Wszystko z 12.08 zmergowane i wdrożone: **bot #157–#162**, **front #147–#151**.
+🟢 **AUTOMAT X JEST WŁĄCZONY I OPUBLIKOWAŁ PIERWSZY POST** (12.08, 20:15). Nic nie czeka na komendę.
 
-## 🔴 AUTOMAT PUBLIKUJĄCY NA X — punkty 1-5 GOTOWE 12.08, czeka na `X_AUTO=true` + punkt 6
+**Od czego zacząć następną sesję — same OBSERWACJE, nie roboty:**
+1. **Obejrzeć posty automatu na @brifup** po pierwszej pełnej dobie. Czy 4/dobę to dobre tempo,
+   czy profil postów odpowiada właścicielowi, czy nie wraca wyliczanka klastrowa.
+2. **Liczniki `x_*` w `brief_health`** (`x_kandydatow`, `x_odrzut_temat`/`_instrument`/`_kwota_krajowa`,
+   `x_klaster_rozbity`, `x_gotowiec_pusty`, `x_opublikowany`, `x_bieg_wstrzymany`). Gdyby
+   `x_gotowiec_pusty` dominował — bramka pokrycia liczb tnie za dużo i post nie wychodzi.
+3. **Punkt 6** (przycisk na feedzie) — jedyna realna robota, opis niżej.
+
+## 🔴 AUTOMAT PUBLIKUJĄCY NA X — 🟢 DZIAŁA NA PRODUKCJI od 12.08 20:15
 
 Właściciel: *„da rade zrobic skrypt zeby mi sam posty z brifup na x dawal?"*. Decyzja: **automat
 wybiera i publikuje sam**, plus osobno **przycisk na feedzie tylko dla właściciela**.
@@ -41,20 +49,38 @@ Format posta: **B+C** — nagłówek + jedno konkretne zdanie z artykułu + lini
 - **`gotowiec-x` przyjmuje klucz `service_role`** (front #146, WDROŻONE) — bot dostaje ten sam
   gotowiec co knaga. Zweryfikowane z serwera.
 - **Bot #156** — `XOpublikujPost`, `XPct`, `PierwszeEmoji`, `BezEmoji`, tryb `X_DIAG=true`.
-  ⚠️ **Nic jeszcze nie publikuje** — brak wywołania w produkcyjnej ścieżce.
-- **Konto ma PREMIUM** → limit 300 znaków dla obu ścieżek. ⚠️ Nie podnoś wyżej: X zwija w osi czasu
-  wszystko powyżej ~280 pod „Pokaż więcej".
-- **Kredyt kupiony.** Wydane dotąd $0,02. Minimalne doładowanie $10, bez abonamentu, kredyty nie wygasają.
+- **Kredyt kupiony.** Minimalne doładowanie $10, bez abonamentu, kredyty nie wygasają.
+  Przy 4 postach/dobę to ~$1,80/mies (~7 zł).
 
-### ✅ PUNKTY 1-5 ZROBIONE 12.08 WIECZOREM (bot #157) — zostaje sam punkt 6
+### ✅ PUNKTY 1-5 ZROBIONE I URUCHOMIONE 12.08 (bot #157–#162)
 Wybór kandydata, bramka różnorodności, `wyslane_na_x.txt`, bezpieczniki i pomiar na archiwum —
 wszystko w `Runner.cs`, szczegóły w `FinancialNewsBot/CLAUDE.md`, sekcja „Automat publikujący
-na X — warstwa druga". Kadencja wg decyzji właściciela: **4 posty/dobę, max 1 na bieg**, odstęp 150 min.
+na X — warstwa druga".
 
-🔴 **AUTOMAT JEST DOMYŚLNIE WYŁĄCZONY — włącza `X_AUTO=true` w `/root/bot_secrets.env`.**
-Merge do `main` = deploy na Hetzner przy najbliższym biegu, więc bez tej bramki sam merge zacząłby
-publikować pod marką właściciela. **Kolejność uruchamiania: najpierw `X_SUCHY=true` z serwera
-(pokazuje wybrany post, nic nie wysyła), dopiero potem `X_AUTO=true`.**
+**USTAWIENIA KOŃCOWE (wszystkie decyzje właściciela z 12.08):**
+
+| co | wartość | skąd ta liczba |
+|---|---|---|
+| postów na dobę | **4**, max 1 na bieg | decyzja właściciela („3-4 najlepsze dziennie") |
+| odstęp | **150 min** | rozkłada posty w oknie, bo cron chodzi co 30 min |
+| okno publikacji | **7:00–23:00** | bez niego posty schodziły o 22:30 / 01:00 / 03:30 |
+| świeżość | **1 h** od `added_at` | zgłoszenie „to nie jest świeże"; pomiar: 3,98 posta/dobę nawet przy 0,5 h |
+| budżet znaków | **270** | pierwszy post miał 283 i wpadł pod „Pokaż więcej" (~280) |
+| spójność klastra | mediana ≥ **0,30** | poniżej → publikujemy pojedynczą podpozycję, nie parasol |
+
+🟢 **WŁĄCZONY:** `export X_AUTO=true` w `/root/bot_secrets.env` (kopia sprzed zmiany:
+`/root/bot_secrets.env.bak-przed-xauto`). **Wyłączenie = usunięcie tej linii, działa od razu.**
+⚠️ Bez tej zmiennej automat wychodzi **całkowicie po cichu, bez linii w logu** — więc „zero wpisów
+`[X]`" znaczy „wyłączony", a nie „zepsuty". Diagnozując, sprawdź to NAJPIERW.
+
+✅ **Pierwszy post: 12.08 20:15**, id `2087603956079804856`. Cały łańcuch przeszedł (ranking →
+bramki → `gotowiec-x` z kluczem `service_role` → publikacja → zapis stanu).
+
+**Tryby do diagnozy (na Hetznerze, `set -a; source /root/bot_secrets.env; set +a`):**
+- `X_SUCHY=true` — realny wybór i realny gotowiec, ZERO wysyłki. Kluczy X nie wymaga.
+- `X_DAWKA=morning|afternoon|evening` — podgląd innej dawki, działa TYLKO z `X_SUCHY`.
+- `X_SYMULACJA=true` — pomiar reguły na archiwum, bez sekretów, działa też z Maca.
+- `X_KLASTRY=true` — histogram spójności klastrów.
 
 📊 **Pomiar z punktu 5 — 42 dni archiwum, 124 posty w każdym wariancie:**
 
@@ -70,11 +96,20 @@ na 124 sloty. Domyka za to dosłownie obawę właściciela: „xAI zmienia nazw�
 przejmuje xAI i zmienia nazwę na SpaceXAI". Harness zwalidowany bazą — odtworzył pomiar z 12.08
 co do liczby (124 posty, seria 4, ta sama para o Ormuzie).
 
-⚠️ **DO OBEJRZENIA PO TYGODNIU PRODUKCJI — reguła zmienia PROFIL postów, nie tylko serię:**
-pilnych (🚨) **24 → 70** (56% postów), pozycji z wykresem (`chart`) **17 → 10**, krajowych 5,6% → 11,3%.
-To skutek tego, że `pilne` jest PIERWSZYM kluczem rankingu (tak brzmiała specyfikacja). Jeśli
-właścicielowi nie będzie odpowiadał automat wrzucający głównie newsy pilne — **przestaw kolejność
-kluczy rankingu, nie ruszaj bramki**.
+📊 **PROFIL POSTÓW — trzy poprawki po drodze, każda go polepszyła:**
+
+| etap | pilnych 🚨 | z wykresem |
+|---|---|---|
+| BAZA (top story) | 24 | 17 |
+| sam ranking | 70 | 10 |
+| + świeżość 3 h | 46 | 12 |
+| + bramka klastra | 36 | 14 |
+| **+ świeżość 1 h (stan końcowy)** | **23** | **15** |
+
+Czyli automat wrócił do normalnego profilu bazy (24 pilne), ale z serią **1 zamiast 4**.
+⚠️ Ostrzeżenie „automat będzie wrzucał głównie pilne" z pierwszej wersji **jest już nieaktualne** —
+zdezaktualizowały je uwagi właściciela o świeżości i o klastrach. Gdyby jednak wróciło:
+**przestaw kolejność kluczy rankingu (`pilne` jest pierwszy), nie ruszaj bramek.**
 
 ⚠️ Próg tekstowy bramki zjechał **0,18 → 0,10** (0,18 nie odrzucał niczego, patrz pomiary niżej),
 ale z warunkiem wspólnego rdzenia NOŚNEGO — bez niego dwa dowolne newsy „o pieniądzach" blokowałyby
@@ -88,6 +123,19 @@ i wszystkie dotyczyły Senatu USA. Ta sama klasa co znany zakaz `PO`/`KO`.
    przez **NOWĄ** Edge Function. ⚠️ Schowanie przycisku to NIE zabezpieczenie — klucze X nie mogą
    trafić do przeglądarki, więc sama funkcja jest tu połową roboty (`gotowiec-x` tylko GENERUJE
    treść, nie publikuje). Automat z punktów 1-5 tego nie obejmuje i nie zastępuje.
+
+### ⬜ OTWARTE PO URUCHOMIENIU (drobne, żadne nie blokuje)
+- **Post klastrowy potrafi być wyliczanką** — bramka spójności 0,30 tnie parasole, ale gdy klaster
+  PRZEJDZIE i mimo to wyjdzie lista, zostają dwie drogi: zawęzić prompt klastrowy w `gotowiec-x`
+  albo podnieść próg. ⚠️ **Rusz próg w GÓRĘ, nie w dół** — rozkład nie ma doliny, więc próg wynika
+  z asymetrii kosztów, nie z separacji (szczegóły w `FinancialNewsBot/CLAUDE.md`).
+- **Próg „Pokaż więcej" ~280 znaków NIEZWERYFIKOWANY** — liczba pochodzi z notatki w repo, nie
+  z pomiaru. Na @brifup wisi post na **283 znaki** (ten pierwszy, 20:15): jeśli widać go w osi czasu
+  w całości, budżet 270 można podnieść. Jeden rzut oka rozstrzyga.
+- **Świeżość mierzy `added_at` (czas NASZEJ publikacji), nie `published_at` (czas źródła).** Tak
+  brzmiało życzenie („było U NAS na brifupie"), ale news bywa świeży u nas i mieć kilka godzin
+  u źródła — pierwszy post: my 17:18, źródło 15:22. Gdyby przeszkadzało, dołóż drugi warunek.
+  ⚠️ `published_at` NIE MAJĄ starsze itemy ani feedy bez `pubDate`, więc fail-closed uciąłby je wszystkie.
 
 ### 📊 POMIARY, KTÓRE ZDECYDOWAŁY O PROJEKCIE (nie licz ich od nowa)
 - **Symulacja „publikuj top story każdej dawki" na 43 dniach = 124 posty:** najdłuższa seria o tym
@@ -115,6 +163,43 @@ i wszystkie dotyczyły Senatu USA. Ta sama klasa co znany zakaz `PO`/`KO`.
   Testowy post z 12.08 miał dwie flagi (`🇺🇦🇷🇺`) i przeszedł, bo to ograniczenie dotyczy Boostu, nie publikacji.
 - **Odczyty w X kosztują osobno ($0,005), bez darmowej puli** — ścieżka ma zostać CZYSTO ZAPISOWA.
 - **Publikacja bez linku wymaga, żeby post niósł całą wartość** — sam nagłówek to ślepy zaułek.
+
+## ✅ Co zrobiono 2026-08-12 (wieczór) — FRONT, przy okazji automatu X
+
+Trzy zgłoszenia właściciela, wszystkie zmergowane i **potwierdzone na produkcji** (nie tylko w repo).
+Szczegóły w `CLAUDE.md` frontu; tu tylko to, co trzeba wiedzieć na start.
+
+- **Knaga otwiera się na AKTUALNEJ dawce** (front #149). `currentDose` było zaszyte na `'morning'`.
+  🔴 **Godzina liczona w `Europe/Warsaw`, NIE lokalnie w przeglądarce** — złapane PRZY WERYFIKACJI:
+  maszyna deweloperska chodziła na `Europe/London`, więc `getHours()` dawało 19 przy warszawskiej 20
+  i przy granicy panel wybrałby POPOŁUDNIOWĄ, gdy bot pisze już do WIECZORNEJ. Rozjazd trwałby
+  godzinę przy każdej granicy, codziennie. Ustawiane RAZ przy wczytaniu, bez przełączania na żywo.
+- **Pastylka PILNE tylko na desktopie** (front #150). Życzenie: *„usuń to na mobilnej, na PC zostaw"*.
+  `aktualizujPilne` nie dotyka już `.live-pill` w ogóle. ⚠️ **Nie da się tego zrobić samym CSS-em** —
+  JS podmieniał `innerHTML`, więc ukrycie zostawiłoby pastylkę z treścią PILNE pod spodem.
+- 🔴 **Koniec fałszywego mrugania kafli** (front #151). Zgłoszenie: *„na PC cały czas mrugają te
+  posty… fałszywy alarm"*. **`_flashedItems` — strażnik przed powtórnym błyskiem — trzymał `it.id`,
+  a `pollLiveUpdates` nadaje itemom NOWE `id: uid()` przy każdym live-updacie.** Po każdym zapisie
+  bota strażnik nie trafiał i wszystko nowsze od progu sesji błyskało od nowa; efekt narastał, bo
+  `sessionNewThreshold` stoi na chwili wejścia. Klucz to teraz **slug**. `it.id` zostaje wyłącznie
+  do znalezienia elementu w DOM — te dwie role były zmieszane i stąd błąd.
+
+## ⚠️ PUŁAPKI ZŁAPANE 12.08 — nie wdepnij drugi raz
+
+- 🔴 **Pomiar dający 100% dla KAŻDEGO wariantu to nie wynik, tylko zepsuta miara.** Pierwszy pomiar
+  świeżości („124/124 slotów ma kandydata nawet przy 1 h") przyjmował „teraz" = najnowszy `added_at`
+  w dawce, więc pozycja w wieku 0 h istniała ZAWSZE. Odczytałem to jako „1 h jest ryzykowne",
+  dołożyłem zapas do 3 h — i to wypuściło nieświeży post na produkcję. Pomiar wierny (tiki co 30 min
+  z zegara) pokazał, że nawet 0,5 h daje 3,98 posta/dobę.
+- ⚠️ **Klucz strażnika musi przeżyć re-render.** Cokolwiek pamiętasz „żeby nie zrobić czegoś drugi
+  raz", nie klucz tego po wartości nadawanej przy renderze (`uid()`). Ta sama klasa co błysk kafli.
+- ⚠️ **Tytuł parasola klastra dzieli słowa z KAŻDĄ podpozycją** — jest tak napisany, żeby je objąć.
+  Mierząc spójność klastra, porównuj podpozycje ZE SOBĄ. Ta sama pułapka co `CzyZapowiedzWieluTematow`.
+- ⚠️ **`gh pr merge` potrafi odbić się o „not mergeable" tuż po pushu** — GitHub nie zdążył przeliczyć
+  stanu. Sprawdź `gh pr view <nr> --json mergeable,mergeStateStatus` i ponów, zamiast szukać konfliktu.
+- ⚠️ **`dotnet build | grep -E "error|Build succ" && <uruchom>`** przepuszcza uruchomienie przy
+  NIEUDANYM buildzie (grep kończy się sukcesem, bo COŚ znalazł) — odpala się wtedy stary `Bot.dll`.
+  Bramkuj kodem wyjścia builda, nie wynikiem grepa.
 
 ## 🔴 CO OBEJRZEĆ PO NAJBLIŻSZYCH BIEGACH — z sesji 11.08
 

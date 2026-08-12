@@ -428,6 +428,18 @@ Bez żadnych napisów „NOWE" — sam **chwilowy błysk** artykułów, które p
   nowego usera całym feedem).
 - **`markNewItems(items)`** — dla itemów z `itemTimestamp(it) > sessionNewThreshold` dokłada klasę `.is-new` na
   element (`_flashedItems` Set pilnuje, żeby ten sam item nie błysnął ponownie przy re-renderze/live-update).
+- 🔴 **KLUCZ `_flashedItems` TO SLUG, NIE `it.id` (naprawione 2026-08-12).** Zgłoszenie właściciela:
+  *„na PC cały czas mrugają te posty… na chwilę mruga jakby był nowy, a to fałszywy alarm"*.
+  **`pollLiveUpdates` nadaje itemom NOWE `id: uid()` przy KAŻDYM live-updacie**, więc strażnik trzymający
+  `it.id` nigdy nie trafiał — po każdym zapisie bota wszystko nowsze od progu sesji błyskało OD NOWA.
+  Efekt narastał w czasie: `sessionNewThreshold` stoi na chwili wejścia, więc im dłużej karta otwarta,
+  tym więcej pozycji łapie się na „nowe". Drugie źródło tego samego objawu: `refreshThreadsIfChanged`
+  woła `pollLiveUpdates(wymusRender = true)`, co POMIJA porównanie `doseSignature` — re-render zdarzał
+  się nawet przy niezmienionej treści dawki.
+  ⚠️ **`it.id` zostaje WYŁĄCZNIE do `getElementById`** (tam musi być id z bieżącego renderu). Te dwie
+  role były zmieszane i stąd błąd. **ZASADA: cokolwiek pamiętasz „żeby nie zrobić czegoś drugi raz",
+  nie kluczuj po wartości nadawanej przy renderze.**
+  ⚠️ Świadomy koszt: przepisanie nagłówka przez bota zmienia slug, więc taki news błyśnie drugi raz.
   Prefiks id dobierany jak w renderze: desktop `dti-`, mobile klaster `group-`, mobile pojedynczy `item-`.
   Po `animationend` klasa jest zdejmowana. Wołane w `renderDose` (mobile) i `dtRenderFeed` (desktop).
   Na końcu przesuwa `brifup_last_seen` do `maxTs` — następna wizyta liczy się od najnowszego już zobaczonego.
@@ -1053,7 +1065,16 @@ artykułu (`location.hash` → `routeHashDeepLink` robi resztę, także dla podp
   wieczór o porannym wydarzeniu i sygnał spowszedniałby natychmiast.
 - **PILNE nie ma osobnego pola w `briefs.json`** — selekcja wyraża je WYŁĄCZNIE flagą 🚨 (kontrakt bota).
 - Bez świeżego 🚨 pastylka wraca do oryginalnego markupu (`pilneDomyslne`), więc zero regresji.
-- Wariant mobilny: czerwone tło + biały tekst. Desktopowy: stonowany, nagłówek ucinany przy 340 px.
+- 🔴 **WARIANT MOBILNY USUNIĘTY 2026-08-12** (decyzja właściciela: *„usuń to na mobilnej wersji, zrób
+  jak było wcześniej, ale na PC zostaw"*). `aktualizujPilne` **nie dotyka już `.live-pill` w ogóle**,
+  mobilna pastylka wróciła do statycznego „Live". Reguły `.live-pill.pilne` skasowane ze `styles.css`.
+  ⚠️ **Nie da się tego zrobić samym CSS-em** — JS podmieniał `innerHTML`, więc ukrycie wariantu
+  zostawiłoby pastylkę z treścią PILNE pod spodem, gotową pokazać się przy pierwszej zmianie stylów.
+  Jedyne czyste wyjście to nie ruszać tego elementu.
+  ⚠️ **`.topbar-right { min-width: 0 }` i `.topbar-date { white-space: nowrap }` ZOSTAJĄ** mimo że
+  powstały pod mobilny pasek: opisują zachowanie CAŁEGO topbara przy ciasnocie (dwie zmierzone
+  regresje — data na trzeciej linii, przycisk 9 px poza ekranem), a nie samej pastylki.
+- Wariant desktopowy: stonowany, nagłówek ucinany przy 340 px.
 
 ## Wątek na X: tekst w poście, pełna oś w obrazku — `w=1&pelna=1` (2026-08-11)
 Życzenie właściciela: *„panel udostępnienia wątków na X — pierwszy wątek będzie w tekście, a później
