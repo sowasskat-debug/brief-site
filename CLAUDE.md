@@ -1181,3 +1181,27 @@ Wcześniej podejrzewaliśmy VPN i serię 26 HEAD-ów (#120). **Przyczyna była i
   jawnych `fetch`, ale też **atrybutów, które sieć wywołują** (`src`, `srcset`, `poster`, `<link
   rel=preload>`). Wyglądają jak treść, a są żądaniem. Przy zdjęciach z OBCYCH domen koszt nie kończy
   się na naszej stronie — płaci nim cała przeglądarka czytelnika.
+
+## Strony statyczne były SIEROTAMI — linkowanie wewnętrzne pod indeksację (2026-08-12) 🔴
+Zgłoszenie właściciela (zrzut z Google dla „brifup com"): w wynikach jest sama strona główna,
+żadnego artykułu — *„po tym updejcie co robiliśmy kilka dni wcześniej miały się pokazywać"*.
+- 🔴 **Dowód, że to nie kwestia czekania, jest W SAMYM ZRZUCIE:** opis wyniku cytuje newsy
+  z **24 lipca** („USA rozpoczynają nowe cła Sekcji 301 … 24 lipca"), a tytuł to nagłówek o Ormuzie.
+  Czyli ostatni render strony głównej przez Googlebota jest sprzed ~3 tygodni — **zanim strony
+  dzienne w ogóle powstały** (09.08). Nic, co wdrożyliśmy 09.08, nie mogło się tam pojawić.
+- 🔴 **Druga, realna wada — zmierzony graf linków:** cała apka miała **JEDEN** crawlowalny
+  `<a href>` (do `watki.html`). Do **42 stron `d/`** nie prowadził żaden link ze strony głównej,
+  a do **64 stron sag `w/`** — **ani jeden link z całego serwisu**: `watki.html` renderuje sagi
+  JS-em i nie linkuje do wersji statycznej, strony dnia też nie. Jedyną drogą był `sitemap.xml`.
+  Strona-sierota jest crawlowana rzadko i rankowana nisko — a dotyczyło to akurat powierzchni
+  opisanej w repo bota jako „pod SEO warta więcej niż strony dzienne".
+- **Naprawa (linki, nie treść):** stopka `.brif-footer` w `index.html` (statyczny markup, nie JS)
+  → `d/`, `w/`, `watki.html`; `d/index.html` linkuje do `w/` i `watki.html`; nowy **`w/index.html`**
+  (bot) — spis żywych sag z tytułami i datą ostatniego etapu; `/w/` dopisane do `sitemap.xml`.
+- ⚠️ Stopka jest **ukryta na desktopie** (`@media min-width:1024px`), bo feed ma tam własny
+  przewijany panel. Zostaje w DOM, więc crawler ją widzi — Googlebot i tak indeksuje mobile-first.
+- ⚠️ **Czego to NIE załatwia:** samo linkowanie nie każe Google przyjść. Najmocniejszy ruch to
+  zgłoszenie `sitemap.xml` w Search Console + „Request indexing" — to po stronie właściciela,
+  konta GSC nie ma w repo. Bez tego świeże adresy czekają na crawl tygodniami.
+- 📊 Zweryfikowane renderem w Chromium: stopka jest w DOM z linkami `d/`, `w/`, `watki.html`,
+  zawija się na szerokości telefonu (358 px → dwie linie), zero błędów JS.
