@@ -1115,6 +1115,15 @@ function wpKotwice(){
 //   • stoimy na początku    → skok idzie do wątku POPRZEDNIEGO (starszego).
 // Dzięki temu gest zawsze coś robi i nigdy nie przeskakuje nad nieprzeczytaną treścią — bo do
 // przodu (ku nowszym i ku newsom) czyta się natywnym przewijaniem, którego stepper nie dotyka.
+// Górna granica wątku, w którym stoimy = ostatnia kotwica nie niżej niż bieżąca pozycja.
+function wpGornaGranicaWatku(){
+  const area = document.getElementById('scrollArea');
+  const poz = wpKotwice();
+  if (!area || !poz.length) return 0;
+  let g = poz[0];
+  for (const k of poz) if (k <= area.scrollTop + 4) g = k;
+  return g;
+}
 function wpSkok(kierunek){
   const area = document.getElementById('scrollArea');
   const poz = wpKotwice();
@@ -1138,11 +1147,21 @@ function wpSkok(kierunek){
   const area = document.getElementById('scrollArea');
   if (!panel || !area) return;
   const PROG_SKOKU = 30;         // krótsze przeciągnięcie = drgnięcie palca, nie polecenie skoku
-  let y0 = 0, aktywny = false, blokuje = false;
+  let y0 = 0, aktywny = false, blokuje = false, startScroll = 0, granica = 0, naGranicy = false;
+  let ostY = 0, ostT = 0, predkosc = 0;      // do rozpędu — patrz `touchend`
   panel.addEventListener('touchstart', e => {
     blokuje = false;
     aktywny = watkiPanelOtwarty && e.touches.length === 1;
-    if (aktywny) y0 = e.touches[0].clientY;
+    if (!aktywny) return;
+    y0 = e.touches[0].clientY;
+    startScroll = area.scrollTop;
+    // 🔴 GÓRNA GRANICA WĄTKU, w którym stoimy — sedno reguły z 2026-08-13 (druga tura):
+    // „możemy scrollować w dół i w górę, dopóki nie dojedziemy do górnej granicy wątku, a w momencie
+    // kiedy dotkniemy górną granicę, to wtedy dopiero przeskok się uruchamia".
+    // Liczone RAZ na gest, bo w trakcie przewijania kotwice zmieniają się względem widoku.
+    granica = wpGornaGranicaWatku();
+    naGranicy = startScroll <= granica + 4;
+    ostY = y0; ostT = e.timeStamp; predkosc = 0;
   }, { passive: true });
   panel.addEventListener('touchmove', e => {
     if (!aktywny) return;
@@ -1158,6 +1177,12 @@ function wpSkok(kierunek){
       blokuje = true;
     }
     if (e.cancelable) e.preventDefault();
+    // W ŚRODKU wątku palec zwyczajnie przewija (1:1), ale ZATRZYMUJE SIĘ na jego górnej granicy —
+    // bez tego natywne przewijanie przelatywało nad krawędzią w poprzedni wątek i stepper nie miał
+    // się od czego odbić. Na granicy nic nie ruszamy; skok robi dopiero `touchend`.
+    if (!naGranicy) area.scrollTop = Math.max(granica, startScroll - dy);
+    const dt = e.timeStamp - ostT;
+    if (dt > 0) { predkosc = (e.touches[0].clientY - ostY) / dt; ostY = e.touches[0].clientY; ostT = e.timeStamp; }
   }, { passive: false });
   panel.addEventListener('touchend', e => {
     if (!aktywny || !blokuje) { aktywny = false; return; }
@@ -1165,7 +1190,16 @@ function wpSkok(kierunek){
     aktywny = false; blokuje = false;
     // 🔴 TYLKO W GÓRĘ LISTY (decyzja właściciela): palec w dół = treść w dół = starszy wątek.
     // Powrót ku newsom zostaje zwykłym, płynnym przewijaniem — dlatego kierunku +1 tu nie ma.
-    if (dy >= PROG_SKOKU) wpSkok(-1);
+    // 🔴 I TYLKO Z GÓRNEJ GRANICY WĄTKU: ze środka ten sam gest dojeżdża do krawędzi (wyżej),
+    // a przeskok odpala dopiero następny — „jak dotkniemy górną granicę, wtedy się uruchamia".
+    if (naGranicy && dy >= PROG_SKOKU) { wpSkok(-1); return; }
+    // ⚠️ ROZPĘD po machnięciu w środku wątku. Przejmując gest, tracimy natywną bezwładność —
+    // a rozsunięta oś ma ~2555 px, więc powrót do jej początku wymagałby kilkunastu przeciągnięć
+    // palcem 1:1. Doliczamy więc drogę z prędkości ostatniego ruchu, DALEJ przycinając do granicy
+    // wątku: flick dojeżdża do krawędzi, ale nigdy jej nie przekracza.
+    if (!naGranicy && predkosc > 0.35) {
+      area.scrollTop = Math.max(granica, area.scrollTop - Math.min(1200, predkosc * 260));
+    }
   }, { passive: true });
 })();
 

@@ -801,8 +801,9 @@ Sesja mobilno-wizualna. Wszystko zmergowane do `main` i **zweryfikowane na produ
   przeskakuje tak jak przy pierwszym"). Skok działa **tylko w górę listy** (palec w dół, ku starszym)
   i jest **natychmiastowy** — animacja trwała dłużej niż odstęp między machnięciami, więc kolejny gest
   łapał ją w locie i lądował byle gdzie (stąd „czasem nie działa"; zmierzone A/B: 1 z 5 trafień vs 5 z 5).
-  Ze ŚRODKA wątku pierwszy skok wraca na jego początek, kolejny idzie do starszego — bez tego
-  po każdym zjeździe w dół gest był martwy, dopóki nie doscrollowało się ręcznie do góry. Szczegóły i pułapki: `CLAUDE.md`, sekcja
+  W ŚRODKU wątku gest przewija 1:1 (z dokładanym rozpędem) i **zatrzymuje się na górnej krawędzi
+  wątku** — skok odpala dopiero następne przeciągnięcie, już z granicy. Bez tego przystanku gest
+  albo umierał po każdym zjeździe, albo zabierał kontrolę nad czytaniem. Szczegóły i pułapki: `CLAUDE.md`, sekcja
   „Panel wątków nad feedem".
 - **Desktop: przycisk „WĄTKI N"** obok zakładek dawek (PR #106), czerwony obrys (fiolet jest zajęty
   przez aktywną dawkę), licznik żywy z `threads.json`.
