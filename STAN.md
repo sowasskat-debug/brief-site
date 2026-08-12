@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-12 (po północy)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-12 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 > 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
@@ -24,6 +24,64 @@ i wygląda to jak awaria deployu.
 
 Wszystkie PR-y z 11.08 zmergowane: **bot #141–#146**, **front #129–#137**. Nic nie wisi.
 Zostały wyłącznie obserwacje po najbliższych biegach (blok niżej) i zadania z punktów 2, 7 i 8.
+
+## 🔴 AUTOMAT PUBLIKUJĄCY NA X — ZACZĘTY 12.08, DOKOŃCZYĆ (sesja 12.08 wieczór)
+
+Właściciel: *„da rade zrobic skrypt zeby mi sam posty z brifup na x dawal?"*. Decyzja: **automat
+wybiera i publikuje sam**, plus osobno **przycisk na feedzie tylko dla właściciela**.
+Format posta: **B+C** — nagłówek + jedno konkretne zdanie z artykułu + linia wpływu, gdy news ją ma.
+**Bez linku** (tekst $0,015, z linkiem $0,20 — 13× drożej).
+
+### ✅ CO JUŻ DZIAŁA (nie odtwarzaj tego)
+- **Klucze X na Hetznerze** — OAuth 1.0a, cztery zmienne `X_API_KEY`/`X_API_SECRET`/`X_ACCESS_TOKEN`/
+  `X_ACCESS_SECRET` w `/root/bot_secrets.env`, z `export`. Wpisywarka: `/root/dodaj_klucze_x.sh`.
+- **OAuth 1.0a DZIAŁA na pay-per-use** — zweryfikowane na żywo: `GET /2/users/me` → 200 (@brifup,
+  id 2083551034404700160), `POST /2/tweets` → 201. ⚠️ Dokumentacja endpointu wymienia dziś tylko
+  OAuth 2.0 i to jest mylące — 1.0a działa i jest lepszy (tokeny nie wygasają).
+- **`gotowiec-x` przyjmuje klucz `service_role`** (front #146, WDROŻONE) — bot dostaje ten sam
+  gotowiec co knaga. Zweryfikowane z serwera.
+- **Bot #156** — `XOpublikujPost`, `XPct`, `PierwszeEmoji`, `BezEmoji`, tryb `X_DIAG=true`.
+  ⚠️ **Nic jeszcze nie publikuje** — brak wywołania w produkcyjnej ścieżce.
+- **Konto ma PREMIUM** → limit 300 znaków dla obu ścieżek. ⚠️ Nie podnoś wyżej: X zwija w osi czasu
+  wszystko powyżej ~280 pod „Pokaż więcej".
+- **Kredyt kupiony.** Wydane dotąd $0,02. Minimalne doładowanie $10, bez abonamentu, kredyty nie wygasają.
+
+### ⬜ CO ZOSTAŁO
+1. **Wybór kandydata** — cała dawka (~20 pozycji), ranking `pilne` → `reach` → wielkość klastra → pozycja.
+2. **Bramka różnorodności** — patrz pomiary niżej.
+3. **`wyslane_na_x.txt`** — lokalny stan per-serwer (jak `wyslane.txt`), NIE w gicie.
+4. **Bezpieczniki** — dzienny limit postów, dedup, liczniki w `brief_health`.
+5. **Pomiar reguły na 43 dniach archiwum PRZED wdrożeniem** — czy seria spada z 4 do 1.
+6. **Przycisk na feedzie** (`index.html`, bramka właściciela jak przy `adminDeleteItem`) + publikacja
+   przez Edge Function. ⚠️ Schowanie przycisku to NIE zabezpieczenie — klucze X nie mogą trafić
+   do przeglądarki.
+
+### 📊 POMIARY, KTÓRE ZDECYDOWAŁY O PROJEKCIE (nie licz ich od nowa)
+- **Symulacja „publikuj top story każdej dawki" na 43 dniach = 124 posty:** najdłuższa seria o tym
+  samym temacie to **4 POSTY POD RZĄD** (Iran/Ormuz, 14-15.07), jedna para miała **J = 1,00** (dwa posty
+  o dosłownie identycznej treści). Obawa właściciela („nie chcę 4 postów pod rząd o SpaceX") jest
+  zmierzona, nie hipotetyczna. Zderzeń ogólnie mało (4,1% par), ale **kumulują się w kryzysach**.
+- 🔴 **`category` i `chart` NIE NADAJĄ SIĘ na sygnał różnorodności:** **72 ze 124 top story mają
+  `category: null`**, `chart` ma tylko ~25 ze 124 (parasole klastrów tych pól nie niosą). Reguła oparta
+  na kategorii milczałaby w 58% przypadków i nikt by tego nie zauważył. **Sygnałem są RDZENIE nagłówka.**
+- 🔴 **Top story to zły kandydat** — w kryzysie jest z definicji o tym samym przez trzy dni. Dawka ma
+  ~20 pozycji, więc jest z czego wybierać.
+- **Test na 78 kandydatach z 12.08:** bramka instrumentu odrzuciła 2 newsy o Iranie/ropie, natomiast
+  **Jaccard 0,18 na nagłówkach nie odrzucił NICZEGO** — „Iran produkuje rakiety" i „brak rozmów Iran-USA"
+  to inne słowa, ta sama historia. ⚠️ **Próg tekstowy trzeba obniżyć i przemierzyć**, bo dziś działa
+  faktycznie jedna z dwóch bramek.
+- ⚠️ **`reach` premiuje polski mainstream** — 5 z 8 wybranych to sprawy krajowe (NFZ, ZUS, sondaż).
+  Właściciel chce miksu → potrzebna kwota krajowe/zagraniczne.
+- **Detektor „krajowy" = flaga 🇵🇱** (19,2% z 3470 itemów, flagę ma 100% pozycji) + wąski słownik
+  instytucji (NFZ/ZUS/GUS/UOKiK/KNF/NBP/RPP/GPW/Sejm/JSW/Orlen…), który dokłada 6 pozycji, wszystkie
+  poprawne. 🔴 **NIE dawaj do słownika `PO` ani `KO`** — przy `IgnoreCase` `PO` łapie przyimek „po"
+  i „USA wznawiają płatności **po** miesiącach" wychodzi jako news krajowy (zmierzone: 27,1% zamiast 19,3%).
+
+### ⚠️ PUŁAPKI ZŁAPANE PO DRODZE
+- **X odrzuca posty z >1 emoji przy „Boost"** — automat musi używać `PierwszeEmoji`/`BezEmoji` (są w bocie).
+  Testowy post z 12.08 miał dwie flagi (`🇺🇦🇷🇺`) i przeszedł, bo to ograniczenie dotyczy Boostu, nie publikacji.
+- **Odczyty w X kosztują osobno ($0,005), bez darmowej puli** — ścieżka ma zostać CZYSTO ZAPISOWA.
+- **Publikacja bez linku wymaga, żeby post niósł całą wartość** — sam nagłówek to ślepy zaułek.
 
 ## 🔴 CO OBEJRZEĆ PO NAJBLIŻSZYCH BIEGACH — z sesji 11.08
 

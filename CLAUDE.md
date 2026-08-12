@@ -807,6 +807,29 @@ Właściciel wrzuca na X **post samym tekstem**, w 1. komentarzu kartę z osią 
   tylko otwiera obrazek). FAIL-SAFE: przy błędzie karta otwiera się w nowej zakładce.
 - 🔴 **Deploy funkcji NIE idzie przez git** — `supabase functions deploy og --no-verify-jwt --project-ref …`.
 
+## `gotowiec-x` przyjmuje też BOTA — klucz `service_role` (2026-08-12) 🔴
+Automat publikujący na X potrzebuje tego samego gotowca co knaga, ale jest **procesem cronowym
+na Hetznerze** i nie ma jak mieć sesji właściciela — `auth.getUser()` nie zwróci mu maila, więc
+dostawał **403**.
+- **Druga droga uwierzytelnienia:** gdy `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`, kontrola
+  właściciela jest pomijana. Klucz `service_role` ma WYŁĄCZNIE bot; knaga go nigdy nie widzi.
+  Supabase wstrzykuje tę zmienną sam — nie trzeba zakładać nowego sekretu.
+  ⚠️ Warunek `SERVICE_KEY.length > 20` jest konieczny: bez niego brak zmiennej dawałby `'' === ''`
+  i **każdy z gołym „Bearer " wchodziłby jak bot**.
+- 🔴 **ŚWIADOMIE NIE budujemy drugiego generatora w bocie** — dokładnie ten błąd wycofaliśmy 02.08
+  (pole `x_post`). Dwa generatory rozjeżdżają się i panel zaczyna produkować inny post niż automat.
+- **Nowe pole wejścia `maxZnakow`** (clamp 120–300): knaga wkleja treść do composera X, który sam
+  pilnuje limitu i nie da wysłać za długiego — a bot publikuje przez API, gdzie **za długi post wraca
+  BŁĘDEM i news po prostu nie idzie**.
+  ✅ Konto @brifup MA PREMIUM (potwierdzone 12.08), więc 300 zostaje domyślne dla obu ścieżek.
+  ⚠️ Nie podnoś wyżej: X zwija w osi czasu wszystko powyżej ~280 pod „Pokaż więcej", więc dłuższy
+  post czytelnik widzi jako URWANY. Premium daje swobodę od twardego limitu, nie zachętę do esejów.
+- ✅ **Zweryfikowane Z SERWERA po deployu:** klucz bota przechodzi bramkę, funkcja zwraca gotowca
+  (223 znaki, format „hook + twarde liczby").
+- ⚠️ **Deploy NIE idzie przez git:** `supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc`.
+  CLI jest zainstalowane lokalnie (`/opt/homebrew/bin/supabase`) i zalogowane; projekt NIE jest
+  „linked", więc `--project-ref` jest obowiązkowy.
+
 ## Udostępnianie CAŁEGO KLASTRA — karta `og?k=1` + gotowiec spinający (2026-08-10)
 Życzenie właściciela: *„chcę ulepszyć to, jak jadę «udostępnij cały klaster» — z tekstem generowanym
 pod postami oraz grafiką"*. Dotąd „WRZUĆ NA X" na grupie brało tekst samej kotwicy i **gubiło całą
