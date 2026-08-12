@@ -33,7 +33,14 @@ const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 // ⚠️ Standardowe konto X ma twardy limit 280; 300 wymaga Premium. Ta sama wartość co X_TEXT_MAX
 // w knaga.html — zmieniaj OBA naraz. ⚠️ Zmiana tutaj wymaga redeployu funkcji (nie idzie przez git):
 //   supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc
-const MAX_ZNAKOW = 300;
+// 🔴 270, NIE 300 (obniżone 2026-08-12 po PIERWSZYM realnym poście automatu). Premium pozwala na
+// znacznie więcej, ale wiążący jest KADR OSI CZASU: powyżej ~280 znaków X zwija resztę pod
+// „Pokaż więcej". Pierwszy post automatu wyszedł na 283 znaki — zmieścił się w budżecie 300 i mimo
+// to wpadł pod zwijanie, czyli stary limit gwarantował dokładnie to, czego chcieliśmy uniknąć.
+// ⚠️ Przy poście BEZ LINKU kosztuje to podwójnie: czytelnik ma zobaczyć całą wartość w kadrze,
+// bo nigdzie nie kliknie. 270 + flaga + spacja = najwyżej 273.
+// ⚠️ ZMIENIAJ RAZEM z `X_TEXT_MAX` w knadze i `XBudzetZnakow` w bocie — trzy miejsca, jedna liczba.
+const MAX_ZNAKOW = 270;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

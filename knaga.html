@@ -478,7 +478,11 @@ function itemSlug(text) {
 // Stare 250 zakładało link w treści (280 − 23 na t.co), ale link i tak idzie do KOMENTARZA, nie do
 // posta — więc margines był podwójnie nieaktualny. ⚠️ Standardowe konto X ma twardy limit 280;
 // 300 wymaga Premium. Gdyby X zaczął odrzucać posty — to jest przyczyna, wtedy wróć do 280.
-const X_TEXT_MAX = 300;
+// 🔴 270, NIE 300 (obniżone 2026-08-12). Wiążący jest kadr osi czasu, nie limit Premium: powyżej
+// ~280 znaków X zwija resztę pod „Pokaż więcej". Pierwszy post automatu wyszedł na 283 znaki, czyli
+// zmieścił się w starym budżecie i i tak został zwinięty.
+// ⚠️ Ta sama liczba musi stać w `MAX_ZNAKOW` (`gotowiec-x`, wymaga redeployu) i `XBudzetZnakow` (bot).
+const X_TEXT_MAX = 270;
 
 // Flaga kraju przed treścią — post na X ma wyglądać jak kafel na brifup.com (życzenie
 // właściciela 2026-08-02). Ta sama wartość i ten sam fallback `📰` co na froncie.
