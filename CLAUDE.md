@@ -949,15 +949,60 @@ pokazują TE SAME dane w TEJ SAMEJ konwencji — zmieniając jedną, sprawdź po
   gdyby wszystkie podpozycje stały już na osi (powtórzony fragment lepszy niż żaden). Etykieta awaryjna
   to „Brif.up", nigdy „archiwum" (mylące przy dzisiejszym newsie). Ta sama klasa pułapki co przy stubach:
   najpierw sprawdź, czy węzeł to kotwica.
-- **Wejście mobilne = pasek nad feedem, DOMYŚLNIE SCHOWANY.** Odsłania go PŁYTSZE pociągnięcie
-  w dół (>24 px) w `pull-to-refresh`; głębsze (>60 px) odświeża jak dotąd — jeden gest, dwa progi.
-  ⚠️ Pasek leży POZA `#content`, bo `renderDose` nadpisuje `#content` przy każdym renderze i pasek
-  znikałby po każdym live-ticku. Raz odsłonięty zostaje do końca wizyty (klasa `.show`).
+- **Wejście mobilne = PANEL WĄTKÓW nad feedem** (2026-08-13; zastąpił cienki pasek-link z 07.08) —
+  pociągnięcie w dół rozwija pełne sagi tej dawki. Szczegóły w sekcji „Panel wątków" niżej.
+  ⚠️ Panel leży POZA `#content`, bo `renderDose` nadpisuje `#content` przy każdym renderze i panel
+  znikałby po każdym live-ticku (ten sam powód co przy dawnym pasku).
 - **Wejście desktopowe = `.dt-watki-btn`** obok zakładek dawek, z żywym licznikiem sag.
   Czerwony obrys, NIE fioletowy — fiolet znaczy „aktywna dawka" i przycisk czytałby się jak czwarta dawka.
 - **Ikona wątku: stała `WATEK_ICN`** (SVG, wariant „naprzemienna oś"). Zastąpiła emoji 🧵, które
   renderowało się inaczej na każdym systemie i było kolorową plamą w monochromatycznym UI.
   Używaj stałej, nie wklejaj SVG drugi raz; osobne kopie są tylko w statycznym HTML (topbar, pasek).
+
+### Panel wątków nad feedem — pociągnięcie w dół zamiast odświeżania (2026-08-13) 🔴
+Życzenie właściciela: *„zamiast odświeżania i tego małego panelu wątku niech pojawią się wątki
+w całości, tak jak na osobnym linku, i tylko te, które matchują z porannym/wieczornym"*.
+Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same wątki, na miejscu.
+- 🔴 **GEST PRZESTAŁ ODŚWIEŻAĆ** (decyzja właściciela). Jeden próg (60 px) zamiast dawnych dwóch,
+  panel otwiera się na PUSZCZENIE — otwieranie dużego bloku w trakcie ruchu palca szarpałoby widokiem.
+  Odświeżanie zostaje pod przyciskiem ↻ w topbarze, a `liveTick` (60 s) i tak dociąga zmiany sam,
+  więc znika skrót gestem, nie dostęp do świeżych danych.
+- 🔴 **KOLEJNOŚĆ SAG ODWROTNA NIŻ NA `/watki` — i to jest zamierzone.** Panel wysuwa się NAD feedem,
+  więc najnowszy wątek stoi na jego DOLE (pierwszy pod ręką po geście), a im wyżej, tym starsze:
+  przewijanie w górę = cofanie się w czasie. Stąd `watkiDlaDawki` sortuje **rosnąco** po ostatnim
+  etapie, a `wpPrzewinDoNajnowszej` po otwarciu ustawia przewinięcie na ostatnią sagę — bez tego
+  czytelnik lądowałby na początku listy, czyli na NAJSTARSZYM wątku, odwrotnie do zamówienia.
+  ⚠️ **Wewnątrz jednej sagi oś zostaje jak wszędzie: najnowszy etap na górze** (patrz sekcja niżej).
+  To dwie różne osie i nie wolno „ujednolicić" ich przez pomyłkę.
+- **Zakres = etap Z TEJ DAWKI i z dnia, który ta dawka realnie pokazuje.** Dzień bierzemy
+  z `doseDates`, nie z zegara — po północy, zanim bot założy nową dawkę, feed pokazuje WCZORAJSZE
+  wydanie i panel musi mówić o tym samym dniu. 📊 Zmierzone na produkcyjnym `threads.json` (12.08):
+  poranna 9 sag, popołudniowa 8, wieczorna 4 — panel ma czym żyć w każdej dawce.
+- **Belka jest na DOLE panelu**, bo to ona ląduje pod ręką po geście; nagłówek u góry byłby o kilka
+  ekranów stąd. ⚠️ Etykieta KRÓTKA (`4 wątki · wieczorna`): zmierzone, że „4 wątki dawki wieczornej"
+  nie mieści się obok „Wszystkie →" i „Zwiń ▴" i jest ucinane w połowie słowa, czyli z odmianą,
+  która wtedy kłamie. Nazwy dawek jak na MOBILNYCH zakładkach („południowa", nie „popołudniowe").
+- **Pusty panel MUSI się otworzyć i powiedzieć dlaczego** — gest, po którym nic się nie dzieje, czyta
+  się jak zepsuta apka (ta sama zasada co karta „dawka w przygotowaniu").
+- 🔴 **`data-bez-wykresu` na wierszu etapu to nie ozdoba.** `sagaToggleSkrot`/`sagaPodswietlKropke`
+  szukają legendy `.sr-box` W GÓRĘ drzewa, a panel i `#content` siedzą w tej samej `.scroll-area` —
+  bez znacznika tap w panelu przestawiałby kropkę na wykresie OTWARTEGO ARTYKUŁU pod spodem
+  i zamykał rozwinięty tam skrót. Znacznik zawęża zasięg „jednego otwartego naraz" do `#watkiPanel`.
+  ✅ Zweryfikowane w Chromium: przy dwóch wykresach w feedzie tap w panelu daje 0 kropek `.sel`.
+- **Zero dodatkowych fetchy przy otwarciu** — panel jedzie z wczytanego `threads.json` i dawek
+  z `cache`; skrót etapu dociąga się leniwie po tapnięciu (`sagaToggleSkrot`, wspólny z osią pod
+  postem i `/watki`, razem z pułapką kotwicy klastra i sięganiem po dzień ±1).
+- ⚠️ **Etap, którego nagłówek bot przepisał po publikacji, pokaże „Pełna treść w wydaniu z tego dnia"**
+  — znana klasa („tekst węzła sagi nie jest kluczem trwałym"), identycznie jak na `/watki`. Zmierzone
+  na dzisiejszych danych: węzły z DZIŚ trafiają w `briefs.json` w 45/47 przypadkach.
+- ✅ Zweryfikowane w Chromium (390 px, gest przez CDP `Input.dispatchTouchEvent`): płytkie pociągnięcie
+  nie otwiera, pełne otwiera i kotwiczy na najnowszej sadze, kolejność rosnąca po dacie, rozsuwanie
+  środka osi 3 → 30 węzłów, przełączanie dawek 9/8/4, „Zwiń" wraca na górę, desktop panelu nie
+  pokazuje, belka mieści się od 320 px, zero błędów JS.
+  ⚠️ **Do testu w sandboxie trzeba UCIĄĆ egress i SW**: fonty Google i SDK OneSignal wiszą na proxy
+  i blokują parsowanie (`document.body === null`, dokument zostaje w `readyState=loading`), a
+  `checkAppShellUpdate` przeładowuje stronę po ~3 s, bo `python http.server` nie daje ETagu — reload
+  kasuje stan panelu i wygląda jak bug w kodzie. Obie pułapki złapane pomiarem, nie lekturą.
 
 ### Chronologia osi — JEDNA konwencja: NAJNOWSZY NA GÓRZE (2026-08-12) 🔴
 Węzły w `threads.json` przychodzą od bota **od najstarszego**, a **każde** miejsce renderujące oś

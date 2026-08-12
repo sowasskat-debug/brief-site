@@ -790,9 +790,12 @@ Sesja mobilno-wizualna. Wszystko zmergowane do `main` i **zweryfikowane na produ
 - Wpis w `sitemap.xml` (podstrona jest publiczna, w odróżnieniu od knagi).
 
 ### Wejścia do Wątków
-- **Mobile: pasek nad feedem SCHOWANY**, odsłania go PŁYTSZE pociągnięcie w dół (>24 px), głębsze
-  (>60 px) odświeża jak dotąd. Pasek żyje POZA `#content`, więc przeżywa re-rendery; raz odsłonięty
-  zostaje do końca wizyty. Wariant „hairline" (wybór właściciela), desktop go nie pokazuje.
+- **Mobile: PANEL WĄTKÓW nad feedem** (2026-08-13) — pociągnięcie w dół (>60 px, na puszczenie)
+  rozwija PEŁNE sagi tej dawki, zamiast dawnego paska-linku do `/watki`. 🔴 Gest **nie odświeża już
+  treści** (decyzja właściciela) — od tego jest ↻ w topbarze i `liveTick`. Najnowsza saga na DOLE
+  panelu, starsze wyżej (panel wysuwa się nad feedem, więc „im wyżej, tym starsze"); wewnątrz sagi
+  oś bez zmian, najnowszy etap na górze. Panel żyje POZA `#content`, więc przeżywa re-rendery;
+  desktop go nie pokazuje. Szczegóły i pułapki: `CLAUDE.md`, sekcja „Panel wątków nad feedem".
 - **Desktop: przycisk „WĄTKI N"** obok zakładek dawek (PR #106), czerwony obrys (fiolet jest zajęty
   przez aktywną dawkę), licznik żywy z `threads.json`.
 
