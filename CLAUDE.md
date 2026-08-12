@@ -904,18 +904,25 @@ pokazują TE SAME dane w TEJ SAMEJ konwencji — zmieniając jedną, sprawdź po
   renderowało się inaczej na każdym systemie i było kolorową plamą w monochromatycznym UI.
   Używaj stałej, nie wklejaj SVG drugi raz; osobne kopie są tylko w statycznym HTML (topbar, pasek).
 
-### Chronologia osi — DWIE konwencje, wybór po tym, SKĄD przychodzi czytelnik (od 2026-08-12) 🔴
-Do 11.08 wszystkie trzy miejsca miały najnowszy etap na górze (decyzja z 07.08). Życzenie właściciela
-z 11.08 („udostępnij wątek ma być od góry do dołu chronologicznie") ZAWĘZIŁO tamtą decyzję do powierzchni
-śledzenia bieżącej dawki. Obowiązuje podział wg tego, skąd przychodzi czytelnik:
-- **Z UDOSTĘPNIONEGO LINKU → chronologicznie, najstarszy na górze:** `watki.html` (front #140)
-  i strona sagi `w/<slug>.html` (bot). Historię czyta się od początku; obie powierzchnie dostaje
-  ten sam odbiorca tego samego linku, więc MUSZĄ czytać się w tę samą stronę.
-  ⚠️ `watki.html` zwija ŚRODEK osi, nie ogon (początek + 2 najnowsze + znacznik „… N etapów pośrodku") —
-  pokazywanie „pierwszych trzech" chowałoby najnowszy etap, czyli to, po co ktoś wchodzi w świeży link.
-- **W APCE, przy bieżącej dawce → najnowszy na górze:** oś pod postem (`watekHtml`) i karta `og?w=1`.
-Węzły w `threads.json` przychodzą od bota **od najstarszego** — miejsca z drugiej grupy odwracają
-listę u siebie. Zmieniając konwencję któregokolwiek miejsca, sprawdź jego grupę.
+### Chronologia osi — JEDNA konwencja: NAJNOWSZY NA GÓRZE (2026-08-12) 🔴
+Węzły w `threads.json` przychodzą od bota **od najstarszego**, a **każde** miejsce renderujące oś
+odwraca je u siebie: `watekHtml` (oś pod postem), `watki.html`, strona sagi `w/<slug>.html` (bot)
+i karta `og?w=1`. Zmieniasz kolejność w jednym miejscu → zmień we wszystkich.
+- 🔴 **HISTORIA TEJ POMYŁKI — warto ją znać, bo kosztowała dwa razy.** Od 07.08 wszystkie powierzchnie
+  miały najnowszy na górze. 11.08 zdanie właściciela *„udostępnij wątek ma być od góry do dołu
+  chronologicznie"* zostało odczytane jako „chronologicznie = od początku historii" i PR #140 usunął
+  `reverse()` w `watki.html`, a bot dostał bliźniaczą zmianę na stronach sag; do tego powstał tu cały
+  akapit o „dwóch konwencjach". 12.08 właściciel zgłosił to ze zrzutem: *„miało być od góry do dołu,
+  u góry najnowsze"* — czyli chodziło o **KIERUNEK CZYTANIA** (kolejno w dół), nie o kolejność zdarzeń.
+  **ZASADA: „od góry do dołu" opisuje układ, nie chronologię — przy takim zdaniu dopytaj, który etap
+  ma stać pierwszy.**
+- ⚠️ `watki.html` zwija ŚRODEK osi, nie ogon: **2 najnowsze na górze + znacznik „… N etapów pośrodku"
+  + początek historii na dole**. Pokazanie „trzech od góry" ucięłoby początek sagi, a wcześniejszy
+  wariant (początek + 2 najnowsze) chował świeży etap — potrzebne są OBA końce.
+- ⚠️ Czerwona kropka = NAJNOWSZY etap, więc na stronie sagi to `li:first-child::before`, nie
+  `last-child`. Przy odwracaniu osi łatwo o tym zapomnieć i oznaczyć początek historii.
+- ⚠️ Nagłówek strony sagi `Oś wydarzeń · N etapów · <data> → <data>` ZOSTAJE chronologiczny —
+  to zakres trwania historii, nie kolejność czytania.
 - `watekHtml`: pełne kropki, największa i czerwona na PIERWSZYM (najnowszym) wierszu, metka
   „MM-DD · dawka → relacja". „TEN NEWS" zostaje jako czerwony pierścień, gdy bieżący news nie jest
   najnowszym etapem — na podstronie nie ma odpowiednika tej informacji.
