@@ -451,9 +451,37 @@ const REJECTED_PATH = 'rejected.json';
 const REJECTED_MAX = 150;
 const DOSE_LABELS = { morning: 'Poranna', afternoon: 'Południowa', evening: 'Wieczorna' };
 
+// Dawka wyliczona z ZEGARA — panel otwiera się od razu na właściwej (2026-08-12, życzenie
+// właściciela: „przeskakiwało mi z porannego na popołudniowe w zależności która jest godzina,
+// bo muszę za każdym razem manualnie przeskakiwać").
+// 🔴 GRANICE MUSZĄ BYĆ TE SAME co w `getCurrentDose` (index.html) i `doseKey` w bocie — trzy
+// miejsca, jedna reguła. Rozjazd oznaczałby, że panel moderuje INNĄ dawkę, niż widzi czytelnik.
+// 🔴 GODZINA LICZONA W EUROPE/WARSAW, NIE LOKALNIE W PRZEGLĄDARCE. Dawka jest własnością DANYCH —
+// bot stempluje ją czasem warszawskim — a nie własnością tego, kto patrzy. Złapane przy weryfikacji
+// tej zmiany: maszyna deweloperska chodziła na Europe/London, więc `new Date().getHours()` dawało
+// 19 przy warszawskiej 20 i panel wybrałby POPOŁUDNIOWĄ, gdy bot pisał już do WIECZORNEJ.
+// Rozjazd trwałby GODZINĘ przy każdej granicy, codziennie, i wyglądałby jak „panel pokazuje starą dawkę".
+// To ta sama klasa co `SupabaseTs` w bocie i `offsetWarszawy` w JSON-LD: znacznik bez strefy plus
+// zgadywana strefa. FAIL-SAFE: gdy `Intl` zawiedzie, wracamy do czasu lokalnego (lepiej przybliżenie
+// niż wywalony panel).
+function dawkaZZegara() {
+  let h;
+  try {
+    h = Number(new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Warsaw', hour: '2-digit', hour12: false,
+    }).format(new Date())) % 24;   // % 24, bo część silników oddaje „24" zamiast „00"
+  } catch { h = new Date().getHours(); }
+  if (!Number.isFinite(h)) h = new Date().getHours();
+  return h < 11 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+}
+
 let token = sessionStorage.getItem('knaga_gh_token') || '';
 let briefsState = null; // { sha, data }
-let currentDose = 'morning';
+// ⚠️ Ustawiane RAZ, przy wczytaniu panelu — świadomie NIE przełącza się na żywo po przekroczeniu
+// godziny granicznej. Panel bywa otwarty długo w trakcie moderowania i wyrwanie zakładki spod ręki
+// (np. o 11:00 w środku kasowania newsów z porannej) byłoby gorsze niż jedno kliknięcie.
+// Ten sam wybór co „panel szczegółów zostaje przy zmianie dawki" na froncie.
+let currentDose = dawkaZZegara();
 let currentPane = 'kokpit';
 
 function escapeHtml(s) {
