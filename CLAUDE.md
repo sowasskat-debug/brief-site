@@ -1018,16 +1018,22 @@ Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same w�
     a raz zwykłe przewinięcie. Slop dotyku (~8 px) daje na to zapas tylko przy natychmiastowej reakcji.
   - ⚠️ Listener wisi na **panelu**, nie na `.scroll-area` — w feedzie palec ma przewijać normalnie.
   - ⚠️ Ruch w GÓRĘ (`dy < -6`) wyłącza stepper na cały gest → natywne przewijanie ku newsom.
-  - 🔴 **SKOK DZIAŁA TAKŻE ZE ŚRODKA WĄTKU** (zgłoszenie: „jesteśmy już na drugim wątku, daję scroll
-    w dół — ok — ale jak chcę iść dalej w górę, to przeskok już nie działa"). Wcześniejsza bramka
-    `wpMoznaSkoczyc` wyłączała stepper, gdy początek bieżącej sagi był poza ekranem, więc po KAŻDYM
-    zjeździe w dół trzeba było ręcznie doscrollować do góry, żeby gest odżył. Obowiązuje teraz reguła
-    kartkowania: **w środku wątku pierwszy skok wraca na jego początek, dopiero kolejny idzie do
-    wątku starszego.** Gest zawsze coś robi, a nad nieprzeczytaną treścią nic nie przeskakuje —
-    do przodu czyta się natywnym przewijaniem, którego stepper nie dotyka.
-    ⚠️ To ZASTĘPUJE dawną ochronę wysokich sag (rozsunięta oś ≈ 2555 px przy widoku 742 px):
-    czytanie w dół dalej jest płynne, a powrót w górę jednym skokiem wraca na początek tej sagi.
-    Zmierzone: z głębokości 30/80/150/260/380 px wewnątrz wątku — 5/5 powrotów na jego kotwicę.
+  - 🔴 **GÓRNA GRANICA WĄTKU JEST PRZYSTANKIEM** (życzenie właściciela, trzecia tura: „możemy
+    scrollować w dół i w górę, dopóki nie dojedziemy do górnej granicy wątku, a w momencie kiedy
+    dotkniemy górną granicę, to wtedy dopiero przeskok się uruchamia"). W ŚRODKU wątku gest przewija
+    1:1 i **zatrzymuje się na jego górnej krawędzi**; skok robi dopiero NASTĘPNE przeciągnięcie,
+    już z granicy. `granica`/`naGranicy` liczone RAZ w `touchstart` (w trakcie ruchu kotwice
+    zmieniają położenie względem widoku).
+    ⚠️ Wcześniejsze podejścia obu skrajności zawiodły: bramka `wpMoznaSkoczyc` (skok tylko przy
+    widocznym początku sagi) **zabijała gest po każdym zjeździe** — natywne przewijanie przelatywało
+    nad krawędzią, więc warunek już nigdy nie był spełniony; wariant „ze środka skacz od razu na
+    początek wątku" z kolei zabierał kontrolę nad czytaniem. Przystanek na krawędzi godzi jedno z drugim.
+    ⚠️ **ROZPĘD dokładany ręcznie** (`predkosc * 260`, cap 1200 px, dalej przycięty do granicy):
+    przejmując gest tracimy natywną bezwładność, a rozsunięta oś ma ~2555 px — bez rozpędu powrót
+    do jej początku wymagałby kilkunastu machnięć. Zmierzone: 1267 → 1002 → 609 → 224 → 22 (cztery
+    machnięcia zamiast dziewięciu), z zatrzymaniem dokładnie na granicy.
+    📊 Zmierzone: zjazd na +185 od granicy → dwa machnięcia dowożą do krawędzi (878), dopiero trzecie
+    skacze na 460, czwarte na 22; z samej granicy **12/12** wariantów gestu skacze.
   - 🔴 **Bieżąca kotwica = OSTATNIA nie niżej niż my, nie „najbliższa".** Przy wysokiej sadze
     najbliższa wskazuje już NASTĘPNY wątek i skok przeskakiwał go w całości — zmierzone: z 1791
     leciało na 2996 zamiast na 2577.
