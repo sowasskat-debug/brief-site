@@ -1115,6 +1115,18 @@ function wpKotwice(){
 //   • stoimy na początku    → skok idzie do wątku POPRZEDNIEGO (starszego).
 // Dzięki temu gest zawsze coś robi i nigdy nie przeskakuje nad nieprzeczytaną treścią — bo do
 // przodu (ku nowszym i ku newsom) czyta się natywnym przewijaniem, którego stepper nie dotyka.
+// 🔴 Czy „rządzi" panel, czyli czy GÓRA WIDOKU jest jeszcze w wątkach (zgłoszenie właściciela
+// 2026-08-13: „przesuwam palcem na dole ekranu, tam gdzie są jeszcze normalne posty, i gest nie
+// działa — a w praktyce ludzie mają kciuk w dolnej części ekranu"). Listener wisiał na `#watkiPanel`,
+// więc liczyło się, CZEGO dotyka palec — a przy zakotwiczeniu na wątku dolna połowa ekranu to już
+// feed. Teraz liczy się POZYCJA, nie miejsce dotknięcia: dopóki góra widoku jest nad początkiem
+// feedu, gest należy do steppera, choćby kciuk leżał na newsach.
+function wpWPanelu(){
+  const area = document.getElementById('scrollArea');
+  const poz = wpKotwice();
+  if (!area || poz.length < 2) return false;      // brak wątków = sam feed, nie ma czym kartkować
+  return area.scrollTop < poz[poz.length - 1] - 4; // ostatnia kotwica to początek `#content`
+}
 // Górna granica wątku, w którym stoimy = ostatnia kotwica nie niżej niż bieżąca pozycja.
 function wpGornaGranicaWatku(){
   const area = document.getElementById('scrollArea');
@@ -1143,15 +1155,17 @@ function wpSkok(kierunek){
   area.scrollTop = poz[cel];
 }
 (function(){
-  const panel = document.getElementById('watkiPanel');
+  // ⚠️ Listener na `.scroll-area`, NIE na `#watkiPanel` — o tym, czy gest należy do steppera,
+  // decyduje POZYCJA (`wpWPanelu`), a nie to, czego akurat dotyka palec. Przy zakotwiczeniu na
+  // wątku dolna połowa ekranu pokazuje już feed, a właśnie tam ludzie trzymają kciuk.
   const area = document.getElementById('scrollArea');
-  if (!panel || !area) return;
+  if (!area) return;
   const PROG_SKOKU = 30;         // krótsze przeciągnięcie = drgnięcie palca, nie polecenie skoku
   let y0 = 0, aktywny = false, blokuje = false, startScroll = 0, granica = 0, naGranicy = false;
   let ostY = 0, ostT = 0, predkosc = 0;      // do rozpędu — patrz `touchend`
-  panel.addEventListener('touchstart', e => {
+  area.addEventListener('touchstart', e => {
     blokuje = false;
-    aktywny = watkiPanelOtwarty && e.touches.length === 1;
+    aktywny = watkiPanelOtwarty && e.touches.length === 1 && wpWPanelu();
     if (!aktywny) return;
     y0 = e.touches[0].clientY;
     startScroll = area.scrollTop;
@@ -1163,7 +1177,7 @@ function wpSkok(kierunek){
     naGranicy = startScroll <= granica + 4;
     ostY = y0; ostT = e.timeStamp; predkosc = 0;
   }, { passive: true });
-  panel.addEventListener('touchmove', e => {
+  area.addEventListener('touchmove', e => {
     if (!aktywny) return;
     const dy = e.touches[0].clientY - y0;
     if (!blokuje) {
@@ -1184,7 +1198,7 @@ function wpSkok(kierunek){
     const dt = e.timeStamp - ostT;
     if (dt > 0) { predkosc = (e.touches[0].clientY - ostY) / dt; ostY = e.touches[0].clientY; ostT = e.timeStamp; }
   }, { passive: false });
-  panel.addEventListener('touchend', e => {
+  area.addEventListener('touchend', e => {
     if (!aktywny || !blokuje) { aktywny = false; return; }
     const dy = e.changedTouches[0].clientY - y0;
     aktywny = false; blokuje = false;

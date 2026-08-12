@@ -1016,7 +1016,18 @@ Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same w�
     przepuścimy bez blokady, przeglądarka zdąży uznać gest za przewijanie i od tej chwili kolejne
     zdarzenia są `cancelable:false` — nasz `preventDefault` staje się bezsilny, raz wychodził skok,
     a raz zwykłe przewinięcie. Slop dotyku (~8 px) daje na to zapas tylko przy natychmiastowej reakcji.
-  - ⚠️ Listener wisi na **panelu**, nie na `.scroll-area` — w feedzie palec ma przewijać normalnie.
+  - 🔴 **LICZY SIĘ POZYCJA, NIE MIEJSCE DOTKNIĘCIA** (zgłoszenie właściciela 2026-08-13: „przesuwam
+    palcem na dole ekranu, tam gdzie są jeszcze normalne posty, i gest nie działa — a w praktyce
+    ludzie mają kciuk w dolnej części ekranu"). Listener wisiał na `#watkiPanel`, więc gest budził się
+    tylko wtedy, gdy palec trafił w panel — a przy zakotwiczeniu na wątku **dolna połowa ekranu to już
+    feed** (zmierzone: `elementFromPoint(195, 760)` zwraca element z `#content`). Teraz listener jest
+    na `.scroll-area`, a bramką jest `wpWPanelu()`: dopóki GÓRA WIDOKU stoi nad początkiem `#content`,
+    gest należy do steppera, choćby kciuk leżał na newsach. Zmierzone: kciuk na y=700/760/800 → 3/3
+    skoki; z pozycji dokładnie na początku feedu i niżej → przewijanie natywne.
+  - ⚠️ Na `.scroll-area` wiszą jeszcze DWA gesty i oba dalej działają: pull-to-* (sam wychodzi przy
+    otwartym panelu) i swipe zmiany dawki (nasz `preventDefault` go nie dotyczy, bo tamten czyta
+    współrzędne z `touchstart`/`touchend`, a przy ruchu poziomym `dy` nie dobija do progu skoku).
+    Zweryfikowane: swipe w lewo w panelu przełącza dawkę i chowa panel.
   - ⚠️ Ruch w GÓRĘ (`dy < -6`) wyłącza stepper na cały gest → natywne przewijanie ku newsom.
   - 🔴 **GÓRNA GRANICA WĄTKU JEST PRZYSTANKIEM** (życzenie właściciela, trzecia tura: „możemy
     scrollować w dół i w górę, dopóki nie dojedziemy do górnej granicy wątku, a w momencie kiedy
