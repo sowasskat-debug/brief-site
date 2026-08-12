@@ -1061,6 +1061,19 @@ function sagaToggleSkrot(el){
   box.hidden = !otwieramy;
   el.classList.toggle('exopen', otwieramy);
   sagaPodswietlKropke(el, otwieramy);
+  // Wiersz-głowa grupy wysuwa TEŻ swoje podetapy („↳" z tej samej sesji). Zwinięcie chowa je z powrotem.
+  if (el.dataset.grupa) {
+    const pod = document.getElementById(el.dataset.grupa);
+    if (pod) {
+      pod.hidden = !otwieramy;
+      // Podetap zwinięty razem z grupą nie może zostać z otwartym opisem — po ponownym rozwinięciu
+      // wyglądałoby to na przypadkowo otwarty wiersz.
+      if (!otwieramy) pod.querySelectorAll('.saga-ex').forEach(x => {
+        x.hidden = true;
+        if (x.previousElementSibling) x.previousElementSibling.classList.remove('exopen');
+      });
+    }
+  }
   if (!otwieramy || box.dataset.gotowe) return;
   const t = THREADS && THREADS.threads && THREADS.threads[+el.dataset.ti];
   const node = t && t.nodes && t.nodes[+el.dataset.ni];
@@ -1267,24 +1280,37 @@ function sagaRynekHtml(item){
   // i odwrócić się jej nie da. Lista czyta się więc 5→1 w dół i to jest zamierzone: najnowszy
   // etap jest zarazem najwyżej i najbardziej na prawo.
   const ti = indeksWatku(t);
+  // Kilka etapów tej samej sesji dzieli JEDNĄ kropkę (weekend spada na piątkowe zamknięcie).
+  // 🔴 PODETAPY SĄ SCHOWANE i wysuwają się dopiero po kliknięciu w numerowany wiersz grupy
+  // (2026-08-12, życzenie właściciela: „te podkategorie mają być schowane, dopiero po kliknięciu
+  // np. w wątek nr 2 się rozwijają"). Wcześniej cztery wiersze jednej sesji rozpychały listę tak,
+  // że numery gubiły się w ścianie tekstu. Licznik „+N" przy numerze mówi, że jest co rozwijać —
+  // bez niego schowana treść jest nieodkrywalna.
+  // ⚠️ Wiersz NIE JEST LINKIEM: tap rozsuwa skrót w miejscu (`sagaToggleSkrot`), a wyjście do newsa
+  // siedzi w rozsuniętym bloku.
+  const wierszLeg = (n, etykieta, teraz, extra) => {
+    const dataPL = (sagaDataWezla(n) || '').slice(5).split('-').reverse().join('.');
+    return `<div class="sr-leg${teraz ? ' on' : ''}" data-ti="${ti}" data-ni="${t.nodes.indexOf(n)}"${extra || ''}`
+         +  ` onclick="event.stopPropagation();sagaToggleSkrot(this)">`
+         +  `<span class="sr-leg-nr">${etykieta}</span>`
+         +  `<span class="sr-leg-dt">${escHtml(dataPL)}</span>`
+         +  `<span class="sr-leg-tx">${escHtml(n.text || '')}</span></div>`
+         +  `<div class="saga-ex" hidden></div>`;
+  };
   let legenda = '';
   [...etapy].reverse().forEach(g => {
     const nr = etapy.indexOf(g) + 1;
     const teraz = g.wezly.some(n => normThreadKey(n.text) === kluczBiez);
-    [...g.wezly].reverse().forEach((n, j) => {
-      const dataPL = (sagaDataWezla(n) || '').slice(5).split('-').reverse().join('.');
-      const ni = t.nodes.indexOf(n);
-      // Kilka etapów tej samej sesji dzieli JEDNĄ kropkę (weekend spada na piątkowe zamknięcie).
-      // Kolejne wiersze dostają „↳", a nie pusty numer — pusta komórka czytała się jak brakujące dane.
-      // ⚠️ Wiersz NIE JEST JUŻ LINKIEM: tap rozsuwa skrót w miejscu (patrz `sagaToggleSkrot`),
-      // a wyjście do newsa siedzi w rozsuniętym bloku.
-      legenda += `<div class="sr-leg${teraz ? ' on' : ''}" data-ti="${ti}" data-ni="${ni}"`
-              +  ` onclick="event.stopPropagation();sagaToggleSkrot(this)">`
-              +  `<span class="sr-leg-nr">${j === 0 ? nr : '<i>↳</i>'}</span>`
-              +  `<span class="sr-leg-dt">${escHtml(dataPL)}</span>`
-              +  `<span class="sr-leg-tx">${escHtml(n.text || '')}</span></div>`
-              +  `<div class="saga-ex" hidden></div>`;
-    });
+    const wezly = [...g.wezly].reverse();          // w grupie też najnowszy pierwszy
+    const idGrupy = `${gid}-g${nr}`;
+    const ukryte = wezly.length - 1;
+    legenda += wierszLeg(wezly[0], `${nr}${ukryte ? `<b class="sr-leg-plus">+${ukryte}</b>` : ''}`,
+                         teraz, ukryte ? ` data-grupa="${idGrupy}"` : '');
+    if (ukryte) {
+      legenda += `<div class="sr-podetapy" id="${idGrupy}" hidden>`
+              +  wezly.slice(1).map(n => wierszLeg(n, '<i>↳</i>', teraz)).join('')
+              +  `</div>`;
+    }
   });
   // Etapy pominięte NIE są przemilczane — inaczej saga wyglądałaby na krótszą, niż jest.
   // Osobno: sprzed okna wykresu (pasują do instrumentu, ale są za stare) i spoza instrumentu
