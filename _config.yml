@@ -54,5 +54,6 @@ exclude:
   - deepseek_usage.json
   - brief_health.json
   - bot_health.json
+  - reczne.json  # kolejka ręcznych dodań — bot czyta ją przez Contents API, nie musi być publiczna
   - brief-health.html
   - maszynownia.html
