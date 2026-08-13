@@ -34,6 +34,17 @@ Wszystko z 13.08 zmergowane i wdrożone: **bot #170, #171**, **front #165**.
 3. **Liczniki `x_*` w `brief_health`** — jak w poprzedniej sesji.
 4. **Punkty 7, 8 i 10 niżej** — trzy realne problemy znalezione 13.08, wszystkie NIENAPRAWIONE.
 
+## ✅ 11. Nazwa klastra zmieniała się po publikacji — NAPRAWIONE (13.08 wieczór, bot)
+Zgłoszenie właściciela: *„jestem przekonany, że nazwa tego klastra była inna"*. Była: 18:37
+„Nowe modele AI od Google i OpenAI" → 18:43 „Google wypuszcza Gemini 3.7 Flash", te same podpozycje.
+Przyczyna: model przemianowywał klaster, do którego środka nie widział (`[ISTNIEJĄCY]` szedł jako sama
+kotwica). Poprawka w bocie: podpozycje `↳` + zakaz zmiany tytułu, który dalej pokrywa grupę.
+📊 Zmierzone: 9 zmian nazwy na 47 klastrach w 3 dniach, **2 pogorszyły pokrycie**. Szczegóły i miara
+w `FinancialNewsBot/CLAUDE.md`, sekcja „Tytuł istniejącego klastra".
+- ⚠️ **DO OBEJRZENIA:** to zmiana promptu, więc miękka. Skrypt pomiarowy da się powtórzyć na historii
+  `briefs.json` — jeśli po kilku dniach dalej wychodzą przemianowania gubiące podpozycje, dołożyć
+  twardą bramkę pokrycia zamiast kolejnego zdania w prompcie.
+
 ## 🔴 10. DUBEL NA X: ręczny post jest NIEWIDZIALNY dla automatu — NIENAPRAWIONE (13.08 wieczór)
 Zgłoszenie właściciela ze zrzutu profilu @brifup: **dwa posty o tym samym Terafabie Tesli/SpaceX
 w ~26 minut** (19:44 i 20:10 czasu warszawskiego).
