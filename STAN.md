@@ -98,6 +98,22 @@ błędna. Angielskie oryginały z dziennika lejka:
   na opisie z niskim progiem wycinałaby legalnie nowe newsy za samo przypomnienie kontekstu.
   **Ten przypadek jest argumentem PRZECIW niskiemu progowi, nie za nim.** Zostaje ~0,30 z pomiaru
   na 44 dniach; nie obniżaj go na podstawie tego przypadku.
+- **SKĄD SIĘ WZIĄŁ ROZJAZD (mechanizm):** Financial Juice to feed SAMYCH NAGŁÓWKÓW, bez artykułów.
+  Bot dostał oświadczenie KCNA bez treści, więc `EnrichItem` musiał artykuł **doszukać** finderami —
+  i wylądował na **vietnam.vn** (stąd to źródło w kaflu zamiast Financial Juice), a tamten tekst
+  opowiadał start rakiety z Wonsan. Nagłówek został z KCNA, treść przyszła z cudzego wydarzenia.
+- 🔴 **Bramka na to ISTNIEJE i bywa skuteczna** — w logu widać ją przy innym newsie:
+  `[INFO] DeepSeek: fakty niezwiązane z nagłówkiem — szukamy kolejnego źródła: Indie — Nowy Delhi
+  i Canberra podpisują pakt nuklearny…` (tam odrzuciła źródło i news poszedł do poczekalni).
+  Hipoteza, dlaczego tu nie zadziałała: **mierzy „czy ZWIĄZANE", a nie „czy TO SAMO WYDARZENIE"**.
+  Tekst z vietnam.vn jest o Korei Płn., o ćwiczeniach Ulchi Freedom Shield i o napięciu wokół sojuszu,
+  więc na pytanie „czy związane z nagłówkiem o sojuszu?" uczciwa odpowiedź brzmi TAK. Był związany —
+  opisywał inne zdarzenie. **Czwarty raz ta sama klasa** (po `CzyZapowiedzWieluTematow`, parasolu
+  „małpy i SpaceX", cytacie-porównaniu z Zaporoża): sygnał policzony poprawnie, mierzył nie to, co trzeba.
+- ⚠️ **NIEZWERYFIKOWANE:** polski nagłówek tego newsa NIE występuje w logu Hetznera, więc nie ma dowodu,
+  czy bramka „fakty niezwiązane" w ogóle się przy nim odpaliła i przepuściła, czy nie została wywołana.
+  Rozstrzygnie log z tego biegu albo powtórzenie enrichu na tym nagłówku. **Zacznij od tego** — bo jeśli
+  bramka nie była wołana, cała hipoteza o „związane vs to samo wydarzenie" jest nietrafiona.
 - ⚠️ **METODA, NIE JEDNORAZOWA WPADKA: przy podejrzeniu powtórki sprawdź NAJPIERW angielskie oryginały
   w `lejek` (pola `tytul` + `feed`), zanim policzysz cokolwiek na polskich tytułach i opisach.** Polska
   warstwa jest wygenerowana przez nasz model i potrafi upodobnić do siebie dwa różne wydarzenia albo
