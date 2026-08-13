@@ -79,12 +79,29 @@ opowiada start rakiety z Wonsan z 12 sierpnia, opublikowany **12.08 rano** jako 
 | „Pocisk balistyczny… poza japońską strefą ekonomiczną" (12.08 00:03) | 0,048 | **0,231** |
 | „Korea Północna wystrzeliła niezidentyfikowany pocisk" (12.08 00:35) | 0,143 | 0,171 |
 | „Drugi start w niecały tydzień…" (12.08 01:30) | 0,000 | 0,162 |
-- 🔴 **TRZECIA KLASA DUBLA: nagłówek o nowym kącie, artykuł o starym wydarzeniu.** Tytuły są
-  kompletnie różne (0,000–0,143), więc bramka tytułowa nie ma tu ŻADNEJ szansy — z definicji, nie przez
-  zły próg. Sygnał jest wyłącznie w opisie.
-- ⚠️ **PRÓG: 0,30 by to PRZEPUŚCIŁ.** Przy 0,20 łapie (0,231), kosztem 1,4% par etapów sag zamiast 0,3%.
-  Czyli rekomendacja z tego samego wieczoru („~0,30") jest **za wysoka o co najmniej jeden przypadek**.
-  Przed wdrożeniem przemierz pasmo **0,20–0,25** i zdecyduj świadomie, ile etapów sag wolno stracić.
+🔴🔴 **SPROSTOWANIE TEGO SAMEGO WIECZORU — TO NIE JEST DUBEL I NIE JEST SPRAWA DEDUPU.**
+Pytanie właściciela („a ty porównywałeś dwa tytuły po angielsku?") ujawniło, że pierwsza diagnoza była
+błędna. Angielskie oryginały z dziennika lejka:
+```
+11.08 21:30-22:30 [Financial Juice/Polymarket] North Korea launches unidentified projectile
+                                               North Korean missile … landed outside Japan's EEZ: NHK
+13.08 21:30       [Financial Juice]  North Korea: U.S., Japan and South Korea military ties evolving into a nuclear pact
+                                     North Korea condemns U.S.-South Korea military exercises: KCNA
+```
+- **Wczorajszy news w oryginale NIE jest powtórką** — to oświadczenie KCNA z 13.08 o sojuszu, jedno
+  z czterech rodzeństwa tego wieczoru. Ze startem rakiety łączy je tylko kraj.
+- 🔴 **Dubel powstał U NAS: nagłówek jest o oświadczeniu KCNA, a wygenerowany artykuł opowiada
+  w całości start rakiety z Wonsan z 12.08.** To rozjazd **nagłówek ↔ artykuł**, czyli rodzina
+  punktu 7 („`impact` przeczy własnemu artykułowi"), a NIE awaria bramki powtórek.
+- ⚠️ **TO OBALA REKOMENDACJĘ „zejdź z progiem do 0,20", KTÓRA STAŁA TU WCZEŚNIEJ.** Opis-J 0,231 brał
+  się z tego, że artykuł dociągnął TŁO poprzedniego wydarzenia — a artykuły robią to rutynowo. Bramka
+  na opisie z niskim progiem wycinałaby legalnie nowe newsy za samo przypomnienie kontekstu.
+  **Ten przypadek jest argumentem PRZECIW niskiemu progowi, nie za nim.** Zostaje ~0,30 z pomiaru
+  na 44 dniach; nie obniżaj go na podstawie tego przypadku.
+- ⚠️ **METODA, NIE JEDNORAZOWA WPADKA: przy podejrzeniu powtórki sprawdź NAJPIERW angielskie oryginały
+  w `lejek` (pola `tytul` + `feed`), zanim policzysz cokolwiek na polskich tytułach i opisach.** Polska
+  warstwa jest wygenerowana przez nasz model i potrafi upodobnić do siebie dwa różne wydarzenia albo
+  rozjechać dwa te same. Diagnoza z niej jest niepewna z definicji.
 
 **Kierunek na następną sesję:** to są DWA rozłączne problemy.
 1. **Duble o podobnym tytule i opisie** (ESA ×3) → bramka na opisie, próg ~0,30, na końcu potoku
