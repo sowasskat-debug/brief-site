@@ -1348,6 +1348,33 @@ Zgłoszenie właściciela (zrzut z Google dla „brifup com"): w wynikach jest s
 - 📊 Zweryfikowane renderem w Chromium: stopka jest w DOM z linkami `d/`, `w/`, `watki.html`,
   zawija się na szerokości telefonu (358 px → dwie linie), zero błędów JS.
 
+## Google zaindeksował stan AWARYJNY — dane zastępcze nie wchodzą do metadanych (2026-08-13) 🔴
+Zgłoszenie właściciela ze zrzutu wyników Google dla „brifup com" (*„może coś źle dodałem na tym
+googlu wczoraj?"* — nie, to nasz bug). Pierwszy wynik wyszukiwarki brzmiał:
+**„Nie udało się pobrać wieczornej dawki — sprawdź połączenie i odśwież."**, a w opisie stało
+*„To dane zastępcze: aplikacja nie mogła pobrać pliku z newsami"*.
+- 🔴 **Mechanizm:** Googlebot wyrenderował stronę w chwili, gdy pobranie `briefs.json` nie doszło do
+  skutku, `loadDose` podstawiło `SAMPLE`, a `updatePageMeta` **lojalnie wpisało jego pierwszą pozycję
+  do `document.title`** (`if (top?.text) document.title = …`). Struktura danych mówiła Google to samo:
+  `ItemList` z komunikatem awarii jako `NewsArticle`, z opisem i datą publikacji.
+- ⚠️ **Awaria pobrania jest CHWILOWA, a wpis w indeksie NIE JEST** — jeden nieudany render psuje wynik
+  wyszukiwania na tygodnie. To jest asymetria, która uzasadnia tę poprawkę.
+- **Naprawa: `daneZastepcze[dose]`** ustawiane w `loadDose` (SAMPLE **oraz** `PUSTA_DAWKA`) i w gałęzi
+  `catch`. Przy takim stanie `updatePageMeta` zostawia statyczny `<title>` z HTML-a i **USUWA** blok
+  JSON-LD, zamiast go nadpisywać.
+- 🔴 **Flaga jest ZDEJMOWANA w `pollLiveUpdates`**, gdy dane wrócą — bez tego jedno nieudane pobranie
+  przy starcie wyciszało metadane na CAŁĄ sesję, mimo że apka dawno pokazuje prawdziwą treść.
+  (Znalezione przy sprawdzaniu ścieżki odzyskiwania, nie w recenzji kodu.)
+- ⚠️ **Świadomie BEZ `noindex` przy awarii** — chwilowa wpadka renderu kazałaby Google wyrzucić stronę
+  główną z indeksu, co jest dużo gorsze niż nijaki tytuł.
+- ⚠️ **Kafel `SAMPLE` dalej się renderuje** — człowiek MUSI wiedzieć, że dane się nie pobrały. Zmiana
+  dotyczy wyłącznie tego, co idzie do wyszukiwarek.
+- 📊 Zweryfikowane w Chromium na trzech stanach, 0 błędów JS: (a) normalnie → tytuł = top story,
+  JSON-LD z realnym nagłówkiem; (b) `briefs.json` → 404 → tytuł zostaje `BrifUp`, JSON-LD usunięty,
+  kafel awaryjny widoczny; (c) sieć wraca w trakcie sesji → tytuł i JSON-LD wracają do realnych newsów.
+- ⚠️ **Google poprawi wynik dopiero przy kolejnym crawlu.** Przyspiesza to wyłącznie „Request indexing"
+  w Search Console — po stronie właściciela, konta GSC nie ma w repo.
+
 ## Etap sagi ROZSUWA SKRÓT zamiast wyrzucać do innego newsa (2026-08-12) 🔴
 Dwa zgłoszenia właściciela tego samego dnia okazały się jedną sprawą:
 *„po kliknięciu w dany wątek przeskakuje czerwone kółko np. z 6 na 2"* oraz *„a także ma się opis

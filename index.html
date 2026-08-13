@@ -507,12 +507,21 @@ async function fetchFromBriefsJson(dose) {
 }
 
 
+// Które dawki pokazują dane ZASTĘPCZE (awaria pobrania) albo kartę „dawka w przygotowaniu".
+// Patrz `updatePageMeta` — bez tego komunikat awarii wchodził do <title> i do JSON-LD, a Google
+// zaindeksował stronę główną pod tytułem „Nie udało się pobrać wieczornej dawki…".
+const daneZastepcze = {};
+
 async function loadDose(dose, force=false) {
   if (cache[dose] && !force) { renderDose(dose, cache[dose]); return; }
   renderSkeleton();
   doseDates[dose] = null;   // reset — ustawi się przy udanym pobraniu z briefs.json/supabase
   try {
     let items = await fetchFromBriefsJson(dose);
+
+    // Znacznik „to nie są realne newsy" — czyta go `updatePageMeta`, żeby komunikat awarii albo
+    // kafel „dawka w przygotowaniu" nie trafił do tytułu strony i do danych strukturalnych.
+    daneZastepcze[dose] = (items === 'PUSTA' || !items);
 
     if (items === 'PUSTA') items = PUSTA_DAWKA[dose];
     else if (!items) items = SAMPLE[dose];
@@ -528,6 +537,7 @@ async function loadDose(dose, force=false) {
     // zakładkę drugiej. Cache wypełniamy zawsze (deep-link tryOpen go czyta), gate dotyczy tylko renderu.
     if (dose === currentDose) renderDose(dose, cache[dose]);
   } catch(e) {
+    daneZastepcze[dose] = true;   // ta sama zasada co wyżej — awaria nie może trafić do tytułu/JSON-LD
     cache[dose] = oznaczKotwice(SAMPLE[dose].map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) })));
     cache[dose].forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
     cache[dose] = sortNewestFirst(cache[dose]);
@@ -1964,6 +1974,24 @@ function renderDose(dose, items) {
 // bez tego każda dawka i każdy news dzielą ten sam gołý "BrifUp" w tytule zakładki,
 // a wyszukiwarki (na tyle, na ile w ogóle wykonają JS) nie widzą żadnej treści newsów.
 function updatePageMeta(dose, cfg, items) {
+  // 🔴 DANE ZASTĘPCZE NIGDY NIE WCHODZĄ DO TYTUŁU ANI DO JSON-LD (2026-08-13, zgłoszenie właściciela
+  // ze zrzutu wyników Google dla „brifup com"). Pierwszy wynik wyszukiwarki brzmiał **„Nie udało się
+  // pobrać wieczornej dawki — sprawdź połączenie i odśwież."**, a w opisie stało „To dane zastępcze:
+  // aplikacja nie mogła pobrać pliku z newsami". Mechanizm: Googlebot wyrenderował stronę w chwili,
+  // gdy pobranie `briefs.json` nie doszło do skutku, `loadDose` podstawiło `SAMPLE`, a TA FUNKCJA
+  // lojalnie wpisała jego pierwszą pozycję do `document.title` — i pod tym tytułem strona główna
+  // wylądowała w indeksie. Struktura danych mówiła Google to samo: `ItemList` z komunikatem awarii
+  // jako `NewsArticle`, z opisem i datą.
+  // ⚠️ Awaria pobrania jest z natury CHWILOWA, a wpis w indeksie NIE JEST — jeden nieudany render
+  // psuje wynik wyszukiwania na tygodnie. Dlatego przy stanie zastępczym zostawiamy statyczny
+  // `<title>` z HTML-a i USUWAMY blok JSON-LD, zamiast go nadpisywać.
+  // ⚠️ Świadomie NIE dokładamy tu `noindex` przy awarii — chwilowa wpadka renderu kazałaby Google
+  // wyrzucić stronę główną z indeksu, co jest dużo gorsze niż nijaki tytuł.
+  if (daneZastepcze[dose]) {
+    document.getElementById('ld-json')?.remove();
+    return;
+  }
+
   const top = items[0];
   if (top?.text) document.title = `${top.text} — ${cfg.label} — Brif.up`;
 
@@ -3341,6 +3369,10 @@ async function pollLiveUpdates(wymusRender = false) {
   let fresh;
   try { fresh = await fetchFromBriefsJson(dose); } catch (_) { return false; }
   if (!fresh || fresh === 'PUSTA' || dose !== currentDose || !cache[dose]) return false;
+  // Dane wróciły — zdejmij znacznik „zastępcze", żeby tytuł i JSON-LD znów odzwierciedlały realne newsy.
+  // Bez tego jedno nieudane pobranie przy starcie wyciszało metadane na CAŁĄ sesję, mimo że apka
+  // dawno pokazuje prawdziwą treść.
+  daneZastepcze[dose] = false;
   // wymusRender = zmieniły się same wątki (badge 🧵) przy niezmienionej treści tej dawki — patrz refreshThreadsIfChanged
   if (!wymusRender && doseSignature(fresh) === doseSignature(cache[dose])) return true; // nic nowego, ale POBRANE
 
