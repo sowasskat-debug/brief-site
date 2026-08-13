@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-12 (późny wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-13 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 > 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
@@ -20,18 +20,62 @@ stąd, że testowany news nie był klastrem. Diagnozując te karty, sprawdzaj NA
 ma `subItems` (dla `k`) i czy należy do sagi (dla `w`) — inaczej fail-safe zwraca grafikę zapasową
 i wygląda to jak awaria deployu.
 
-## 🔴🔴 NAJPILNIEJSZE — NIC nie czeka na komendę (stan 12.08 późny wieczór)
+## 🔴🔴 NAJPILNIEJSZE — NIC nie czeka na komendę (stan 13.08 wieczór)
 
-Wszystko z 12.08 zmergowane i wdrożone: **bot #157–#162**, **front #147–#151**.
-🟢 **AUTOMAT X JEST WŁĄCZONY I OPUBLIKOWAŁ PIERWSZY POST** (12.08, 20:15). Nic nie czeka na komendę.
+Wszystko z 13.08 zmergowane i wdrożone: **bot #170, #171**, **front #165**.
+🟢 Automat X chodzi od 12.08 20:15, kadencja podniesiona 13.08 na **12/dobę, odstęp 60 min, okno 7-23**.
 
-**Od czego zacząć następną sesję — same OBSERWACJE, nie roboty:**
-1. **Obejrzeć posty automatu na @brifup** po pierwszej pełnej dobie. Czy 4/dobę to dobre tempo,
-   czy profil postów odpowiada właścicielowi, czy nie wraca wyliczanka klastrowa.
-2. **Liczniki `x_*` w `brief_health`** (`x_kandydatow`, `x_odrzut_temat`/`_instrument`/`_kwota_krajowa`,
-   `x_klaster_rozbity`, `x_gotowiec_pusty`, `x_opublikowany`, `x_bieg_wstrzymany`). Gdyby
-   `x_gotowiec_pusty` dominował — bramka pokrycia liczb tnie za dużo i post nie wychodzi.
-3. **Punkt 6** (przycisk na feedzie) — jedyna realna robota, opis niżej.
+**Od czego zacząć następną sesję — OBSERWACJE, nie roboty:**
+1. **Log `X -> pominięto (agregat z raportu…)` i licznik `x_odrzut_agregat_z_raportu`** (bot #171).
+   Zmierzona częstość to ~1 trafienie na 3 tygodnie — gdyby licznik rósł szybciej, wzorzec łapie
+   za szeroko i tnie realne umowy. **Zawęź wzorzec, nie zdejmuj bramki.**
+2. **Log `NAGŁÓWEK BEZ KONKRETU` i `naglowek_anonimowy_podmiot_podejrzenie`** (bot #170). Zmierzone
+   0,09 wywołania modelu na dobę, więc licznik ma być prawie zawsze zerowy.
+3. **Liczniki `x_*` w `brief_health`** — jak w poprzedniej sesji.
+4. **Punkty 7 i 8 niżej** — dwa realne problemy znalezione 13.08, oba NIENAPRAWIONE.
+
+## 🔴 7. `impact` PRZECZY WŁASNEMU ARTYKUŁOWI — NIENAPRAWIONE (13.08)
+Znalezione przy zgłoszeniu o nudnym poście SanDiska (dawka wieczorna, poz. 0, `TradingNEWS`).
+- `article`: *„wzrósł o 3,34% po publikacji danych o inflacji CPI za lipiec 2026 (3,4% r/r…),
+  które **zbiegły się z prognozami**"*; `impact`: *„**CPI poniżej oczekiwań** (3,4% vs prognozy
+  wyższe)"*. **Jedno przeczy drugiemu**, a odczyt CPI nie ma nic wspólnego z kontraktami SanDiska —
+  artykuł dokleił ogólnorynkowy odczyt jako PRZYCZYNĘ ruchu jednej spółki. Ta wersja poszła na X.
+- 🔴 **Nikt nie pilnuje zgodności `impact` ↔ `article`.** Istnieje `CzyArtykulPrzeczyLiczbieWNaglowku`
+  (para nagłówek↔artykuł) i `LiczbyBezPokryciaWArtykule`, ale linia wpływu nie przechodzi przez żadną
+  bramkę spójności z tekstem, pod którym stoi.
+- Kandydat na naprawę: prefiltr deterministyczny (liczby nośne z `impact` muszą mieć pokrycie
+  w `article`) + wąski werdykt modelu na resztce — wzorzec 1:1 jak przy rozjeździe liczb w nagłówku.
+  **Najpierw ZMIERZ na archiwum**, ile par realnie się rozjeżdża.
+
+## ⬜ 8. Jednoźródłowy news jako TOP STORY — do rozważenia (13.08)
+Ta sama pozycja SanDiska miała **`reach` = 1** i źródło `tradingnews.com` (blog giełdowy, w slugu URL
+literówka „jumnps"), a mimo to stanęła na `items[0]` dawki wieczornej i wygrała ranking automatu X
+(`pilne` → `reach` → wielkość klastra → pozycja — pozycja 0 wygrywa mimo `reach` 1).
+- To NIE jest bug, tylko konsekwencja rankingu. Otwarte pytanie redakcyjne: czy top story powinno mieć
+  próg `reach`, czy raczej listę źródeł, które nie kwalifikują się na kotwicę.
+- ⚠️ Przed zmianą rankingu **przemierz go** — repo ma na to harness (`X_SYMULACJA`), a zasada
+  „zmieniając miarę, przemierz KAŻDY próg" była już raz kupiona drogo (podpowiedzi wątków, 04.08).
+
+## ⬜ 9. Personalizacja feedu — ROZMOWA PROJEKTOWA, nic nie zbudowane (13.08)
+Właściciel: *„zapamiętaj tę rozmowę, wrócimy do niej później"*. Kierunek wybrany: **przycisk
+„nie pokazuj mi" pod każdym postem**, a w nim zaawansowane kategorie („nie pokazuj mi wyników
+kwartalnych"). Uznane za LEPSZY pierwszy krok niż lajk/dislajk — jawne, czytelne i odwracalne.
+- ✅ **Manualny wybór per temat JUŻ DZIAŁA** — `brifup_cat_pct`, suwak „top X% tematu", `meatScore`,
+  `filterByCatMeat`, z podłogą (top story zawsze, min. 1 na temat). To jest połowa zadania.
+- **Do dołożenia: druga oś `typ`** (kształt newsa), PROSTOPADŁA do `category` (temat). Połowę
+  kształtów da się oznaczyć **za darmo** regexami, które już są i już są zmierzone
+  (`_metrykaWyniku`+`_porownanieDoKonsensusu`, `_agregatZRaportu`, `_akcjaAnalityka`,
+  `_decyzjaBankuCentralnego`, `_izbyParlamentu`, `_ruchKursuWNaglowku`, `_prawyboryUSA`).
+  Resztę (premiera, M&A, katastrofa, sondaż) — od modelu w JSON selekcji, wzorcem `kategoria` z 17.07.
+- **Menu: 5 z 6 osi już jest w danych** — `category`, `flag`, `chart`, `source_name`, saga; brakuje `typ`.
+- **Wycena:** `typ` z regexów + menu + panel ukrytych ≈ 2 sesje; `typ` od modelu +1; zliczanie do
+  Supabase +1. Konta i synchronizacja między urządzeniami — osobne 2-3 sesje i głównie decyzja
+  PRODUKTOWA. Collaborative filtering — bez sensu poniżej tysięcy użytkowników.
+- ⚠️ **Odwracalność ważniejsza od filtra** (jedno miejsce „ukryte przez Ciebie: … ×"), `pilne` (🚨)
+  niechowalne żadną osią, zamknięta lista NAJPIERW front POTEM bot, archiwum bez `typ` → fallback.
+- 🔴 **Sygnały czytelników NIE MOGĄ karmić selekcji bota** — agregat „N osób schowało X" to informacja
+  dla właściciela, nigdy automat do `WSPOLNE_ODRZUCENIA`. Ta sama granica co „X bot ma inne reguły".
+- ⚠️ **Nie ruszać `meatScore`** (4 wywołania, w tym widoki cross-day) — blendować w funkcji NAD nim.
 
 ## 🔴 AUTOMAT PUBLIKUJĄCY NA X — 🟢 DZIAŁA NA PRODUKCJI od 12.08 20:15
 
@@ -163,6 +207,37 @@ i wszystkie dotyczyły Senatu USA. Ta sama klasa co znany zakaz `PO`/`KO`.
   Testowy post z 12.08 miał dwie flagi (`🇺🇦🇷🇺`) i przeszedł, bo to ograniczenie dotyczy Boostu, nie publikacji.
 - **Odczyty w X kosztują osobno ($0,005), bez darmowej puli** — ścieżka ma zostać CZYSTO ZAPISOWA.
 - **Publikacja bez linku wymaga, żeby post niósł całą wartość** — sam nagłówek to ślepy zaułek.
+
+## ✅ Co zrobiono 2026-08-13 (wieczór) — trzy zgłoszenia właściciela
+
+**bot #170 — nagłówek MUSI nazwać podmiot z nazwy.** Zgłoszenie: *„nie ten kraj tylko Rumunia, znowu
+clickbaitowy nagłówek"* — kafel „Susza uderza w energetykę jądrową. **Ten kraj** wyłącza ostatni
+reaktor" przy artykule o Cernavodzie. Trzeci kształt rodziny „nagłówek nie nazywa rzeczy", wpięty
+w `NaprawNaglowekBezKonkretu` jako `_anonimowyPodmiotWskazujacy` + warstwa w prompcie selekcji.
+Zmierzone realnym regexem z `Bot.dll` na 5353 nagłówkach: **4 trafienia (0,07%), ~0,09 wywołania
+modelu na dobę**, zero nachodzenia na dwa istniejące prefiltry. Świadomie bez gołego „to" (kopula).
+
+**front #165 — poprawka kafla w danych.** Nowy tytuł: „Rumunia wyłącza ostatni reaktor w Cernavodzie
+przez rekordowo niski poziom Dunaju", flaga `🚨` → `🇷🇴`.
+- ⚠️ **`🚨` to JEDYNY nośnik statusu `pilne`** — `XCzyPilne` czyta go z pola `flag`, osobnego pola
+  w `briefs.json` NIE MA. Podmiana zdjęła pozycji pilność (decyzja właściciela: „nie jest pilna").
+  Diagnozując „dziwną flagę", sprawdzaj NAJPIERW, czy to nie znacznik pilnego.
+- ⚠️ Slug `1bk3248` → `1a21p99`: stary stub osierocony (wygaśnie po 14 dniach), nowy powstaje przy
+  najbliższym biegu. Zsynchronizowany węzeł sagi i wpis w `seen` w `threads.json`.
+- 🔴 **Poprawkę danych trzeba było przenosić na świeży `main` TRZY RAZY** — bot dopisał w międzyczasie
+  27 commitów i PR robił się `CONFLICTING`. **To jest reguła, nie wyjątek:** przy każdej ręcznej
+  poprawce `briefs.json` licz się z przeniesieniem między przygotowaniem a mergem.
+
+**bot #171 — X nie publikuje agregatów z raportu.** Zgłoszenie pod postem @brifup: *„niech bot nie
+dodaje takich nudnych wyników jak to"* („Sandisk: ośmiu klientów odpowiada za 93,9 mld USD wartości
+kontraktów" — pozycja księgowa, nie zdarzenie).
+- 🔴 **Filtr WYŁĄCZNIE po stronie X**, po uwadze właściciela *„pamiętaj że to X bot jest na innych
+  regułach niż main"*. Pierwsza wersja dopisywała klauzulę do `WSPOLNE_ODRZUCENIA` i **została
+  cofnięta** — news zostaje na brifup.com, po prostu nie kandyduje na post.
+- ⚠️ **`XKandydaci` nie miało dotąd ŻADNEGO filtra redakcyjnego** (tylko świeżość, obecność artykułu
+  i ranking), czyli automat dziedziczył wszystko z dawki. To pierwszy filtr własny tej ścieżki.
+- Zmierzone na 5374 pozycjach: **2 trafienia, oba w klasie**; kontrola na 118 pozycjach o kontraktach —
+  tnie te 2, ani jednej realnej umowy. ⚠️ Nigdy `\bRPO\b` (to Rzecznik Praw Obywatelskich).
 
 ## ✅ Co zrobiono 2026-08-12 (wieczór) — FRONT, przy okazji automatu X
 
