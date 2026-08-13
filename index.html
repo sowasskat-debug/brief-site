@@ -2134,13 +2134,35 @@ function switchDose(dose) {
   if (prevDose === 'afternoon' && dose === 'morning') setTimeout(mobGripPulse, 320);
 }
 
+// 🔴 ↻ = ODŚWIEŻ **I WRÓĆ NA POCZĄTEK** (decyzja właściciela 2026-08-13: „przycisk odświeżyć zawsze
+// cofa użytkownika do top story na początku aktualnej dawki, nawet jak jesteśmy przy wątkach").
+// Dotąd robił to POŁOWICZNIE i właśnie ta połowa myliła. Zmierzone w Chromium (390 px, panel wątków
+// otwarty): `scrollTop` szedł 1341 → 0, ale **panel zostawał otwarty** — a panel leży NAD feedem
+// i sortuje sagi rosnąco, więc pozycja 0 to jego góra, czyli **NAJSTARSZY wątek**. Czytelnik lądował
+// więc nie na top story, tylko kilka ekranów nad feedem, w najstarszej sadze.
+// To dokładnie ten sam wniosek, który stoi już przy `logoDoAktualnejDawki` („bez tego płynny scroll
+// do zera zostawiałby czytelnika NAD najstarszym wątkiem") — przycisk ↻ nigdy go nie dostał.
 async function refresh() {
   const btn = document.getElementById('refreshBtn');
   btn.classList.add('spinning');
   delete cache[currentDose];
+  // Zerowane PRZED renderem: `renderDesktop` otwiera top story tylko przy pustym `dtCurrentItemId`
+  // (patrz komentarz tam), więc ustawienie tego po `loadDose` byłoby spóźnione o cały render.
+  dtCurrentItemId = null;
   await loadDose(currentDose, true);
+  wrocNaPoczatekWidoku();
   btn.classList.remove('spinning');
   showToast('Zaktualizowano');
+}
+
+// Wspólny „wróć na początek" dla logo i przycisku ↻ — jedno miejsce, żeby oba nie rozjechały się
+// przy kolejnej zmianie (logo dostało tę logikę 01.08, ↻ dopiero 13.08 i różnica była widoczna).
+function wrocNaPoczatekWidoku() {
+  // Panel wątków ZAMYKAMY — inaczej „na górze" znaczy góra panelu, a nie początek dawki.
+  if (watkiPanelOtwarty) zamknijWatkiPanel();
+  scrollArea?.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('dtFeedList')?.scrollTo({ top: 0 });
+  document.getElementById('dtDetail')?.scrollTo({ top: 0 });
 }
 
 document.getElementById('topbarDate').textContent =
@@ -3264,11 +3286,7 @@ function logoDoAktualnejDawki() {
 
   // Logo = „wróć na początek", więc panel wątków też się chowa. Bez tego płynny scroll do zera
   // zostawiałby czytelnika NAD najstarszym wątkiem, z feedem kilka ekranów niżej.
-  if (watkiPanelOtwarty) zamknijWatkiPanel();
-
-  scrollArea?.scrollTo({ top: 0, behavior: 'smooth' });
-  document.getElementById('dtFeedList')?.scrollTo({ top: 0 });
-  document.getElementById('dtDetail')?.scrollTo({ top: 0 });
+  wrocNaPoczatekWidoku();
 }
 
 function syncDoseToTime() {

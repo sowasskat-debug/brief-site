@@ -1402,3 +1402,25 @@ rozwijać"* (dla OBU list: legendy „Sagi na wykresie" i osi „Wątek tematu")
 - 📊 Zweryfikowane w Chromium na produkcyjnych danych: 10 rozwiniętych wierszy w obu listach,
   **2 z fallbackiem** (etapy, których tytuł przepisano po publikacji — znana klasa), **0 błędów JS**;
   kolejność legendy `5, 4, ↳, ↳, ↳, 3, 2, 1` przy datach `12.08 → 06.08`.
+
+## ↻ = odśwież **i wróć na początek** — `wrocNaPoczatekWidoku` (2026-08-13)
+Zgłoszenie właściciela: *„przycisk odświeżyć w prawym górnym rogu zawsze cofa użytkownika do top story
+na początku aktualnej dawki, nawet jak jesteśmy przy wątkach"* — decyzja: tak ma być, ↻ jest przyciskiem
+„do góry", a nie zachowaniem pozycji.
+- 🔴 **Dotąd robił to POŁOWICZNIE i właśnie ta połowa myliła.** Zmierzone w Chromium (390 px, panel
+  wątków otwarty): `scrollTop` szedł **1341 → 0, ale panel ZOSTAWAŁ otwarty**. Panel leży NAD feedem
+  i sortuje sagi **rosnąco**, więc pozycja 0 to jego góra, czyli **NAJSTARSZY wątek** — czytelnik
+  lądował kilka ekranów nad feedem, w najstarszej sadze, zamiast na top story.
+- **To ten sam wniosek, który stoi przy `logoDoAktualnejDawki` od 01.08** („bez tego płynny scroll do
+  zera zostawiałby czytelnika NAD najstarszym wątkiem") — przycisk ↻ po prostu nigdy go nie dostał.
+  Stąd wspólny `wrocNaPoczatekWidoku()` (zamknij panel + przewiń `.scroll-area`, `#dtFeedList`,
+  `#dtDetail`), używany przez OBA wejścia; logo straciło własną kopię tych czterech linii.
+- ⚠️ **`dtCurrentItemId = null` MUSI stać PRZED `loadDose`** — `renderDesktop` otwiera top story tylko
+  przy pustym `dtCurrentItemId`, więc zerowanie po renderze byłoby spóźnione o cały render.
+- ⚠️ **To ŚWIADOME odstępstwo od zasady „panel szczegółów na PC zostaje"** — tamta reguła dotyczy
+  zmiany dawki i live-ticku (czytelnik nie prosił o ruch). ↻ to jawne kliknięcie „odśwież", więc
+  zachowuje się jak logo. Gdyby na desktopie miało jednak zostawiać otwarty artykuł — wystarczy nie
+  zerować `dtCurrentItemId` w `refresh()`, reszta zostaje.
+- 📊 Zweryfikowane w Chromium, **trzy warianty, 0 błędów JS**: (a) panel wątków otwarty → panel
+  zamknięty, `scrollTop` 0, hero na `y=130` (stan identyczny jak po świeżym wejściu); (b) mobilny feed
+  przewinięty na 2958 → 0; (c) desktop — otwarty inny artykuł wraca do top story, `#dtFeedList` na 0.
