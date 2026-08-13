@@ -32,7 +32,48 @@ Wszystko z 13.08 zmergowane i wdrożone: **bot #170, #171**, **front #165**.
 2. **Log `NAGŁÓWEK BEZ KONKRETU` i `naglowek_anonimowy_podmiot_podejrzenie`** (bot #170). Zmierzone
    0,09 wywołania modelu na dobę, więc licznik ma być prawie zawsze zerowy.
 3. **Liczniki `x_*` w `brief_health`** — jak w poprzedniej sesji.
-4. **Punkty 7 i 8 niżej** — dwa realne problemy znalezione 13.08, oba NIENAPRAWIONE.
+4. **Punkty 7, 8 i 10 niżej** — trzy realne problemy znalezione 13.08, wszystkie NIENAPRAWIONE.
+
+## 🔴 10. DUBEL NA X: ręczny post jest NIEWIDZIALNY dla automatu — NIENAPRAWIONE (13.08 wieczór)
+Zgłoszenie właściciela ze zrzutu profilu @brifup: **dwa posty o tym samym Terafabie Tesli/SpaceX
+w ~26 minut** (19:44 i 20:10 czasu warszawskiego).
+- **Automat wypuścił TYLKO JEDEN z nich** — ten o 20:10 („Ruszyła budowa Terafabu Tesli, SpaceX
+  i Intela w Teksasie", id `2087965020629959102`, wpis `9/12` w logu Hetznera i w `wyslane_na_x.txt`).
+  Zachował się poprawnie: odstęp 62 min, limit 9/12, świeżość OK.
+- **Postów z 19:44 (Terafab „największy budynek świata") i 19:46 (crack spread diesla) NIE MA
+  ani w logu, ani w stanie bota.** Poszły 2 minuty po sobie, a `XMinOdstepMinut` = 60, więc automat
+  fizycznie nie mógł ich wysłać. To ręczna ścieżka: knaga → „Wrzuć na X" → `gotowiec-x` →
+  `x.com/intent/post` (`knaga.html`, `otworzX`).
+- 🔴 **PRZYCZYNA: `otworzX` nie zostawia ŻADNEGO śladu.** Automat zna wyłącznie własny
+  `wyslane_na_x.txt` (plik per-serwer, świadomie poza gitem), więc bramka różnorodności
+  `XRoznorodnyWobec` nie widzi ręcznych postów, a licznik dobowy ich nie liczy — realnie na profilu
+  może wyjść WIĘCEJ niż `XMaxPostowNaDobe`.
+- ⚠️ **To NIE jest za słaba bramka.** Gdyby ręczny post był w pliku, złapałaby go bez zmiany progów:
+  te dwa nagłówki mają wysokie podobieństwo rdzeni (próg 0,10) **i wspólny `chart` `SPCX,TSLA`**.
+  Nie ruszaj `PROG_X_TEN_SAM_TEMAT` — problem jest w ślepej plamie stanu, nie w mierze.
+- ✅ **Sprawdzone i ODPADA: druga instancja automatu.** `bot.yml` nie przekazuje `X_API_KEY`/
+  `X_ACCESS_TOKEN`, więc GitHub Actions na X nie publikuje — publikuje wyłącznie Hetzner (cron 30 min).
+
+**Kierunek uzgodniony z właścicielem (13.08, NIC nie zbudowane): warianty 1 i 2 naraz, w tej kolejności
+w przepływie — najpierw OSTRZEŻENIE, potem ZAPIS.**
+1. **Ostrzeżenie w knadze (2)** — przy „Wrzuć na X" panel mówi, że ta pozycja stoi wysoko w rankingu
+   automatu i prawdopodobnie pójdzie sama.
+2. **Wspólny stan w Supabase (1)** — po kliknięciu „Otwórz X" knaga dopisuje wpis (slug, tekst,
+   `chart`, czas), a bot dokleja te wpisy do historii z `wyslane_na_x.txt`.
+- 🔴 **OSTRZEŻENIE JEST W PRZÓD, NIE W TYŁ** — musi wiedzieć „co automat ZARAZ wypuści", nie „co już
+  poszło". W incydencie ręczny post był PIERWSZY, więc bramka patrząca wstecz nic by nie dała.
+- 🔴 **NIE przepisywać rankingu do JS.** Ranking (`pilne` → `reach` → wielkość klastra → pozycja)
+  plus bramki świeżości/`XNudnyAgregatZRaportu`/różnorodności siedzą w `XKandydaci` (`Runner.cs`).
+  Druga implementacja rozjedzie się przy pierwszej zmianie progu — ta lekcja jest już kupiona
+  (podpowiedzi wątków, 04.08). Zamiast tego **bot publikuje swoją listę kandydatów** do Supabase
+  co bieg, knaga tylko czyta i porównuje slug. Czyli 1 i 2 dzielą JEDNĄ rurę, ruch w dwie strony.
+
+**Dwie decyzje OTWARTE — obie zmieniają kod, właściciel ich jeszcze nie podjął:**
+- **Kiedy zapisywać ręczny post?** Klik „Otwórz X" otwiera sam intent i NIE dowodzi wysyłki. Zapis na
+  klik może uciszyć automat na temat, który nigdy nie wyszedł (cisza, ale bez duplikatu). Alternatywa:
+  knaga pyta po powrocie „poszło?" i zapisuje na potwierdzenie — dokładniejsze, ale to klik więcej.
+- **Czy ręczny post zjada slot z limitu 12/dobę?** Jeśli tak, wrzutki właściciela obniżają liczbę
+  postów automatu; jeśli nie, może wyjść 12 + ile ręcznych.
 
 ## 🔴 7. `impact` PRZECZY WŁASNEMU ARTYKUŁOWI — NIENAPRAWIONE (13.08)
 Znalezione przy zgłoszeniu o nudnym poście SanDiska (dawka wieczorna, poz. 0, `TradingNEWS`).
