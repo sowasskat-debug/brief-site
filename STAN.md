@@ -70,6 +70,22 @@ sagi (54 sagi, 1121 par) tylko 0,061. Przy progu 0,30 łapie 29% dubli i wycina 
 Centrum ESA" jest w archiwum **trzy razy** (opis-J 0,65 i 0,59), „Japonia: więcej zwierząt niż dzieci"
 dwa razy. To jest osobny, łatwiejszy problem niż sporny Anthropic — i wart zrobienia.
 
+🔴 **DRUGI PRZYPADEK, ZNALEZIONY TEGO SAMEGO WIECZORU — i on koryguje próg.** Zgłoszenie właściciela
+(*„tutaj też był podobny news"*): kotwica **13.08 23:33** „Korea Północna: więzy wojskowe USA, Japonii
+i Korei Południowej przekształcają się w pakt nuklearny" (30 źródeł, Vietnam.vn) — a jej ARTYKUŁ
+opowiada start rakiety z Wonsan z 12 sierpnia, opublikowany **12.08 rano** jako trzy podpozycje klastra.
+| porównanie | tytuł-J | opis-J |
+|---|---|---|
+| „Pocisk balistyczny… poza japońską strefą ekonomiczną" (12.08 00:03) | 0,048 | **0,231** |
+| „Korea Północna wystrzeliła niezidentyfikowany pocisk" (12.08 00:35) | 0,143 | 0,171 |
+| „Drugi start w niecały tydzień…" (12.08 01:30) | 0,000 | 0,162 |
+- 🔴 **TRZECIA KLASA DUBLA: nagłówek o nowym kącie, artykuł o starym wydarzeniu.** Tytuły są
+  kompletnie różne (0,000–0,143), więc bramka tytułowa nie ma tu ŻADNEJ szansy — z definicji, nie przez
+  zły próg. Sygnał jest wyłącznie w opisie.
+- ⚠️ **PRÓG: 0,30 by to PRZEPUŚCIŁ.** Przy 0,20 łapie (0,231), kosztem 1,4% par etapów sag zamiast 0,3%.
+  Czyli rekomendacja z tego samego wieczoru („~0,30") jest **za wysoka o co najmniej jeden przypadek**.
+  Przed wdrożeniem przemierz pasmo **0,20–0,25** i zdecyduj świadomie, ile etapów sag wolno stracić.
+
 **Kierunek na następną sesję:** to są DWA rozłączne problemy.
 1. **Duble o podobnym tytule i opisie** (ESA ×3) → bramka na opisie, próg ~0,30, na końcu potoku
    (po tłumaczeniu i wzbogaceniu). Obie strony porównania to nasz własny tekst, a opublikowane pozycje
