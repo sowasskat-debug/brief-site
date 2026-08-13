@@ -545,7 +545,10 @@ sam guard schematu inline. **ZASADA:** każdy nowy href z danych → przez `safe
   z linii wpływu tego itemu (45/48). **Klucz `QQQ` w bocie ZOSTAJE** dla newsów o samym ETF-ie.
   ⚠️ Serie `NASDAQ`/`NASDAQ100` pojawią się w `quotes.json` dopiero po pierwszym biegu bota po deployu
   — do tego czasu te pozycje są bez kafla (fail-safe „brak serii = brak kafla").
-  ⚠️ **`SPY` i `DIA` dalej są funduszami** (49 referencji) — ta sama wada, po prostu niezgłoszona.
+  ✅ **`SPY`→`SP500` i `DIA`→`DJIA` zdjęte z funduszy w tej samej turze** (`^GSPC` / `^DJI`),
+  49 referencji przepiętych — czyli w danych nie ma już ANI JEDNEGO klucza funduszu pod indeksem.
+  ⚠️ Token `DIA` w treści to **Defense Intelligence Agency**, nie fundusz — kolejny powód, dla którego
+  migracja idzie wyłącznie po `"chart":[…]`, nigdy po całym pliku.
 
 ## Udostępnij na X — ✅ W PANELU (2026-08-01), ⚠️ na `index.html` DALEJ NIEZAIMPLEMENTOWANE
 Życzenie właściciela: wrzucać 3-4 najlepsze newsy dziennie na X. Wybrany wariant: **właściciel sam wybiera
