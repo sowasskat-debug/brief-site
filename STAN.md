@@ -34,6 +34,54 @@ Wszystko z 13.08 zmergowane i wdrożone: **bot #170, #171**, **front #165**.
 3. **Liczniki `x_*` w `brief_health`** — jak w poprzedniej sesji.
 4. **Punkty 7, 8 i 10 niżej** — trzy realne problemy znalezione 13.08, wszystkie NIENAPRAWIONE.
 
+## 🔴 12. DUBEL W FEEDZIE: ten sam raport dwa razy — NIENAPRAWIONE, 4 ślepe uliczki zmierzone (13.08 noc)
+Zgłoszenie właściciela: *„podobny news już chyba był"*. Był — ten sam raport Anthropica o agentach
+Claude wyszedł **05:30 (poranna)** i **23:03 (wieczorna)**. Pozycja wieczorna usunięta ręcznie z
+`briefs.json`.
+
+**Dlaczego bramka nie zadziałała.** Cross-bieg dedup ma DWA etapy (`Runner.cs`, ~L3269): tani filtr
+Jaccarda, a dopiero nad progiem **`PROG_POWTORKI_MIEDZY_BIEGAMI = 0.18`** model orzeka
+`POWTORKA`/`COFNIECIE`/`NOWE`. **Filtr jest odźwiernym — model dostaje tylko to, co filtr wpuści.**
+Ta para dała ~0,15, więc model NIGDY nie został zapytany. Dowód: w logu Hetznera przy tym newsie nie ma
+ŻADNEJ linii decyzyjnej (cisza = prefiltr nie zwrócił nic).
+
+📊 **CZTERY DROGI ZMIERZONE, WSZYSTKIE ODPADAJĄ** — nie powtarzaj tych pomiarów:
+| droga | wynik dla spornej pary | próg | werdykt |
+|---|---|---|---|
+| tytuł polski | 0,154 | 0,18 | za nisko |
+| **tytuł angielski (oryginał)** | **0,148** | 0,18 | za nisko — GORZEJ niż polski |
+| **opis polski (`article`)** | **0,160** | ≥0,25 użyteczny | za nisko |
+| **to samo źródło + doba + nazwa własna** | — | — | **nie dotyczy, patrz niżej** |
+
+- ⚠️ **Angielski NIE pomaga, mimo że brzmi lepiej.** Morfologia faktycznie działa (`turf war`/`turf wars`
+  sklejają się, gdy `terytorium`/`terytorialne` NIE), ale obie redakcje napisały o tym raporcie inne
+  zdania — jedna o sabotażu i self-replicating malware, druga o zmowie cenowej. 4 wspólne słowa na ~30.
+- ⚠️ **Opis też nie pomaga**, bo opis generuje NASZ model dwa razy od zera i wychodzą dwie różne treści.
+- 🔴 **`feed` ≠ `source_name` — TO JEST PUŁAPKA DIAGNOSTYCZNA.** W `briefs.json` oba newsy mają
+  `source_name: Unite.AI`, ale dziennik lejka pokazuje, że przyszły z **RÓŻNYCH feedów: Polymarket
+  (03:30) i Techmeme (21:03)**. `source_name` jest rozwiązywane PO wzbogaceniu, a bramka stoi PRZED nim
+  i widzi wtedy tylko feed. **Każdy pomiar reguły działającej w bramce licz na `feed`, nigdy na
+  `source_name` z `briefs.json`** — inaczej mierzysz pole, którego kod w tym miejscu nie ma.
+
+📊 **Co pomiar dał POZYTYWNEGO** (44 dni archiwum, 4752 newsy z opisem): bramka na podobieństwie OPISÓW
+rozdziela dobrze **inną** klasę dubli — pary bliskich dubli mają medianę 0,203, a różne etapy TEJ SAMEJ
+sagi (54 sagi, 1121 par) tylko 0,061. Przy progu 0,30 łapie 29% dubli i wycina 0,3% etapów sag.
+**Obawa, że taka bramka zje sagi, NIE potwierdziła się.** Widoczny realny problem: „Warszawa siedzibą
+Centrum ESA" jest w archiwum **trzy razy** (opis-J 0,65 i 0,59), „Japonia: więcej zwierząt niż dzieci"
+dwa razy. To jest osobny, łatwiejszy problem niż sporny Anthropic — i wart zrobienia.
+
+**Kierunek na następną sesję:** to są DWA rozłączne problemy.
+1. **Duble o podobnym tytule i opisie** (ESA ×3) → bramka na opisie, próg ~0,30, na końcu potoku
+   (po tłumaczeniu i wzbogaceniu). Obie strony porównania to nasz własny tekst, a opublikowane pozycje
+   MAJĄ już `article` w `briefs.json` — **żadnej zmiany formatu utrwalonych plików**. Koszt: płacimy
+   za enrich, zanim wyrzucimy. Zmierzone, gotowe do wdrożenia.
+2. **Ten sam news napisany zupełnie inaczej** (Anthropic) → żadna miara słów tego nie łapie. Złapałby
+   MODEL, gdyby parę zobaczył. Zostało wyłącznie obniżenie progu 0,18 — **NIE ruszaj go bez pomiaru
+   pozytywów i negatywów na archiwum** (ta sama zasada co przy `PROG_SPOJNOSCI_KLASTRA`).
+- ⚠️ Usunięcie poszło **wprost przez `briefs.json` w gicie, nie przez knagę** — więc pominięty jest kosz
+  w Supabase (brak odwracalności jednym kliknięciem) i wpis do `rejected.json` (filtr bota się na tym
+  NIE uczy). Przy następnym takim usunięciu rozważ panel.
+
 ## ✅ 11. Nazwa klastra zmieniała się po publikacji — NAPRAWIONE (13.08 wieczór, bot)
 Zgłoszenie właściciela: *„jestem przekonany, że nazwa tego klastra była inna"*. Była: 18:37
 „Nowe modele AI od Google i OpenAI" → 18:43 „Google wypuszcza Gemini 3.7 Flash", te same podpozycje.
