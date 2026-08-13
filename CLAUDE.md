@@ -535,6 +535,17 @@ sam guard schematu inline. **ZASADA:** każdy nowy href z danych → przez `safe
   ⚠️ **Dokładając instrument, którego klucz kiedykolwiek trzeba będzie zmienić, licz się z migracją archiwum**
   — front dopasowuje serię po kluczu DOSŁOWNIE. Przy XAU dlatego klucz zamrożono; tu zmieniał się instrument,
   nie jednostka, a **na telefonie (<460 px) `.q-name` jest ukryta**, więc czytelnik widziałby sam ticker `BNO`.
+- 🔴 **TO SAMO Z NASDAQIEM: `QQQ`→`NASDAQ100`, `ONEQ`→`NASDAQ` (2026-08-13).** Zgłoszenie właściciela
+  pod newsem o IPO Anthropica + zrzuty „Nasdaq Composite · INDEXNASDAQ: .IXIC": QQQ to **fundusz**
+  (~600 USD), a nagłówki mówią o poziomie indeksu (~26 500 pkt). Bot bierze teraz `^IXIC`/`^NDX` z Yahoo.
+  **93 referencje `chart` w 12 plikach przepięte.**
+  ⚠️ **Inaczej niż przy `BNO`/`USO`, token „QQQ" występuje TEŻ W TREŚCI** — 7 pól `impact`/`article`
+  mówi o samym funduszu („↑ Invesco QQQ", „waga ok. 1% w funduszu Invesco QQQ"). Zamiana po całym pliku
+  sfałszowałaby artykuły; migracja szła **wyłącznie po `"chart":[…]`**, a wybór NASDAQ vs NASDAQ100
+  z linii wpływu tego itemu (45/48). **Klucz `QQQ` w bocie ZOSTAJE** dla newsów o samym ETF-ie.
+  ⚠️ Serie `NASDAQ`/`NASDAQ100` pojawią się w `quotes.json` dopiero po pierwszym biegu bota po deployu
+  — do tego czasu te pozycje są bez kafla (fail-safe „brak serii = brak kafla").
+  ⚠️ **`SPY` i `DIA` dalej są funduszami** (49 referencji) — ta sama wada, po prostu niezgłoszona.
 
 ## Udostępnij na X — ✅ W PANELU (2026-08-01), ⚠️ na `index.html` DALEJ NIEZAIMPLEMENTOWANE
 Życzenie właściciela: wrzucać 3-4 najlepsze newsy dziennie na X. Wybrany wariant: **właściciel sam wybiera
