@@ -25,6 +25,25 @@ i wygląda to jak awaria deployu.
 Wszystko z 13.08 zmergowane i wdrożone: **bot #170, #171**, **front #165**.
 🟢 Automat X chodzi od 12.08 20:15, kadencja podniesiona 13.08 na **12/dobę, odstęp 60 min, okno 7-23**.
 
+## 🔵 OD CZEGO ZACZĄĆ 14.08 — kolejność ustalona z właścicielem (sesja 13.08 noc)
+
+Wieczór 13.08 zeszedł na diagnozę trzech zgłoszeń o powtórkach. **Dwa z trzech okazały się czymś
+innym niż dubel** — dlatego kolejność poniżej jest od najlepiej rozpoznanego do najbardziej niepewnego.
+
+1. **Tryb celowanego re-enrichu w bocie — ZACZNIJ OD TEGO.** Bot NIE MA sposobu, by wzbogacić
+   POJEDYNCZY news: `REENRICH_DOSE` przepisuje CAŁĄ dawkę (39 pozycji, 39 wywołań modelu),
+   a `RETRY_POCZEKALNIA` dotyczy tylko poczekalni. Potrzebny tryb „weź ten nagłówek, poszukaj artykułu
+   od nowa, pokaż co znalazłeś" — potrzeba wróci przy KAŻDYM rozjeździe nagłówek↔artykuł.
+   Przypadek testowy gotowy: `North Korea: U.S., Japan and South Korea military ties evolving into
+   a nuclear pact` (Financial Juice, 13.08 21:30) — pozycja zdjęta z dawki, ale nagłówek jest w lejku.
+2. **Sprawdź, czy bramka „fakty niezwiązane z nagłówkiem" w ogóle była wołana** przy tym newsie
+   (punkt 12, blok o mechanizmie). **Jeśli nie była — moja hipoteza „mierzy związane zamiast to samo
+   wydarzenie" jest nietrafiona i cała diagnoza idzie do kosza.** To jest warunek wstępny, nie detal.
+3. **Bramka na podobieństwie OPISÓW, próg ~0,30** (punkt 12) — jedyna rzecz z wczoraj zmierzona
+   i gotowa do wdrożenia. ⚠️ NIE obniżaj progu na podstawie przypadku Korei; ten przypadek został
+   zdiagnozowany błędnie i sprostowany.
+4. **Punkt 10** — ręczne posty na X niewidzialne dla automatu. Dwie decyzje właściciela otwarte.
+
 **Od czego zacząć następną sesję — OBSERWACJE, nie roboty:**
 1. **Log `X -> pominięto (agregat z raportu…)` i licznik `x_odrzut_agregat_z_raportu`** (bot #171).
    Zmierzona częstość to ~1 trafienie na 3 tygodnie — gdyby licznik rósł szybciej, wzorzec łapie
