@@ -181,6 +181,20 @@ Deno.serve(async (req) => {
               'Pomiń ujęcia, które powtarzają to samo. '
             : 'Struktura: linia 1 to HOOK — nagłówek przerobiony tak, by konkret był na przodzie. ' +
               'Potem JEDNO zdanie z artykułu, złożone z samych twardych faktów i liczb. ') +
+          // ── ODBIORCA: szerokie grono, nie inwestor (decyzja właściciela 2026-08-13) ──
+          // Post idzie na publiczny profil, nie na terminal. Zmierzone na realnej parze gotowców
+          // do tego samego newsa (zwroty ceł): wariant „firmy z S&P 500 zaksięgowały 9,6 mld"
+          // przegrał z „sześć firm technologicznych 2,5 mld" — agregat wymaga od czytelnika
+          // wiedzy, czym jest indeks, a „zaksięgowały" to żargon księgowy (ujęcie ≠ gotówka).
+          'ODBIORCA to szeroka publiczność, nie inwestor. Nazwany konkret (nazwa firmy, ile firm, ' +
+          'jaki kraj) BIJE agregat rynkowy — nie pisz "spółki z S&P 500" ani "firmy z indeksu", ' +
+          'gdy materiał pozwala nazwać podmioty. Używaj prostych słów zamiast żargonu (np. "dostały" ' +
+          'zamiast "zaksięgowały"), ale NIGDY kosztem prawdziwości: jeśli materiał mówi o ujęciu ' +
+          'księgowym, a nie o wypłacie, zostaw znaczenie i uprość samo zdanie. ' +
+          'PRZYCZYNA JEST OBOWIĄZKOWA, gdy materiał ją podaje (wyrok, decyzja urzędu, ustawa, ' +
+          'wynik spółki) — bez niej post jest listą liczb i czytelnik nie wie, dlaczego to się dzieje. ' +
+          'Najwyżej CZTERY liczby w poście. Gdy materiał podaje kilka etapów tej samej rury ' +
+          '(np. kwota autoryzowana, zatwierdzona i wypłacona), podaj SKRAJNE i pomiń środkowe. ' +
           `TWARDY LIMIT: ${maxZnakow} znaków łącznie. ` +
           'ZAKAZANE: zmyślanie jakichkolwiek liczb — każda liczba w poście MUSI dosłownie występować ' +
           'w materiale źródłowym. Jeśli materiał nie podaje liczb, napisz post bez liczb. ' +

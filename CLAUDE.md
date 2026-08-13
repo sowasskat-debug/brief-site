@@ -856,6 +856,32 @@ dostawał **403**.
   CLI jest zainstalowane lokalnie (`/opt/homebrew/bin/supabase`) i zalogowane; projekt NIE jest
   „linked", więc `--project-ref` jest obowiązkowy.
 
+## Gotowiec X pisze do SZEROKIEGO GRONA, nie do inwestora (2026-08-13) 🔴
+Decyzja właściciela po zestawieniu **dwóch gotowców do tego samego newsa** (zwroty ceł po wyroku SN):
+wariant *„firmy z S&P 500 zaksięgowały ok. 9,6 mld USD"* PRZEGRAŁ z *„sześć firm technologicznych
+2,5 mld USD"* — *„łatwiejszy do zrozumienia dla szerokiego grona"*.
+- **Agregat rynkowy wymaga od czytelnika dwóch rzeczy naraz:** żeby wiedział, czym jest indeks,
+  i żeby wyczuł, że „zaksięgowały" ≠ „dostały" (ujęcie księgowe vs gotówka). Nazwany konkret
+  (nazwa firmy, ile firm, jaki kraj) nie wymaga niczego. Post idzie na publiczny profil, nie na terminal.
+- 🔴 **PRZYCZYNA JEST OBOWIĄZKOWA, gdy materiał ją podaje.** Przegrany wariant nie miał ANI SŁOWA
+  o wyroku Sądu Najwyższego — został z czterech liczb pod rząd, po których nie wiadomo, dlaczego
+  cokolwiek się dzieje. To był drugi powód wyboru właściciela i ważniejszy niż sam żargon.
+- **Najwyżej 4 liczby; przy kilku etapach tej samej rury podaj SKRAJNE.** Materiał o cłach dawał
+  autoryzowane 128,7 → zatwierdzone 104,29 → wypłacone 71,06 — trzy etapy w osi czasu to o jeden
+  za dużo, kontrast „autoryzowane vs wypłacone" niesie tę samą historię.
+- ⚠️ **Uproszczenie NIE MOŻE zmieniać znaczenia** — gdy materiał mówi o ujęciu księgowym, a nie
+  o wypłacie, zostaje ujęcie księgowe; upraszczamy zdanie, nie fakt.
+- ⚠️ **To zmiana PROMPTU, czyli miękka** (repo zna zasadę „prompt negocjuje, regex nie"). Sprawdzone
+  na 3 kolejnych wywołaniach wdrożonej funkcji tym samym materiałem: 2 trafione (nazwany konkret
+  + wyrok SN, bez „S&P 500"/„zaksięgowały"), **1 odrzucony przez bramkę pokrycia liczb** — model
+  zaokrąglił `71,06` do `71`, a bramka wymaga dosłownego wystąpienia w materiale. Fail-safe zadziałał
+  (front podstawia sam nagłówek), ale **instrukcja „mniej liczb" popycha model do zaokrąglania**
+  i to jest realny ogon do obserwacji. Gdyby odrzuty rosły — dopuścić zaokrąglenie w bramce,
+  nie luzować promptu.
+- ⚠️ **Deploy NIE idzie przez git:** `supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc`.
+- ⚠️ **`X_TEXT_MAX` w knadze to 270, nie 300** — ten plik twierdził „300" w sekcji o budżecie treści
+  i było to nieaktualne (zmierzone w kodzie: `knaga.html`, `const X_TEXT_MAX = 270`).
+
 ## Udostępnianie CAŁEGO KLASTRA — karta `og?k=1` + gotowiec spinający (2026-08-10)
 Życzenie właściciela: *„chcę ulepszyć to, jak jadę «udostępnij cały klaster» — z tekstem generowanym
 pod postami oraz grafiką"*. Dotąd „WRZUĆ NA X" na grupie brało tekst samej kotwicy i **gubiło całą
