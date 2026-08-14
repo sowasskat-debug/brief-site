@@ -1415,6 +1415,41 @@ googlu wczoraj?"* — nie, to nasz bug). Pierwszy wynik wyszukiwarki brzmiał:
 - ⚠️ **Google poprawi wynik dopiero przy kolejnym crawlu.** Przyspiesza to wyłącznie „Request indexing"
   w Search Console — po stronie właściciela, konta GSC nie ma w repo.
 
+## Deep-link „nie przewija do posta" — startowe re-rendery kasowały efekt routingu (2026-08-14) 🔴
+Zgłoszenie właściciela: *„jak wysyłam komuś link, często nie przewija do posta, tylko dopiero jak
+wejdę drugi raz"*. Stuby i routing były SPRAWNE — deep-link otwierał kartę i przewijał poprawnie,
+a potem **własna apka to cofała**.
+- 🔴 **Przyczyna:** przy starcie lecą równolegle `briefs.json`, `threads.json` i `quotes.json`, a dwa
+  ostatnie miały w `.then()` GOŁY `renderDose` (żeby badge 🧵 i wykresy pojawiły się bez czekania na
+  live-tick). Goły render buduje `#content` od zera przez `innerHTML`: karty wychodzą zwinięte
+  (`aria-expanded="false"`), a podmiana treści **zeruje `scrollTop` kontenera**. Gdy trafił PO tym,
+  jak `routeDoseHash`/`tryOpen` otworzył i przewinął — czytelnik lądował z powrotem na górze feedu.
+- 📊 **Zmierzone w Chromium** (390 px, `threads`/`quotes` opóźnione o 3,5 s = zimne pierwsze wejście):
+  t=1,5 s scroll 3902 px + karta otwarta → t=4,5 s (dojechał threads.json) **scroll 0 + karta
+  zwinięta**. Kontrola bez opóźnienia: scroll stoi całe 10 s.
+- 🔴 **Dlaczego „drugi raz działa": to WYŚCIG, nie brak funkcji.** Przy zimnym wejściu gotowce
+  dojeżdżają po scrollu deep-linka; przy drugim wejściu (rozgrzane łącze, powłoka z SW) rozstrzygają
+  się ZANIM łańcuch `tryOpen` (150 ms + otwarcie + 160 ms) skończy — finalny scroll przeżywa.
+  Stąd „często", nie „zawsze". Ta sama klasa co `pollLiveUpdates`, który przy live-ticku ŚWIADOMIE
+  zachowuje scroll — startowe re-rendery nigdy tej ochrony nie dostały.
+- **Naprawa — `renderDoseZachowujacWidok()`** (oba startowe `.then()`): przed renderem zapamiętuje
+  otwarte karty, filtr tematu i scroll obu paneli; po renderze przywraca (kolejność jak
+  w `pollLiveUpdates`: najpierw filtr, scroll na końcu). Do tego **kotwiczenie**: badge 🧵 dokładane
+  przez re-render zmieniają wysokość treści NAD postem, więc sam `scrollTop` nie wystarcza (post
+  zjeżdżał ~350 px, zmierzone) — scroll jest dosuwany o przesunięcie OSTATNIEJ otwartej karty.
+- 🔴 **Otwarte karty wracają PO ID ELEMENTU — poprawne WYŁĄCZNIE tu**, bo helper renderuje TEN SAM
+  obiekt `cache[dose]` (id-ki stabilne). `pollLiveUpdates` nadaje itemom NOWE id (`uid()`) i ma
+  własne zachowanie widoku — **nie używać tego helpera w ścieżce live-ticku** (znana zasada:
+  nie kluczuj po wartości nadawanej przy renderze; tu render jest ten sam, więc wolno).
+- 📊 Zweryfikowane w Chromium po naprawie: zimne wejście — po dojechaniu gotowców karta otwarta,
+  post przypięty co do piksela (108 px, scroll dosunięty 3902→4247); szybkie wejście bez zmian;
+  zwykłe wejście bez hasha — scroll 0, 19 badge'ów sag dojechało, nic samo się nie otworzyło,
+  0 błędów JS. SW → v121.
+- ⚠️ Drugie znalezisko przy okazji (NIE naprawiane): mobilna gałąź `tryOpen` ma `if (!el) return`
+  bez ponowienia — gdy element nie zdążył powstać w DOM, routing poddaje się po cichu. W praktyce
+  cache i render są w tym samym bloku synchronicznym, więc nie zaobserwowano; gdyby objaw wrócił
+  mimo tej naprawy, zacznij tam.
+
 ## Etap sagi ROZSUWA SKRÓT zamiast wyrzucać do innego newsa (2026-08-12) 🔴
 Dwa zgłoszenia właściciela tego samego dnia okazały się jedną sprawą:
 *„po kliknięciu w dany wątek przeskakuje czerwone kółko np. z 6 na 2"* oraz *„a także ma się opis
