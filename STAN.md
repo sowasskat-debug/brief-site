@@ -1,7 +1,29 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-14 (dzień)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-14 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+## ⏰ 14.08 wieczór: czujnik nagłówków OBSERWUJE — analiza ~16–17.08, decyzja o wdrożeniu OTWARTA
+
+Pomysł właściciela: zamiast sztywnego crona `*/30` bot ma reagować na nowe nagłówki zdarzeniowo.
+Wybrany wariant A (tani poller-czujnik + wyzwalacz silnika), ale NAJPIERW pomiar — właściciel:
+„sprawdzimy co i jak to działa a później podejmiemy decyzję o wdrożeniu".
+- ✅ **Zrobione 1/2 — lock w `run_bot.sh`** (`flock -n /var/lock/brif_bot.lock`): łata ISTNIEJĄCĄ dziurę —
+  bieg z serią timeoutów `SELEKCJA-JSON` (300 s, ~16% biegów łapie choć jeden) przekracza 30 min i cron
+  stawiał mu drugi bieg na plecach → dubel publikacji nie do złapania żadną bramką + rozjechany git.
+  Backup: `/root/run_bot.sh.bak.20260814`. Test kolizji przeszedł.
+- ✅ **Zrobione 2/2 — czujnik `/root/czujnik.py`** w trybie CZYSTO OBSERWACYJNYM: cron co 1 min,
+  16 feedów 1:1 z botem (fast 2 min / slow 10 min, conditional GET, nigdy artykuły), loguje
+  `NOWY [feed] tytuł` do `/var/log/brif_czujnik.log`, stan w `/root/czujnik_state/`. NICZEGO nie wyzwala.
+- ⏰ **DO ZROBIENIA ~16–17.08 (PRZYPOMNIEĆ WŁAŚCICIELOWI):** analiza linii `NOWY` z 2–3 dób →
+  ile wyzwoleń silnika/dobę przy min-odstępie 5/10/15 min → decyzja o podpięciu wyzwalacza.
+- 📊 Zmierzone przy instalacji: conditional GET honoruje tylko 5/16 feedów; **rss.app zawsze pełne 200**
+  (~25 KB) → przy wdrożeniu nie schodzić z interwałem rss.app poniżej 2 min (IP już dostaje 403/429).
+- ⚠️ Znane ryzyka wdrożenia (spisane też w `FinancialNewsBot/CLAUDE.md`, sekcja o czujniku): w dzień
+  biegów byłoby WIĘCEJ, nie mniej (koszt DeepSeeka ↑), mniejsze paczki mogą zmienić selekcję porównawczą,
+  `dotnet run` kompiluje per bieg. Fallback-cron zostaje przy każdym wariancie.
+- ⚠️ Oba skrypty żyją TYLKO na serwerze (jak dotąd `run_bot.sh` — nie jest w repo); przy decyzji
+  „wdrażamy" zwersjonować.
 
 ## 🔴 14.08: klasa z punktu 12 UDERZYŁA NA PRODUKCJI dzień po diagnozie — NAPRAWIONE (bot, PR z tej sesji)
 
