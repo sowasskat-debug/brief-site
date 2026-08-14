@@ -3,6 +3,18 @@
 Zdjęcie stanu na **2026-08-14 (późny wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## ✅ 14.08 noc: deep-link „nie przewija do posta" — NAPRAWIONE (front, PR z tej sesji)
+
+Zgłoszenie właściciela: link wysłany komuś często nie przewijał do posta, dopiero drugie wejście.
+Routing i stuby były sprawne — **startowe re-rendery po `loadThreads()`/`loadQuotes()`** (goły
+`renderDose` dla badge 🧵/wykresów) zerowały scroll i zwijały kartę otwartą przez deep-link, gdy
+gotowce dojechały PO scrollu (zimne wejście = wyścig przegrany, drugie wejście = wygrany — stąd
+„często"). Zreprodukowane i zweryfikowane w Chromium z opóźnionym `threads.json`.
+Naprawa: `renderDoseZachowujacWidok()` (zachowuje otwarte karty, filtr, scroll + kotwiczenie do
+otwartej karty). SW → v121. Szczegóły i pomiary: `CLAUDE.md`, sekcja „Deep-link «nie przewija do
+posta»". ⚠️ Gdyby objaw wrócił: drugie znalezisko (bez naprawy) to `if (!el) return` bez ponowienia
+w mobilnej gałęzi `tryOpen`.
+
 ## 🔴 14.08 ~19:15: AUTOMAT X WYŁĄCZONY — `X_AUTO=false`, stan TYLKO NA SERWERZE
 
 Decyzja właściciela („wyłącz na razie X bota"). `X_AUTO=true→false` w `/root/bot_secrets.env`

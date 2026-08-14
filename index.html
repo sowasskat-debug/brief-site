@@ -1305,10 +1305,58 @@ function sagaToggleSkrot(el){
     .then(pokaz)
     .catch(pokaz);
 }
+// ── Re-render dawki BEZ gubienia widoku — dla startowych dociągnięć threads/quotes (2026-08-14) ──
+// Goły renderDose buduje #content od zera: scrollTop kontenera spada do 0, a otwarta karta się zwija.
+// Startowe .then() po loadThreads/loadQuotes robiły dokładnie to — i na zimnym pierwszym wejściu
+// dojeżdżały PO tym, jak deep-link (#dawka/slug ze stuba) zdążył otworzyć kartę i przewinąć do posta.
+// Efekt zgłoszony przez właściciela: „link nie przewija do posta, dopiero jak wejdę drugi raz".
+// 📊 Zmierzone w Chromium (opóźnione threads/quotes ~3,5 s = zimne wejście): t=1,5 s scroll 3902 px
+// i karta otwarta → t=4,5 s (dojechał threads.json) scroll 0 i karta zwinięta. Przy szybkich gotowcach
+// (drugie wejście, rozgrzane łącze) wyścig wypada odwrotnie i scroll przeżywa — stąd „często", nie zawsze.
+// ⚠️ Otwarte karty przywracamy PO ID ELEMENTU — to jest poprawne WYŁĄCZNIE tu, bo ten helper renderuje
+// TEN SAM obiekt cache[dose] (id-ki stabilne). pollLiveUpdates nadaje itemom NOWE id (uid()) i ma
+// własne zachowanie widoku — NIE używaj tego helpera w ścieżce live-ticku.
+function renderDoseZachowujacWidok() {
+  try {
+    if (typeof currentDose === 'undefined' || !cache[currentDose]) return;
+    const otwarte = Array.from(document.querySelectorAll('.hero-card.open, .news-item.open, .sub-item.open'), el => el.id);
+    // Kotwica scrolla = OSTATNIA otwarta karta (przy klastrze: sub-item, nie grupa) — badge 🧵/wykresy
+    // dokładane przez re-render zmieniają wysokość treści NAD postem, więc sam scrollTop nie wystarcza:
+    // post zjeżdżał ~350 px w dół (zmierzone). Po renderze dosuwamy scroll tak, żeby kotwica stanęła
+    // dokładnie tam, gdzie była.
+    const kotwicaId = otwarte.length ? otwarte[otwarte.length - 1] : null;
+    const kotwicaTop = kotwicaId ? document.getElementById(kotwicaId).getBoundingClientRect().top : 0;
+    const savedMobCat = mobActiveCat;
+    const savedDtFilter = dtActiveFilter;
+    const mobTop = scrollArea ? scrollArea.scrollTop : 0;
+    const feedList = document.getElementById('dtFeedList');
+    const deskTop = feedList ? feedList.scrollTop : 0;
+    // Podmiana treści + przywrócenie scrolla generują zdarzenia scroll — nie chowaj od tego tabów
+    // (ten sam guard co w toggleGroup/toggleSubItem).
+    suppressScrollHide = true;
+    setTimeout(() => { suppressScrollHide = false; }, 400);
+
+    renderDose(currentDose, cache[currentDose]);
+
+    // Kolejność jak w pollLiveUpdates: najpierw widok tematu (sam przewija na górę), scroll na KOŃCU.
+    if (savedMobCat && savedMobCat !== 'all') mobileFilterCat(savedMobCat);
+    if (savedDtFilter) dtRenderCatFilter(savedDtFilter);
+    // Otwarte karty wracają w kolejności DOM (grupa przed swoim sub-itemem), więc klaster
+    // rozwija się przed przywróceniem podpozycji.
+    otwarte.forEach(id => { const el = document.getElementById(id); if (el) setCardOpen(el, true); });
+    if (scrollArea) {
+      scrollArea.scrollTop = mobTop;
+      const kot = kotwicaId && document.getElementById(kotwicaId);
+      if (kot) scrollArea.scrollTop = mobTop + (kot.getBoundingClientRect().top - kotwicaTop);
+    }
+    const fl2 = document.getElementById('dtFeedList');
+    if (fl2) fl2.scrollTop = deskTop;
+  } catch(_){}
+}
 loadThreads().then(() => {
   // threads.json dociąga się równolegle z pierwszym renderem — po załadowaniu odśwież widoki,
   // żeby badge 🧵 pojawił się bez czekania na kolejny live-tick.
-  try { if (typeof currentDose !== 'undefined' && cache[currentDose]) renderDose(currentDose, cache[currentDose]); } catch(_){}
+  renderDoseZachowujacWidok();
 });
 
 // ══ Notowania (wykresy pod „Wpływ na rynek") — czyta quotes.json od bota, 0 tokenów per klik ══
@@ -3452,9 +3500,10 @@ async function liveTick() {
 // Ustal punkt odniesienia na starcie, żeby pierwszy tik nie ściągał całości bez potrzeby.
 probeBriefsTag().then(t => { if (t) lastBriefsTag = t; });
 // Notowania dociągane równolegle z pierwszym renderem — po załadowaniu odśwież widok, żeby wykres
-// pojawił się bez czekania na live-tick (ten sam wzorzec co loadThreads wyżej).
+// pojawił się bez czekania na live-tick (ten sam wzorzec co loadThreads wyżej; helper zachowuje
+// scroll i otwartą kartę — goły renderDose kasował efekt deep-linka, patrz komentarz przy helperze).
 loadQuotes().then(() => {
-  try { if (typeof currentDose !== 'undefined' && cache[currentDose]) renderDose(currentDose, cache[currentDose]); } catch(_){}
+  renderDoseZachowujacWidok();
 });
 setInterval(liveTick, LIVE_POLL_MS);
 
