@@ -102,6 +102,21 @@ innym niż dubel** — dlatego kolejność poniżej jest od najlepiej rozpoznane
 3. **Liczniki `x_*` w `brief_health`** — jak w poprzedniej sesji.
 4. **Punkty 7, 8 i 10 niżej** — trzy realne problemy znalezione 13.08, wszystkie NIENAPRAWIONE.
 
+## ✅ Co zrobiono 2026-08-14 (rano) — powrót do apki po ≥5 min
+Życzenie właściciela: *„jeżeli ktoś wróci do aplikacji po 5 minutach i wyżej, otwiera mu się
+odświeżona wersja na top story w aktualnej dawce"*. Front: `wznowApke` + `wznowJakNoweWejscie`
+(`index.html`, SW v121).
+- Dotąd każdy powrót — po 10 s i po 3 h — szedł jedną ścieżką `syncDoseToTime` (cicha podmiana
+  w miejscu). Poniżej 5 min zachowanie jest **bez zmian** i to jest warunek, żeby nie cofnąć
+  poprawki z 16.07 o migotaniu „stare artykuły, potem nowe".
+- ⚠️ Znacznik wyjścia stoi w `visibilitychange` ORAZ `pagehide` — przy powrocie z bfcache
+  `visibilitychange` na ukrycie może nie paść i próg odpalałby się losowo.
+- ⚠️ W nakładce archiwum czytelnik ZOSTAJE (leci samo `syncDoseToTime`).
+- 📊 Zmierzone w Chromium, 0 błędów JS: 30 s → scroll 2200 bez zmian; 6 min → 2200 → 0; panel wątków
+  zamknięty; desktop wraca z pozycji 4. na `items[0]`. Szczegóły w `CLAUDE.md`.
+- ⚠️ Ścieżka zmiany dawki w przerwie (powrót po 11:00/17:00) nietestowana — `getCurrentDose` czyta
+  `new Date()`, więc podmiana `Date.now` w teście jej nie ruszyła. Logika jak przed zmianą.
+
 ## 🔴 12. DUBEL W FEEDZIE: ten sam raport dwa razy — ✅ NAPRAWIONE 14.08 (bramka po opisach, patrz sekcja na górze)
 > ⚠️ **Aktualizacja 14.08:** obie drogi z „Kierunku na następną sesję" zrealizowane JEDNĄ bramką —
 > podobieństwo OPISÓW przy progu **0,15** służy wyłącznie jako SELEKTOR KANDYDATÓW dla modelu
