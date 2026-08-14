@@ -1,9 +1,66 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-14 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-14 (późny wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
-## ⏰ 14.08 wieczór: czujnik nagłówków OBSERWUJE — analiza ~16–17.08, decyzja o wdrożeniu OTWARTA
+## 🔴 14.08 ~19:15: AUTOMAT X WYŁĄCZONY — `X_AUTO=false`, stan TYLKO NA SERWERZE
+
+Decyzja właściciela („wyłącz na razie X bota"). `X_AUTO=true→false` w `/root/bot_secrets.env`
+(backup: `/root/bot_secrets.env.bak.20260814`). **W żadnym repo tego nie widać** — kod bramki
+([Runner.cs] `OpublikujNajlepszyNaX`, pierwsza linia) jest bez zmian, przełącznik żyje wyłącznie
+w env na Hetznerze. Jeśli automat „milczy na X" — to jest powód, nie awaria.
+- Ostatni post bota przed wyłączeniem: 14.08 18:39 (licznik dnia stanął na 11/12).
+- Bieg 19:00 wystartował jeszcze ze starym env, ale NIC nie opublikował — zablokowała go własna
+  bramka odstępu („odstęp 32 min < 60 min"), potwierdzone w logu.
+- Ponowne włączenie = `X_AUTO=true` w `bot_secrets.env` (żadnego deployu nie trzeba).
+
+## ✅ 14.08 wieczór: klaster Lockheed–Musk — dane naprawione + bramka rdzenia w cross-dose NA PRODUKCJI
+
+Zgłoszenie właściciela („post z Lockheed zniknął z porannej"): o 19:36 cross-dose merge zamienił
+solo posta „Lockheed Martin: przyszłość obronności…" (poranna poz. 19) w klaster, doklejając
+„Musk: obliczenia orbitalne…" (Tech/AI, UA.NEWS) — **zero wspólnych rdzeni nośnych, Jaccard 0,0**,
+wbrew zakazowi „ten sam temat ≠ ten sam event" w promptcie. Front zmienia wtedy id kafla
+(`item-`→`group-`) i tap przestaje otwierać artykuł — stąd wrażenie zniknięcia.
+- ✅ **Dane naprawione** (brief-site `9b5e505ab`): Lockheed z powrotem solo, Musk jako osobny post
+  w evening. Przeżyło kolejne biegi bota.
+- ✅ **Bot naprawiony** (FinancialNewsBot #174, `591f033`, deploy zweryfikowany na biegu 22:30 —
+  0 błędów kompilacji): (a) bramka `SpojneTematycznie` w pętli crossDose (dotąd NIE MIAŁA ŻADNEJ
+  weryfikacji tematycznej — in-dose ma ją od 02.08); (b) fix GUBIENIA newsa przy pełnym klastrze
+  (`uzyteNowe.Add` szedł przed capem 4 subów → odrzucony item nie trafiał ani do klastra, ani do
+  fallbacku; realna ofiara z 14.08 rano: „Pentagon ogłosił zawarcie umów z Northrop Grumman…").
+  Szczegóły i zasady: `FinancialNewsBot/CLAUDE.md`, sekcja o cross-dose merge.
+- 👀 **PO DEPLOYU OBEJRZEĆ** (bramka jeszcze nie miała okazji zadziałać — cross-dose zdarza się
+  kilka razy/dobę): log `bez wspólnego rdzenia tematycznego z klastrem … — publikuję osobno`.
+  Ma ciąć parasole (wzorzec: Musk↔Lockheed), a przepuszczać to samo wydarzenie (Pentagon↔Lockheed —
+  oba zmierzone na realnych funkcjach z `Bot.dll`). Fałszywy odrzut = news wychodzi osobno, nic nie ginie.
+- ℹ️ Kopia kotwicy w `subItems[0]` (tekst == kotwica, ~19% klastrów, mierzone 21/110) to **CELOWY
+  projekt, nie bug** — kontrakt „subItems = wszystkie ujęcia łącznie z ujęciem kotwicy" (confirmCount,
+  render, promocja RetroCleanup). Nie „naprawiać".
+
+## 🖼️ 14.08: banery X w `marka/` mają logo przesunięte ~90–94 px w prawo — DECYZJA OTWARTA
+
+Zgłoszenie właściciela (zrzut profilu @brifup: logo ucieka w prawo pod przyciski aplikacji).
+Zmierzone: wszystkie 4 pliki `marka/x-baner*.png` mają środek treści na ~840–844 px zamiast 750
+(marginesy np. 607/418). Wyśrodkowane wersje wygenerowane przesunięciem PIKSELI (nie rerenderem —
+fonty z CDN, ta sama zasada co przy `og-image.png`) i wysłane właścicielowi.
+- OTWARTE: (a) właściciel wgrywa baner na X sam; (b) czy nadpisać pliki w `marka/` wersją
+  wyśrodkowaną — nie zrobione bez decyzji; (c) błąd jest we WSPÓLNYM ŹRÓDLE (wszystkie 4 pliki
+  identycznie przesunięte) — poprawić też w pliku źródłowym (Figma/Canva?), inaczej następny
+  eksport wróci krzywy.
+
+## ⏰ 14.08 wieczór: czujnik nagłówków OBSERWUJE — analiza ~16.08 (przypomnienie ZAUTOMATYZOWANE), decyzja o wdrożeniu OTWARTA
+
+📊 **Pierwsza próbka (42 min, 18:30–19:12 warszawskiego, piątek — szczyt sesji US, ZA MAŁO na
+decyzję):** 39× `NOWY`, 0 błędów; conditional GET tylko 9% (15/168 pobrań); mostki X (Juice,
+Polymarket, PolymarketMoney, Kalshi, Kobeissi) = 28/39 nagłówków (72%). Symulacja wyzwoleń silnika:
+odstęp 5 min → ~10/h, 10 min → ~5,7/h, 15 min → ~4,3/h (dziś cron daje 2/h) — ryzyko „biegów będzie
+WIĘCEJ, koszt DeepSeeka ↑" pierwsze dane potwierdzają. Dwie hipotezy na pełną analizę:
+(a) realna zwłoka wykrycia ~2,5–3 min, nie 2 (próg `FAST=120` s zderza się z siatką crona 60 s;
+fix jedną liczbą `FAST=110`); (b) `nowe>0` to zły wyzwalacz — Juice wyrzucił 11 nagłówków
+w 1 sekundę, w tym 7 zdań z JEDNEJ wypowiedzi Goolsbee'ego (próg musi liczyć wydarzenia, nie linie).
+⏰ **Przypomnienie ustawione automatycznie:** scheduled task `brifup-czujnik-analiza` na Macu
+właściciela, odpala się 16.08 9:00 London = 10:00 Warszawa (jednorazowo; wymaga włączonej aplikacji
+Claude — przy zamkniętej odpali przy najbliższym starcie). Prompt zadania jest samowystarczalny.
 
 Pomysł właściciela: zamiast sztywnego crona `*/30` bot ma reagować na nowe nagłówki zdarzeniowo.
 Wybrany wariant A (tani poller-czujnik + wyzwalacz silnika), ale NAJPIERW pomiar — właściciel:
@@ -15,8 +72,8 @@ Wybrany wariant A (tani poller-czujnik + wyzwalacz silnika), ale NAJPIERW pomiar
 - ✅ **Zrobione 2/2 — czujnik `/root/czujnik.py`** w trybie CZYSTO OBSERWACYJNYM: cron co 1 min,
   16 feedów 1:1 z botem (fast 2 min / slow 10 min, conditional GET, nigdy artykuły), loguje
   `NOWY [feed] tytuł` do `/var/log/brif_czujnik.log`, stan w `/root/czujnik_state/`. NICZEGO nie wyzwala.
-- ⏰ **DO ZROBIENIA ~16–17.08 (PRZYPOMNIEĆ WŁAŚCICIELOWI):** analiza linii `NOWY` z 2–3 dób →
-  ile wyzwoleń silnika/dobę przy min-odstępie 5/10/15 min → decyzja o podpięciu wyzwalacza.
+- ⏰ **DO ZROBIENIA ~16.08 (przypomnienie ZAUTOMATYZOWANE — patrz nagłówek sekcji):** analiza linii
+  `NOWY` z 2–3 dób → ile wyzwoleń silnika/dobę przy min-odstępie 5/10/15 min → decyzja o wyzwalaczu.
 - 📊 Zmierzone przy instalacji: conditional GET honoruje tylko 5/16 feedów; **rss.app zawsze pełne 200**
   (~25 KB) → przy wdrożeniu nie schodzić z interwałem rss.app poniżej 2 min (IP już dostaje 403/429).
 - ⚠️ Znane ryzyka wdrożenia (spisane też w `FinancialNewsBot/CLAUDE.md`, sekcja o czujniku): w dzień
