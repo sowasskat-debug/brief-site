@@ -251,10 +251,30 @@ błędna. Angielskie oryginały z dziennika lejka:
   więc na pytanie „czy związane z nagłówkiem o sojuszu?" uczciwa odpowiedź brzmi TAK. Był związany —
   opisywał inne zdarzenie. **Czwarty raz ta sama klasa** (po `CzyZapowiedzWieluTematow`, parasolu
   „małpy i SpaceX", cytacie-porównaniu z Zaporoża): sygnał policzony poprawnie, mierzył nie to, co trzeba.
-- ⚠️ **NIEZWERYFIKOWANE:** polski nagłówek tego newsa NIE występuje w logu Hetznera, więc nie ma dowodu,
-  czy bramka „fakty niezwiązane" w ogóle się przy nim odpaliła i przepuściła, czy nie została wywołana.
-  Rozstrzygnie log z tego biegu albo powtórzenie enrichu na tym nagłówku. **Zacznij od tego** — bo jeśli
-  bramka nie była wołana, cała hipoteza o „związane vs to samo wydarzenie" jest nietrafiona.
+- ✅ **ZWERYFIKOWANE 14.08 (nocna sesja) — bramka BYŁA wołana i orzekła `related=true`. Bez logu,
+  strukturalnie:** bramka to pole `related` WEWNĄTRZ `DeepSeekWriteArticle` (Runner.cs ~7082), a linia
+  „fakty niezwiązane…" loguje się WYŁĄCZNIE przy `related=false` — więc cisza w logu niczego nie
+  dowodzi. Rozstrzyga kod + dane: `SourceUrl` przypisuje się w CAŁYM bocie w 3 miejscach i każde stoi
+  za `related==true` (`ProbujFindery` L4755 wprost; L4504/4547 kopiują wynik `EnrichItem`, czyli tę samą
+  ścieżkę). Opublikowany item (odzyskany z historii gita, commit `39bcd81`) MA `source_url` vietnam.vn
+  + artykuł ⇒ bramka przepuściła. **Hipoteza „nie była wołana" obalona.**
+  - ⚠️ **KOREKTA HIPOTEZY „związane vs to samo wydarzenie":** prompt JUŻ pyta o „DOKŁADNIE TO SAMO
+    konkretne wydarzenie" z fail-closed („przy jakichkolwiek wątpliwościach related=false") — pytanie
+    jest dobre, zawiódł WERDYKT na materiale splątanym: artykuł vietnam.vn opisuje start z Wonsan,
+    ale RAMUJE go jako „sygnał przed ćwiczeniami USA–Korea" i wprost wymienia „więzy wojskowe" —
+    czyli fakty zawierały temat nagłówka jako TŁO. Klasyczne „prompt negocjuje". Przeformułowanie
+    promptu to NIE jest naprawa pierwszego wyboru.
+  - 💡 **Kandydat deterministyczny do ZMIERZENIA (nie wdrożony):** `published_at` artykułu = 13.08
+    03:10, a nagłówek KCNA wszedł feedem 21:30 — źródło **starsze o ~18 h od depeszy** fizycznie nie
+    może opisywać wydarzenia, o którym depesza dopiero informuje. Prefiltr „artykuł starszy niż
+    nagłówek feedu o >N h → zaostrzone pytanie/odrzut kandydata" jest tani i mierzalny na archiwum
+    (`data_z_artykulu` już płynie). Zmierzyć rozkład, zanim cokolwiek stanie w potoku.
+  - ℹ️ Bramka po OPISACH z 14.08 dziś by ten dubel PRZECHWYCIŁA (opis-J 0,231/0,171/0,162 ≥ 0,15 →
+    werdykt modelu) — ale leczy OBJAW (dubel), nie przyczynę (cudzy artykuł pod nagłówkiem): news
+    o oświadczeniu KCNA i tak by przepadł, tyle że po cichu jako powtórka.
+  - ℹ️ Drobne znalezisko przy okazji: item ma `tytul_oryginalny = null`, mimo że wszedł Financial Juice
+    (angielski oryginał był w lejku) — mapa `_tytulyOryginalne` nie dopięła się do tego itemu.
+    Nie zbadane głębiej; jeśli powtarzalne, EN-fallback enrichu traci wejście, które miał mieć.
 - ⚠️ **METODA, NIE JEDNORAZOWA WPADKA: przy podejrzeniu powtórki sprawdź NAJPIERW angielskie oryginały
   w `lejek` (pola `tytul` + `feed`), zanim policzysz cokolwiek na polskich tytułach i opisach.** Polska
   warstwa jest wygenerowana przez nasz model i potrafi upodobnić do siebie dwa różne wydarzenia albo
