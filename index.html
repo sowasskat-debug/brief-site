@@ -2456,14 +2456,15 @@ function toggleTheme() {
 // Jeden próg zamiast dawnych dwóch (24 px pasek / 60 px odświeżanie): panel jest dużym elementem,
 // więc otwieranie go w trakcie ruchu palca szarpałoby widokiem — otwiera się na PUSZCZENIE.
 // 🔴 CZUŁOŚĆ ZDJĘTA 2026-08-14 (zgłoszenie właściciela: „to pociągnięcie w dół jest zbyt czułe"):
-// próg 60 → 120 px (60 px ≈ 7 mm — otwierało się od drgnięcia przy top story; 120 px to zamierzone
-// pociągnięcie) + GUARD KIERUNKU `dy > |dx| * 1.5` — dotąd liczyła się sama oś pionowa, więc ukośne
-// machnięcie (np. zamiana dawki swipe'em zahaczająca o pion) też otwierało panel. Wskaźnik `↓ Wątki`
+// próg 60 → 120 → 150 px (60 px ≈ 7 mm — otwierało się od drgnięcia przy top story; 150 px to
+// zamierzone, pełne pociągnięcie — drugie „jeszcze troszkę zwiększ" od właściciela tego samego dnia)
+// + GUARD KIERUNKU `dy > |dx| * 1.5` — dotąd liczyła się sama oś pionowa, więc ukośne machnięcie
+// (np. zamiana dawki swipe'em zahaczająca o pion) też otwierało panel. Wskaźnik `↓ Wątki`
 // pokazuje się od 24 px zamiast 10 — mniej migotania przy zwykłym dotyku.
 (function() {
   const ptr = document.getElementById('ptr');
   const area = document.getElementById('scrollArea');
-  const PROG = 120;
+  const PROG = 150;
   const zamierzone = (dy, dx) => dy > Math.abs(dx) * 1.5;   // pion musi wyraźnie dominować
   let startY = 0, startX = 0, pulling = false;
 

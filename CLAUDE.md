@@ -1008,7 +1008,9 @@ Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same w�
   Odświeżanie zostaje pod przyciskiem ↻ w topbarze, a `liveTick` (60 s) i tak dociąga zmiany sam,
   więc znika skrót gestem, nie dostęp do świeżych danych.
 - 🔴 **CZUŁOŚĆ ZDJĘTA 2026-08-14** (zgłoszenie właściciela: *„to pociągnięcie w dół jest zbyt czułe"*):
-  próg **60 → 120 px** (60 px ≈ 7 mm otwierało panel od drgnięcia przy top story) + **guard kierunku
+  próg **60 → 120 → 150 px** (60 px ≈ 7 mm otwierało panel od drgnięcia przy top story; 150 = drugie
+  „jeszcze troszkę zwiększ" od właściciela tego samego wieczoru — próg jest KALIBROWANY jego kciukiem,
+  nie pomiarem, więc kolejne korekty to jedna stała `PROG`) + **guard kierunku
   `dy > |dx| · 1,5`** — dotąd liczyła się sama oś pionowa, więc ukośne machnięcie (np. zmiana dawki
   swipe'em zahaczająca o pion) też otwierało panel. Wskaźnik `↓ Wątki` pokazuje się od 24 px zamiast 10.
   ✅ Zweryfikowane w Chromium realnym dotykiem (CDP `Input.dispatchTouchEvent`, 390 px): 80 px pion →
