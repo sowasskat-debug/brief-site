@@ -1470,6 +1470,41 @@ rozwijać"* (dla OBU list: legendy „Sagi na wykresie" i osi „Wątek tematu")
   **2 z fallbackiem** (etapy, których tytuł przepisano po publikacji — znana klasa), **0 błędów JS**;
   kolejność legendy `5, 4, ↳, ↳, ↳, 3, 2, 1` przy datach `12.08 → 06.08`.
 
+## Powrót po ≥5 min = NOWE WEJŚCIE — `wznowApke` / `wznowJakNoweWejscie` (2026-08-14)
+Życzenie właściciela: *„jeżeli ktoś wróci do aplikacji po 5 minutach i wyżej, otwiera mu się
+odświeżona wersja na top story w aktualnej dawce"*.
+- 🔴 **Dotąd KAŻDY powrót szedł jedną ścieżką** (`syncDoseToTime`) — po 10 sekundach i po 3 godzinach
+  tak samo: cicha podmiana W MIEJSCU z zachowaniem pozycji scrolla i otwartego artykułu. Dla krótkiego
+  przełączenia aplikacji to jest właściwe i było zrobione ŚWIADOMIE 16.07 (zgłoszenie o migotaniu
+  „stare artykuły, potem nowe"). Po dłuższej przerwie czytelnik wraca za to do widoku, którego już
+  nie pamięta — w połowie feedu albo w rozwiniętym artykule.
+- **Próg `PRZERWA_NOWE_WEJSCIE_MS` = 5 min.** Poniżej — zachowanie bez zmian (to jest warunek, żeby
+  poprawka nie cofnęła tamtej z 16.07). Powyżej — `wznowJakNoweWejscie`: świeże dane + top story
+  aktualnej dawki, czyli dokładnie to, co widzi ktoś, kto właśnie wszedł.
+- 🔴 **Znacznik wyjścia stawiamy w DWÓCH miejscach.** Apka znika z oczu na dwa sposoby: przełączenie
+  aplikacji / zgaszenie ekranu daje `visibilitychange`, a wyjście „wstecz" do bfcache daje `pagehide`
+  i wtedy `visibilitychange` na ukrycie **może nie paść wcale**. Bez `pagehide` powrót z bfcache
+  liczyłby przerwę od poprzedniego ukrycia albo od zera, więc próg odpalałby się losowo.
+- **Ta sama dawka → `pollLiveUpdates()`, NIE `loadDose(force)`.** Pobiera briefs.json i podmienia
+  tylko przy zmienionym podpisie treści, więc świeżość jest, a skeletonu i migotania nie ma.
+  Powrót na początek dokładamy PO nim — `pollLiveUpdates` sam PRZYWRACA zapamiętaną pozycję scrolla,
+  więc odwrotna kolejność zostawiłaby czytelnika dokładnie tam, skąd wyszedł.
+- ⚠️ **`dtCurrentItemId = null` MUSI stać PRZED renderem** — `renderDesktop` otwiera top story tylko
+  przy pustym `dtCurrentItemId` (ta sama pułapka co w `refresh()`).
+- ⚠️ **Czytelnik w NAKŁADCE ARCHIWUM zostaje tam, gdzie był** — to wybrany dzień z przeszłości, więc
+  wyrzucenie go na dzisiejsze top story byłoby zabraniem mu tego, co sam otworzył. Wtedy leci samo
+  `syncDoseToTime()`, żeby dawka pod spodem nie została w tyle.
+- **Panel wątków zamyka się** (przez `wrocNaPoczatekWidoku`) — bez tego „na górze" znaczyłoby górę
+  panelu, czyli NAJSTARSZĄ sagę. Trzecie wejście do tej samej reguły, obok logo i ↻.
+- 📊 Zweryfikowane w Chromium (podmieniony `Date.now` + wymuszony `visibilitychange`), **0 błędów JS**:
+  mobile 30 s → `scrollTop` 2200 **bez zmian**; mobile 6 min → 2200 → **0**; panel wątków otwarty
+  + 6 min → **zamknięty**; desktop 6 min → panel szczegółów wraca z pozycji 4. na `items[0]`
+  (potwierdzone tytułem z `briefs.json`, nie samym „coś się zmieniło").
+- ⚠️ **Ścieżka ZMIANY DAWKI w tej przerwie** (powrót po 11:00 albo po 17:00) idzie przez `switchDose`
+  jak dotąd, ale w teście się nie odpaliła — `getCurrentDose` czyta zegar przez `new Date()`, a podmiana
+  `Date.now` tego nie rusza. Logika jest ta sama co przed zmianą, doszło tylko zerowanie
+  `dtCurrentItemId` i powrót na górę.
+
 ## ↻ = odśwież **i wróć na początek** — `wrocNaPoczatekWidoku` (2026-08-13)
 Zgłoszenie właściciela: *„przycisk odświeżyć w prawym górnym rogu zawsze cofa użytkownika do top story
 na początku aktualnej dawki, nawet jak jesteśmy przy wątkach"* — decyzja: tak ma być, ↻ jest przyciskiem

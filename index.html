@@ -3333,17 +3333,70 @@ function syncDoseToTime() {
     loadDose(currentDose, true);   // brak danych w pamięci → pełne załadowanie ze skeletonem
   }
 }
+// 🔴 DŁUŻSZA NIEOBECNOŚĆ = NOWE WEJŚCIE (życzenie właściciela 2026-08-14: „jeżeli ktoś wróci do
+// aplikacji po 5 minutach i wyżej, otwiera mu się odświeżona wersja na top story w aktualnej dawce").
+// Dotąd KAŻDY powrót — po 10 sekundach i po 3 godzinach — szedł tą samą ścieżką `syncDoseToTime`,
+// czyli cichą podmianą W MIEJSCU z zachowaniem pozycji scrolla. Dla krótkiego przełączenia aplikacji
+// to jest właściwe (i tak było zrobione świadomie 16.07, żeby nie migotało), ale po dłuższej przerwie
+// czytelnik wraca do widoku, którego już nie pamięta — w połowie feedu albo w rozwiniętym artykule.
+const PRZERWA_NOWE_WEJSCIE_MS = 5 * 60 * 1000;
+let ukrytoOMs = 0;
+
+// ⚠️ Znacznik stawiamy w DWÓCH miejscach, bo apka znika z oczu na dwa różne sposoby: przełączenie
+// aplikacji/zgaszenie ekranu daje `visibilitychange`, a wyjście „wstecz" do bfcache daje `pagehide`
+// i wtedy `visibilitychange` na ukrycie może nie paść wcale. Bez `pagehide` powrót z bfcache liczyłby
+// przerwę od poprzedniego ukrycia (albo od zera) i próg 5 min odpalałby się losowo.
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    checkAppShellUpdate();   // nowa wersja apki? → przeładuj
-    syncDoseToTime();        // dawka zgodna z aktualną godziną + świeże dane
-  }
+  if (document.visibilityState === 'hidden') { ukrytoOMs = Date.now(); return; }
+  checkAppShellUpdate();   // nowa wersja apki? → przeładuj
+  wznowApke();
 });
+window.addEventListener('pagehide', () => { ukrytoOMs = Date.now(); });
 window.addEventListener('pageshow', (event) => {
-  if (event.persisted) {
-    syncDoseToTime();
-  }
+  if (event.persisted) wznowApke();
 });
+
+function wznowApke() {
+  const przerwa = ukrytoOMs ? Date.now() - ukrytoOMs : 0;
+  ukrytoOMs = 0;
+  if (przerwa >= PRZERWA_NOWE_WEJSCIE_MS) wznowJakNoweWejscie();
+  else syncDoseToTime();   // krótka przerwa → jak dotąd: podmiana w miejscu, zero migotania
+}
+
+// Powrót po dłuższej przerwie: świeże dane + top story aktualnej dawki, czyli to samo, co widzi ktoś,
+// kto właśnie wszedł. Ten sam zestaw kroków co `logoDoAktualnejDawki` i `refresh()` — jedno zachowanie
+// „wróć na początek" w trzech wejściach.
+async function wznowJakNoweWejscie() {
+  // ⚠️ Czytelnik w NAKŁADCE ARCHIWUM zostaje tam, gdzie był. Archiwum to wybrany dzień z przeszłości,
+  // więc wyrzucenie go na dzisiejsze top story byłoby zabraniem mu tego, co sam otworzył — a nie
+  // powrotem do świeżości. `pollLiveUpdates` pilnuje tego samego warunku po swojej stronie.
+  const overlay = document.getElementById('archiveOverlay');
+  if (overlay && overlay.classList.contains('show')) { syncDoseToTime(); return; }
+
+  const teraz = getCurrentDose();
+  // Zerowane PRZED renderem — `renderDesktop` otwiera top story wyłącznie przy pustym `dtCurrentItemId`,
+  // więc ustawienie tego po załadowaniu byłoby spóźnione o cały render (ta sama pułapka co w `refresh`).
+  dtCurrentItemId = null;
+
+  if (teraz !== currentDose) {
+    delete cache[teraz];   // przez przerwę mogła zmienić się dawka (np. powrót po 11:00 albo po 17:00)
+    switchDose(teraz);     // pełne załadowanie ze skeletonem; renderDesktop otworzy top story sam
+  } else if (cache[currentDose]) {
+    // Świeże dane bez skeletonu: `pollLiveUpdates` pobiera briefs.json i podmienia TYLKO gdy podpis
+    // treści się zmienił. Migotanie „stare artykuły, potem nowe" (zgłoszone 16.07) tu nie wraca —
+    // po prostu dokładamy powrót na początek, którego ta ścieżka nigdy nie miała.
+    await pollLiveUpdates();
+    const top = (cache[currentDose] || [])[0];
+    if (top && dtItemsMap[top.id]) dtPickItem(top.id);
+  } else {
+    await loadDose(currentDose, true);   // brak danych w pamięci → pełne załadowanie
+  }
+
+  // Na końcu, bo `pollLiveUpdates` PRZYWRACA zapamiętaną pozycję scrolla po re-renderze — bez tego
+  // wracalibyśmy dokładnie tam, skąd czytelnik wyszedł. Zamyka też panel wątków (leży NAD feedem,
+  // więc „na górze" bez tego znaczyłoby górę panelu, czyli najstarszą sagę).
+  wrocNaPoczatekWidoku();
+}
 
 // ══ Auto-odświeżanie na żywo (jak FinancialJuice) ══════════════════════════
 // Gdy karta jest widoczna, co interwał sprawdzamy briefs.json bieżącej dawki. Jeśli DOSZŁY
