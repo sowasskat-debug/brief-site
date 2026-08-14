@@ -1003,10 +1003,18 @@ pokazują TE SAME dane w TEJ SAMEJ konwencji — zmieniając jedną, sprawdź po
 Życzenie właściciela: *„zamiast odświeżania i tego małego panelu wątku niech pojawią się wątki
 w całości, tak jak na osobnym linku, i tylko te, które matchują z porannym/wieczornym"*.
 Pasek z 07.08 był wyłącznie linkiem do `/watki` — teraz gest oddaje same wątki, na miejscu.
-- 🔴 **GEST PRZESTAŁ ODŚWIEŻAĆ** (decyzja właściciela). Jeden próg (60 px) zamiast dawnych dwóch,
+- 🔴 **GEST PRZESTAŁ ODŚWIEŻAĆ** (decyzja właściciela). Jeden próg zamiast dawnych dwóch,
   panel otwiera się na PUSZCZENIE — otwieranie dużego bloku w trakcie ruchu palca szarpałoby widokiem.
   Odświeżanie zostaje pod przyciskiem ↻ w topbarze, a `liveTick` (60 s) i tak dociąga zmiany sam,
   więc znika skrót gestem, nie dostęp do świeżych danych.
+- 🔴 **CZUŁOŚĆ ZDJĘTA 2026-08-14** (zgłoszenie właściciela: *„to pociągnięcie w dół jest zbyt czułe"*):
+  próg **60 → 120 px** (60 px ≈ 7 mm otwierało panel od drgnięcia przy top story) + **guard kierunku
+  `dy > |dx| · 1,5`** — dotąd liczyła się sama oś pionowa, więc ukośne machnięcie (np. zmiana dawki
+  swipe'em zahaczająca o pion) też otwierało panel. Wskaźnik `↓ Wątki` pokazuje się od 24 px zamiast 10.
+  ✅ Zweryfikowane w Chromium realnym dotykiem (CDP `Input.dispatchTouchEvent`, 390 px): 80 px pion →
+  zamknięty, 160 px pion → otwarty + kotwica na najnowszej sadze, ukos 160/140 → zamknięty, zamierzony
+  lekki ukos 200/60 → otwarty, start przy `scrollTop>0` → zamknięty; 0 błędów JS. SW → v122.
+  ⚠️ Zmieniając próg ponownie, testuj DOTYKIEM, nie kółkiem — znana pułapka z sekcji o stepperze.
 - 🔴 **KOLEJNOŚĆ SAG ODWROTNA NIŻ NA `/watki` — i to jest zamierzone.** Panel wysuwa się NAD feedem,
   więc najnowszy wątek stoi na jego DOLE (pierwszy pod ręką po geście), a im wyżej, tym starsze:
   przewijanie w górę = cofanie się w czasie. Stąd `watkiDlaDawki` sortuje **rosnąco** po ostatnim
