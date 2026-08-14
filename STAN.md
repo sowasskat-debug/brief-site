@@ -1,7 +1,34 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-13 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-14 (dzień)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+## 🔴 14.08: klasa z punktu 12 UDERZYŁA NA PRODUKCJI dzień po diagnozie — NAPRAWIONE (bot, PR z tej sesji)
+
+Zgłoszenie właściciela („karygodny fatalny błąd", zrzuty): saga paliwowa **w647** dostała TRZY kafle
+jednego wydarzenia w ~20 h — 13.08 16:03 „Rząd obniża VAT na paliwa do 8 proc. …, decyzja zamiast
+rozważań", 14.08 10:32 „Premier Donald Tusk zapowiada ponowne wprowadzenie mechanizmów obniżających
+ceny paliw" (COFNIECIE: zapowiedź po opublikowanej decyzji), 14.08 11:34 „Wracamy do cen maksymalnych…"
+(TOP STORY popołudniówki). 📊 Tytuły tych par: **0,053 / 0,000 / 0,056** — dokładnie klasa „żadna miara
+słów tego nie łapie" z punktu 12.
+- **Naprawa (bot): bramka cross-bieg PO OPISACH** — trzeci selektor kandydatów dla `OcenEtapKontynuacji`:
+  `PROG_POWTORKI_PO_OPISIE = 0,15` na artykułach (+ wspólny rdzeń nośny), kandydaci z bieżącego
+  `briefs.json`, werdykt zostaje przy modelu z memo sagi i fail-safe. Opisy tych samych par mierzą
+  **0,171 / 0,214**, Anthropic z pkt 12 **0,160** — czyli 0,15 domyka OBIE klasy z punktu 12 naraz.
+  Koszt zmierzony: ~17 małych calli/dzień. Szczegóły i liczniki: `FinancialNewsBot/CLAUDE.md`,
+  sekcja „Trzy kafle jednego wydarzenia w 20 h".
+- **Drugi front tego samego incydentu:** RetroMerge o 11:34 POPRAWNIE skleił oba dzisiejsze kafle,
+  a RetroCleanup o 11:39 rozebrał klaster i OKALECZYŁ poranną pozycję (src/reach/impact → None).
+  Przyczyna: model wpisał item i do `groups`, i do `crossDose` (duplikacja w dwóch dawkach) + okrojona
+  kopia kotwicy promowana przy zwijaniu 1-elem. klastra. Oba bugi naprawione (guard + pełna kopia pól).
+- **Dane naprawione w tym samym PR brief-site:** okaleczony duplikat (morning, Tusk) usunięty,
+  węzeł sagi w647 + `seen` przepięte na kafel Bankiera („Wracamy do cen maksymalnych…").
+  ⚠️ briefs.json/threads.json commituje bot co ~30 min — przy mergu tego PR spodziewaj się konfliktu
+  na tych dwóch plikach i przenieś TĘ SAMĄ edycję na świeży main (poprawka jest w OSOBNYM commicie).
+- **PO DEPLOYU OBEJRZEĆ:** log „Pominięto powtórkę wykrytą PO OPISIE" + liczniki
+  `cross_bieg_kandydat_po_opisie` (~17/dzień to norma z pomiaru) vs `cross_bieg_powtorka_po_opisie`/
+  `cross_bieg_cofniecie_po_opisie`. Gdyby realne eskalacje znikały — zawęź prompt werdyktu,
+  NIE ruszaj progu 0,15 (zmierzony na recall).
 
 > 🔴 **2026-08-07: `STAN.md`, `CLAUDE.md` i diagnostyka są już 404 pod brifup.com** (Jekyll `exclude`
 > w `_config.yml`). Dalej widać je w PUBLICZNYM repo na GitHubie — to nie są pliki tajne, tylko zdjęte
@@ -68,7 +95,11 @@ odświeżona wersja na top story w aktualnej dawce"*. Front: `wznowApke` + `wzno
 - ⚠️ Ścieżka zmiany dawki w przerwie (powrót po 11:00/17:00) nietestowana — `getCurrentDose` czyta
   `new Date()`, więc podmiana `Date.now` w teście jej nie ruszyła. Logika jak przed zmianą.
 
-## 🔴 12. DUBEL W FEEDZIE: ten sam raport dwa razy — NIENAPRAWIONE, 4 ślepe uliczki zmierzone (13.08 noc)
+## 🔴 12. DUBEL W FEEDZIE: ten sam raport dwa razy — ✅ NAPRAWIONE 14.08 (bramka po opisach, patrz sekcja na górze)
+> ⚠️ **Aktualizacja 14.08:** obie drogi z „Kierunku na następną sesję" zrealizowane JEDNĄ bramką —
+> podobieństwo OPISÓW przy progu **0,15** służy wyłącznie jako SELEKTOR KANDYDATÓW dla modelu
+> (nie deterministyczne cięcie przy 0,30, które łapało tylko 29% dubli). Anthropic (opis-J 0,160)
+> i trójka paliwowa (0,171/0,214) mieszczą się w progu. Pomiary niżej zostają jako historia diagnozy.
 Zgłoszenie właściciela: *„podobny news już chyba był"*. Był — ten sam raport Anthropica o agentach
 Claude wyszedł **05:30 (poranna)** i **23:03 (wieczorna)**. Pozycja wieczorna usunięta ręcznie z
 `briefs.json`.
