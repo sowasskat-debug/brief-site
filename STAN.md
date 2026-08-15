@@ -12,6 +12,10 @@ batchem rodziny `CheckKalshiBatched` przez furtkę „duże transakcje" w REGULE
   feedu, NIE w `WSPOLNE_ODRZUCENIA` (precedens BBC Science). Kontrola pozytywów: rundy dużych firm
   i wielkie emisje obligacji przechodzą dalej. Szczegóły: `FinancialNewsBot/CLAUDE.md`,
   sekcja „Udział banku w kredycie syndykowanym ≠ wydarzenie".
+- 🔴 **Doprecyzowanie właściciela (chwilę po mergu): „chodzi o to, że to japońskie, a nie europejskie"**
+  — kryterium jest GEOGRAFIA finansowanego projektu, nie sam kredyt syndykowany. Reguła przepisana:
+  daleki świat bez haczyka na PL/UE = odrzut, ale finansowanie dużego projektu energetycznego
+  w Polsce/Europie MOŻE przejść. Nie zawężać tej furtki przy kolejnych zgłoszeniach.
 - Dane: kafel zdjęty z popołudniowej, jednowęzłowa saga w946 usunięta (tekst został w `seen`),
   wpis dopisany do `rejected.json` (REGUŁA 0).
 - ⚠️ To zmiana promptu (miękka). Gdyby klasa wróciła — bramka deterministyczna wzorem
