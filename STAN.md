@@ -1,7 +1,32 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-14 (późny wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-15 (południe)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+## ✅ 15.08: ten sam news po SZEŚCIU dniach — okno bramki było za krótkie (bot + dane, PR z tej sesji)
+
+Zgłoszenie właściciela ze zrzutu osi wątku: saga **w719** miała trzy etapy, z czego dwa to TEN SAM news
+— 09.08 „Netanjahu odrzuca 15-punktowy plan pokojowy dla Gazy" i 15.08 „Netanjahu odrzucił 15-punktowy
+plan pokojowy Trumpa dla Strefy Gazy" (Vietnam.vn, przedruk sprzed tygodnia).
+- 📊 **Tytuły tej pary: 0,600 przy progu 0,18** — miara zadziałałaby bez zarzutu, tylko **para nigdy do
+  niej nie dotarła**: bramka czytała 3 DNI wstecz, a news był sprzed SZEŚCIU (plik miał zresztą retencję
+  5 dni, więc 09.08 fizycznie w nim nie było). Selektor po opisach (14.08) też nie mógł — jego okno to
+  bieżący `briefs.json`, czyli ~24-40 h; dla tej pary wyszło 0,148 przy progu 0,15.
+- 🔴 **To INNA klasa niż 14.08.** Tam miara mierzyła nie to, co trzeba; tu miara była doskonała, a
+  **materiału nie było w oknie**. Trzeci wariant rodziny „model nie miał JAK odpowiedzieć dobrze".
+- **Naprawa: czwarty selektor — okno DALEKIE (dni 4-7) z własnym progiem `PROG_POWTORKI_DALEKIE = 0,35`**,
+  retencja pliku 5 → 8 dni, kandydaci dopisywani do tej samej listy dla `OcenEtapKontynuacji`.
+  📊 Próg wybrany pomiarem na 4417 pozycjach z 38 dni: 0,18 → 13,4 dodatkowych wywołań/dobę (pasmo
+  0,18-0,35 to szum i realne nowe etapy sag), **0,35 → 0,9/dobę**, a zgłoszona para ma duży zapas.
+  Szczegóły: `FinancialNewsBot/CLAUDE.md`, sekcja „Ten sam news po SZEŚCIU dniach".
+- **Dane naprawione w tym samym PR:** pozycja z 15.08 usunięta z porannej dawki, węzeł zdjęty z sagi
+  w719 (zostają 2 etapy z 09.08); tekst ZOSTAJE w `seen`, żeby nie wrócił na oś.
+  ⚠️ `briefs.json`/`threads.json` commituje bot co ~30 min — przy mergu spodziewaj się konfliktu na
+  tych dwóch plikach i przenieś TĘ SAMĄ edycję na świeży main (poprawka jest w OSOBNYM commicie).
+- 👀 **PO DEPLOYU OBEJRZEĆ:** licznik `cross_bieg_kandydat_dalekie` (~1/dobę to norma z pomiaru) i to,
+  czy `cross_bieg_powtorka` nie zaczyna ciąć realnych kolejnych etapów trwających sag.
+  ⚠️ **Okno napełnia się dopiero po deployu** — `opublikowane_historia.txt` jest lokalny per-serwer
+  i miał retencję 5 dni, więc pełne 7 dni historii bot będzie miał po ~3 dobach.
 
 ## ✅ 14.08 noc: deep-link „nie przewija do posta" — NAPRAWIONE (front, PR z tej sesji)
 
