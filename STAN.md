@@ -3,6 +3,20 @@
 Zdjęcie stanu na **2026-08-15 (południe)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## ✅ 15.08 popołudnie: kafel Citi/kredyt syndykowany zdjęty + kontr-wskaźnik w feedzie Kalshi
+
+Zgłoszenie właściciela („zbyt mało istotne dla Polaka"): „Citi dołącza do konsorcjum finansującego
+kredytem syndykowanym 4,6 mld USD…" — citybiz (agregator komunikatów prasowych), reach 0, wszedł
+batchem rodziny `CheckKalshiBatched` przez furtkę „duże transakcje" w REGULE 2.
+- 📊 Klasa JEDNORAZOWA (1 trafienie na 46 dni / 5565 pozycji) → kontr-wskaźnik w prompcie jednego
+  feedu, NIE w `WSPOLNE_ODRZUCENIA` (precedens BBC Science). Kontrola pozytywów: rundy dużych firm
+  i wielkie emisje obligacji przechodzą dalej. Szczegóły: `FinancialNewsBot/CLAUDE.md`,
+  sekcja „Udział banku w kredycie syndykowanym ≠ wydarzenie".
+- Dane: kafel zdjęty z popołudniowej, jednowęzłowa saga w946 usunięta (tekst został w `seen`),
+  wpis dopisany do `rejected.json` (REGUŁA 0).
+- ⚠️ To zmiana promptu (miękka). Gdyby klasa wróciła — bramka deterministyczna wzorem
+  `_agregatZRaportu`, nie kolejne zdanie w prompcie.
+
 ## ✅ 15.08: ten sam news po SZEŚCIU dniach — okno bramki było za krótkie (bot + dane, PR z tej sesji)
 
 Zgłoszenie właściciela ze zrzutu osi wątku: saga **w719** miała trzy etapy, z czego dwa to TEN SAM news
