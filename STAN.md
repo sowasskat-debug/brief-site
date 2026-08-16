@@ -387,18 +387,25 @@ w przepływie — najpierw OSTRZEŻENIE, potem ZAPIS.**
 - **Czy ręczny post zjada slot z limitu 12/dobę?** Jeśli tak, wrzutki właściciela obniżają liczbę
   postów automatu; jeśli nie, może wyjść 12 + ile ręcznych.
 
-## 🔴 7. `impact` PRZECZY WŁASNEMU ARTYKUŁOWI — NIENAPRAWIONE (13.08)
-Znalezione przy zgłoszeniu o nudnym poście SanDiska (dawka wieczorna, poz. 0, `TradingNEWS`).
-- `article`: *„wzrósł o 3,34% po publikacji danych o inflacji CPI za lipiec 2026 (3,4% r/r…),
-  które **zbiegły się z prognozami**"*; `impact`: *„**CPI poniżej oczekiwań** (3,4% vs prognozy
-  wyższe)"*. **Jedno przeczy drugiemu**, a odczyt CPI nie ma nic wspólnego z kontraktami SanDiska —
-  artykuł dokleił ogólnorynkowy odczyt jako PRZYCZYNĘ ruchu jednej spółki. Ta wersja poszła na X.
-- 🔴 **Nikt nie pilnuje zgodności `impact` ↔ `article`.** Istnieje `CzyArtykulPrzeczyLiczbieWNaglowku`
-  (para nagłówek↔artykuł) i `LiczbyBezPokryciaWArtykule`, ale linia wpływu nie przechodzi przez żadną
-  bramkę spójności z tekstem, pod którym stoi.
-- Kandydat na naprawę: prefiltr deterministyczny (liczby nośne z `impact` muszą mieć pokrycie
-  w `article`) + wąski werdykt modelu na resztce — wzorzec 1:1 jak przy rozjeździe liczb w nagłówku.
-  **Najpierw ZMIERZ na archiwum**, ile par realnie się rozjeżdża.
+## ✅ 7. `impact` PRZECZY WŁASNEMU ARTYKUŁOWI — BRAMKA WDROŻONA (16.08, FinancialNewsBot#182)
+Znalezione przy zgłoszeniu o nudnym poście SanDiska (dawka wieczorna, poz. 0, `TradingNEWS`):
+`article` *„…które **zbiegły się z prognozami**"*, `impact` *„**CPI poniżej oczekiwań**"* — ta wersja
+poszła na X. Dotąd linia wpływu nie przechodziła przez żadną bramkę spójności z tekstem pod nią.
+- 📊 **Pomiar wykonany zgodnie z planem** (47 dni, 2572 pary impact+article, realne metody z `Bot.dll`):
+  klasa KIERUNKOWA („poniżej oczekiwań" × „zgodnie z konsensusem") — **3 trafienia, wszystkie
+  prawdziwe, 0 FP**; klasa LICZBOWA (liczba nośna bez pokrycia) — 16 przypadków, w połowie fałszywki
+  z zaokrągleń („904" vs „903,86") + jedna czysta fabrykacja (Caterpillar +41% pod newsem o SpaceX).
+- **Wdrożone: `SprawdzSpojnoscImpactu`** — prefiltr (regexy kierunkowe + liczby z TOLERANCJĄ
+  ZAOKRĄGLEŃ wobec facts+article+nagłówka) → werdykt modelu PRZECZY/MILCZY (etap
+  `brief-impact-rozjazd`, fail-safe MILCZY) → cięcie ogona wyjaśnienia po myślniku albo `impact=null`.
+  Wpięte na końcu `DeepSeekWriteArticle`, kryje Haiku i DeepSeeka. Szczegóły + zasady odczytu
+  liczników `impact_rozjazd_*`: `financialnewsbot/CLAUDE.md`, sekcja „`impact` nie może przeczyć…".
+- ⚠️ **Nietestowane na żywym DeepSeeku** — po deployu obejrzeć log `ROZJAZD IMPACT/TREŚĆ` i proporcje
+  liczników (podejrzeń ~0,4/dzień to norma z pomiaru; „potwierdzony" ≈ suma podejrzeń = prompt
+  werdyktu za szeroki).
+- ⚠️ **Czego bramka NIE łapie (świadomie):** doklejenia CPI jako PRZYCZYNY ruchu jednej spółki
+  w `article` (druga połowa zgłoszenia SanDiska — to wada opisu, nie linii wpływu) ani błędnego
+  KIERUNKU strzałki bez sprzeczności słownej (kierunek to osąd rynkowy modelu, nie weryfikowalny fakt).
 
 ## ⬜ 8. Jednoźródłowy news jako TOP STORY — do rozważenia (13.08)
 Ta sama pozycja SanDiska miała **`reach` = 1** i źródło `tradingnews.com` (blog giełdowy, w slugu URL
