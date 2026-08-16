@@ -57,3 +57,4 @@ exclude:
   - reczne.json  # kolejka ręcznych dodań — bot czyta ją przez Contents API, nie musi być publiczna
   - brief-health.html
   - maszynownia.html
+  - czujnik_analiza.txt  # TYMCZASOWY raport sondy czujnika nagłówków (16.08) — usunąć razem z plikiem
