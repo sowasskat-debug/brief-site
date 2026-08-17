@@ -1,7 +1,66 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-17 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-17 (późny wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+## 🔴 17.08 noc: SELEKCJA ZMYŚLIŁA 16 NEWSÓW — bramka pochodzenia `idx` (bot #188, ZMERGOWANE)
+
+Zgłoszenie właściciela ze zrzutu lejka (*„dlaczego nagle jest 19 z Bankieru i nie może znaleźć
+źródła, przecież bankier jest"*). **Ani jedno, ani drugie nie było prawdą.** Bieg 15:04, źródła
+zbiorcze: **4 kandydatów na wejściu → 20 „wybranych" na wyjściu, 16 ZMYŚLONYCH** z pamięci
+treningowej modelu (śledztwo SEC ws. Super Micro = wrzesień 2024, wyrok SN ws. TikToka = styczeń
+2025, „pierwsza sprzedaż robotów Optimus" = wydarzenie, które NIGDY nie zaszło).
+- 🔴 **PRZYCZYNA: selekcja to GENERACJA tekstu, nie filtr listy.** Nic architektonicznie nie
+  wymuszało, żeby wynik był podzbiorem wejścia, a `idx` był czystą diagnostyką („selekcji nie
+  blokuje"). Trójbramka sprawdza FORMĘ — zmyślony news napisany poprawną polszczyzną przechodzi ją
+  w całości. Wyzwalacz: mikroskopijna paczka (praca = 1% promptu, reszta to reguły + 100 nagłówków
+  historii), model „kontynuuje wzorzec" zamiast zwrócić `items:[]`.
+- 🔴 **„BANKIER (18)" W PANELU BYŁO KŁAMSTWEM ETYKIETY** — wpis syntetyczny „bez dopasowania idx"
+  dostawał feed PIERWSZEGO kandydata paczki, a Bankier stoi w niej pierwszy (dał 1 kandydata).
+  **Diagnozując lejek sprzed 17.08 nie wierz feedowi przy takim wpisie.** Naprawione na `"?"`.
+- 📊 **Zmierzone na CAŁYM logu Hetznera: 3 zdarzenia na ~500 biegów** (11.08 Predykcje 1→23,
+  14.08 zbiorcze 1→3, 17.08 zbiorcze 4→20), **zawsze przy paczce 1-4 kandydatów** — a takich
+  paczek są setki. Rzadkie, ale wraca. ⚠️ **W tym samym pomiarze „X Feed 1→20" to NIE fabrykacja**
+  (jeden kandydat X-feeda to cały skrót dnia) — licz wyłącznie ścieżki 1:1.
+- **Naprawa:** bramka pochodzenia w `SelekcjaJson` (idx w [1..N], unikalny, brakujący TNIE) na
+  5 ścieżkach 1:1 + jawny zakaz w `FORMAT_JSON_SELEKCJI` (jedyna ochrona X-feeda) + `Feed="?"`.
+  Szczegóły i zasady odczytu: `FinancialNewsBot/CLAUDE.md`, sekcja „Selekcja GENERUJE, nie filtruje".
+- 👀 **PO DEPLOYU OBEJRZEĆ:** licznik `selekcja_idx_bez_pokrycia` ma być ~zerowy.
+  🔴 **Ucięty nagłówek wyglądający na REALNY news w logu = łagodzić bramkę, nie ignorować** —
+  koszt jest permanentny (linki kandydatów palą się po selekcji, news nie wróci).
+- **Dane:** 16 fabrykacji zdjętych z poczekalni. Na stronę nie weszła ANI JEDNA (enrich nie znalazł
+  źródeł — 3 wyszukiwarki × 0 wyników — więc wszystkie wylądowały w poczekalni). ⚠️ **20 zmyślonych
+  nagłówków poszło jednak na Telegram** i tego nie odkręcimy — kanał jest przelotowy.
+
+## ✅ 17.08 noc: czujka dostała DRUGI STOPIEŃ + trzy kafle poprawione
+
+Pierwszy przebieg na całym wydaniu: **6 znalezisk → 3 po naprawach**, a zostały same fałszywki.
+- **Drugi stopień w `brifup-kontrola/CLAUDE.md`**: przy `liczby-naglowek` model rozstrzyga
+  **PRZECZY** (inna wartość / inne wydarzenie → raportuj głośno) vs **MILCZY** (liczba prawdziwa,
+  artykuł jej nie powtarza → jedno zdanie zbiorcze). Skrypt deterministyczny tego nie rozdzieli;
+  bot ma tę bramkę dwustopniową od 31.07. **Zero dodatkowych wywołań** — model routine'u i tak ma
+  te pozycje przed oczami.
+- **Anthropic „190 mld USD"** (znalezisko czujki z popołudnia): **nagłówek był PRAWDZIWY** — Amazon
+  wycenia pakiet na 190,4 mld USD w raporcie za II kw. (z 74,2 mld kwartał wcześniej, ~21% udziałów
+  przy 13 mld inwestycji). Zły był ARTYKUŁ (mówił wyłącznie o przychodach 11,5 mld) → wymieniony,
+  źródło The Motley Fool. **Tekst nietknięty, slug i stub zostają.**
+- **JPMorgan**: artykuł przeczył własnemu nagłówkowi (3,5% vs 4%). 965 mld → 1 bln to +3,63%,
+  więc artykuł mówi teraz „niespełna 4%". Tekst nietknięty.
+- **SPR ZDJĘTY**: liczby 5,3/293,4 mln nie do potwierdzenia (najnowszy odczyt EIA to 298,7 mln za
+  tydzień do 7.08), rok błędny (styczeń 1983, nie 1982), a artykuł był o tempie uwalniania rezerw
+  przez IEA. Trzy wady naraz → usunięcie uczciwsze niż zgadywanie. Tekst został w `seen`.
+- ⚠️ **Zostawione świadomie:** linia wpływu przy kaflu Anthropica mówi o Nasdaq/Nvidii (została po
+  starym artykule) — nie jest sprzeczna, więc czujka jej nie flaguje.
+
+## ✅ 17.08 noc: flagi krajów na Windowsie — NA PRODUKCJI (`42aedb35c`)
+
+Zgłoszenie z 15.08 (*„na Windowsie zamiast flag widać «PL»"*) leżało trzy dni gotowe
+i NIEZACOMMITOWANE. Wdrożone: `flagi.js` + font Twemoji (78 KB) ładowany **wyłącznie tam, gdzie
+system flag nie rysuje**, wykrywanie po szerokości glifu, SW → **v124**. Szczegóły i pułapki:
+`CLAUDE.md`, sekcja „Flagi krajów na Windowsie".
+- ⚠️ **PR #183 zmergowany LOKALNIE squashem** — GitHub miał tego wieczoru awarię i API PR-ów
+  oddawało 503 (sam push protokołem gita działał). PR został otwarty; **domknij go ręcznie**,
+  gdy API wróci.
 
 ## ✅ 17.08 wieczór: czujka godzinowa NIE DZIAŁAŁA od wdrożenia — naprawiona, skrypt w osobnym repo
 
