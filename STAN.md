@@ -1,7 +1,31 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-15 (południe)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-17 (przedpołudnie)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+## ✅ 17.08: cudzy artykuł pod nagłówkiem — dane naprawione (#180) + bramka w bocie (#184, ZMERGOWANE = deploy)
+
+Zgłoszenie właściciela (zrzut + „artykuł powinien być o awarii"): kafel **„Anthropic informuje
+o poważnej awarii Claude'a"** (awaria REALNA: 16.08 21:58–22:34 UTC, logowanie + 5 usług) miał artykuł
+t3n o **wodoznaku SynthID** — enrich podpiął gorący artykuł tej samej firmy, werdykt `related`
+przepuścił, a klastrowanie wsadziło awarię do parasola o wodoznaku. **Ta sama klasa co KCNA ×
+start rakiety z pkt 12 poniżej** — i to jest jej domknięcie.
+- **Dane (#180):** kafel awarii dostał artykuł z BleepingComputer (`text` nietknięty → slug/stub
+  zostają), klaster rozdzielony (watermark Mashable osobno), `threads.json` zsynchronizowany
+  (w994 → BC, ostatni węzeł w783 przepięty na tekst pozycji watermark + `seen`).
+- **Bot (#184):** bramka `ArtykulOInnymWydarzeniu` — wąski werdykt `OPISUJE`/`INNE` po KAŻDYM
+  `related=true` (polski nagłówek × polski artykuł + daty; `INNE` → kolejny finder, wzorzec bramki
+  osób; fail-safe → publikuj). 📊 **Oba kandydaty na prefiltr deterministyczny ZMIERZONE
+  i odrzucone — nie powtarzaj tych pomiarów:** „artykuł starszy o >6 h" ma **44,5% legalnych trafień**
+  (mediana wieku artykułu przy publikacji to 4,5 h — kandydat z pkt 12 obalony), „wspólne wyłącznie
+  encje" — 6,2% FP, a zgłoszony przypadek i tak przechodzi. Szczegóły: `FinancialNewsBot/CLAUDE.md`,
+  sekcja „Cudzy artykuł pod nagłówkiem".
+- 👀 **PO DEPLOYU OBEJRZEĆ:** proporcję `artykul_odrzucony_inne_wydarzenie` do
+  `artykul_wydarzenie_sprawdzony` (odrzuty mają być RZADKIE — klasa wraca co kilka dni; odrzuty ≈
+  sprawdzenia = model tnie wszystko → zawęź prompt werdyktu) oraz czy `do_poczekalni`/`utknal`
+  nie rosną skokowo (bramka odrzucałaby też dobre artykuły). Log: „artykuł opisuje INNE wydarzenie
+  niż nagłówek". Etap tokenów `brief-inne-wydarzenie` w `deepseek_usage` (~50-70 małych calli/dzień
+  to norma — bramka działa świadomie BEZ prefiltru).
 
 ## ✅ 15.08 popołudnie: kafel Citi/kredyt syndykowany zdjęty + kontr-wskaźnik w feedzie Kalshi
 
