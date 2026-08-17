@@ -1536,3 +1536,37 @@ na początku aktualnej dawki, nawet jak jesteśmy przy wątkach"* — decyzja: t
 - 📊 Zweryfikowane w Chromium, **trzy warianty, 0 błędów JS**: (a) panel wątków otwarty → panel
   zamknięty, `scrollTop` 0, hero na `y=130` (stan identyczny jak po świeżym wejściu); (b) mobilny feed
   przewinięty na 2958 → 0; (c) desktop — otwarty inny artykuł wraca do top story, `#dtFeedList` na 0.
+
+## Flagi krajów na Windowsie — font Twemoji ładowany WARUNKOWO (2026-08-15) 🔴
+Zgłoszenie właściciela: *„na Windowsie jak wchodzę to flag nie widać, tylko «PL»"*.
+**To nie był błąd w naszym kodzie.** Flaga w emoji to PARA wskaźników regionalnych
+(🇵🇱 = U+1F1F5 U+1F1F1), którą font ma skleić w jeden glif — Segoe UI Emoji tego glifu
+NIE MA, więc Chrome i Edge na Windowsie rysują dwie literki w ramkach. Pole `flag` jest
+w KAŻDEJ pozycji `briefs.json`, więc dotyczyło to całego feedu.
+- ⚠️ **Firefox na Windowsie wozi własne Twemoji i flagi POKAZUJE** — sprawdzając w nim
+  NIE zobaczysz objawu. Na macOS, Androidzie i iOS objawu nie ma w ogóle.
+- **Lek: `fonts/TwemojiCountryFlags.woff2`** (Twemoji Mozilla, COLR/CPAL, 261 par flag,
+  78 KB, CC BY 4.0 — licencja w `fonts/FLAGI-LICENCJA.txt`, atrybucja w stopce `index.html`
+  z `rel="nofollow"`, bo stopka powstała pod linkowanie WEWNĘTRZNE).
+- 🔴 **DWA ZABEZPIECZENIA, ŻEBY NIE PŁACIŁ ZA TO KAŻDY CZYTELNIK** — to repo raz już
+  odchudzało wejście z 1,63 MB do 0,34 MB i nie dokładamy 78 KB komuś, kto flagi widzi:
+  1. `@font-face` wstrzykiwany WYŁĄCZNIE po wykryciu, że system flag nie rysuje — na Macu,
+     Androidzie i iOS nie powstaje nawet deklaracja, więc nie ma czego pobierać;
+  2. `unicode-range: U+1F1E6-1F1FF` — font obsługuje TYLKO wskaźniki regionalne. Reszta pola
+     `flag` (🚨 🌍 🛢 📰) idzie dalej z fontu systemowego, a teksty z DM Serif / Inter.
+     Dlatego wolno go dopisać do stosu `body`.
+- ⚠️ **WYKRYWANIE PO SZEROKOŚCI GLIFU, NIE po `navigator.platform`.** Sniffing systemu
+  skłamałby w OBIE strony: Firefox na Windowsie flagi ma, a kolejne wydania Windowsa mogą
+  je kiedyś dostać. Mierzymy SKUTEK: sklejona para 🇵🇱 jest ~tak szeroka jak pojedynczy
+  wskaźnik, dwie literki są ~dwa razy szersze; próg 1,5 leży w połowie między 1,0 a 2,0.
+- ⚠️ **Świadomie `measureText`, a NIE `getImageData`** (test na kolor): rozszerzenia
+  anty-fingerprintingowe zaszumiają odczyt pikseli i test koloru zacząłby kłamać.
+- **FAIL-SAFE W STRONĘ „NIC NIE RÓB":** każdy wyjątek i każdy dziwny pomiar = zostawiamy
+  stan obecny. Najgorsze, co się stanie, to że Windows dalej pokazuje „PL" — czyli dokładnie
+  to, co było. Odwrotny fail-safe kazałby pobierać font ludziom, którzy go nie potrzebują.
+- **PRZEŁĄCZNIKI DO PODGLĄDU** (bo na Macu objawu nie da się zobaczyć):
+  `brifup.com/?flagi=on` wymusza font, `?flagi=off` wyłącza nawet tam, gdzie wykrywanie go chce.
+- **Wpięte w CZTERY strony:** `index.html`, `watki.html`, `fala.html`, `knaga.html`.
+- ⚠️ **`flagi.js` JEST w `STATIC_ASSETS` service-workera, a font CELOWO NIE.** Wpisanie
+  woff2 do precache kazałoby ściągnąć 78 KB KAŻDEMU — także na telefonie, gdzie flagi
+  działają. Gdy jest realnie potrzebny, trafia do cache zwykłą gałęzią „pozostałe statyczne".
