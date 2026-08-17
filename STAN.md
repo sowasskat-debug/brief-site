@@ -1,7 +1,58 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-17 (późny wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
-niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+Zdjęcie stanu na **2026-08-17 (noc, po sesji o dublu Berkshire)**. Czytaj to PRZED `CLAUDE.md` — mówi
+*co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+## ✅ 17.08 noc: TEN SAM NEWS PO TRZECH DNIACH — dubel zdjęty (#184) + aliasy firm w mierze (bot #189, ZMERGOWANE)
+
+Zgłoszenie właściciela (*„ten news już był u nas chyba"*): dawka wieczorna dostała **„Google jest trzecim
+co do wielkości holdingiem Berkshire Hathaway"** (18:48, Yahoo Finance) — ten sam raport 13F za Q2, co
+opublikowane **14.08** „Berkshire Hathaway zwiększył udział w Alphabet o 83 proc. do 37,8 mld USD"
+(NY Post) i **08.08** „…kupiła akcje netto za 19,8 mld USD, w tym 10 mld w Alphabet". Ten sam pakiet
+~106 mln akcji, ten sam `chart` [GOOGL, BRK.B], a **artykuł z 14.08 zawiera dosłownie zdanie, które trzy
+dni później poszło jako nagłówek**.
+- 📊 **Zmierzone: `PodobienstwoRdzeni` = 0,143 przy progu 0,18** — bramka cross-bieg NIGDY nie dostała
+  tej pary. Wspólne były wyłącznie `berkshir` i `hathawa`, bo `googl` ≠ `alphabet`. **Ta sama klasa co
+  `bilion`≠`bln` z 03.08.** Okno DALEKIE (0,35) milczało z tego samego powodu.
+- 🔴 **OBNIŻENIE PROGU TEGO NIE NAPRAWIA — nie odgrzewaj:** musiałby zejść poniżej 0,143, a przy **0,167**
+  stoi para NIEZWIĄZANA („Berkshire posiada rekordowe 397 mld w gotówce", 27.07).
+- **Naprawa: `_aliasyFirm`** mapowane na KOŃCU `RdzenSlowa`, czyli na rdzeniu po stemmerze
+  (`googl`/`google` → `alphabet`). ⚠️ Klucz to RDZEŃ, nie mianownik, i trzeba go SPRAWDZIĆ na realnym
+  słowie — stemmer nie jest idempotentny („SpaceXAI" → `spacexa`, nie `spacex`).
+- 📊 **Przemierzone WSZYSTKIE progi tej miary** (stary vs nowy `Bot.dll` refleksją + port z `brifup-kontrola`
+  na całym archiwum): cross-bieg bliskie 1 086 993 par → **1177→1178 na 0,18**, dalekie 1 110 087 par →
+  **117→117 na 0,35**, pozytywy w klastrach 3451 par → +1 na 0,06/0,10 i **bez zmian od 0,15 w górę**,
+  negatywy 59 106 par → **+2 na podłodze 0,06**, bez zmian wyżej. **Jedyną nową parą nad 0,18 w całym
+  archiwum jest DOKŁADNIE zgłoszona** (0,143 → 0,231) ≈ 0,02 dodatkowego wywołania modelu na dobę.
+- ⚠️ **Świadomy koszt:** 2 pary negatywne przeszły podłogę klastra 0,06 („Alphabet i Anthropic" × „Kara UE
+  dla Google" 0,083; „Google odwołuje AI Studio" × „…Alphabet zablokowały 1,09 bln USD" 0,074). Gdyby
+  zaczęły się sklejać różne sprawy jednej spółki — **usuń alias, NIE podnoś progu 0,06** (to podłoga dla
+  każdego klastra, patrz sekcje z 02.08 i 05.08).
+- 🔴 **Port w `brifup-kontrola` przemierzony w tej samej turze** (`ALIASY_FIRM`, commit `2fc65aa`):
+  `waliduj_port.py` na 5725 pozycjach wobec świeżego `Bot.dll` — **0 rozjazdów** w 8 miarach. Bez tego
+  czujka godzinowa liczyłaby duble STARĄ miarą i **nie zgłosiłaby błędu**.
+  ⚠️ Na Macu walidator wymaga `DOTNET_ROLL_FORWARD=Major` (jest tylko runtime 10, projekt celuje w net8.0).
+- **Dane:** kafel zdjęty z wieczornej (#184). Tekst ZOSTAJE w `seen` — dopisał go sam bot, zanim doszło
+  do commita. Sagi nietknięte (ani ta pozycja, ani wpis z 14.08 nie były węzłami; w753 ma 3 węzły z 10.08).
+- 👀 **PO DEPLOYU OBEJRZEĆ:** `cross_bieg_powtorka` ma drgnąć najwyżej o pojedyncze sztuki; skok znaczyłby,
+  że alias skleja więcej, niż pokazał pomiar.
+- ⚠️ **Odrzucone po pomiarze (nie dokładaj bez skanu archiwum):** `facebook`→`meta` (2 nagłówki w korpusie,
+  a „meta" to w polskim także słowo), `spacexai`→`spacex` (7), `twitter`/`xai` (2 i 4).
+
+## ❌ 17.08 noc: TRZECI WERDYKT CZUJKI („ARTYKUŁ ZŁY") — ODRZUCONY przez właściciela
+
+Czujka godzinowa **złapała** kafel „Google… emisja obligacji w Australii **3,6 mld USD**", w którym artykuł
+mówi „do **5 mld USD**" — to ta sama kwota w dwóch walutach (A$5b ≈ 3,6 mld USD przy AUD/USD 0,712 z naszego
+`quotes.json`), czyli **artykuł ma złą walutę**. Routine ocenił to jako MILCZY → „czysto" i nic nie wysłał.
+- Propozycja (trzeci werdykt w `brifup-kontrola/CLAUDE.md` + poprawka danych) **odrzucona**:
+  *„to nie był żaden problem, dobrze podało przecież liczbę, niech tak zostanie"*.
+- **Próg właściciela na przyszłość:** rozstrzygamy o NAGŁÓWKU. Nagłówek broni się wobec `tytul_oryginalny`
+  /sluga → zamykamy jako MILCZY, **nawet gdy artykuł podaje inną wartość tej samej wielkości**. Głośno
+  tylko przy błędnym NAGŁÓWKU (klasa JPMorgan 3,5% vs 4%) albo artykule o INNYM wydarzeniu (klasa awaria
+  × wodoznak). **Nie przerabiaj zasad czujki po pojedynczym takim znalezisku.**
+- ⚠️ **Powiadomienia zostają PUSH-ONLY** (`notifications: {email:false, push:true}`, potwierdzone w API
+  routine'u — tam są same przełączniki, adresu wpisać się nie da). Decyzja: *„bez maila, tylko na Claude
+  apce"*. **Cisza z czujki znaczy więc: albo czysto, albo znalezisko odrzucone jako fałszywka.**
 
 ## 🔴 17.08 noc: SELEKCJA ZMYŚLIŁA 16 NEWSÓW — bramka pochodzenia `idx` (bot #188, ZMERGOWANE)
 
