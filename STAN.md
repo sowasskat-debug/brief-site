@@ -1,7 +1,56 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-17 (przedpołudnie)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
+Zdjęcie stanu na **2026-08-17 (wieczór)**. Czytaj to PRZED `CLAUDE.md` — mówi *co jest
 niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+## ✅ 17.08 wieczór: czujka godzinowa NIE DZIAŁAŁA od wdrożenia — naprawiona, skrypt w osobnym repo
+
+Godzinowy routine kontroli jakości (`#186`, wdrożony przedpołudniem) **padał na KAŻDYM przebiegu
+od 12:16 UTC** — cztery kolejne biegi zwróciły „BŁĄD KONTROLI", czyli strona nie była pilnowana
+po publikacji ani przez chwilę. Dwie przyczyny, jedna po drugiej:
+- **Routine utworzony BEZ `sources`** → świeży kontener startował z pustym `/home/user`, więc nie
+  było ani danych, ani skryptu (`cd: /home/user/brief-site: No such file or directory`).
+- Po dopięciu źródeł wyszła druga: **Claude Code auto-ładuje `CLAUDE.md` repo źródłowego**, a ten
+  w bocie ma **371 KB** → `Prompt is too long`, a po zawężeniu do jednego repo sesja kompaktowała się
+  **w połowie kontroli** i gubiła instrukcje (raport wychodził PO ANGIELSKU i bez weryfikacji pozycji).
+- 🔴 **Naprawa: skrypt przeniesiony do osobnego, prywatnego repo `sowasskat-debug/brifup-kontrola`**
+  (~2 KB + własny `CLAUDE.md` z zasadami czujki i znanymi fałszywkami). To JEDYNY dom skryptu —
+  `kontrola/` znika z repo bota ([FinancialNewsBot#187](https://github.com/sowasskat-debug/FinancialNewsBot/pull/187),
+  **CZEKA NA MERGE**), żeby nie powstały dwie rozjeżdżające się wersje miar.
+- Front leci **anonimowym `git clone --depth 1`** (repo publiczne) — prywatnego repo bota sandbox
+  doklonować NIE MOŻE (`could not read Username`, poświadczenia tylko do zadeklarowanych źródeł).
+- 📊 **Zmierzony postęp na tym samym zadaniu:** repo bota jako źródło 59 s / **2 kompaktowania** /
+  raport po angielsku → nowe repo 44 s / 0 kompaktowań / 3 zmarnowane wywołania na grepie →
+  **nowe repo + `pokaz.py`: 28 s, 5 tur, 0 kompaktowań, trafione za pierwszym razem.**
+- ⚠️ **`grep` po polskim nagłówku NIE TRAFIA w `briefs.json`** (escape'y `ł`), a grep po fragmencie
+  ASCII zwraca **cały plik, 117 KB**. Stąd `pokaz.py --fragment` w repo czujki — nie odgrzewaj grepa.
+- ⚠️ **Pułapki konfiguracji routine'ów (zmierzone, nie powtarzaj):** `setup_script` jest **ignorowany**
+  („No setup script configured" mimo wysłania), `branch` w `git_repository` **odrzucany**, `cwd`
+  w `session_context` **zapisuje się, ale runner i tak startuje w katalogu repo**. Żadne nie działa
+  jako obejście balastu kontekstu.
+- 👀 **PO CZYM POZNAĆ, ŻE ZNÓW SIĘ PSUJE:** raport przychodzi po angielsku albo bez rozstrzygnięcia
+  „realny błąd czy fałszywka" = sesja znowu się kompaktuje (ktoś dołożył duże źródło albo `CLAUDE.md`
+  czujki spuchł). Log przebiegu: routine `Kontrola jakości brifup — co godzinę`, claude.ai/code.
+
+## 🔴 17.08 wieczór: kafel „190 mld USD" (Amazon/Anthropic) — ZGŁOSZONY PRZEZ CZUJKĘ, dane NIETKNIĘTE
+
+Pierwsze realne trafienie nowej czujki, dawka **wieczorna**, źródło zerohedge.com:
+- Nagłówek: *„Wycena udziałów Amazona w Anthropic przekroczyła 190 mld USD."*
+- Artykuł mówi WYŁĄCZNIE o przychodach Anthropic (11,5 mld USD, wzrost 14-krotny) — **liczby 190 mld
+  nie zawiera w ogóle**. Klasa `liczby-naglowek`, nie fałszywka zaokrągleniowa (tam różnice są rzędu
+  94,6 vs 94,66; tolerancja 1% jest już w skrypcie).
+- **Danych NIE ruszałem** — czujka ma zakaz naprawiania, a zmiana `text` przestawia slug i psuje stuby
+  podglądu. Do decyzji właściciela: poprawić nagłówek czy uzupełnić artykuł.
+
+## ⬜ 17.08: etap 2 czujki (werdykt redakcyjny) — ŚWIADOMIE ODŁOŻONY o tydzień
+
+Ustalenie z właścicielem: czujka **sprawdza rzemiosło, nie redakcję**. Na pytanie „czy ten news
+w ogóle powinien wejść" (klasa Citi/kredyt syndykowany, agregatory, geografia) odpowiadają bramki
+w bocie PRZED publikacją — skrypt tego nie zastąpi, bo werdykt wymaga osądu modelu nad każdą pozycją.
+- **Plan, jeśli przecieki okażą się częste:** drugi etap w tym samym przebiegu — destylat reguł
+  odrzuceń (~4 KB) + Haiku ocenia ~9 nowych pozycji na godzinę (~20-30k tokenów/przebieg).
+- ⚠️ **Koszt tej decyzji:** powstaje DRUGA kopia reguł redakcyjnych do synchronizowania z botem —
+  ta sama choroba, którą właśnie wyleczyliśmy przy skrypcie. Dlatego najpierw tydzień obserwacji.
 
 ## ✅ 17.08: cudzy artykuł pod nagłówkiem — dane naprawione (#180) + bramka w bocie (#184, ZMERGOWANE = deploy)
 
