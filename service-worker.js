@@ -8,14 +8,20 @@
 try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js'); }
 catch (e) { /* push niedostępny, reszta SW działa */ }
 
-const CACHE_NAME = 'brifup-cache-v123';
+const CACHE_NAME = 'brifup-cache-v124';
 const STATIC_ASSETS = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
   './og-image.png',
   './styles.css',
+  './flagi.js',
 ];
+
+// ⚠️ `fonts/TwemojiCountryFlags.woff2` CELOWO NIE JEST precache'owany. Font naprawia flagi
+// na Windowsie i pobiera go wyłącznie ten, komu system ich nie rysuje (patrz `flagi.js`);
+// wpisanie go tutaj kazałoby ściągnąć 78 KB KAŻDEMU — także na telefonie, gdzie flagi działają.
+// Gdy jest realnie potrzebny, i tak trafi do cache zwykłą gałęzią „pozostałe statyczne".
 
 // 🔴 STRONA AWARYJNA — ostatnia deska ratunku dla NAWIGACJI (2026-08-11, zgłoszenie właściciela:
 // „czasami po otwarciu apki na Androidzie muszę zrestartować, żeby się odpalił brifup", zrzut czystej bieli).

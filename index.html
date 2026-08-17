@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+<!-- Flagi krajów na Windowsie (Chrome/Edge rysują „PL" zamiast 🇵🇱). Font pobiera się
+     WYŁĄCZNIE tam, gdzie system flag nie rysuje — mechanizm i przełączniki w `flagi.js`. -->
+<script defer src="flagi.js"></script>
 <title>BrifUp</title>
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -142,6 +145,9 @@
     <a href="d/">Archiwum dzienne</a>
     <a href="w/">Wątki tematyczne</a>
     <a href="watki.html">Wątki na żywo</a>
+    <!-- Atrybucja wymagana przez CC BY 4.0 dla grafik Twemoji (font flag na Windowsie).
+         `rel="nofollow"`, bo stopka powstała pod linkowanie WEWNĘTRZNE (indeksacja podstron). -->
+    <a href="https://github.com/mozilla/twemoji-colr" rel="nofollow noopener" target="_blank">Flagi: Twemoji · CC BY 4.0</a>
   </nav>
 </div>
 <div class="toast" id="toast"></div>

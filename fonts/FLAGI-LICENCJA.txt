@@ -1,0 +1,31 @@
+TwemojiCountryFlags.woff2 — skąd jest i na jakich warunkach (2026-08-15)
+=======================================================================
+
+PO CO TU JEST
+  Windows nie ma glifów flag — Chrome i Edge rysują parę wskaźników regionalnych
+  jako dwie literki („PL" zamiast 🇵🇱). Ten font te pary skleja. Ładowany jest
+  WYŁĄCZNIE tam, gdzie system flag nie rysuje — patrz `flagi.js` w katalogu głównym.
+
+CO TO ZA PLIK
+  Twemoji Mozilla 0.6.0 (nazwa z tablicy `name` fontu), format woff2, 78 292 B.
+  Kolor przez COLR/CPAL, 1663 glify, 261 par flag, wszystkie 26 wskaźników
+  regionalnych w `cmap`. Build Mozilli (github.com/mozilla/twemoji-colr), ten sam,
+  którego Firefox używa na Windowsie.
+  Pobrany z: https://cdn.jsdelivr.net/npm/country-flag-emoji-polyfill@0.1/dist/TwemojiCountryFlags.woff2
+
+LICENCJA — WYMAGA PODANIA AUTORA
+  Grafiki Twemoji: Copyright Twitter, Inc i pozostali współautorzy,
+  licencja CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
+  Narzędzia budujące font (mozilla/twemoji-colr): Apache License 2.0.
+
+  CC BY 4.0 wymaga wskazania autora — dlatego w stopce `index.html` stoi
+  „Flagi: Twemoji · CC BY 4.0" z odnośnikiem do źródła.
+  ⚠️ Usuwając tę linijkę ze stopki, przenieś atrybucję w inne widoczne miejsce.
+  Sam ten plik atrybucji nie zastępuje — nie jest serwowany czytelnikowi.
+
+⚠️ NIE MYLIĆ Z POZOSTAŁYMI FONTAMI W TYM KATALOGU
+  DMSerifDisplay-Regular.ttf i SpaceMono-*.ttf (licencja OFL) są tu WYŁĄCZNIE dla
+  funkcji `og` — satori musi dostać kroje jako bajty i sama strona ich nie pobiera.
+  Ten font jest odwrotnie: pobiera go PRZEGLĄDARKA czytelnika, a funkcja `og` go nie zna.
+  ⚠️ Karty obrazkowe z `og` nie mają więc flag i to jest stan sprzed tej zmiany,
+  nie regresja — gdyby miały je dostać, font trzeba dołożyć do satori osobno.

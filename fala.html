@@ -103,6 +103,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font
 #hint{flex-shrink:0;height:20px;display:flex;align-items:center;justify-content:center;font-size:8px;color:rgba(136,136,160,.34);letter-spacing:.06em;border-top:1px solid rgba(255,255,255,.03);opacity:0;transition:opacity 1.5s}
 #hint.vis{opacity:1}
 </style>
+<!-- Flagi krajów na Windowsie (Chrome/Edge rysują „PL" zamiast pary wskaźników
+     regionalnych). Font ładowany tylko tam, gdzie trzeba — patrz `flagi.js`. -->
+<script defer src="flagi.js"></script>
 </head>
 <body>
 
