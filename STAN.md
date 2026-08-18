@@ -1,7 +1,42 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-17 (noc, po sesji o dublu Berkshire)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-18 (po sesji o wykresie sagi)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+## ✅ 18.08: WYKRES SAGI KŁAMAŁ O ODSTĘPACH — front z barierą, czujka informuje, BOT OTWARTY
+
+Zgłoszenie właściciela ze zrzutu (saga „Polityka Fed a dane z rynku pracy" pod kaflem ADP):
+*„zobacz gdzie jest «1» na grafice, a kiedy była dodana ta jedynka jako post — nie zgadza się"*.
+Kropka **1** (13.08) stała tuż obok kropki **2** (18.08), a etapy z 14, 16 i 18.08 zlały się w jedną.
+- 🔴 **Przyczyna: `doIndeksu` nie miało zabezpieczenia na etap NOWSZY niż koniec serii** — wszystko
+  po ostatniej sesji siadało na ostatnim punkcie. Seria SP500 stała na **14.08** przy wydaniu z 18.08.
+- ✅ **Front (ten PR):** oś skaluje się do najdalszego etapu, odcinek bez notowań jest **kreskowany**,
+  nagłówek pokazuje `do 14.08` zamiast liczby sesji, a zaległość >5 sesji odbiera kropkę i ląduje
+  w stopce. Zweryfikowane na żywych danych: kropki 13.08 / 14+14+16.08 / **18.08 za luką**.
+  ⚠️ Kontrola regresji: dwa wykresy BRENT (seria świeża) na tej samej stronie renderują się
+  bez zmian — „30 sesji", zero kreskowanych ogonów.
+- ✅ **Czujka (`brifup-kontrola`):** klasa `wykres-serii-przestarzaly` — na żywym wydaniu złapała
+  SP500 i NASDAQ100 („w tyle o 1 sesję"). ⚠️ Nie łapie DJIA, bo żaden kafel dzisiejszej dawki go
+  nie używa — to celowe, ta sama osłona co przy `chart-bez-serii`.
+- 🔴 **CACHE_NAME v126 → v127** (sesja tknęła JS).
+
+### 🔴 OTWARTE — strona BOTA (następna tura, ustalone z właścicielem)
+Zmierzone na 400 commitach `quotes.json` i testami z Hetznera:
+1. **Yahoo oddaje HTTP 429 CAŁEMU IP Hetznera** — sprawdzone 18.08 z serwera, 5 z 5 symboli
+   (`^GSPC`, `^NDX`, `^DJI`, `BZ=F`, `000001.SS`). ⚠️ **Ponawianie zapytań tego NIE naprawi**
+   (limit jest na adres, nie na strzał) — to była moja pierwsza propozycja i jest błędna.
+   Realne wyjścia: fallback na fundusze (SPY/QQQ/DIA z Alpaki, która działa — akcje mają 17.08)
+   **albo** świadome zaakceptowanie dziur, bo od teraz wykres je pokazuje zamiast maskować.
+   ⚠️ Fallback na fundusze to COFNIĘCIE decyzji z 13.08 („Nasdaq WPROST zamiast QQQ/ONEQ") —
+   broni się lepiej niż przy WIG20/EPOL (ten sam koszyk, ta sama waluta), ale musiałby być
+   podpisany jak fallback EIA dla ropy. **Decyzja właściciela, nie moja.**
+2. **Retencja kasuje serię, której nie ma w bieżącym wydaniu** (`!potrzebne.Contains` w `Runner.cs`).
+   Zmierzone: SP500 i DJIA znikały z pliku na ~12 h (~20 biegów) i wracały ze STARSZĄ datą.
+3. **Świeży odczyt nadpisuje serię lepszą** — NDX cofnął się 17.08 → 14.08 przy biegu 04:03Z.
+4. 🔴 **WIG20 nigdy nie przekroczył 2 punktów** (400 commitów: 228× brak, 143× 1 pkt, 29× 2 pkt).
+   Seria przyrostowa miała rosnąć o sesję dziennie — nie rośnie, bo przy każdym biegu bez WIG20
+   w wydaniu znika z pliku i akumulator nie ma do czego dokleić. ⚠️ **Tej historii nie odzyska
+   żadne źródło** — po naprawie liczy się od zera.
 
 ## 🔴 18.08: DUBEL O TOMAHAWKACH — bramka MIAŁA materiał, model orzekł NOWE
 

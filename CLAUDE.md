@@ -1590,3 +1590,32 @@ w KAŻDEJ pozycji `briefs.json`, więc dotyczyło to całego feedu.
 - ⚠️ **`flagi.js` JEST w `STATIC_ASSETS` service-workera, a font CELOWO NIE.** Wpisanie
   woff2 do precache kazałoby ściągnąć 78 KB KAŻDEMU — także na telefonie, gdzie flagi
   działają. Gdy jest realnie potrzebny, trafia do cache zwykłą gałęzią „pozostałe statyczne".
+
+## Etapy sagi PO KOŃCU SERII idą za kreskowaną luką (2026-08-18) 🔴
+Zgłoszenie właściciela ze zrzutu sagi „Polityka Fed a dane z rynku pracy": *„zobacz gdzie jest «1»
+na grafice, a kiedy była dodana ta jedynka jako post — nie zgadza się z grafiką"*. Kropka **1**
+(13.08) stała tuż obok kropki **2** (18.08), jakby dzieliła je jedna sesja.
+- 🔴 **Przyczyna nie leżała w numeracji ani w danych sagi — daty w legendzie były poprawne.**
+  `doIndeksu` miało zabezpieczenie na etap ZA STARY (`-1` → licznik „sprzed okna wykresu"), a na
+  etap za NOWY **żadnego**: wszystko po ostatniej sesji siadało na ostatnim punkcie. Seria SP500
+  stała wtedy na **14.08**, więc etapy z 14, 16 i 18.08 zlały się w jedną kropkę („2 +3"),
+  a 13.08 wylądowało slot obok. Wykres mówił „jedna sesja odstępu", legenda „pięć dni".
+- **Naprawa jest w SKALI OSI, nie w danych:** `maxSlot` liczy się z najdalszego etapu, nie z długości
+  serii. Etap po końcu serii dostaje `IDX_KONCA + sesjiPo(ostatnia_sesja, data_etapu)`, linia ceny
+  ściska się w lewo, a odcinek bez notowań idzie **kreskowany** (`stroke-dasharray`, bez wypełnienia
+  pod spodem — inaczej wyglądałby jak płaski kurs, a nie jak brak danych).
+- ⚠️ **`ext === 0` ZOSTAJE na ostatniej sesji i to jest poprawne** — news z soboty ma siedzieć na
+  piątkowym zamknięciu, bo wcześniej rynek nie miał jak zareagować. Bariera dotyczy wyłącznie
+  etapów oddzielonych od serii realnymi SESJAMI, nie kalendarzem.
+- ⚠️ **Świąt giełdowych nie znamy** — dzień wolny liczy się jak sesja i najwyżej odsuwa kropkę o slot
+  za daleko. Przesada w stronę „widać lukę" jest bezpieczniejsza niż w stronę „luki nie widać".
+- **Powyżej `EXT_MAX = 5` sesji kropki NIE MA** — etap idzie do stopki („+ N etapów po ostatniej
+  sesji wykresu (DD.MM) — brak notowań z tych dni"). Doklejanie pół wykresu kreskowanej pustki byłoby
+  gorsze niż uczciwy licznik, a przy takiej dziurze problemem jest źródło notowań, nie rysowanie.
+- 🔴 **Nagłówek pokazuje wtedy `do DD.MM` ZAMIAST liczby sesji, nie obok niej.** `.sr-sym` ma
+  `nowrap` + `text-overflow: ellipsis`, więc czwarty człon ucinał się na „do 14.…" i cała informacja
+  przepadała (złapane na zrzucie z podglądu, przed wdrożeniem). „do 14.08" ma tyle samo znaków co
+  „30 sesji". Długość okna jest tu ozdobą, data końca serii — nie.
+- **To jest bariera, nie naprawa danych.** Świeżość notowań pilnuje osobno czujka
+  (`brifup-kontrola`, klasa `wykres-serii-przestarzaly`); przyczyna po stronie bota — Yahoo oddaje
+  **HTTP 429 całemu IP Hetznera** dla indeksów USA — zostaje otwarta.
