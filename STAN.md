@@ -1,7 +1,73 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-18 (po sesji o wykresie sagi)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-18 (noc, po sesji o dublach i klastrowaniu)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+## 🔴 18.08 wieczór: DO ROZPOZNAWANIA DUBLI UŻYWAMY WYŁĄCZNIE TEKSTÓW, KTÓRE SAMI NAPISALIŚMY
+
+**To jest najważniejsze znalezisko tej sesji i punkt wyjścia dla następnej.** Trop od właściciela:
+*„byłem przekonany, że angielski tekst pierworodny to będzie ten, z którym najłatwiej znaleźć dubla"*.
+
+Zmierzone na 5702 pozycjach (49 dni archiwum + bieżące wydanie):
+
+| materiał | mamy przy zaciągnięciu | zapisujemy |
+|---|---|---|
+| nagłówek źródłowy (EN/PL) | ✅ zawsze | **15,1%** pozycji z nie-polskich źródeł |
+| **opis źródłowy z RSS** | ✅ zawsze | ❌ **nigdy** — brak pola na pozycji |
+| nagłówek polski (nasz) | – | tak, ale **zmienia się 5×** po publikacji |
+| `article` (pisany przez model z finderów) | – | tak — i to **jego** porównuje bramka po opisach |
+
+- 🔴 **`tytul_oryginalny` nie ginie dlatego, że go nie ma.** `ZapamietajTytulOryginalny` woła się tylko
+  na dwóch ścieżkach selekcji, trzyma parę w **słowniku w RAM-ie** kluczowanym POLSKIM tekstem
+  (`NormalizujTekst(tekstPl)`), a polski tekst zmienia się między selekcją a enrichem. Do tego słownik
+  nie przeżywa poczekalni. Efekt na jednym feedzie: **BBC 265 pozycji bez oryginału, 15 z oryginałem.**
+- 🔴 **Opis źródłowy czytamy i wyrzucamy.** `item.Element("description")` idzie do modelu przy selekcji
+  z instrukcją *„Opis służy WYŁĄCZNIE do oceny… NIE przepisuj opisu"* i nigdzie nie ląduje.
+- 🔴 **Bramka dedupu „po opisach" porównuje dwa teksty WYGENEROWANE** — `article` powstaje od zera
+  z faktów finderów, więc dwa niezależne wygenerowania o tym samym wydarzeniu potrafią się rozjechać.
+  Dwa opisy z tego samego wire'a byłyby prawie identyczne.
+- **Wniosek:** utrwalić SUROWY materiał źródłowy (tytuł + opis, choćby przycięty) na pozycji i dopiero
+  na nim opierać tożsamość i porównania. Kosztuje tyle co nic — i tak to czytamy.
+- ⚠️ Ograniczenie, które trzeba pamiętać: z 5 znanych dubli **2 były z tego samego źródła**
+  (Bankier.pl × Bankier.pl, The Guardian × The Guardian) — tam oryginał to bardzo mocny klucz.
+  Przy różnych źródłach dwie redakcje piszą inaczej, więc oryginał pomaga częściowo. I korzyść jest
+  **wyłącznie na przyszłość** — historii się tym nie nadpisze.
+
+## 🔴 18.08 wieczór: PLAN NA NASTĘPNĄ SESJĘ — 2 → 3 → 4 (w tej kolejności)
+
+**2. Utrwalenie materiału źródłowego + stabilne `Id`.** Dziś tożsamością newsa jest jego TEKST, a ten
+zmienia się 5× (przepisanie X-feed, element eskalacji, trzy naprawy nagłówka) plus `RetroMerge`
+przepisuje tytuły klastrów. `ItemSlug` to **hash z tekstu**, więc slug też nie jest stabilny (stąd
+osierocone stuby). Nadać `Id` przy powstaniu + zapisywać tytuł i opis źródłowy; wiązania po tekście
+zostają jako fallback dla starych danych. **Tylko bot, addytywnie, front bez zmian.**
+⚠️ Świadoma decyzja: **slugów i deep linków NIE ruszamy** przy tej okazji — osobna sprawa.
+
+**3. Sagi jako arbiter.** Silnik wątków to niezależny sędzia: inny prompt, własny stan (memo + relacja
+per węzeł), i jego prompt **już zawiera regułę, której brakuje klastrowaniu** („ten sam podmiot w INNEJ
+historii to OSOBNY wątek"). Reguła: pozycje w różnych sagach nie mogą stać w jednym klastrze.
+To jedyne, co obroni rozklejenie z tej sesji przed `RetroMergeSameEvent`. Wymaga punktu 2.
+
+**4. Jeden werdykt zamiast pięciu.** „Czy to ta sama historia" pytamy w 5 miejscach, każde z własnym
+progiem: bramka cross-bieg (×3), `IstinieWInnychDawkach`, filtr przy kotwicy klastra,
+`RetroMergeSameEvent`, przypisanie do wątku. Repo ujednoliciło MIARĘ, nie WERDYKT — i dlatego
+w jeden dzień trafiliśmy na dwie różne martwe strefy.
+
+## ⛔ 18.08 wieczór: ODRZUCONE POMYSŁY (zmierzone — nie odgrzewaj)
+
+- **Memo sagi do wywołania klastrowania** (pierwotny „punkt 1"). Prompt klastrowania **już zawiera**
+  regułę „ten sam TEMAT ogólny (Ukraina, **Trump**, energetyka) to NIE powód", sekcję „BŁĄD
+  Z PRZESZŁOŚCI" z przykładem Trump/Meloni × Australia-Fidżi (ta sama klasa co Kanada×Ormuz) ORAZ
+  zawartość klastra w wierszach „↳". Model to wszystko widział i mimo to skleił. Memo dołoży
+  streszczenie tego, co już miał.
+- **Strojenie progu / listy `_rdzenieNieNosne`.** Zmierzone na 1758 parach pozytywnych i 61 168
+  negatywnych: obecna reguła zachowuje 71,0% pozytywów i odrzuca 98,0% negatywów, ale **wpuszcza
+  Kanadę**. Wariant „≥2 wspólne rdzenie, gdy wszystkie częste" **też wpuszcza** (wspólne są dwa:
+  `trump`, `usa`). Wariant „wymagaj ≥1 rdzenia rzadkiego (<5%)" odrzuca Kanadę, ale kosztuje
+  **7,3 pp pozytywów** (~128 par przestaje się kleić). ⚠️ Sama podstawa pomiaru jest słaba — „pozytywy"
+  to pary z klastrów zbudowanych przez OBECNY system, razem z tą złą.
+- **Dopisanie `trump`/`usa` do `_rdzenieNieNosne` na czuja.** `usa` to **14,12%** wszystkich nagłówków
+  (rdzeń nr 1 w korpusie), `trump` **8,80%** (nr 4, częściej niż `dolar`, który na liście już jest) —
+  ale `iran` ma **9,19%** i tam rdzeń realnie niesie temat. Każdy próg, który załatwia Kanadę, psuje Iran.
 
 ## ✅ 18.08: WYKRES SAGI KŁAMAŁ O ODSTĘPACH — front z barierą, czujka informuje, BOT OTWARTY
 
