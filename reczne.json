@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "text": "KNF nałożyła na PKO BP 47,5 mln zł kar za nieprawidłowości przy lokatach strukturyzowanych",
+    "flag": "🇵🇱",
+    "kategoria": "Fed / Banki",
+    "ciekawostka": false
+  },
+  {
+    "text": "Rosyjski sąd skazał Lwa Szłosberga, wiceszefa partii Jabłoko, na 11 lat kolonii karnej za sprzeciw wobec wojny z Ukrainą",
+    "flag": "🇷🇺",
+    "kategoria": "Polityka",
+    "ciekawostka": false
+  },
+  {
+    "text": "Amerykanie coraz częściej finansują czynsz, prąd i ubezpieczenia kredytami „kup teraz, zapłać później”",
+    "flag": "🇺🇸",
+    "kategoria": "Fed / Banki",
+    "ciekawostka": false
+  },
+  {
+    "text": "Co czwarty młody Amerykanin handluje akcjami codziennie, 64 proc. z nich czuje się nieudacznikami",
+    "flag": "🇺🇸",
+    "kategoria": "Rynki",
+    "ciekawostka": true
+  }
+]
