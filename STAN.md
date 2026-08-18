@@ -1,11 +1,71 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-18 (noc, po sesji o dublach i klastrowaniu)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-18 (noc, po sesji o utrwaleniu materiału źródłowego)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+## ✅ 18.08 noc: PUNKT 2 (pierwsza połowa) ZROBIONY — materiał źródłowy zapisuje się na pozycji
+
+Zmergowane do `main` bota (PR #197), wdroży się przy najbliższym biegu Hetznera (`git pull` + `dotnet run`
+co 30 min). Nowe pole `opis_zrodlowy` na `BriefItem`, `tytul_oryginalny` naprawiony, oba przenoszone
+przez poczekalnię. Front bez zmian i pola nie zna.
+
+🔴 **PRZYCZYNA BYŁA INNA, NIŻ ZAPISALIŚMY WIECZOREM.** Sekcja niżej („DO ROZPOZNAWANIA DUBLI…") mówi,
+że `tytul_oryginalny` ginie przez rozjazd klucza w mapie kluczowanej polskim tekstem. **To nieprawda.**
+Jedyne przypisanie stało w gałęzi awaryjnego angielskiego, czyli ZA `return` z głównego przebiegu —
+pozycja, której enrich od razu znalazł źródło, pola nie dostawała nigdy. Stąd rozkład per źródło:
+Bankier 0/1189, Onet 0/116, CNBC 0/67, ale Crypto Briefing 31/85 = 36,5%. Pełny wywód w `CLAUDE.md`
+bota, sekcja „Materiał źródłowy: przyczyną było MIEJSCE zapisu".
+⚠️ **Nie licz z archiwum dostępności materiału wstecz** — brak pola znaczy „enrich poszedł głównym
+torem", a nie „feed nie dał tytułu".
+
+📊 **Zmierzone pokrycie materiału:** 153/153 kandydatów z 8 feedów selekcji niesie opis (pobrane
+z Hetznera, przepuszczone przez prawdziwy `WyciagnijOpisRss`). Czyli zapisywać jest CO.
+
+## 📊 18.08 noc: OPIS ŹRÓDŁOWY TO DRUGA OŚ, NIE LEPSZA MIARA — to zmienia kształt punktów 3–4
+
+Zmierzone zanim cokolwiek wpięliśmy w werdykt. 26 feedów z Hetznera → 835 pozycji z opisem,
+390 par oznaczonych przez DWÓCH sędziów (drugi ŚLEPY na opisy, kontrola na stronniczość; zgodność 91,8%).
+Procedura i komplet liczb: `FinancialNewsBot/pomiar_opis_vs_tytul.md`.
+
+- ⛔ **Hipoteza „oryginał to najłatwiejszy klucz" NIE potwierdza się jako zamiennik miary.**
+  AUC globalne: tytuł 0,743, opis 0,719. Przy progu zrównanym na czułość produkcyjną opis wpuszcza
+  **108 fałszywych par zamiast 81**. Nie podmieniaj miary na opisową — to kusi i jest gorsze.
+- ✅ **Za to jako DRUGA OŚ jest mocny.** Wśród par, które bramka JUŻ przepuściła (tytuł ≥ 0,18),
+  tytuł ma AUC **0,550** — rzut monetą, zero resztkowego sygnału. **To JEST ta martwa strefa.**
+  Opis w tym samym miejscu: **0,764** (sędzia ślepy: 0,738).
+- **Kierunek: dwa miejsca, PRZECIWNE strony.** Przy kotwicy klastra warunek ODRZUCAJĄCY
+  (`opis ≥ 0,05` → zostaje 85% prawdziwych, odsiane 52% fałszywych). W bramce cross-bieg warunek
+  DOKŁADAJĄCY (`opis ≥ 0,30` → +9 dubli za 3 fałszywe kandydatury).
+- Para, która to pokazuje najlepiej: Bankier „Rosyjska gospodarka niemal przygnieciona wojną"
+  × Business Insider „W Rosji coś zaczyna pękać" — tytuły **0,000** wspólnych rdzeni, leady
+  **identyczne co do znaku** (obie redakcje puściły tę samą depeszę PAP). Obecna bramka jest
+  na taki dubel całkowicie ślepa.
+- ⚠️ Progów nie przenoś wprost: rdzenie opisu są 2,4× liczniejsze (23,3 vs 9,6), a zbiór pomiarowy
+  jest wzbogacony z konstrukcji. Przed wdrożeniem przelicz na danych produkcyjnych.
+
+## 🔴 18.08 noc: PLAN — czego NIE da się zrobić od razu
+
+🔴 **Punkty 3–4 są ZABLOKOWANE CZASOWO, i to nie jest kwestia priorytetu.** Bramki porównują nowy news
+z JUŻ OPUBLIKOWANYMI, a w archiwum nie ma ani jednego `opis_zrodlowy` — pole istnieje od dziś.
+Warunek na opisie byłby przez kilka dni **martwy**, bo nie miałby z czym porównywać. Kolejność jest
+wymuszona przez dane, nie przez wybór.
+
+**Następna sesja, w tej kolejności:**
+1. **Kontrola pokrycia po wdrożeniu** (tanie, robić najpierw). Policzyć na pozycjach dodanych PO
+   18.08 wieczór, ile ma `tytul_oryginalny` i `opis_zrodlowy`. Baza do porównania: **9,2%**
+   na 5874 pozycjach archiwum. Jeśli nie skoczy blisko 100% na tytule — hydraulika nie działa.
+2. **Druga połowa punktu 2: stabilne `Id`** nadawane przy powstaniu, wiązania po tekście jako
+   fallback dla starych danych. ⚠️ Slugów i deep linków NIE ruszamy — decyzja stoi.
+3. **Punkty 3–4** dopiero gdy nazbiera się opublikowanych pozycji z opisem. Wtedy przeliczyć progi
+   na danych produkcyjnych i wpiąć wg kierunku wyżej.
 
 ## 🔴 18.08 wieczór: DO ROZPOZNAWANIA DUBLI UŻYWAMY WYŁĄCZNIE TEKSTÓW, KTÓRE SAMI NAPISALIŚMY
 
-**To jest najważniejsze znalezisko tej sesji i punkt wyjścia dla następnej.** Trop od właściciela:
+⛔ **UWAGA: diagnoza w tej sekcji została CZĘŚCIOWO OBALONA kilka godzin później** — patrz sekcja
+„PUNKT 2 (pierwsza połowa) ZROBIONY" wyżej. Wniosek („utrwalić surowy materiał") był słuszny
+i jest już wdrożony; **przyczyna niskiego pokrycia była inna**, niż tu napisano.
+
+**Trop od właściciela:**
 *„byłem przekonany, że angielski tekst pierworodny to będzie ten, z którym najłatwiej znaleźć dubla"*.
 
 Zmierzone na 5702 pozycjach (49 dni archiwum + bieżące wydanie):
@@ -33,7 +93,7 @@ Zmierzone na 5702 pozycjach (49 dni archiwum + bieżące wydanie):
   Przy różnych źródłach dwie redakcje piszą inaczej, więc oryginał pomaga częściowo. I korzyść jest
   **wyłącznie na przyszłość** — historii się tym nie nadpisze.
 
-## 🔴 18.08 wieczór: PLAN NA NASTĘPNĄ SESJĘ — 2 → 3 → 4 (w tej kolejności)
+## 🔴 18.08 wieczór: PLAN — pierwotny zapis (punkt 2 częściowo zrobiony, patrz wyżej)
 
 **2. Utrwalenie materiału źródłowego + stabilne `Id`.** Dziś tożsamością newsa jest jego TEKST, a ten
 zmienia się 5× (przepisanie X-feed, element eskalacji, trzy naprawy nagłówka) plus `RetroMerge`
