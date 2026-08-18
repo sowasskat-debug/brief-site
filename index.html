@@ -1489,6 +1489,9 @@ function quotesHtml(item){
 // ostatni etap (a to zwykle TEN news) jest przycięty krawędzią SVG — tak było przy padX 10 i r 7.
 const SAGA_W = 420, SAGA_H = 104;
 function sagaDataWezla(n){ return String(n && (n.published_at || n.added_at) || '').slice(0,10); }
+// „2026-08-14" → „14.08". Jedna postać dla legendy sagi i dla daty końca serii w nagłówku —
+// gdyby się rozjechały, czytelnik porównywałby dwa różne formaty tej samej wielkości.
+function sagaDataPL(d){ return (d || '').slice(5).split('-').reverse().join('.'); }
 function sagaRynekHtml(item){
   if (!item || !Array.isArray(item.chart) || !item.chart.length) return '';
   if (!QUOTES || !QUOTES.series) return '';
@@ -1513,9 +1516,37 @@ function sagaRynekHtml(item){
     for (let i = 0; i < s.daty.length; i++){ if (s.daty[i] <= d) idx = i; else break; }
     return idx;                       // -1 = etap starszy niż okno wykresu
   };
+  // 🔴 ETAP NOWSZY NIŻ KONIEC SERII NIE MOŻE PO CICHU SIADAĆ NA OSTATNIM ZAMKNIĘCIU
+  // (2026-08-18, zgłoszenie właściciela ze zrzutu sagi „Polityka Fed a dane z rynku pracy").
+  // `doIndeksu` miało zabezpieczenie na etap ZA STARY (-1 → licznik w stopce), a na etap za NOWY
+  // żadnego — więc każdy etap po końcu serii lądował na ostatnim punkcie. Seria SP500 stała wtedy
+  // na 14.08 (Yahoo odrzucało Hetznera kodem 429), więc etapy z 14, 16 i 18.08 zlały się w JEDNĄ
+  // kropkę, a etap z 13.08 wylądował tuż obok niej: wykres mówił „jedna sesja odstępu", legenda
+  // „pięć dni". Daty w legendzie były dobre — kłamała POZYCJA.
+  // Naprawa: oś dostaje tyle dodatkowych slotów, ile sesji dzieli koniec serii od etapu, a odcinek
+  // BEZ NOTOWAŃ idzie kreskowany na poziomie ostatniego zamknięcia. Luka jest wtedy widoczna
+  // i proporcjonalna zamiast zamaskowanej — i działa to przy KAŻDEJ przyszłej dziurze w danych,
+  // niezależnie od tego, które źródło padło.
+  // ⚠️ `ext === 0` (weekend zaraz po ostatniej sesji) ZOSTAJE na tej sesji — to zachowanie opisane
+  //    przy `doIndeksu` i poprawne: w sobotę rynek naprawdę nie miał jak zareagować.
+  const OSTATNIA = s.daty[s.daty.length - 1], IDX_KONCA = s.punkty.length - 1, EXT_MAX = 5;
+  // Ile sesji dzieli koniec serii od daty etapu. ⚠️ Świąt nie znamy — dzień wolny liczy się jak sesja,
+  // co najwyżej ODSUWAJĄC kropkę o slot za daleko. Wybór świadomy: przesada w stronę „widać lukę"
+  // jest bezpieczniejsza niż w stronę „luki nie widać", bo to drugie było właśnie błędem.
+  const sesjiPo = (od, doDnia) => {
+    let n = 0;
+    const t = new Date(od + 'T00:00:00Z'), koniec = new Date(doDnia + 'T00:00:00Z');
+    for (let k = 0; k < 60 && n <= EXT_MAX; k++){
+      t.setUTCDate(t.getUTCDate() + 1);
+      if (t > koniec) break;
+      const dz = t.getUTCDay();
+      if (dz !== 0 && dz !== 6) n++;
+    }
+    return n;
+  };
   const kluczBiez = watekKluczBiezacego(item, t);
-  const grupy = new Map();            // indeks sesji → { i, wezly:[] }
-  let pozaOknem = 0, innyInstrument = 0;
+  const grupy = new Map();            // slot osi → { slot, idxCeny, wezly:[] }
+  let pozaOknem = 0, innyInstrument = 0, poKoncu = 0;
   t.nodes.forEach(n => {
     // 🔴 Kropka trafia na wykres TYLKO gdy etap ma TEN instrument we własnym `chart` (2026-08-10,
     // zgłoszenie właściciela: saga „Rekordy w USA i Polsce" nanosiła etapy o S&P 500 na wykres
@@ -1525,31 +1556,49 @@ function sagaRynekHtml(item){
     // wpływu na żaden instrument (albo zabytek sprzed backfillu) = kropka nigdzie.
     // Pełna, niefiltrowana oś sagi jest dalej w „Wątku tematu" — tu tniemy tylko KROPKI.
     if (!Array.isArray(n.chart) || !n.chart.includes(sym)) { innyInstrument++; return; }
-    const i = doIndeksu(sagaDataWezla(n));
-    if (i < 0) { pozaOknem++; return; }
-    if (!grupy.has(i)) grupy.set(i, { i, wezly: [] });
-    grupy.get(i).wezly.push(n);
+    const dn = sagaDataWezla(n);
+    let slot = doIndeksu(dn);
+    if (slot < 0) { pozaOknem++; return; }
+    if (dn > OSTATNIA) {
+      const ext = sesjiPo(OSTATNIA, dn);
+      // Seria przestarzała o więcej niż EXT_MAX sesji: kropki NIE rysujemy w ogóle. Doklejanie
+      // pół wykresu kreskowanej pustki jest gorsze niż uczciwy licznik w stopce — a przy takiej
+      // dziurze problemem jest źródło notowań, nie rysowanie.
+      if (ext > EXT_MAX) { poKoncu++; return; }
+      slot = IDX_KONCA + ext;
+    }
+    if (!grupy.has(slot)) grupy.set(slot, { slot, idxCeny: Math.min(slot, IDX_KONCA), wezly: [] });
+    grupy.get(slot).wezly.push(n);
   });
   if (grupy.size < 2) return '';      // jedna kropka nie opowiada żadnej historii
 
   // ⚠️ ŚWIADOME ODSTĘPSTWO od konwencji „najnowszy etap na górze" (obowiązującej w watki.html, osi pod
   // postem i karcie og?w=1): oś CZASU wykresu biegnie w lewo→prawo i odwrócić się jej nie da, więc
   // numeracja i legenda idą OD NAJSTARSZEGO. Inaczej numer 1 stałby po prawej stronie wykresu.
-  const etapy = [...grupy.values()].sort((a,b) => a.i - b.i);
+  const etapy = [...grupy.values()].sort((a,b) => a.slot - b.slot);
   const punkty = s.punkty, min = Math.min(...punkty), max = Math.max(...punkty);
   const rozp = (max - min) || 1, padX = 14, padY = 12;
-  const X = i => (i / (punkty.length - 1)) * (SAGA_W - padX*2) + padX;
+  // ⚠️ Skala X liczy się od MAKSYMALNEGO slotu, nie od długości serii — gdy jakiś etap wypada
+  // po ostatniej sesji, linia ceny ściska się w lewo i po prawej robi się miejsce na lukę.
+  const maxSlot = Math.max(IDX_KONCA, etapy[etapy.length - 1].slot);
+  const X = i => (i / maxSlot) * (SAGA_W - padX*2) + padX;
   const Y = v => SAGA_H - padY - ((v - min) / rozp) * (SAGA_H - padY*2);
   const wzrost = (s.zmiana_okres_pct || 0) >= 0;
   const kolor = wzrost ? '#0f7b3d' : '#c81e1e';
   const d = punkty.map((v,i) => (i?'L':'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
-  const pod = `${d} L${X(punkty.length-1).toFixed(1)} ${SAGA_H} L${X(0).toFixed(1)} ${SAGA_H} Z`;
+  const pod = `${d} L${X(IDX_KONCA).toFixed(1)} ${SAGA_H} L${X(0).toFixed(1)} ${SAGA_H} Z`;
+  // Odcinek bez notowań: kreskowany, na poziomie ostatniego zamknięcia i BEZ wypełnienia pod
+  // spodem — żeby na pierwszy rzut oka było widać, że tam nie ma danych, a nie że kurs stał płasko.
+  const ogon = maxSlot > IDX_KONCA
+    ? `<path d="M${X(IDX_KONCA).toFixed(1)} ${Y(punkty[IDX_KONCA]).toFixed(1)} L${X(maxSlot).toFixed(1)} ${Y(punkty[IDX_KONCA]).toFixed(1)}" `
+      + `fill="none" stroke="${kolor}" stroke-width="1.4" stroke-dasharray="3 3" opacity=".45"/>`
+    : '';
   const gid = 'sr' + Math.random().toString(36).slice(2,8);
 
   let kropki = '';
   etapy.forEach((g, nr) => {
     const teraz = g.wezly.some(n => normThreadKey(n.text) === kluczBiez);
-    const x = X(g.i), y = Y(punkty[g.i]);
+    const x = X(g.slot), y = Y(punkty[g.idxCeny]);
     // `data-nis` = indeksy węzłów tej kropki w `t.nodes` (jedna sesja bywa wspólna dla kilku etapów).
     // Po tym polu wiersz listy odnajduje SWOJĄ kropkę — patrz `sagaPodswietlKropke`.
     const nis = g.wezly.map(n => t.nodes.indexOf(n)).join(',');
@@ -1571,7 +1620,7 @@ function sagaRynekHtml(item){
   // ⚠️ Wiersz NIE JEST LINKIEM: tap rozsuwa skrót w miejscu (`sagaToggleSkrot`), a wyjście do newsa
   // siedzi w rozsuniętym bloku.
   const wierszLeg = (n, etykieta, teraz, extra) => {
-    const dataPL = (sagaDataWezla(n) || '').slice(5).split('-').reverse().join('.');
+    const dataPL = sagaDataPL(sagaDataWezla(n));
     return `<div class="sr-leg${teraz ? ' on' : ''}" data-ti="${ti}" data-ni="${t.nodes.indexOf(n)}"${extra || ''}`
          +  ` onclick="event.stopPropagation();sagaToggleSkrot(this)">`
          +  `<span class="sr-leg-nr">${etykieta}</span>`
@@ -1600,8 +1649,19 @@ function sagaRynekHtml(item){
   const czesciStopki = [];
   if (pozaOknem) czesciStopki.push(`+ ${pozaOknem} ${pozaOknem === 1 ? 'wcześniejszy etap' : 'wcześniejszych etapów'} sprzed okna wykresu`);
   if (innyInstrument) czesciStopki.push(`+ ${innyInstrument} ${odmianaEtap(innyInstrument)} sagi bez wpływu na ${escHtml(sym)} — pełna oś w „Wątku tematu"`);
+  // Etapy, które wypadły PO końcu serii dalej niż EXT_MAX sesji — kropki nie ma, ale milczeć o nich
+  // nie wolno: to dokładnie ta klasa, przez którą wykres zaczął kłamać o odstępach.
+  if (poKoncu) czesciStopki.push(`+ ${poKoncu} ${odmianaEtap(poKoncu)} po ostatniej sesji wykresu (${sagaDataPL(OSTATNIA)}) — brak notowań z tych dni`);
   const stopka = czesciStopki.length ? `<div class="sr-foot">${czesciStopki.join('<br>')}</div>` : '';
   const nSesji = s.punktow_okres || punkty.length;
+  // 🔴 Data końca serii ZAMIAST liczby sesji, nie obok niej — i tylko wtedy, gdy wykres nie sięga
+  // najnowszego etapu, czyli dokładnie wtedy, gdy czytelnik mógłby zostać wprowadzony w błąd.
+  // ⚠️ Czwarty człon SIĘ NIE MIEŚCI: `.sr-sym` ma `nowrap` + `text-overflow:ellipsis`, więc przy
+  //    375 px „…· 30 sesji · do 14.08" ucinało się na „do 14.…" i cała informacja przepadała
+  //    (złapane na zrzucie z podglądu). „do 14.08" ma tyle samo znaków co „30 sesji", więc
+  //    podmiana mieści się w tym samym miejscu. Długość okna jest tu ozdobą, data końca — nie.
+  const ogonek = (maxSlot > IDX_KONCA || poKoncu);
+  const okno = ogonek ? `do ${sagaDataPL(OSTATNIA)}` : `${nSesji} sesji`;
   // ⚠️ LEGENDA ZWINIĘTA, ROZSUWA JĄ DOPIERO KLIK W WYKRES (2026-08-09, życzenie właściciela ze zrzutem).
   // Saga potrafi mieć 20 węzłów, a legenda to jeden wiersz na węzeł — przy sadze Ormuz (6 etapów, 20
   // wierszy) lista była DŁUŻSZA niż cały artykuł, pod którym stoi, i spychała treść poza ekran.
@@ -1610,7 +1670,7 @@ function sagaRynekHtml(item){
   const nEtapow = etapy.reduce((a, g) => a + g.wezly.length, 0);
   return `<div class="sr-box">
     <div class="sr-head"><span class="sr-tt">Saga na wykresie</span>`
-    + `<span class="sr-sym">${escHtml(sym)} · ${escHtml(s.nazwa || sym)} · ${nSesji} sesji</span></div>
+    + `<span class="sr-sym">${escHtml(sym)} · ${escHtml(s.nazwa || sym)} · ${okno}</span></div>
     <button type="button" class="sr-klik" aria-expanded="false" aria-controls="${lid}"
             onclick="toggleSagaLegenda(this,'${lid}')">
     <svg class="sr-svg" viewBox="0 0 ${SAGA_W} ${SAGA_H}" role="img" aria-label="Etapy wątku naniesione na wykres ${escAttr(sym)}">
@@ -1619,6 +1679,7 @@ function sagaRynekHtml(item){
         <stop offset="100%" stop-color="${kolor}" stop-opacity="0"/></linearGradient></defs>
       <path d="${pod}" fill="url(#${gid})"/>
       <path d="${d}" fill="none" stroke="${kolor}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+      ${ogon}
       ${kropki}
     </svg>
       <span class="sr-hint"><span class="sr-hint-w">Kliknij wykres — ${nEtapow} ${odmianaEtap(nEtapow)} sagi</span>`
