@@ -3,6 +3,97 @@
 Zdjęcie stanu na **2026-08-17 (noc, po sesji o dublu Berkshire)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## 🔴 18.08: DUBEL O TOMAHAWKACH — bramka MIAŁA materiał, model orzekł NOWE
+
+Zgłoszenie właściciela ze zrzutu (*„wydaje mi się, że to już było"*) — miał rację:
+- **17.08 14:33** (popołudniowa, Breakingthenews.net, reach 5): „US Navy przyznała Raytheonowi kontrakt
+  o wartości **22,9 mld USD** na zwiększenie produkcji pocisków Tomahawk";
+- **18.08 09:11** (poranna, Vietnam.vn, reach 23): „Pentagon podpisał z Raytheon kontrakt na rakiety
+  Tomahawk za **22,9 mld USD**". Ten sam komunikat DoD, ta sama kwota, ~19 h różnicy.
+- 🔴 **TO INNA KLASA NIŻ WSZYSTKIE DOTYCHCZASOWE DUBLE.** Zmierzone realnymi metodami z `Bot.dll`:
+  **tytuły 0,333 przy progu 0,18**, opisy 0,161 przy progu 0,15 — czyli **OBIE** bramki miały tę parę
+  nad progiem. Dotąd każdy dubel brał się z tego, że model NIE DOSTAŁ materiału (`bilion`≠`bln`,
+  `googl`≠`alphabet`, okno za krótkie, parafrazy bez wspólnych słów). **Tu materiał był, a werdykt
+  `OcenEtapKontynuacji` brzmiał NOWE.**
+- **Hipoteza (NIEZWERYFIKOWANA — brak dostępu do logu Hetznera i do lejka w Supabase):** dla modelu
+  „US Navy PRZYZNAŁA kontrakt" i „Pentagon PODPISAŁ kontrakt" wyglądają jak dwa etapy (award → signing),
+  a taki właśnie rozwój ma przepuszczać. ⚠️ **Zanim cokolwiek zmienisz — sprawdź w logu, czy bramka
+  w ogóle była wołana** i jaki padł werdykt; drugą możliwością jest fail-safe (błąd API → publikuj).
+- **Kandydat na naprawę, gdyby klasa wróciła:** ta sama KWOTA (`SklejKwoty` daje wspólny token
+  `kwota22miliard`) + ta sama FIRMA w obu nagłówkach = ten sam kontrakt, więc reguła w prompcie
+  `OcenEtapKontynuacji`: *przyznanie i podpisanie tego samego kontraktu to JEDNO wydarzenie*.
+  ⚠️ Nie rób z tego twardej bramki deterministycznej bez pomiaru — „ta sama kwota + ta sama firma"
+  trafia też w realne etapy (transze, aneksy).
+- **Dane (PR z tej sesji):** nowsza pozycja (18.08, Vietnam.vn) zdjęta z porannej. Tekst **ZOSTAJE
+  w `seen`**, ale **zdjęty z rolki `loose`** — wskazywałby na kafel, którego już nie ma. Węzłem sagi
+  nie był. Starsza pozycja (17.08) zostaje jako właściwa publikacja tego wydarzenia.
+
+## ✅ 18.08 rano: CYTAT-WABIK W NAGŁÓWKU — kafel poprawiony, bramka ŚWIADOMIE NIEWDROŻONA, czujka informuje
+
+Zgłoszenie właściciela ze zrzutu (poranna poz. 03, `reach 52`): **„«Co z nami zrobiliście». Polacy mają
+dość systemu kaucyjnego"** (superbiz.se.pl) — *„czy nie uważasz, że powinien być lepszy tytuł?"*.
+Cytat BEZ atrybucji + teza zamiast faktu; konkrety (skargi posłów KO na kolejki do automatów, wygasające
+bony, niejasny obieg kaucji) siedziały wyłącznie w artykule. Slug źródła:
+`system-kaucyjny-doprowadza-ludzi-do-szalu-poslowie-ko-traca-cierpliwosc` — **wabik jest od wydawcy**.
+- 🔴 **BRAMKA W BOCIE NAPISANA, ZMIERZONA I WYCOFANA — nie odgrzewaj bez nowego powodu.**
+  `ZdejmijCytatWabik` działał (10 trafień / 5771 pozycji, 0 fałszywek, 0 nachodzenia na trzy istniejące
+  bramki oprawy), ale **w 2 z 10 przypadków cięcie gubiło sedno**: „«My nie czujemy paniki przed Rosją».
+  Szef MSZ o groźbach Kremla" → zostawało samo „Szef MSZ o groźbach Kremla". Właściciel obejrzał
+  zestawienie przed/po i zdecydował: *„nie, no źle to trochę jest… zmień tylko ten kafel, a do kontrolki
+  dodaj, że jak coś się nie będzie zgadzać, to mnie informuj"*. Kod zdjęty z gałęzi (commit `6816cac`
+  w historii, gdyby wracać).
+  ⚠️ Rozważony i też odrzucony wariant „przestaw na atrybucję" (`Szef MSZ…: «My nie czujemy paniki…»`) —
+  zostawia cytat w nagłówku.
+- **Zamiast tego: sygnał w czujce** — [brifup-kontrola#1](https://github.com/sowasskat-debug/brifup-kontrola/pull/1),
+  klasa `naglowek-cytat-wabik` (waga WAŻNE) + zasada w `CLAUDE.md` czujki: zgłaszać właścicielowi
+  **z propozycją nagłówka z faktów artykułu**, nie samą resztką po odjęciu cytatu.
+  ⚠️ **Czujka złapie to dopiero PO MERGU** — routine klonuje `main`.
+- **Dane (ten PR):** kafel dostał nagłówek **„Posłowie KO chcą zmian w systemie kaucyjnym — skargi na
+  kolejki do automatów i wygasające bony"**. ⚠️ Slug **`iwd414` → `nrg969`**: stary stub osierocony
+  (wygasa po 14 dniach), nowy powstanie przy najbliższym biegu bota. Zsynchronizowane `seen` **oraz
+  rolka `loose`** w `threads.json` (pozycja nie jest węzłem żadnej sagi). `article`, `source_url`
+  i `image_url` NIETKNIĘTE.
+- ⚠️ **Port `itemSlug` zwalidowany PRZED edycją**: 87/87 dzisiejszych pozycji trafia w istniejące stuby.
+- ⚠️ **`briefs.json` MA escapowanie .NET, `threads.json` NIE MA** — ta sama podmiana wymaga w jednym
+  pliku `\u0142`, w drugim dosłownego „ł".
+
+## ✅ 18.08 rano: NISZOWY SPORT — kafel zdjęty + reguła w stałej (bot PR z tej sesji)
+
+Zgłoszenie właściciela ze zrzutu dawki porannej (poz. 06): **„47-letni pastor z Kalifornii znalazł się
+w składzie drużyny futbolowej San José City College…"** (Fox News, **reach 0**, `impact` null,
+kategoria `Świat`) — *„ten rodzaj newsu nam jest niepotrzebny, zbyt niszowy"*.
+- 🔴 **PRZYCZYNA: `WSPOLNE_ODRZUCENIA` nie miało ŻADNEJ reguły o sporcie.** Istniała lokalnie tylko
+  w 2 z 6 promptów (feedy zbiorcze i polskie), a news wszedł **ścieżką `CheckKalshiBatched`** (Kobeissi,
+  oryginał `JUST IN: 47 y/o California pastor makes…`). Reguła o rozrywce mówi wyłącznie o filmie i muzyce.
+- 📊 **Zmierzone na 5767 pozycjach** (briefs + 49 dni archiwum): 47 trafień wzorca sportowego, **21 w oknie
+  Mundialu 2026** (wyniki meczów, saga Baluguna, kibice); po turnieju klasa znika i wraca dopiero tym
+  pastorem. ⚠️ Pierwszy wzorzec dał 179 trafień, bo łapał **„ek-sportowe"** — wzorce sportowe wyliczaj
+  jawnie i wypisuj trafiony token.
+- **Reguła w `WSPOLNE_ODRZUCENIA`** (nie w jednym prompcie — klasa wchodzi różnymi ścieżkami), zakres
+  **zawężony do niszowego**: poziom amatorski/uczelniany/lokalny i historie o pojedynczym zawodniku.
+  Cztery wyjątki z realnych pozycji, które MUSZĄ przechodzić: biznes wokół sportu (prawa transmisji,
+  „FIFA zarobiła 9 mld USD", zwolnienie podatkowe dla FIFA, cło na kije hokejowe), postacie-topki
+  (Bezos × Liverpool), geopolityka sportowa (MKOl × Rosja), finał mega-wydarzenia.
+- **Dane (ten PR):** kafel zdjęty z porannej, jednowęzłowa saga **w1038** usunięta, tekst **ZOSTAJE
+  w `seen`**, wpis dopisany do `rejected.json` (warstwa PRZYKŁADÓW). Stub osierocony — wygaśnie po 14 dniach.
+  ⚠️ Edycja **tekstowa**, nie przez `json.dumps`: `briefs.json`/`threads.json` mają escapowanie .NET
+  (`\u017C` WIELKIMI literami), więc re-serializacja Pythonem przepisała CAŁY plik (8070 linii diffa) —
+  cofnięte, poprawna wersja ma diff 1/1 na plik. **Nie re-serializuj tych plików.**
+  ⚠️ Bot commituje `briefs.json`/`threads.json` co ~30 min → **przy mergu spodziewaj się konfliktu**
+  i przenieś tę samą edycję na świeży `main`.
+- 👀 **Po deployu obejrzeć:** czy nie zniknęły newsy biznesowe wokół sportu — to byłby znak, że model
+  czyta regułę zbyt szeroko (wtedy **zawęź opis sportu, nie ruszaj wyjątków**).
+- ✅ **DOMKNIĘTE tego samego ranka — doprecyzowanie właściciela:** *„sport może być pod warunkiem,
+  że to jakiś globalny event albo coś, co zainteresowałoby przeciętnego Polaka"*. Wyjątek (d) poszerzony:
+  rozstrzygnięcia imprez najwyższej rangi (MŚ, ME, igrzyska, finał LM, Wielki Szlem), **wszystko
+  z udziałem Polski i polskich sportowców**, rekordy świata, wydarzenia rezonujące poza sportem.
+  Do reguły wpisany TEST: *czy przeciętny Polak, który sportem się nie interesuje, i tak o tym usłyszy?*
+  Granica: mecz grupowy i ćwierćfinał bez polskiego wątku, tabela ligowa, kalendarz, ligi krajowe innych
+  państw, kontuzje i forma zawodników.
+  ⚠️ **Polskiego haczyka nie dało się skalibrować pomiarem** — w 49 dniach archiwum praktycznie go nie ma
+  (Mundial 2026 bez Polski). To reguła NA PRZYSZŁOŚĆ; po pierwszym turnieju z polskim udziałem sprawdzić,
+  czy nie wpuszcza relacji z każdego meczu.
+
 ## ✅ 17.08 noc: TEN SAM NEWS PO TRZECH DNIACH — dubel zdjęty (#184) + aliasy firm w mierze (bot #189, ZMERGOWANE)
 
 Zgłoszenie właściciela (*„ten news już był u nas chyba"*): dawka wieczorna dostała **„Google jest trzecim
