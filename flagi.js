@@ -22,9 +22,8 @@
  *
  * ⚠️ WYKRYWANIE PO SZEROKOŚCI, NIE PO `navigator.platform`. Sniffing systemu skłamie
  * w obie strony: Firefox na Windowsie flagi MA (nie potrzebuje fontu), a kolejne wydania
- * Windowsa mogą je kiedyś dostać. Mierzymy więc SKUTEK: gdy para 🇵🇱 skleja się w jeden
- * glif, jest ~tak szeroka jak pojedynczy wskaźnik; gdy system rysuje dwie literki,
- * jest ~dwa razy szersza. Próg 1,5 leży w połowie między 1,0 a 2,0.
+ * Windowsa mogą je kiedyś dostać. Mierzymy więc SKUTEK — czy shaper SKLEJA parę wskaźników
+ * w jeden glif (szczegóły pomiaru i historia błędnego progu przy `systemMaFlagi` niżej).
  * ⚠️ Świadomie `measureText`, a NIE `getImageData` (test na kolor): rozszerzenia
  * anty-fingerprintingowe zaszumiają odczyt pikseli i test koloru zacząłby kłamać.
  *
@@ -47,20 +46,44 @@
 
   var RODZINA = 'Twemoji Country Flags';
   var PLIK = '/fonts/TwemojiCountryFlags.woff2';
-  var PARA = '🇵🇱';  // 🇵🇱 — para wskaźników regionalnych
-  var JEDEN = '🇵';             // 🇵 — sam wskaźnik, zawsze rysowany jako literka w ramce
+  var PARA_Z_FLAGA  = '\u{1F1F5}\u{1F1F1}';  // 🇵🇱 — para, która TWORZY flagę
+  var PARA_BEZ_FLAGI = '\u{1F1FF}\u{1F1FF}'; // 🇿🇿 — ZZ to kod zarezerwowany, flagi nie ma w ŻADNYM foncie
 
-  // true = system rysuje prawdziwe flagi, nie ma czego naprawiać.
+  /* true = system rysuje prawdziwe flagi, nie ma czego naprawiać.
+   *
+   * 🔴 POPRAWIONE 2026-08-18 — poprzedni test BYŁ MARTWY i zwracał `true` na KAŻDYM systemie,
+   * więc font nie był wstrzykiwany nigdy, a Windows dalej pokazywał „PL" (zgłoszenie właściciela:
+   * „flagi wciąż nie działają na windowsie" — trzy dni po wdrożeniu poprawki).
+   *
+   * Stary test porównywał PARĘ z POJEDYNCZYM wskaźnikiem i zakładał, że dwie literki w ramkach
+   * są ~2× szersze niż jedna. 📊 Zmierzone w Chromium bez fontu emoji (czyli w stanie, w jakim
+   * jest Windows): para 39,9 px, pojedynczy 28,3 px — stosunek **1,41**, a próg wynosił **1,5**.
+   * Czyli warunek `para < jeden * 1.5` wychodził PRAWDZIWY także tam, gdzie flag nie ma.
+   * Założenie „×2" było błędne, bo pojedynczy wskaźnik ma własne boczne marginesy i nie jest
+   * połową pary — porównanie DWÓCH znaków z JEDNYM zależy od metryk fontu zastępczego, nie od
+   * tego, o co pytamy.
+   *
+   * Teraz pytamy WPROST o to, co nas interesuje: czy shaper SKLEJA parę w ligaturę. Porównujemy
+   * parę tworzącą flagę (🇵🇱) z parą, która flagi nie tworzy (🇿🇿) — oba napisy mają tę samą
+   * długość i te same metryki bazowe, więc różnica bierze się WYŁĄCZNIE ze sklejenia.
+   * 📊 Zmierzone (te same warunki):
+   *     system BEZ flag:      🇵🇱 39,9  ·  🇿🇿 39,9  → stosunek 1,00
+   *     z fontem Twemoji:     🇵🇱 32,0  ·  🇿🇿 64,0  → stosunek 0,50
+   *   Próg 0,9 leży w bezpiecznej odległości od obu, a separacja jest dwukrotna zamiast 6-procentowej.
+   *
+   * ⚠️ Nie wracaj do porównania „para vs pojedynczy znak" — to jest dokładnie ten pomiar,
+   *    który tu zawiódł, i zawiódł CICHO (bez błędu, bez śladu w konsoli).
+   */
   function systemMaFlagi() {
     try {
       var ctx = document.createElement('canvas').getContext('2d');
       if (!ctx) return true;
       ctx.font = '32px sans-serif';
-      var para = ctx.measureText(PARA).width;
-      var jeden = ctx.measureText(JEDEN).width;
+      var zFlaga = ctx.measureText(PARA_Z_FLAGA).width;
+      var bezFlagi = ctx.measureText(PARA_BEZ_FLAGI).width;
       // Zerowe albo bezsensowne pomiary — nie zgadujemy.
-      if (!para || !jeden) return true;
-      return para < jeden * 1.5;
+      if (!zFlaga || !bezFlagi) return true;
+      return zFlaga < bezFlagi * 0.9;
     } catch (e) {
       return true;
     }

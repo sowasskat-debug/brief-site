@@ -1557,8 +1557,28 @@ w KAŻDEJ pozycji `briefs.json`, więc dotyczyło to całego feedu.
      Dlatego wolno go dopisać do stosu `body`.
 - ⚠️ **WYKRYWANIE PO SZEROKOŚCI GLIFU, NIE po `navigator.platform`.** Sniffing systemu
   skłamałby w OBIE strony: Firefox na Windowsie flagi ma, a kolejne wydania Windowsa mogą
-  je kiedyś dostać. Mierzymy SKUTEK: sklejona para 🇵🇱 jest ~tak szeroka jak pojedynczy
-  wskaźnik, dwie literki są ~dwa razy szersze; próg 1,5 leży w połowie między 1,0 a 2,0.
+  je kiedyś dostać. Mierzymy SKUTEK — czy shaper SKLEJA parę wskaźników w jeden glif.
+- 🔴 **PIERWSZA WERSJA TESTU BYŁA MARTWA — zwracała „system ma flagi" NA KAŻDYM systemie,
+  więc font nie był wstrzykiwany nigdy (naprawione 2026-08-18).** Zgłoszenie właściciela
+  *„flagi wciąż nie działają na windowsie"* przyszło **trzy dni po wdrożeniu poprawki**, a poprawka
+  po prostu nie miała jak się odpalić. Stary test porównywał PARĘ z POJEDYNCZYM wskaźnikiem
+  i zakładał, że dwie literki w ramkach są ~2× szersze niż jedna. 📊 Zmierzone w Chromium bez fontu
+  emoji (czyli w stanie, w jakim jest Windows): **para 39,9 px, pojedynczy 28,3 px → 1,41**, przy
+  progu **1,5**. Warunek `para < jeden * 1.5` wychodził PRAWDZIWY także tam, gdzie flag nie ma.
+  Założenie „×2" było błędne, bo pojedynczy wskaźnik ma własne boczne marginesy i nie jest połową
+  pary — porównanie DWÓCH znaków z JEDNYM mierzy metryki fontu zastępczego, nie sklejanie.
+  **Teraz pytamy wprost o sklejanie:** para tworząca flagę (🇵🇱) kontra para, która flagi NIE tworzy
+  (🇿🇿 — kod zarezerwowany, nie ma go w żadnym foncie). Oba napisy mają tę samą długość, więc różnica
+  bierze się wyłącznie z ligatury. 📊 **Bez flag 39,9/39,9 = 1,00; z Twemoji 32/64 = 0,50** — próg
+  **0,9** stoi w bezpiecznej odległości od obu, a separacja jest DWUKROTNA zamiast 6-procentowej.
+  ⚠️ **Nie wracaj do porównania „para vs pojedynczy znak"** — to jest dokładnie ten pomiar, który
+  zawiódł, i zawiódł CICHO: bez błędu, bez śladu w konsoli, przy poprawnym foncie i poprawnym CSS.
+  ⚠️ **`?flagi=on` działało przez cały czas**, więc podgląd wyglądał na dowód, że wszystko gra —
+  weryfikując taką bramkę, sprawdzaj ŚCIEŻKĘ AUTOMATYCZNĄ, nie przełącznik.
+  ✅ Zweryfikowane w Chromium (390 px, przeglądarka bez fontu flag = odpowiednik Windowsa),
+  3 warianty, 0 błędów JS: bez parametru → `@font-face` wstrzyknięty, woff2 **200**, stosunek
+  w realnym stosie elementu **0,50** (flaga sklejona); `?flagi=on` → to samo; `?flagi=off` → brak
+  wstrzyknięcia, **woff2 w ogóle nie pobrany**, stosunek 1,00.
 - ⚠️ **Świadomie `measureText`, a NIE `getImageData`** (test na kolor): rozszerzenia
   anty-fingerprintingowe zaszumiają odczyt pikseli i test koloru zacząłby kłamać.
 - **FAIL-SAFE W STRONĘ „NIC NIE RÓB":** każdy wyjątek i każdy dziwny pomiar = zostawiamy
