@@ -3,6 +3,27 @@
 Zdjęcie stanu na **2026-08-18 (noc, po sesji o utrwaleniu materiału źródłowego)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## ⬜ 19.08: KARTY OG CZEKAJĄ NA DEPLOY — jedna komenda, TYLKO Z MACA
+
+**Kod jest zmergowany na `main` (#197), ale karty na X dalej wyglądają po staremu.** Deploy Edge
+Function **nie idzie przez git** i nie da się go zrobić z sandboxa: nie ma CLI, nie ma tokenu,
+a egress nie widzi `api.supabase.com` (sprawdzone — kod 000).
+
+```
+cd ~/Documents/brief-site && git pull
+supabase functions deploy og --no-verify-jwt --project-ref utmvokfjvrthvcmxzowc
+```
+
+- Co czeka: czcionki kart wątku i klastra (tytuł 38→44, tekst etapu 23→27) + bramka `ileWezlowNa630`,
+  która przy bardzo długich nagłówkach pokazuje 3 etapy zamiast ciąć czwarty. Szczegóły i pomiary
+  w `CLAUDE.md`, sekcja „Karty OG: większa czcionka".
+- ⚠️ `cd` do repo jest KONIECZNE — CLI bierze funkcję z bieżącego katalogu. To ta sama pułapka,
+  przez którą 07.08 dwa deploye nadpisały niezacommitowany układ karty.
+- ⚠️ Stare linki wrzucone już na X zachowają starą kartę (X cache'uje podgląd per URL). Nowe posty
+  dostaną większą od razu.
+- 💡 Do rozważenia, żeby to przestało być ręczne: workflow wdrażający `og` przy merge do `main`.
+  Wymaga jednego sekretu repo (`SUPABASE_ACCESS_TOKEN`) — da się dodać z telefonu przez GitHub.
+
 ## 🔴 19.08: DEEPSEEK PODNIÓSŁ CENNIK — rachunek ×2,3 przy TYM SAMYM zużyciu
 
 Zgłoszenie właściciela („wczoraj zapłaciłem 0,81, normalnie 0,25"). **To nie jest nasz kod.**
