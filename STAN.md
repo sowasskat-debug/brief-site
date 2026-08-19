@@ -6,7 +6,15 @@ Zdjęcie stanu na **2026-08-19 (wieczór, po sesji o kadencji nocnej, czujce i d
 ## ⬜ 19.08 noc: NISZOWE WSKAŹNIKI — LISTA KLAS DO DOPISANIA (reguła bazowa JUŻ w main, PR #205)
 
 Reguła bazowa weszła (PR #205, `409c4b3`), ale wymienia w zasadzie sam Cass Freight. Uwaga właściciela:
-„cass freight to nie jedyny niszowy wskaźnik" — i to prawda. 📊 Przeszukane 12 470 kandydatów
+„cass freight to nie jedyny niszowy wskaźnik" — i to prawda.
+
+🔴 **DECYZJE WŁAŚCICIELA ZAPADŁY 19.08 — wariant A. Do dopisania jako ODRZUCANE cztery klasy:**
+regionalne oddziały Fed · zagraniczne sondaże konsumenckie · amerykańskie wskaźniki mieszkaniowe ·
+azjatyckie PPI/CPI. **ZOSTAJĄ: `Fear & Greed` oraz benchmarki AI.**
+Uzasadnienie wspólne: te cztery dzielą dokładnie cechę, przez którą wyleciał Cass Freight —
+zerowa rozpoznawalność u polskiego czytelnika przy zerowym przełożeniu na jego sytuację
+(„Dallas Fed Manufacturing" to sondaż nastrojów w JEDNYM okręgu USA, „S.Korea producer price index"
+to koreańska inflacja producencka). 📊 Przeszukane 12 470 kandydatów
 z historii `tytuly.txt`, znalezione **19 różnych indeksów**. Klasy do dopisania jako PRZYKŁADY:
 
 - **regionalne oddziały Fed** — Dallas Fed Manufacturing, Philadelphia/Philly Fed, Richmond,
@@ -23,11 +31,13 @@ z wszystkich (16–32 trafienia zależnie od wzorca, `Crypto Fear & Greed Index:
 przeciętny czytelnik go nie zna, publikujemy dużo krypto i tam jest rozpoznawalny.
 ⚠️ Przy dopisywaniu listy MUSI zostać wyjęty spod reguły wprost, inaczej wypadnie razem z resztą.
 
-⬜ **DO ROZSTRZYGNIĘCIA — benchmarki AI** (Artificial Analysis Intelligence Index, SWE-Bench, LMArena,
+✅ **ROZSTRZYGNIĘTE 19.08 — benchmarki AI ZOSTAJĄ** (Artificial Analysis Intelligence Index, SWE-Bench, LMArena,
 Chatbot Arena; 4 trafienia). Tech to nasza mocna kategoria i granica jest cienka:
 „Grok 4.5 najlepszym modelem poza Anthropic" **JEST** newsem o zmianie układu sił, ale
 „Muse Spark 1.2 zdobywa 54 punkty w Artificial Analysis Intelligence Index" to czysty szum.
-Kryterium do wpisania, gdy właściciel zdecyduje: **zmiana układu sił = przepuść, punktacja w rankingu = odrzuć.**
+⚠️ Właściciel zdecydował, że zostają — czyli reguła NIE MOŻE ich objąć. Zaproponowane kryterium
+(**zmiana układu sił = przepuść, punktacja w rankingu = odrzuć**) zostaje jako wskazówka na wypadek,
+gdyby zaczęły zaśmiecać front punktacjami — ale dziś NIE wpisujemy go jako odrzucenia.
 
 📊 Zasięg reguły bazowej sprawdzony na 6009 opublikowanych pozycjach: niszowych indeksów **0**
 (Cass Freight był pierwszym, który przeszedł), rekord serii **2** — z czego „Eksport Japonii wzrósł
