@@ -3,6 +3,128 @@
 Zdjęcie stanu na **2026-08-18 (noc, po sesji o utrwaleniu materiału źródłowego)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## 🔴 19.08: DEEPSEEK PODNIÓSŁ CENNIK — rachunek ×2,3 przy TYM SAMYM zużyciu
+
+Zgłoszenie właściciela („wczoraj zapłaciłem 0,81, normalnie 0,25"). **To nie jest nasz kod.**
+DeepSeek podniósł ceny **16.08 o 16:00 UTC** i wprowadził stawki szczytowe.
+
+| pozycja /1 M | do 15.08 | off-peak | peak | wzrost |
+|---|---|---|---|---|
+| cache hit | $0,0028 | $0,007 | $0,014 | ×5 |
+| cache miss | $0,14 | $0,22 | $0,44 | ×3,1 |
+| output | $0,28 | $0,66 | $1,32 | ×4,7 |
+
+Szczyt: **01:00-04:00 i 06:00-10:00 UTC** (03:00-06:00 i 08:00-12:00 warszawskiego), poza nim połowa ceny.
+📊 Dowód, że to cennik, a nie my: **18.08 = 2535 requestów, 1,95 M miss, 327 k output → $0,835**;
+**13.08 = 2176 / 1,86 M / 333 k → $0,364**. Ruch praktycznie ten sam. Ruch z 13.08 po dzisiejszym
+cenniku kosztowałby **$1,31**. Projekcja: **~$22/mies** zamiast ~$8-9.
+Skład rachunku 18.08: **miss 64% · output 32% · hit 3,6%**.
+⛔ **Nie tnij `WSPOLNE_ODRZUCENIA` „dla oszczędności"** — cały stały blok reguł to HIT, czyli 3 centy
+na dobę. Przebudowa prefiksu po zmianie reguły kosztuje ~$0,02, nie „cały dzień".
+📊 Porównanie z OpenAI (na naszym zużyciu): **GPT-5 nano = $0,246/dobę, czyli 3,4× taniej** i 1,5×
+taniej niż DeepSeek PRZED podwyżką. Przewaga cenowa DeepSeeka zniknęła. Migracja to jednak 15 miejsc
+wywołania i model najmniejszej klasy przy 30-tysięcznych polskich promptach — **gdyby próbować, to od
+wąskich bramek werdyktu** (`brief-liczby-rozjazd`, `brief-osoba-w-zrodle`, `brief-inne-wydarzenie`),
+nigdy od selekcji.
+
+## ⬜ 19.08: KADENCJA NOCNA — ZMIERZONA, GOTOWA, CZEKA NA WKLEJENIE NA HETZNERZE
+
+Nie wdrożone — właściciel dostał gotowy blok crontaba. **Dzień bez zmian**, rzadziej tylko w nocy:
+00:00-03:00 co 60 min, 03:00-05:00 co 120 min (najcichsza pora doby I szczyt cenowy). 41 biegów zamiast 48.
+
+- 📊 **Noc NIE jest martwa** — 23:00-07:00 to **24,2 pozycji/dobę, 26% całości**. Feedy są amerykańskie
+  (Juice, Kalshi, Kobeissi, Polymarket, ZeroHedge, Techmeme, BBC World) i nadają całą naszą noc.
+  Dlatego cięcie jest wąskie: 03:00-06:00 ma tylko 6,4 pozycji, a kosztuje podwójnie.
+- 🔴 **ZASADA, bez której to gubi newsy: okno selekcji ≥ 2× odstęp.** `OknoSelekcjiMinut = 60`, a przy
+  godzinnej kadencji zapas spada do zera — i wtedy **pominięty bieg** (flock, ~16% biegów łapie timeout
+  `SELEKCJA-JSON` 300 s) zostawia dziurę, w której news przepada bez śladu w żadnym liczniku.
+  Stąd `CATCHUP_MINUTES=150` przy odstępie 60 i `240` przy 120.
+- ✅ **Poszerzenie okna jest DARMOWE** — pozycje spalone w `wyslane.txt` odpadają przy parsowaniu RSS,
+  **przed** zbudowaniem promptu. Zero dodatkowych tokenów. Dlatego nie ma po co być oszczędnym.
+- ✅ Zweryfikowane w kodzie: `CATCHUP_MINUTES` obejmuje wszystkie 6 ścieżek (jedno pole statyczne);
+  `historia.Contains(link)` odsiewa przed promptem, a burn dotyczy WSZYSTKICH kandydatów paczki;
+  `wyslane.txt` trzyma 200 linków ≈ **10 godzin**, czyli dużo więcej niż każde okno;
+  `MaxWiekZrodlaGodziny = 24 h`; limity „max N/bieg" nie wiążą w nocy (2,6 publikacji/godzinę
+  ze WSZYSTKICH feedów, ForexLive z capem 1/bieg daje 0,4 pozycji na całą noc); automat X nietknięty
+  (jego okno 05:00-21:00 UTC leży w bloku `*/30`).
+- ⚠️ **Hetzner chodzi na UTC** (potwierdzone stemplami commitów), `added_at` jest warszawskie.
+  Crontab piszemy w UTC.
+- ⚠️ **Pre-flight przed wklejeniem:** `CATCHUP_MINUTES` NIE MOŻE być w `bot_secrets.env` —
+  `set -a; source` nadpisałoby wartość z crona i okno po cichu wróciłoby do 60.
+- ⛔ **Blok 08:00-12:00 co 90 min ODRZUCONY na teraz** ($1,60/mies): to dawka poranna, godziny czytania,
+  a limity „max 2/bieg" zaczęłyby tam wiązać. Decyzja wymaga rozkładu godzinowego wejść z knagi.
+
+## 🔴 19.08: ANGIELSKI NAGŁÓWEK NA PRODUKCJI — NAPRAWIONE (bot #199 + kontrola #4, ZMERGOWANE)
+
+Zgłoszenie właściciela: 18.08 w dawce wieczornej wyszło **„New Mexico regulators reject original route
+for natural gas pipeline serving Oracle AI data center; project rerouted."** (Kalkine Media).
+
+- 🔴 **Przyczyna: agencyjny nagłówek RZECZOWNIKOWY.** `WygladaNaAngielski` wymaga ≥2 trafień, a ten
+  nagłówek dawał **1** (`for`). Drugi taki, „UK moves to ban candy, dessert & other «enticing» vape
+  names" (10.07), też **1** (`other`). Oba poprzednie rozszerzenia listy (16.07, 17.07) celowały
+  w zdania ze słowami funkcyjnymi — a te nagłówki nie mają ich wcale.
+- **Naprawa: +70 czasowników i rzeczowników agencyjnych.** 📊 Zmierzone na **5922 opublikowanych
+  nagłówkach**: nowa lista daje **2 trafienia, oba realne, 0 fałszywych**. Stara łapała 0 z 2.
+- 🔴 **Bramka „CAŁY po angielsku"** (`PolskieSlowaFunkcyjne`, życzenie właściciela): mieszany EN+PL
+  („Micron announces $250 billion… – plan inwestycyjny producenta chipów") zostaje NIETKNIĘTY.
+  ⚠️ **Do tej listy NIGDY nie dokładaj słów, które są też angielskie** (`to, do, a, i, we, by, on, no,
+  u, o, ale, be, he, it, in, is, as`) — z `to` na liście „UK moves TO ban…" zostałoby uznane za polskie,
+  czyli bramka broniłaby dokładnie tego, co ma łapać.
+- ⛔ **Odrzucone po pomiarze:** `regulator` (3 trafienia polskie), `new` (6: „New York"), `report`,
+  `deal`, `data`, `center`, `project`, `pipeline`, `gas`. Odrzucony też sygnał strukturalny „brak
+  diakrytyków + długość" — **109 polskich nagłówków** ma ≥10 słów bez diakrytyków.
+- 🔴 **CZUJKA BYŁA ŚLEPSZA OD BRAMKI, KTÓRĄ MIAŁA KONTROLOWAĆ:** port listy w `kontrola.py` miał
+  **81 słów wobec 140 w bocie**. Dlatego zgłosiła „czysto". **Kontrola nie złapie klasy, w której jest
+  ślepa RAZEM z botem** — przy dublach i liczbach port patrzy na inny etap niż bramka, przy
+  angielszczyźnie na dokładnie ten sam. Port zsynchronizowany (`waliduj_port.py`: 0 rozjazdów na 5922
+  przypadkach, 8 miar).
+
+## ✅ 19.08: PAMIĘĆ CZUJKI + przyczyna braku pushy (kontrola #5, ZMERGOWANE)
+
+- **Powiadomienia były wyłączone na telefonie** — to była główna przyczyna ciszy. Właściciel włączył.
+- Ale czujka i tak **hałasowała**: trwałe znalezisko (nieświeża seria NASDAQ, Yahoo 429) szło pushem
+  co godzinę. `--stan PLIK` + `--cisza-godzin` (24) wycisza powtórki; bez `--stan` zachowanie bajt
+  w bajt jak dotąd.
+- 🔴 **Odcisk BEZ CYFR** — „od 214 min" i „od 274 min" to ten sam problem; z cyframi pamięć byłaby martwa.
+  Koszt: pogłębienie problemu czeka na okno 24 h.
+- 🔴 **Stan idzie DO REPO** (`stan_czujki.json`) — routine startuje świeży kontener co godzinę, więc plik
+  na dysku nie przeżywa. Jedyny wyjątek od „niczego nie commituj". Prompt routine'u zaktualizowany.
+- ⚠️ Fail-safe w stronę ZGŁASZANIA (brak/zły stan = raport pełny) — odwrotnie niż przy stanie wysyłek bota.
+- 👀 **Do obejrzenia:** o 10:16 pierwszy strzał z pamięcią zgłosi NASDAQ (stan pusty) → push ma przyjść;
+  o 11:16 ma o nim ZAMILCZEĆ. Drugi push o tym samym = commit stanu się nie zapisuje (czujka sama to
+  napisze w raporcie).
+
+## ⬜ 19.08: cztery znaleziska czujki BEZ REAKCJI — do rozstrzygnięcia
+
+Przebieg na całym bieżącym wydaniu (135 pozycji) dał 8 znalezisk. Fałszywki: „prawie 1 mln euro"
+przy artykule „960 tys." (poprawne zaokrąglenie), dubel Ormuz 0,40 (porównanie z tytułem PARASOLA
+klastra), cytat-wabik z Zaporoża (klasa ze świadomie odłożoną bramką). **Realne, nietknięte:**
+- 🔴 **Bezos/Liverpool** — nagłówek „blisko **40%**", artykuł „około **38%**". Nie brak pokrycia, tylko
+  INNA wartość, zaokrąglona w GÓRĘ ponad źródło. Bramka `LiczbyBezPokryciaWArtykule` powinna to złapać.
+- **67 mln akrów dna Pacyfiku** — artykuł nie zawiera słowa „akr" ani powierzchni.
+- **IonQ 217 mln USD** — artykuł nie podaje kwoty.
+- **NASDAQ w tyle o sesję** — znany otwarty problem (Yahoo 429 z IP Hetznera).
+
+## ⬜ 19.08: zamrożenie historii w prompcie selekcji — ZMIERZONE, NIEWDROŻONE
+
+Sekcja `[OPUBLIKOWANE WCZEŚNIEJ]` + `[OCENIONE WCZEŚNIEJ]` to **1 744 tokeny miss na wywołanie**
+(sekcja waży 2 300, część już się cache'uje) × ~250 wywołań/dobę = **436 k tok/dobę = 22% missów =
+$3,60/mies**. Okno jest PRZESUWNE, więc prefiks pęka od pierwszej linii.
+📊 Zmierzone na 40 realnych biegach (kandydaci z historii gita `tytuly.txt`, publikacje z archiwum):
+
+| wariant | oszczędność |
+|---|---|
+| kotwica 50/30 (append-only) | 46% = $1,65/mies |
+| **zamrożenie na 3 biegi** | **63% = $2,27/mies** |
+| kotwica + zamrożenie | 77% = $2,77/mies |
+
+🔴 Sama kotwica daje tylko 46%, bo przy **10 kandydatach na bieg** okno 50 pozycji wymienia się
+w 5 biegów — arytmetyki się nie obejdzie, a powiększenie okna to kierunek awarii z 18.07.
+Zamrożenie bije kotwicę, bo cache dopasowuje prefiks POZYCYJNIE: dopisanie linii w środku
+unieważnia wszystko poniżej.
+⚠️ Rekomendacja: zamrożenie na 3 biegi (model widzi DOKŁADNIE to samo co dziś, tylko do 90 min
+starsze; prawdziwa bramka dedupu `ZnajdzPodobnePublikowane` czyta plik na świeżo i NIE jest zamrażana).
+
 ## ✅ 18.08 noc: PUNKT 2 (pierwsza połowa) ZROBIONY — materiał źródłowy zapisuje się na pozycji
 
 Zmergowane do `main` bota (PR #197), wdroży się przy najbliższym biegu Hetznera (`git pull` + `dotnet run`
