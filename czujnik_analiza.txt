@@ -1,0 +1,336 @@
+# SONDA CZUJNIKA NAGŁÓWKÓW — raport agregatów
+# wygenerowany: 2026-08-19 17:39:13 UTC
+# plik: /var/log/brif_czujnik.log
+
+rozmiar_bajtow: 541200
+ostatni_zapis: 2026-08-19 17:38:02 (czas serwera)
+linii_ogolem: 5805
+linii_NOWY: 2747
+linii_z_bledem: 22
+## LINIE Z BŁĘDEM (do 10)
+| 2026-08-14 21:56:19 BLAD [InsiderPaper] TimeoutError: The read operation timed out
+| 2026-08-15 03:34:03 BLAD [RestOfWorld] HTTPError: HTTP Error 429: Too Many Requests
+| 2026-08-16 00:27:03 BLAD [RestOfWorld] HTTPError: HTTP Error 429: Too Many Requests
+| 2026-08-16 01:10:01 BLAD [RestOfWorld] HTTPError: HTTP Error 429: Too Many Requests
+| 2026-08-16 12:50:17 BLAD [Bankier] TimeoutError: The read operation timed out
+| 2026-08-17 09:38:18 BLAD [Techmeme] TimeoutError: The read operation timed out
+| 2026-08-17 09:49:18 BLAD [Techmeme] TimeoutError: The read operation timed out
+| 2026-08-17 10:09:19 BLAD [Techmeme] TimeoutError: The read operation timed out
+| 2026-08-17 10:31:18 BLAD [Techmeme] TimeoutError: The read operation timed out
+| 2026-08-17 12:41:19 BLAD [Techmeme] TimeoutError: The read operation timed out
+
+## PIERWSZE 5 LINII (dosłownie — do weryfikacji formatu)
+| 2026-08-14 16:30:02 CYKL fetched=8 304=0 200=8 nowe=0 err=0
+| 2026-08-14 16:32:02 CYKL fetched=8 304=1 200=7 nowe=0 err=0
+| 2026-08-14 16:35:02 NOWY [PolymarketMoney] BREAKING: Airbnb CEO Brian Chesky reveals AI now writes 60% of Airbnb’s code.
+| 2026-08-14 16:35:02 NOWY [PolymarketMoney] JUST IN: U.S. sells 30-year bonds at the highest interest rate in 25 years.
+| 2026-08-14 16:35:02 NOWY [PolymarketMoney] JUST IN: Peter Schiff declares "sell" Bitcoin.
+## OSTATNIE 5 LINII (dosłownie)
+| 2026-08-19 17:35:02 NOWY [Polymarket] JUST IN: Trump nominates Dr. Heidi Overton to lead the FDA.
+| 2026-08-19 17:35:02 NOWY [Polymarket] JUST IN: It’s been revealed that the Penn State frat cocaine operation unraveled after a dealer used a Venmo account bearing his own full name.
+| 2026-08-19 17:35:02 CYKL fetched=8 304=1 200=7 nowe=2 err=0
+| 2026-08-19 17:38:02 NOWY [PolymarketMoney] BREAKING: IBM declares it has “successfully linked and jointly cooled” two quantum modules, a key step toward scaling to 1,000+ programmable qubits by 2027.
+| 2026-08-19 17:38:02 CYKL fetched=8 304=0 200=8 nowe=1 err=0
+
+znaczniki_z_pelna_data: TAK
+sparsowane: 2747, bez_znacznika: 0
+zakres: 2026-08-14 16:35:02 → 2026-08-19 17:38:02 (5.04 doby)
+
+## NOWE NAGŁÓWKI PER FEED
+Juice	664
+Bankier	374
+Polymarket	363
+Techmeme	225
+ZeroHedge	217
+BBCWorld	197
+PolymarketMoney	181
+Kalshi	121
+InsiderPaper	99
+TheVerge	84
+ForexLive	63
+Kobeissi	53
+ArsTechnica	40
+X	33
+BBCScience	31
+RestOfWorld	2
+
+## GĘSTOŚĆ PER GODZINA (data godzina liczba)
+2026-08-14 16	29
+2026-08-14 17	37
+2026-08-14 18	37
+2026-08-14 19	35
+2026-08-14 20	42
+2026-08-14 21	33
+2026-08-14 22	14
+2026-08-14 23	14
+2026-08-15 00	15
+2026-08-15 01	14
+2026-08-15 02	14
+2026-08-15 03	8
+2026-08-15 04	6
+2026-08-15 05	16
+2026-08-15 06	13
+2026-08-15 07	27
+2026-08-15 08	4
+2026-08-15 09	12
+2026-08-15 10	4
+2026-08-15 11	10
+2026-08-15 12	25
+2026-08-15 13	16
+2026-08-15 14	20
+2026-08-15 15	12
+2026-08-15 16	18
+2026-08-15 17	4
+2026-08-15 18	22
+2026-08-15 19	9
+2026-08-15 20	11
+2026-08-15 21	17
+2026-08-15 22	6
+2026-08-15 23	10
+2026-08-16 00	4
+2026-08-16 01	4
+2026-08-16 02	8
+2026-08-16 03	4
+2026-08-16 04	5
+2026-08-16 05	3
+2026-08-16 06	3
+2026-08-16 07	22
+2026-08-16 08	11
+2026-08-16 09	4
+2026-08-16 10	5
+2026-08-16 11	16
+2026-08-16 12	9
+2026-08-16 13	13
+2026-08-16 14	8
+2026-08-16 15	19
+2026-08-16 16	16
+2026-08-16 17	12
+2026-08-16 18	10
+2026-08-16 19	11
+2026-08-16 20	8
+2026-08-16 21	15
+2026-08-16 22	25
+2026-08-16 23	20
+2026-08-17 00	15
+2026-08-17 01	9
+2026-08-17 02	8
+2026-08-17 03	9
+2026-08-17 04	20
+2026-08-17 05	32
+2026-08-17 06	10
+2026-08-17 07	25
+2026-08-17 08	18
+2026-08-17 09	19
+2026-08-17 10	28
+2026-08-17 11	24
+2026-08-17 12	33
+2026-08-17 13	44
+2026-08-17 14	46
+2026-08-17 15	52
+2026-08-17 16	28
+2026-08-17 17	43
+2026-08-17 18	38
+2026-08-17 19	46
+2026-08-17 20	31
+2026-08-17 21	40
+2026-08-17 22	15
+2026-08-17 23	7
+2026-08-18 00	19
+2026-08-18 01	19
+2026-08-18 02	16
+2026-08-18 03	15
+2026-08-18 04	15
+2026-08-18 05	46
+2026-08-18 06	17
+2026-08-18 07	17
+2026-08-18 08	24
+2026-08-18 09	30
+2026-08-18 10	17
+2026-08-18 11	34
+2026-08-18 12	38
+2026-08-18 13	54
+2026-08-18 14	37
+2026-08-18 15	67
+2026-08-18 16	48
+2026-08-18 17	38
+2026-08-18 18	32
+2026-08-18 19	41
+2026-08-18 20	32
+2026-08-18 21	37
+2026-08-18 22	15
+2026-08-18 23	34
+2026-08-19 00	17
+2026-08-19 01	22
+2026-08-19 02	23
+2026-08-19 03	26
+2026-08-19 04	27
+2026-08-19 05	25
+2026-08-19 06	29
+2026-08-19 07	22
+2026-08-19 08	20
+2026-08-19 09	36
+2026-08-19 10	28
+2026-08-19 11	19
+2026-08-19 12	49
+2026-08-19 13	31
+2026-08-19 14	41
+2026-08-19 15	60
+2026-08-19 16	40
+2026-08-19 17	41
+
+## SYMULACJA WYZWOLEŃ — CAŁE OKNO (5.04 doby; dziś cron */30 daje 48/dobę)
+odstep_min	wyzwolen	na_dobe
+3	837	165.9
+5	680	134.8
+10	496	98.3
+15	352	69.8
+20	292	57.9
+30	206	40.8
+
+## SYMULACJA WYZWOLEŃ — OSTATNIA DOBA (2026-08-18 17:38 →, 765 nagłówków)
+odstep_min	wyzwolen	na_dobe
+3	202	202.0
+5	161	161.0
+10	111	111.0
+15	78	78.0
+20	62	62.0
+30	44	44.0
+
+## SERIE: nagłówków w ≤2 s od poprzedniego: 1704 z 2747 (62.0%)
+
+## NAJGĘSTSZE MINUTY (top 15) — do oceny „linie vs wydarzenia"
+--- 2026-08-17 12:47 — 20 nagłówków
+    [Juice] NVIDIA: OpenAI committed to substantial deployments of NVIDIA AI infrastructure through 2030
+    [Juice] OpenAI: We are investing significantly in security controls.
+    [Juice] OpenAI: Using models to help secure code.
+    [Juice] IRGC will decisively crush any threat or aggression
+    [Juice] NVIDIA secures 4.25 IT-GW at SB energy Ohio campus.
+    [Juice] Canadian CPI July 2026 Report
+    [Juice] CANADIAN CORE CPI MOM ACTUAL 0.2% (FORECAST -, PREVIOUS 0.2%) $MACRO
+    [Juice] CANADIAN CPI COMMON ACTUAL 2.7% (FORECAST -, PREVIOUS 2.6%) $MACRO
+--- 2026-08-18 05:10 — 18 nagłówków
+    [Juice] PBoC: to explore expansion of central bank's macroprudential and financial stability roles
+    [Juice] PBoC: to innovate macroprudential policy tools and support sustained economic recovery and growth
+    [Juice] PBoC: will allow currency swap and yuan settlement to fulfill their functions
+    [Juice] PBoC: to boost international use of yuan
+    [Juice] PBoC: to intensify review of macroeconomic and financial efforts
+    [Juice] PBoC: plans to expand yuan offshore market
+    [Juice] PBoC: backing the creation of a new model for real estate development
+    [Juice] PBoC holds 2025 macroprudential work meeting
+--- 2026-08-18 15:24 — 16 nagłówków
+    [Polymarket] JUST IN: U.S. refugee admissions are on pace to hit their lowest level on record, with nearly all re…
+    [Polymarket] BREAKING: UAE detects an incoming missile threat, urges residents to remain in safe locations.
+    [PolymarketMoney] JUST IN: Nokia plans to cut most of its workforce in mainland China and close facilities in stages b…
+    [PolymarketMoney] BREAKING: Einride has agreed to buy 500 Tesla Semi trucks for its U.S. fleet, the largest publicly a…
+    [PolymarketMoney] BREAKING: Meta is now trading below 10x this year’s operating cash flow.
+    [PolymarketMoney] JUST IN: Perplexity’s India revenue rose about 60% even after Airtel ended new Pro redemptions, with…
+    [PolymarketMoney] BREAKING: Citi is launching Bitcoin custody services for institutional clients.
+    [PolymarketMoney] JUST IN: American Airlines plans to add seatback screens to every seat while expanding first class a…
+--- 2026-08-18 15:54 — 14 nagłówków
+    [X] Holandia która "śpi" na gazie uruchamia bloki węglowe na pełną moc. Ratuje sąsiadów. Już pobiła reko…
+    [Bankier] Trump publikuje grafikę i ogłasza: Cieśnina Ormuz nowym terytorium USA
+    [Bankier] Rekordowa fala oszustw w sieci. KNF: Ponad 17,6 tys. groźnych domen i 1,7 tys. fałszywych reklam
+    [ZeroHedge] The US Is Forcing Others To Take Sides, As Is China
+    [ZeroHedge] US Issues Rare Condemnation Of Israeli Strikes On Syrian Airbase: 'Unnecessary Escalation'
+    [ZeroHedge] Meta Faces Unprecedented Legal Reckoning Over Youth Mental Health As Massive Multistate Trial Begins
+    [ZeroHedge] Nvidia Confirms It Will Back Massive 4.25GW SoftBank Data Center In Ohio For $105 Billion
+    [ZeroHedge] US Pending Home Sales Plunge Back Near Record Lows In July
+--- 2026-08-19 06:11 — 14 nagłówków
+    [Juice] Drone strike sparks fire at UFA refinery
+    [Juice] Japan to review overtime work cap from September
+    [Juice] UK CPI July 2026 Report
+    [Juice] UK CORE CPI MOM ACTUAL 0.2% (FORECAST -, PREVIOUS 0.3%) $MACRO
+    [Juice] UK PPI OUTPUT PRICES MOM ACTUAL 0.2% (FORECAST 0.2%, PREVIOUS 0.0%) $MACRO
+    [Juice] UK PPI OUTPUT PRICES YOY ACTUAL 3.1% (FORECAST 3.2%, PREVIOUS 3.5%) $MACRO
+    [Juice] UK PPI INPUT PRICES MOM ACTUAL -1.7% (FORECAST 0%, PREVIOUS -2.0%) $MACRO
+    [Juice] UK PPI INPUT PRICES YOY ACTUAL 4.9% (FORECAST 6.5%, PREVIOUS 7.3%) $MACRO
+--- 2026-08-14 21:45 — 13 nagłówków
+    [Juice] Canadian minister in charge of U.S. bilateral trade says Canada and U.S. are far from reaching deal
+    [Juice] Third Point LLC offloads share stake in Lam Research: SEC filing
+    [Juice] Third Point LLC reports holding of 2.6 million Class A shares in Block
+    [Juice] Third Point LLC unloads share stake in Broadcom: SEC filing
+    [Juice] Third Point LLC sells share stake in Meta: SEC filing
+    [Juice] Third Point LLC reduces  stake by 9.8% to 1.8 million shares
+    [Juice] Third Point LLC raises Alphabet shareholding to 1 mln class A common stock
+    [Juice] Iran's FM Aragchi: Qatar, Pakistan relay messages with Iran, but this does not indicate talks
+--- 2026-08-15 12:22 — 13 nagłówków
+    [Bankier] Elon Musk w niezwykłym wywiadzie. Padły ważne pytania o przyszłość
+    [Bankier] Szwedzki koncern kupuje polską sieć przedszkoli. Przejął 34 placówki
+    [Bankier] Wojna wydawców z AI. Media pozywają Google za automatyczne streszczenia artykułów
+    [Bankier] Prezydent wręczył 21 oficerom nominacje na stopnie generalskie i admiralskie
+    [Bankier] Lotnisko w Katanii znów działa. Koniec ośmiodniowego paraliżu
+    [Bankier] Zełenski: Rakiety Flamingo zaatakowały centrum rakietowo-kosmiczne Progress w Rosji
+    [Bankier] Wydamy 1,9 bln zł na zbrojenia. Ekonomiści ostrzegają przed haczykiem
+    [Bankier] 30 lat tajemnicy. Ruszył proces w sprawie zabójstwa 2Paca
+--- 2026-08-17 14:39 — 13 nagłówków
+    [Juice] The Japanese Envoy is going to visit the Russian Foreign Ministry on Tuesday
+    [Juice] Fear & Greed Index: 63/100
+    [Juice] Crypto Fear & Greed Index: 31/100
+    [Juice] US NAHB Housing Market Index
+    [Juice] Nvidia to Invest $100 Billion in OpenAI Data Centre in Ohio
+    [Juice] US NAHB HOUSING MARKET INDEX ACTUAL 35 (FORECAST 33, PREVIOUS 34) $MACRO
+    [Juice] Yemen: Any escalation of tensions by the Saudi regime will be met with a reciprocal response
+    [Juice] Wells Fargo Investment Institute cuts gold's 2026 year-end target range to $4,900-$5,100 per ounce f…
+--- 2026-08-17 20:30 — 13 nagłówków
+    [Polymarket] JUST IN: LIV Golf cancels its season finale after Saudi Arabia withdrew financial backing, saying it…
+    [Polymarket] JUST IN: Trump reveals he "likes the idea" of declaring the Strait of Hormuz a U.S. territory.
+    [Polymarket] JUST IN: The Buss family reportedly intends to sell its remaining stake in the Lakers, ending its ow…
+    [Polymarket] BREAKING: Anthropic’s revenue run rate has reportedly surged +600% since late 2025, to over $65,000,…
+    [Polymarket] BREAKING: Kushner & Netanyahu reportedly agree there will be no IDF withdrawal from Gaza until Hamas…
+    [Polymarket] JUST IN: Americans are increasingly using “Buy Now, Pay Later” loans to cover basic expenses like re…
+    [ZeroHedge] "Both Parties Are Whirling Around The Drain Of Extinction..."
+    [ZeroHedge] "Cash Crunch" Deepens? Mark Walter Explores Chelsea FC Stake Sale To Clearlake
+--- 2026-08-18 13:29 — 13 nagłówków
+    [Juice] Trump discussed cooperation between the UAE and the US and ways to further strengthen ties in suppor…
+    [Juice] UAE President receives phone call from US President - WAM
+    [Juice] UAE President and Trump discuss region in a phone call
+    [Juice] US Industrial Production July 2026 Report
+    [Juice] US INDUSTRIAL PRODUCTION YOY ACTUAL 1.1% (FORECAST -, PREVIOUS 1.14%) $MACRO
+    [Juice] 🔴 US INDUSTRIAL PRODUCTION MOM ACTUAL 0.2% (FORECAST 0.3%, PREVIOUS 0.1%) $MACRO
+    [Juice] US MANUFACTURING OUTPUT MOM ACTUAL 0.2% (FORECAST 0.2%, PREVIOUS 0.0%) $MACRO
+    [Juice] US CAPACITY UTILIZATION ACTUAL 76.3% (FORECAST 76.3%, PREVIOUS 76.1%) $MACRO
+--- 2026-08-19 15:40 — 13 nagłówków
+    [Juice] IDF Chief of Staff Zamir, whilst on tour of Syria: Israel will use its power when and where necessar…
+    [Juice] Trump ends remarks to reporters.
+    [Juice] Trump: Oil prices will be a lot lower when this is over.
+    [Juice] Israel's Chief of Staff to Turkey: We must prevent the emergence of a significant military threat to…
+    [Juice] Trump on Iran: Negotiations may be at some point.
+    [Juice] Trump: We had a lot of boats come through Hormuz last night.
+    [Juice] Trump reiterates that the Canada deal is subject to finalization.
+    [Juice] Trump, asked if meeting North Korea's Kim this year: Yes.
+--- 2026-08-19 17:22 — 13 nagłówków
+    [ForexLive] US Treasury auctions off $18 billion of 20-year bonds at a high yield of 5.204%
+    [ArsTechnica] A fantastical journey unfolds in gorgeous Wildwood trailer
+    [ArsTechnica] mRNA cancer vaccine succeeded in Phase 3 melanoma trial, Moderna and Merck say
+    [ArsTechnica] Google Pixel 11 series review: Is the magic fading?
+    [ArsTechnica] Scientists find closest star to the Milky Way's central black hole
+    [ArsTechnica] Meta ran ads for an app promising to nudify female politicians
+    [ArsTechnica] Trump expected to pick conservative policy wonk Heidi Overton to lead FDA
+    [BBCWorld] Israel opens up bids for highly-sensitive West Bank settlement project
+--- 2026-08-14 18:45 — 12 nagłówków
+    [Polymarket] JUST IN: Emergency alert sent to phones across England & Wales as wildfire risk remains “very high.”
+    [Polymarket] JUST IN: Shane Gillis reveals support for universal free healthcare in the United States.
+    [Kalshi] JUST IN: 𝕏 had the "most downloads" in history last week
+    [Kalshi] JUST IN: Bill Gates' daughter accused of "cookie stuffing" scheme with potential of 20 years in jail
+    [Kalshi] JUST IN: Semiconductor stocks are on track for "best" August in 20+ years
+    [ArsTechnica] Vulnerability giving attackers full control of Macs is under active exploitation
+    [ArsTechnica] First test flight of largest all-electric aircraft used just $5 of electricity
+    [ArsTechnica] Suspecting court of using AI, man injected prompts in filings to try to win case
+--- 2026-08-19 17:11 — 12 nagłówków
+    [Juice] US 20-YEAR BOND BID-TO-COVER ACTUAL 2.530 (FORECAST -, PREVIOUS 2.640) $MACRO
+    [Juice] US 20-Year Bond Auction High Yield 5.204% (Tailed by 0.5 basis points) Bid-to-cover 2.53 Sells $16 b…
+    [Juice] US 20-YEAR BOND HIGH YIELD ACTUAL 5.204% (FORECAST -, PREVIOUS 5.163%) $MACRO
+    [Juice] Treasury WI 20-year yield 5.199% before $16 billion auction.
+    [PolymarketMoney] JUST IN: Goldman Sachs reveals private equity could reaccelerate M&A as buyout firms sit on roughly …
+    [PolymarketMoney] JUST IN: Bitcoin odds of hitting $100,000 by year-end just rose to 9%.
+    [PolymarketMoney] JUST IN: : Jim Cramer declares to “buy Target on any pullback” as the retailer’s turnaround takes ho…
+    [PolymarketMoney] JUST IN: Gold is up around 3% today as Treasury yields retreat from multi-decade highs.
+--- 2026-08-14 16:37 — 11 nagłówków
+    [Juice] Fed's Goolsbee: Persistent drop in productivity would change the AI narrative.
+    [Juice] Fed's Goolsbee: I supported the decision to hold rates in July.
+    [Juice] Fed's Goolsbee: Past 2 readings on productivity were very poor.
+    [Juice] Fed's Goolsbee encouraged by CPI reports and needs more data.
+    [Juice] Fed's Goolsbee: Continued spending weakness would be worrying.
+    [Juice] Fed's Goolsbee: Weak retail sales represent just one month of data.
+    [Juice] Fed's Goolsbee: US GDP and labor market are basically stable.
+    [Juice] Houthi forces targeted the port of Al-Mokha with a missile
