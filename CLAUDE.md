@@ -1619,3 +1619,66 @@ na grafice, a kiedy była dodana ta jedynka jako post — nie zgadza się z graf
 - **To jest bariera, nie naprawa danych.** Świeżość notowań pilnuje osobno czujka
   (`brifup-kontrola`, klasa `wykres-serii-przestarzaly`); przyczyna po stronie bota — Yahoo oddaje
   **HTTP 429 całemu IP Hetznera** dla indeksów USA — zostaje otwarta.
+
+## Flagi na Windowsie, tura trzecia — panel `?flagi=diag` i odwrócony fail-safe (2026-08-19) 🔴
+Zgłoszenie właściciela: *„flagi wciąż na windowsie nie działają"*, doprecyzowane: **Microsoft Edge**.
+To TRZECIA tura tej samej naprawy (15.08 zły próg, 18.08 martwy test) — i pierwsza, w której
+**cały mechanizm okazał się sprawny**, a mimo to objaw został.
+- ✅ **Sprawdzone i WYKLUCZONE po kolei** (żeby następna sesja tego nie powtarzała):
+  `main` ma poprawiony `flagi.js` (próg 0,9, `PARA_BEZ_FLAGI`) — potwierdzone przez API GitHuba,
+  nie przez lokalny klon (jest płytki, `git log` pokazuje jeden commit i myli); `index.html` na
+  `main` ma tag `<script defer src="flagi.js">`; `fonts/` NIE jest w `exclude` w `_config.yml`;
+  SW ma `flagi.js` w `STATIC_ASSETS` i wymusza `cache:'reload'` dla `.js`, więc **nie serwuje
+  starej wersji**; sam plik fontu jest poprawny — `wOF2`, COLR/CPAL, **261 ligatur flag**,
+  cmap 37 znaków (zweryfikowane `fontTools`).
+- ✅ **Mechanizm działa END-TO-END** w Chromium bez systemowego fontu flag (czyli w stanie, w jakim
+  jest Windows): detekcja zwraca stosunek **1,000** → wstrzykuje styl → font się pobiera →
+  **kafel renderuje prawdziwą, kolorową flagę** (zrzut elementu, nie tylko `font-family`).
+- 🔴 **Czego NIE DA SIĘ tu rozstrzygnąć:** sandbox nie ma dostępu do `brifup.com` (egress blokuje
+  curl i WebFetch), a Windowsa nie ma jak odtworzyć. Dwie poprzednie tury poszły „na ślepo"
+  i obie padły — więc zamiast trzeciego strzału powstał **panel diagnostyczny**.
+
+### `?flagi=diag` — jeden zrzut zamiast kolejnej tury zgadywania
+Panel pokazuje DOKŁADNIE liczby, na których zapada decyzja, plus dwa fakty niewidoczne z zewnątrz.
+Rozdziela trzy przyczyny, których inaczej nie odróżnimy:
+| co widać w panelu | przyczyna |
+|---|---|
+| `stosunek < 0,9`, werdykt „system MA flagi" | wina **detekcji** |
+| `styl wstrzyknięty: TAK`, `font DZIAŁA: NIE` | wina **dostarczenia** (404 / blokada / MIME) |
+| oba TAK, a kafle dalej „PL" | wina **CSS** (reguła nie dociera do elementu) |
+Do tego próbka 🇵🇱🇺🇸🇺🇦🇮🇱 renderowana wprost w rodzinie Twemoji.
+
+### 🔴 TRZY ŚLEPE ULICZKI W SAMEJ DIAGNOSTYCE — wszystkie kłamały „NIE" przy DZIAŁAJĄCYM foncie
+Każda wyglądała rozsądnie i każda wysłałaby następną sesję w złą stronę. Nie odgrzewaj ich:
+1. **`document.fonts.check()`** — przy `unicode-range` zwraca `false`, choć font rysuje flagi.
+2. **`canvas.measureText` z rodziną webfontu** — canvas 2D **nie stosuje `unicode-range`**,
+   więc mierzy font zastępczy. (Dlatego detekcja w canvasie mierzy tylko font SYSTEMOWY — i to
+   akurat jest poprawne, bo o niego właśnie pyta.)
+3. **`document.fonts.ready`** — rozwiązuje się NATYCHMIAST, bo font jest ładowany LENIWIE, a panel
+   powstaje zanim feed wyrenderuje pierwszą flagę: nic nie jest „pending", więc nie ma na co czekać.
+   Trzeba **`document.fonts.load()`**, który żąda go wprost.
+📊 Zweryfikowane pomiarem w DOM: `🇵🇱 32 px` wobec `🇿🇿 64 px` (stosunek 0,50) — DOM mierzy dobrze,
+canvas nie. **ZASADA: diagnostyka, która kłamie, jest gorsza od jej braku** — to dokładnie ta klasa
+błędu, przez którą ta poprawka stoi tu trzeci raz.
+
+### 🔴 FAIL-SAFE ODWRÓCONY — najważniejsza zmiana tej tury
+Dotąd każdy nieudany albo dziwny pomiar zwracał „system ma flagi", czyli **nie wstrzykiwał fontu**.
+Uzasadnienie („nie każmy nikomu pobierać 78 KB") jest dalej prawdziwe, ale skutek jest taki, że
+**każda usterka pomiaru wyłącza całą poprawkę CICHO i NA ZAWSZE** — i tak padła dwa razy, bez błędu
+i bez śladu w konsoli. Teraz wstrzykujemy font, **dopóki nie ma DOWODU ligatury**.
+- ⚠️ Koszt jest asymetryczny i dlatego tak: „ktoś pobiera 78 KB bez potrzeby" jest odwracalne
+  i niewidoczne, „cały Windows nie widzi flag" jest widoczne i trwałe.
+- ⚠️ Systemy, które flagi MAJĄ, mierzą ~0,50 i dalej nic nie pobierają — odwrócenie dotyczy
+  WYŁĄCZNIE przypadków nierozstrzygniętych.
+- **Pomiar przeniesiony z `sans-serif` na stos `body`** — flagi dziedziczą font po `body`, więc
+  dotąd pytaliśmy o INNY font niż ten, którym strona realnie rysuje. W sandboxie oba dają ten sam
+  wynik, więc tej hipotezy NIE dało się tu potwierdzić; zmiana jest darmowa i usuwa jedną z
+  ostatnich różnic wobec produkcji.
+- `PROG_LIGATURY` + `maFlagi(p)` = jedno źródło prawdy, żeby panel nie mógł pokazać innej liczby
+  niż ta, na której zapadła decyzja.
+
+⚠️ **Strony `d/*.html` i `w/*.html` generuje BOT i nadal NIE MAJĄ tego skryptu** — jeśli objaw
+widać właśnie tam, naprawa jest po stronie `Runner.cs`, nie tutaj.
+✅ Zweryfikowane w Chromium, 4 ścieżki, 0 błędów JS: auto → wstrzykuje + pobiera font,
+`?flagi=on` → to samo, `?flagi=off` → brak wstrzyknięcia i **woff2 w ogóle nie pobrany**,
+`?flagi=diag` → panel z prawdziwymi wartościami we wszystkich wierszach. SW → v128.
