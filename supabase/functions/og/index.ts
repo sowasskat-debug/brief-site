@@ -194,12 +194,21 @@ function karta(naglowek: string, kicker: string, poprzedni: { kiedy: string; tex
 // wierszami. Limit `tnij` to 118 znaków, a przy ~1050 px szerokości w linię wchodzi ~62 znaki,
 // więc etap zajmuje jedną albo dwie linie — nigdy więcej.
 function wysokoscKartyWatku(wezly: { kiedy: string; text: string }[]) {
-  const SZKIELET = 224, LINIA = 28, NA_LINIE = 62;
+  // 🔴 STAŁE WYPROWADZONE Z RENDERU, nie z arytmetyki na oko (2026-08-19, przy powiększeniu czcionek).
+  // Poprzednie (224/28/62) ZANIŻAŁY wysokość: dla 12 długich etapów model liczył 1267 px, a satori
+  // rysował 1324 — czyli treść była CIĘTA dolną krawędzią (`overflow: hidden`), bez żadnego sygnału.
+  // Teraz zmierzone realnym renderem (satori + resvg, skan pikseli) na 1, 4 i 12 etapach po pełnym
+  // limicie 118 znaków — model trafia CO DO PIKSELA na wszystkich trzech:
+  //     card = SZKIELET + Σ (STALA + LINIA × linie)
+  // ⚠️ STALA zawiera także odstęp między wierszami. Forma jest zweryfikowana JAKO CAŁOŚĆ na obu
+  //    krańcach zakresu, więc nie „porządkuj" jej, rozbijając margines na osobny składnik, bez
+  //    ponownego pomiaru — dokładnie tak powstał poprzedni, zaniżający model.
+  const SZKIELET = 243, STALA = 37, LINIA = 33, NA_LINIE = 76;
   let h = SZKIELET;
-  wezly.forEach((w, i) => {
+  wezly.forEach((w) => {
     const dl = Math.min((w.text || '').length, 118);
     const linie = Math.min(2, Math.max(1, Math.ceil(dl / NA_LINIE)));
-    h += 16 + 3 + linie * LINIA + (i ? 13 : 0);
+    h += STALA + linie * LINIA;
   });
   return Math.max(600, Math.min(1200, Math.round(h)));
 }
@@ -211,6 +220,20 @@ function wysokoscKartyWatku(wezly: { kiedy: string; text: string }[]) {
 function ileWezlowNaKarte(wezly: { kiedy: string; text: string }[]) {
   let ile = Math.min(wezly.length, MAX_WEZLOW_KARTA_KWADRAT);
   while (ile > 1 && wysokoscKartyWatku(wezly.slice(0, ile)) >= 1200) ile--;
+  return ile;
+}
+
+// 🔴 Ile etapów realnie wejdzie w SZTYWNY kadr 630 px karty `w=1` (2026-08-19, przy powiększeniu
+// czcionek). Zasada ta sama co `ileWezlowNaKarte` dla kwadratu: zdejmujemy NAJSTARSZE, aż się mieści.
+// POWÓD: przy etapie 27 px cztery pozycje po pełnym limicie 118 znaków potrzebują 655 px, czyli
+// 25 px WIĘCEJ niż kadr — a `overflow: hidden` uciąłby czwarty etap bez żadnego sygnału. Dokładnie
+// ta wpadka zdarzyła się już raz (pierwsze podejście 46/25 px). Lepiej pokazać 3 etapy z pełnym
+// tekstem niż 4, z których ostatni jest przecięty w pół — nagłówek i tak mówi „OSTATNIE N Z M".
+// ⚠️ Typowy nagłówek zajmuje jedną linię, więc realnie prawie zawsze wchodzą wszystkie cztery;
+//    zejście do trzech dotyczy sag o wyjątkowo długich tytułach etapów.
+function ileWezlowNa630(wezly: { kiedy: string; text: string }[]) {
+  let ile = Math.min(wezly.length, MAX_WEZLOW_NA_KARCIE);
+  while (ile > 1 && wysokoscKartyWatku(wezly.slice(0, ile)) > 630) ile--;
   return ile;
 }
 
@@ -248,8 +271,8 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
         ...(ostatni ? [] : [el('div', { width: 2, flexGrow: 1, marginTop: 5, backgroundColor: '#e4e4e4' })]),
       ]),
       el('div', { display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, paddingLeft: 14 }, [
-        el('div', { display: 'flex', fontFamily: 'SM', fontSize: 13, fontWeight: 700, letterSpacing: 1.6, color: akt ? CZERWONY : '#9a9a9a' }, w.kiedy),
-        el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 23, color: akt ? '#111' : '#3d3d3d', lineHeight: 1.22, marginTop: 3 }, tnij(w.text, 118)),
+        el('div', { display: 'flex', fontFamily: 'SM', fontSize: 14, fontWeight: 700, letterSpacing: 1.6, color: akt ? CZERWONY : '#9a9a9a' }, w.kiedy),
+        el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 27, color: akt ? '#111' : '#3d3d3d', lineHeight: 1.22, marginTop: 3 }, tnij(w.text, 118)),
       ]),
     ]);
   });
@@ -265,12 +288,12 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
     color: '#111', boxSizing: 'border-box', padding: '54px 62px 50px', overflow: 'hidden',
   }, [
     el('div', { display: 'flex', flexShrink: 0, alignItems: 'flex-start', justifyContent: 'space-between' }, [
-      el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 15, letterSpacing: 3.4, color: CZERWONY, paddingTop: 8 }, naglowek),
-      el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 40, color: '#111', flexShrink: 0 }, [
+      el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 16, letterSpacing: 3.4, color: CZERWONY, paddingTop: 8 }, naglowek),
+      el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 44, color: '#111', flexShrink: 0 }, [
         el('span', {}, 'Brif'), el('span', { color: CZERWONY }, '.up'),
       ]),
     ]),
-    el('div', { display: 'flex', flexShrink: 0, fontFamily: 'DMS', fontSize: 38, color: '#111', lineHeight: 1.12, marginTop: 10, paddingBottom: 2 }, tnij(tytulWatku, 54)),
+    el('div', { display: 'flex', flexShrink: 0, fontFamily: 'DMS', fontSize: 44, color: '#111', lineHeight: 1.12, marginTop: 10, paddingBottom: 2 }, tnij(tytulWatku, 54)),
     // ⚠️ `rozciagnij` = kadr jest WYŻSZY niż treść, bo wysokość uderzyła w podłogę 600 px (proporcja 2:1,
     // poniżej której X zaczyna kadrować). Zamiast zostawiać pas bieli na dole, rozkładamy nadmiar RÓWNO
     // między etapy — uwaga właściciela: „żeby nie zostało białe tło na dole bez sensu".
@@ -289,8 +312,11 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
 // ⚠️ BEZ NAZW REDAKCJI (wybór właściciela): „3 ŹRÓDŁA" brzmi jak argument, dopóki nie przeczyta się
 // jakie — realny klaster z tego dnia miał Wealth Professional, InvestmentNews i KELO-AM (lokalna stacja
 // radiowa). Kicker mówi więc o LICZBIE NEWSÓW, nie o wiarygodności, której te nazwy nie dowożą.
-// ⚠️ Trzy pozycje to granica kadru — czwarta wypycha oś poza 630 px (ta sama arytmetyka co przy karcie
-// wątku: tytuł 38 px + pozycje 23 px w dwóch liniach). Nagłówek mówi „3 Z N", gdy jest ich więcej.
+// ⚠️ Trzy pozycje to granica kadru — czwarta wypycha oś poza 630 px. Rozmiary podniesione 2026-08-19
+// razem z kartą wątku (tytuł 44 px, pozycje 27 px), bo obie idą w tej samej nitce i muszą wyglądać
+// jak jedna rodzina. 📊 Zmierzone realnym renderem: trzy pozycje po pełnym limicie 118 znaków to
+// 484 px przy kadrze 630 — zapas jest spory, ale CZWARTEJ nadal nie dokładaj bez ponownego pomiaru.
+// Nagłówek mówi „3 Z N", gdy jest ich więcej.
 const MAX_POZYCJI_KLASTRA = 3;
 
 function kartaKlastra(tytul: string, pozycje: string[], ile: number) {
@@ -303,7 +329,7 @@ function kartaKlastra(tytul: string, pozycje: string[], ile: number) {
       el('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', width: 24, flexShrink: 0 }, [
         el('div', { width: 10, height: 10, borderRadius: 999, marginTop: 9, backgroundColor: CZERWONY }),
       ]),
-      el('div', { display: 'flex', flexGrow: 1, minWidth: 0, paddingLeft: 14, fontFamily: 'DMS', fontSize: 23, color: '#222', lineHeight: 1.22 },
+      el('div', { display: 'flex', flexGrow: 1, minWidth: 0, paddingLeft: 14, fontFamily: 'DMS', fontSize: 27, color: '#222', lineHeight: 1.22 },
          tnij(t, 118)),
     ]));
 
@@ -312,12 +338,12 @@ function kartaKlastra(tytul: string, pozycje: string[], ile: number) {
     color: '#111', boxSizing: 'border-box', padding: '54px 62px 50px', overflow: 'hidden',
   }, [
     el('div', { display: 'flex', flexShrink: 0, alignItems: 'flex-start', justifyContent: 'space-between' }, [
-      el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 15, letterSpacing: 3.4, color: CZERWONY, paddingTop: 8 }, naglowek),
-      el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 40, color: '#111', flexShrink: 0 }, [
+      el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 16, letterSpacing: 3.4, color: CZERWONY, paddingTop: 8 }, naglowek),
+      el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 44, color: '#111', flexShrink: 0 }, [
         el('span', {}, 'Brif'), el('span', { color: CZERWONY }, '.up'),
       ]),
     ]),
-    el('div', { display: 'flex', flexShrink: 0, fontFamily: 'DMS', fontSize: 38, color: '#111', lineHeight: 1.12, marginTop: 10, paddingBottom: 2 }, tnij(tytul, 54)),
+    el('div', { display: 'flex', flexShrink: 0, fontFamily: 'DMS', fontSize: 44, color: '#111', lineHeight: 1.12, marginTop: 10, paddingBottom: 2 }, tnij(tytul, 54)),
     el('div', { display: 'flex', flexDirection: 'column', flexShrink: 0, borderTop: '2px solid #111', marginTop: 12, paddingTop: 18 }, wiersze),
   ]);
 }
@@ -461,7 +487,7 @@ Deno.serve(async (req) => {
       const wszystkie = pelnyWatek.nodes.slice(-MAX_WEZLOW_KARTA_KWADRAT).reverse()
         .map((n: any) => ({ kiedy: kiedy(n?.added_at), text: n?.text || '' }));
       const ostatnie = pelna ? wszystkie.slice(0, ileWezlowNaKarte(wszystkie))
-                             : wszystkie.slice(0, MAX_WEZLOW_NA_KARCIE);
+                             : wszystkie.slice(0, ileWezlowNa630(wszystkie));
       const wys = pelna ? wysokoscKartyWatku(ostatnie) : 630;
       // Policzona wysokość uderzyła w PODŁOGĘ (treść niższa niż 600 px) → rozciągamy odstępy zamiast bielić dół.
       const rozciagnij = pelna && wysokoscKartyWatku(ostatnie) === 600 && ostatnie.length < 7;

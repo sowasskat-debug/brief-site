@@ -1682,3 +1682,56 @@ widać właśnie tam, naprawa jest po stronie `Runner.cs`, nie tutaj.
 ✅ Zweryfikowane w Chromium, 4 ścieżki, 0 błędów JS: auto → wstrzykuje + pobiera font,
 `?flagi=on` → to samo, `?flagi=off` → brak wstrzyknięcia i **woff2 w ogóle nie pobrany**,
 `?flagi=diag` → panel z prawdziwymi wartościami we wszystkich wierszach. SW → v128.
+
+## Karty OG: większa czcionka + bramka wysokości na kadr 630 (2026-08-19) 🔴
+Życzenie właściciela ze zrzutu karty wątku: *„możesz trochę większą czcionką to zrobić? i żeby wciąż
+wszystko się mieściło?"*. Podniesione **w OBU kartach naraz** (wątku i klastra — idą w tej samej nitce
+na X i mają wyglądać jak jedna rodzina):
+
+| element | przed | po |
+|---|---|---|
+| tytuł | 38 | **44** |
+| tekst etapu / pozycji | 23 | **27** |
+| logo | 40 | **44** |
+| kicker | 15 | **16** |
+| data etapu | 13 | **14** |
+
+### 🔴 Powiększenie ROZBIŁO BY kartę 630 — stąd `ileWezlowNa630`
+Karta `w=1` (ta ze zrzutu) ma **SZTYWNE 630 px**; dynamiczną wysokość ma dopiero wariant `pelna=1`.
+📊 Zmierzone realnym renderem: przy 27 px cztery etapy po pełnym limicie 118 znaków potrzebują
+**655 px**, czyli 25 px więcej niż kadr — a `overflow: hidden` uciąłby czwarty etap **bez żadnego
+sygnału**. Dokładnie ta wpadka zdarzyła się już raz (pierwsze podejście 46/25 px).
+**Naprawa wzorcem, który już istniał dla kwadratu: zdejmujemy NAJSTARSZY etap, aż się mieści.**
+Lepiej pokazać 3 etapy z pełnym tekstem niż 4 z przeciętym — nagłówek i tak mówi „OSTATNIE N Z M".
+⚠️ Typowy etap zajmuje jedną linię, więc realnie prawie zawsze wchodzą wszystkie cztery.
+✅ Zmierzone na trzech scenariuszach w kadrze 630: realna karta ze zgłoszenia **4 etapy**, wszystkie
+krótkie **4**, skrajny (4 × 118 znaków) **3** — w żadnym nic nie wychodzi poza kadr.
+
+### 🔴 Model wysokości ZANIŻAŁ i to była istniejąca, nieujawniona wada
+Stary `SZKIELET 224, LINIA 28, NA_LINIE 62` dla 12 długich etapów liczył **1267 px**, a satori rysował
+**1324** — czyli karta kwadratowa przy długich sagach już wcześniej mogła ciąć treść dolną krawędzią.
+Nowy model **wyprowadzony z renderu, nie z arytmetyki**: `SZKIELET 243, STALA 37, LINIA 33, NA_LINIE 76`,
+wzór `card = SZKIELET + Σ(STALA + LINIA × linie)`. Trafia **co do piksela** na 1, 4 i 12 etapach.
+⚠️ `STALA` zawiera też odstęp między wierszami — forma jest zweryfikowana JAKO CAŁOŚĆ, więc nie
+„porządkuj" jej, rozbijając margines na osobny składnik, bez ponownego pomiaru. Właśnie tak powstał
+poprzedni, zaniżający model.
+⚠️ `NA_LINIE 76` jest CELOWO zachowawcze — realne łamanie przy 27 px wypada między 80 a 90 znakami
+(zmierzone). Zaniżenie znaków na linię zawyża liczbę linii, czyli **zawyża wysokość** — czyli myli się
+w stronę bezpieczną (biały pas), nie w stronę cięcia treści.
+
+### Czego pomiar NIE kazał ruszać
+- **Limit `tnij` 118 znaków ZOSTAJE** — sprawdzone, że przy 27 px (a nawet 28) tekst dalej mieści się
+  w dwóch liniach. Obniżenie limitu przywróciłoby urywanie w pół zdania, na które właściciel już raz
+  się skarżył (dlatego limit podniesiono ze 104).
+- **Tytuł przy 44 px nie zawija się** nawet przy pełnym limicie 54 znaków — zmierzone na długościach
+  30/40/45/50/54. Gdyby zawinął, dołożyłby ~49 px poza model.
+
+### 🔬 Jak to zmierzyć ponownie
+Sandbox nie ma Deno, ale **satori i resvg da się uruchomić z npm w Node** i wyrenderować kartę tym samym
+kodem: `npm i satori @resvg/resvg-js`, render na kadrze 3000 px, potem skan pikseli (Pillow) po ostatnim
+wierszu ciemniejszym niż 245 → to jest realna dolna krawędź treści. **Nie szacuj arytmetyką — ten plik
+ma już dwa modele wyprowadzone „na oko" i oba zaniżały.**
+
+⚠️ **DEPLOY NIE IDZIE PRZEZ GIT:** `supabase functions deploy og --no-verify-jwt --project-ref utmvokfjvrthvcmxzowc`.
+Do czasu wdrożenia karty wyglądają jak dotąd. Zmiana JEST w repo — i musi tam być, patrz ostrzeżenie
+„wygląd trzymany tylko na serwerze NIE ISTNIEJE".
