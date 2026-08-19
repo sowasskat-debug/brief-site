@@ -3,6 +3,64 @@
 Zdjęcie stanu na **2026-08-19 (wieczór, po sesji o kadencji nocnej, czujce i diagnozie dubla)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## 💡 20.08: CZYM MIERZYĆ PODOBIEŃSTWO OPISÓW — cztery metody, rekomendacja i co zmierzyć
+
+Pytanie właściciela (ze zrzutem tabeli): *„może zaczniemy używać którejś z tych do naszych opisów?"* —
+embeddingi (SBERT), SimHash, TF-IDF + cosine, Winnowing. **Nic z tego nie jest jeszcze zbudowane**,
+to notatka kierunkowa z rekomendacją i planem pomiaru.
+
+### Stan dzisiejszy, żeby było wiadomo co ulepszamy
+Wszystkie bramki liczą **Jaccard po rdzeniach** (`PodobienstwoRdzeni`) — czyli **binarny worek słów**
+po lekkim stemmerze. Dwa znane, udokumentowane ograniczenia:
+1. **Parafraza bez wspólnych słów = 0.** Saga paliwowa (14.08): `0,053 / 0,000 / 0,056` na trzech
+   kaflach JEDNEGO wydarzenia. Żaden próg tego nie złapie — to nie kwestia kalibracji, tylko miary.
+2. **Wszystkie słowa ważą tyle samo.** Stąd ręczna lista `_rdzenieNieNosne` (05.08) — czyli **IDF
+   robiony ręcznie**, bo „wzrosł" i „dolar" są w połowie newsów finansowych.
+
+### 🥇 REKOMENDACJA: embeddingi — jedyna metoda, która rusza klasę 1
+- **Wektor liczony RAZ przy publikacji i zapisany**, porównania to potem cosinus — czyli **zero
+  wywołań modelu na parę**. To znosi dzisiejszy kompromis „okno 3 dni na progu 0,18 + dni 4-7 na 0,35"
+  (15.08), który istnieje wyłącznie po to, żeby nie mnożyć wywołań: przy wektorach okno może mieć
+  tygodnie za darmo.
+- **Koszt rzędu grosza miesięcznie.** ~76 pozycji/dobę × ~150 tokenów = ~11 k tokenów/dobę.
+  Nawet przy dziesięciokrotnie gorszej stawce niż zakładana to nic wobec dzisiejszych **$0,83/dobę**
+  za DeepSeeka. ⚠️ **Stawkę i dostępność endpointu trzeba SPRAWDZIĆ, nie zakładać** — DeepSeek podniósł
+  ceny 16.08 i nie wiadomo, czy w ogóle ma endpoint embeddingów.
+- **Miejsce na wektory już mamy: Supabase** (diagnostyka jedzie tam od 01.08) z `pgvector`.
+- ⚠️ **To NIE zastępuje werdyktu modelu** — embedding typuje kandydatów lepiej niż Jaccard, ale
+  „ten sam news czy kolejny etap" zostaje pytaniem semantycznym (18.08: prawdziwy dubel 0,444 vs
+  prawdziwy kolejny etap 0,400 — każdy próg tnie jedno albo drugie). **Zmiana dotyczy SELEKTORA,
+  nie WERDYKTU.** Kto zapomni tej granicy, powtórzy błąd z 14.08 („to jest wyłącznie selektor
+  kandydatów, deterministycznego cięcia po tym progu NIE MA i nie wolno go dodać").
+
+### 🥈 TF-IDF + cosine — tani ulepszacz, ale nie tej klasy
+Zastępuje ręczną listę `_rdzenieNieNosne` **zmierzonym IDF z naszego własnego archiwum** (5900 pozycji):
+„dolar" dostałby wagę bliską zeru sam z siebie, „berkshir" wysoką. Zero nowych zależności, zero tokenów.
+- 🔴 **Ale głównej klasy NIE rusza** — przy zerowym przecięciu słów TF-IDF też daje zero.
+- 🔴 **Realny koszt to nie kod, tylko REKALIBRACJA:** ta sama miara karmi dziś co najmniej sześć
+  progów (0,18 / 0,35 / 0,15 / 0,10 / 0,06 / 0,30 przy X). Zasada z 04.08: *„zmieniając miarę,
+  przemierz KAŻDY próg, który jej używa — także ten, który wygląda na kosmetyczny"*.
+
+### ⛔ SimHash i Winnowing — zła klasa narzędzia do naszego problemu
+Oba wykrywają **niemal identyczny tekst** (kopie, plagiat, przedruki bajt w bajt). Nasze duble to
+**parafrazy różnych redakcji**, a `article` w dodatku **piszemy sami od zera** — dwa niezależne
+wygenerowania tego samego wydarzenia rozjeżdżają się z definicji (18.08). Jedyna nisza, w której
+miałyby sens, to agregatory-przedruki (Vietnam.vn, Kalkine) na polu `opis_zrodlowy` — ale to wąska
+klasa, którą i tak łapią istniejące bramki. **Nie zaczynaj od tego.**
+
+### 📋 CO ZMIERZYĆ, ZANIM COKOLWIEK POWSTANIE (materiał już jest)
+1. **Zbiór testowy istnieje** — `pomiar_opis_vs_tytul.md` (18.08, z etykietami sędziego) + wszystkie
+   pary dubli udokumentowane w `CLAUDE.md` bota z policzonymi wartościami Jaccarda.
+2. **Policzyć AUC embeddingów wobec Jaccarda na tym samym zbiorze** i sprawdzić punktowo pary, których
+   Jaccard nie widzi: saga paliwowa (0,053), Anthropic (0,160), Berkshire×Alphabet (0,143).
+   **Jeśli embeddingi nie wyciągną tych trzech nad rozsądny próg — temat zamknięty.**
+3. **Kontrola w drugą stronę, obowiązkowa:** prawdziwe KOLEJNE ETAPY sag muszą zostać pod progiem
+   („Zełenski spotka się" → „spotyka się" = 0,400 na Jaccardzie; ile na embeddingach?).
+4. ⚠️ **Pomiar prawdopodobnie NIE wyjdzie z sandboxa** (egress blokuje hosty API) — liczyć z Hetznera
+   albo z Maca, wzorcem „niech sprawdzi produkcja".
+5. ⚠️ Archiwum sprzed 18.08 **nie ma `opis_zrodlowy`**, więc licz na parach `text` + `article`,
+   które są dla 50 dni.
+
 ## 🔴 20.08 noc: TRZY DUBLE W DAWCE PORANNEJ — dane naprawione, kod w PR
 
 Zgłoszenie właściciela (zrzuty osi + *„czy da się zrobić tak, żeby bot rozumiał opis, a nie bawił się
