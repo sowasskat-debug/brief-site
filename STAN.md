@@ -1,28 +1,80 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-18 (noc, po sesji o utrwaleniu materiału źródłowego)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-19 (wieczór, po sesji o kadencji nocnej, czujce i diagnozie dubla)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
-## ⬜ 19.08: KARTY OG CZEKAJĄ NA DEPLOY — jedna komenda, TYLKO Z MACA
+## ✅ 19.08: KARTY OG WDROŻONE — wersja 21, stempel 14:03:29 UTC
 
-**Kod jest zmergowany na `main` (#197), ale karty na X dalej wyglądają po staremu.** Deploy Edge
-Function **nie idzie przez git** i nie da się go zrobić z sandboxa: nie ma CLI, nie ma tokenu,
-a egress nie widzi `api.supabase.com` (sprawdzone — kod 000).
+`supabase functions deploy og --no-verify-jwt --project-ref utmvokfjvrthvcmxzowc` wykonane z Maca.
+Weszły większe czcionki kart wątku i klastra (tytuł 38→44, tekst etapu 23→27) oraz bramka
+`ileWezlowNa630` (`supabase/functions/og/index.ts` L234, użyta w L490).
 
-```
-cd ~/Documents/brief-site && git pull
-supabase functions deploy og --no-verify-jwt --project-ref utmvokfjvrthvcmxzowc
-```
+- ⚠️ **Stare linki wrzucone już na X zachowują starą kartę** — X cache'uje podgląd per URL. Nowe posty
+  dostają większą od razu. Tego nie da się odkręcić z naszej strony.
+- ⚠️ **Deploy NIE idzie z sandboxa ani przez git**: brak CLI, brak tokenu, egress nie widzi
+  `api.supabase.com` (sprawdzone — kod 000). Zostaje Mac albo workflow.
+- 💡 Żeby przestało być ręczne: workflow wdrażający `og` przy merge do `main`. Wymaga jednego sekretu
+  repo (`SUPABASE_ACCESS_TOKEN`) — da się dodać z telefonu przez GitHub.
 
-- Co czeka: czcionki kart wątku i klastra (tytuł 38→44, tekst etapu 23→27) + bramka `ileWezlowNa630`,
-  która przy bardzo długich nagłówkach pokazuje 3 etapy zamiast ciąć czwarty. Szczegóły i pomiary
-  w `CLAUDE.md`, sekcja „Karty OG: większa czcionka".
-- ⚠️ `cd` do repo jest KONIECZNE — CLI bierze funkcję z bieżącego katalogu. To ta sama pułapka,
-  przez którą 07.08 dwa deploye nadpisały niezacommitowany układ karty.
-- ⚠️ Stare linki wrzucone już na X zachowają starą kartę (X cache'uje podgląd per URL). Nowe posty
-  dostaną większą od razu.
-- 💡 Do rozważenia, żeby to przestało być ręczne: workflow wdrażający `og` przy merge do `main`.
-  Wymaga jednego sekretu repo (`SUPABASE_ACCESS_TOKEN`) — da się dodać z telefonu przez GitHub.
+## ⬜ 19.08 wieczór: CAP 4 SUBITEMÓW — PIERWSZA RZECZ NA NASTĘPNĄ SESJĘ
+
+Wieczorny kafel „Szczepionka Moderny na czerniaka: pierwszy pozytywny wynik III fazy" (Puls Biznesu,
+17:34) to **piąte źródło o tym samym wydarzeniu**. Cztery poprzednie siedzą w popołudniowym klastrze
+(STAT 14:34, geekweek 15:05, Alert Medyczny 15:05, Sky News 16:04). Czujka złapała to jako
+`dubel-wydanie` (podobieństwo 0,43) — **zawiodła bramka w bocie, nie kontrola**.
+
+- 📊 **Zmierzone na całym logu bota:** cross-dose merge udał się **655** razy, pominięty **445** —
+  z tego **413 przez cap „klaster pełny (4 subitemy)"** ([Runner.cs:8378](../FinancialNewsBot/Runner.cs))
+  i 32 przez złamanie kontraktu przez model (pozycja wpisana i do `groups`, i do `crossDose`).
+  Czyli **cap odpowiada za 93% pominięć**, a pomyłki modelu za 7%.
+- ✅ **Publikacja osobno przy pełnym klastrze to ŚWIADOMY fallback z 14.08** — wcześniej ta gałąź
+  gubiła news bez śladu (zniknął kafel o umowach Pentagonu z Northrop Grumman). Nie usuwać jej,
+  tylko podnieść próg.
+- ⬜ **Do rozstrzygnięcia:** nowa wartość (6? 8?) i dwie rzeczy wizualne — jak wygląda kafel z dłuższą
+  listą podpozycji i czy `ileWezlowNa630` w karcie OG dobrze przycina. **Pokazać zrzut przed wdrożeniem.**
+- ⬜ Drugi, tańszy punkt: przy złamanym kontrakcie **wybierać `crossDose` zamiast pomijać** — model
+  sygnalizuje przynależność do klastra, a bot dziś ten sygnał wyrzuca (32 przypadki).
+- ⚠️ Zmiana idzie w bocie: **`dotnet build Bot.csproj` przed mergem**, nie ma CI.
+
+## 📊 19.08 wieczór: DLACZEGO TEN DUBEL WYGLĄDAŁ JAK CZYSTA POWTÓRKA — diagnoza zamknięta
+
+Kafel przeszedł bramkę dedup ŚWIADOMIE: `Brief -> Podobny temat był, ale to nowy rozwój/eskalacja —
+publikuję`. I to nie był zły werdykt — kolejne źródła podawały 83% → ponad 100% → 110% → 150%,
+kurs realnie rósł cały dzień. **Klasa błędu: eskalacja mierzona liczbą, która sama rośnie.**
+
+- 🔴 **Fakt uzasadniający publikację nie trafił do ŻADNEGO pola, które widzi czytelnik.** Sprawdzone
+  polem po polu: w tytule, artykule i linii wpływu opublikowanego kafla nie ma nawet znaku `%`.
+- **Gdzie zniknął:** `EnrichItem` podmienił tytuł kandydata („Akcje Moderny rosną o 150%…") na
+  `og:title` polskiego źródła ([Runner.cs:5095](../FinancialNewsBot/Runner.cs)) — reguła słuszna,
+  polski oryginał bije tłumaczenie. Artykuł DeepSeek napisał o nauce (punkty końcowe, Bancel,
+  34 sygnatury, FDA/EMA), nie o rynku. Więc do kroku eskalacji nie dotarła żadna liczba.
+- **Skutek:** `DeepSeekDopiszEskalacjeDoTytulu` mógł sięgnąć wyłącznie po to, co było w artykule —
+  „pierwszy pozytywny wynik III fazy" — czyli **dokładnie treść popołudniowego klastra**. Element
+  odróżniający został wzięty ze wspólnej części historii zamiast z tego, co się zmieniło.
+- ✅ **Bramka `EskalacjaMaPokrycieWArtykule` NIE zawiniła** — nikogo tu nie odrzuciła (liczniki na
+  całym logu: 173 eskalacje dopisane, 13 odrzuconych, 334 podmiany tytułu). Moderna jest w grupie 173.
+- 🔴 **Czujka tej klasy NIGDY nie złapie.** Szuka liczb w nagłówku BEZ pokrycia; tu liczba nie jest
+  fałszywa — jej po prostu nie ma. Ubytku odróżnika nie widzi żadna obecna miara.
+
+## ✅ 19.08 wieczór: SKALOWANIE JEDNOSTEK W CZUJCE (kontrola #6, ZMERGOWANE)
+
+`liczby_bez_pokrycia_z_tolerancja` brała z nagłówka **gołą liczbę** (`m.group(1)`) i nigdy nie używała
+jednostki, którą sama wyłuskiwała w `m.group(2)`. „Target otrzymał **1 mld** USD" porównywało się
+z artykułowym „**994 mln** USD" jako `1` do `994` — rozjazd liczony jako 99,9% zamiast realnych 0,6%,
+więc tolerancja 1% nie miała czego przepuścić.
+
+- **Naprawa:** wartość z nagłówka porównywana także PO PRZESKALOWANIU (`mld`/`mln`/`bln`/`tys` plus
+  formy słowne). Po stronie artykułu przeskalowane są **dokładane do gołych, nigdy w zamian** —
+  inaczej „1 mld" przestałoby się kryć z „1 miliard" zapisanym słownie. Patch jest z konstrukcji
+  **wyłącznie rozluźniający**: nie może dodać znaleziska.
+- 📊 **Zmierzone na 5977 pozycjach** (50 dni archiwum + bieżące wydanie, z `subItems`):
+  znalezisk 275 → 272, **regresji 0**. Wyciszone trzy realne fałszywki: `1 mld` (Target, artykuł
+  994 mln), `6 tys` (Porsche, artykuł 6000), `1,5 tys.` (drony w Baszkirii).
+- ⚠️ **`liczby_impactu_bez_pokrycia` NIETKNIĘTA** — to port bramki z `Runner.cs`. Port wolno rozjechać
+  z botem wyłącznie razem z botem, inaczej wracamy do „czujka ślepsza od bramki, którą kontroluje".
+- ⬜ **SK Hynix to nie ta klasa:** „blisko 29 mld" przy 28,61 mld to 1,36%, czyli powyżej progu 1% —
+  po skalowaniu dalej się zgłasza. To pytanie o próg, świadomie nieruszone (podniesienie tolerancji
+  odbiera realne wykrycia).
 
 ## 🔴 19.08: DEEPSEEK PODNIÓSŁ CENNIK — rachunek ×2,3 przy TYM SAMYM zużyciu
 
@@ -48,32 +100,25 @@ wywołania i model najmniejszej klasy przy 30-tysięcznych polskich promptach �
 wąskich bramek werdyktu** (`brief-liczby-rozjazd`, `brief-osoba-w-zrodle`, `brief-inne-wydarzenie`),
 nigdy od selekcji.
 
-## ⬜ 19.08: KADENCJA NOCNA — ZMIERZONA, GOTOWA, CZEKA NA WKLEJENIE NA HETZNERZE
+## ✅ 19.08: KADENCJA NOCNA NA PRODUKCJI — crontab podmieniony 14:03 UTC
 
-Nie wdrożone — właściciel dostał gotowy blok crontaba. **Dzień bez zmian**, rzadziej tylko w nocy:
-00:00-03:00 co 60 min, 03:00-05:00 co 120 min (najcichsza pora doby I szczyt cenowy). 41 biegów zamiast 48.
+Dzień bez zmian, rzadziej tylko w nocy. Backup starego crontaba: `/root/crontab.bak.20260819`.
 
-- 📊 **Noc NIE jest martwa** — 23:00-07:00 to **24,2 pozycji/dobę, 26% całości**. Feedy są amerykańskie
-  (Juice, Kalshi, Kobeissi, Polymarket, ZeroHedge, Techmeme, BBC World) i nadają całą naszą noc.
-  Dlatego cięcie jest wąskie: 03:00-06:00 ma tylko 6,4 pozycji, a kosztuje podwójnie.
-- 🔴 **ZASADA, bez której to gubi newsy: okno selekcji ≥ 2× odstęp.** `OknoSelekcjiMinut = 60`, a przy
-  godzinnej kadencji zapas spada do zera — i wtedy **pominięty bieg** (flock, ~16% biegów łapie timeout
-  `SELEKCJA-JSON` 300 s) zostawia dziurę, w której news przepada bez śladu w żadnym liczniku.
-  Stąd `CATCHUP_MINUTES=150` przy odstępie 60 i `240` przy 120.
-- ✅ **Poszerzenie okna jest DARMOWE** — pozycje spalone w `wyslane.txt` odpadają przy parsowaniu RSS,
-  **przed** zbudowaniem promptu. Zero dodatkowych tokenów. Dlatego nie ma po co być oszczędnym.
-- ✅ Zweryfikowane w kodzie: `CATCHUP_MINUTES` obejmuje wszystkie 6 ścieżek (jedno pole statyczne);
-  `historia.Contains(link)` odsiewa przed promptem, a burn dotyczy WSZYSTKICH kandydatów paczki;
-  `wyslane.txt` trzyma 200 linków ≈ **10 godzin**, czyli dużo więcej niż każde okno;
-  `MaxWiekZrodlaGodziny = 24 h`; limity „max N/bieg" nie wiążą w nocy (2,6 publikacji/godzinę
-  ze WSZYSTKICH feedów, ForexLive z capem 1/bieg daje 0,4 pozycji na całą noc); automat X nietknięty
-  (jego okno 05:00-21:00 UTC leży w bloku `*/30`).
-- ⚠️ **Hetzner chodzi na UTC** (potwierdzone stemplami commitów), `added_at` jest warszawskie.
-  Crontab piszemy w UTC.
-- ⚠️ **Pre-flight przed wklejeniem:** `CATCHUP_MINUTES` NIE MOŻE być w `bot_secrets.env` —
-  `set -a; source` nadpisałoby wartość z crona i okno po cichu wróciłoby do 60.
-- ⛔ **Blok 08:00-12:00 co 90 min ODRZUCONY na teraz** ($1,60/mies): to dawka poranna, godziny czytania,
-  a limity „max 2/bieg" zaczęłyby tam wiązać. Decyzja wymaga rozkładu godzinowego wejść z knagi.
+```
+0,30 5-23 * * * /root/FinancialNewsBot/run_bot.sh >> /var/log/brif_bot.log 2>&1
+0 0-2  * * * CATCHUP_MINUTES=150 /root/FinancialNewsBot/run_bot.sh >> /var/log/brif_bot.log 2>&1
+0 3    * * * CATCHUP_MINUTES=240 /root/FinancialNewsBot/run_bot.sh >> /var/log/brif_bot.log 2>&1
+```
+
+- 📊 **To 42 biegi na dobę, nie 41** — poprzedni zapis mylił się o jeden. Dzień 05:00-23:59 = 38,
+  noc (00, 01, 02, 03 UTC) = 4. Nie szukaj układu dającego 41, nie ma takiego przy tych parametrach.
+- ✅ **Pre-flight przeszedł:** `CATCHUP_MINUTES` nie ma w `bot_secrets.env`, więc `set -a; source`
+  w `run_bot.sh` (L20-22) nie nadpisuje wartości z crona. Kod czyta ją w `Runner.cs:136` do
+  statycznego `OknoSelekcjiMinut`, czyli jedno pole obsługuje wszystkie ścieżki selekcji.
+- ✅ Blok dnia `5-23` pokrywa okno automatu X (05:00-21:00 UTC) tą samą kadencją co dotąd.
+- 👀 **Pierwsza noc z nową kadencją: 19/20.08.** Do sprawdzenia rano, czy nic nie przepadło —
+  zasada „okno selekcji ≥ 2× odstęp" ma to chronić, ale jeszcze nie była testowana na produkcji.
+- ⛔ Blok 08:00-12:00 co 90 min dalej ODRZUCONY (dawka poranna, godziny czytania).
 
 ## 🔴 19.08: ANGIELSKI NAGŁÓWEK NA PRODUKCJI — NAPRAWIONE (bot #199 + kontrola #4, ZMERGOWANE)
 
@@ -111,9 +156,13 @@ for natural gas pipeline serving Oracle AI data center; project rerouted."** (Ka
 - 🔴 **Stan idzie DO REPO** (`stan_czujki.json`) — routine startuje świeży kontener co godzinę, więc plik
   na dysku nie przeżywa. Jedyny wyjątek od „niczego nie commituj". Prompt routine'u zaktualizowany.
 - ⚠️ Fail-safe w stronę ZGŁASZANIA (brak/zły stan = raport pełny) — odwrotnie niż przy stanie wysyłek bota.
-- 👀 **Do obejrzenia:** o 10:16 pierwszy strzał z pamięcią zgłosi NASDAQ (stan pusty) → push ma przyjść;
-  o 11:16 ma o nim ZAMILCZEĆ. Drugi push o tym samym = commit stanu się nie zapisuje (czujka sama to
-  napisze w raporcie).
+- ✅ **SPRAWDZONE 19.08 wieczór — pamięć DZIAŁA.** Commity „Stan czujki [skip ci]" o 10:17, 13:23,
+  14:19 i 15:18, czyli stan przeżywa świeży kontener. W `stan_czujki.json` dwa wpisy mają
+  `widziane_razy: 2` przy `ostatnio_zgloszone` wcześniejszym niż `ostatnio_widziane` — **czujka
+  zobaczyła to samo drugi raz i nie wysłała pusha.**
+- ⚠️ **Prognoza o NASDAQ była o znalezisku, które nie wystąpiło** — nieświeża seria i Yahoo 429 same
+  się rozeszły. Zamiast tego cztery znaleziska klasy `liczby-naglowek` (SK Hynix 10:16, Moderna 83%
+  13:22, nagłówek klastra Moderna 14:18, Target 15:17). Trzy z czterech to zaokrąglenia.
 
 ## ⬜ 19.08: cztery znaleziska czujki BEZ REAKCJI — do rozstrzygnięcia
 
@@ -1937,6 +1986,12 @@ biegami). Angielski oryginał karmi `DeepSeekWyszukiwarkaQueryEN` zamiast być o
 
 ## ⚠️ Pułapki, w które łatwo wdepnąć ponownie
 
+- ⚠️ **Log bota obcina tytuły do 60 znaków** (`item.Text[..Math.Min(60, …)]`). Każdy pomiar liczony
+  z `brif_bot.log` na zasadzie „co zgubiła podmiana tytułu" jest przez to **górną granicą**, nie
+  liczbą dokładną — liczba stojąca dalej niż 60. znak wygląda na zgubioną, choć wcale nie jest.
+  Realny przykład: „blisko 19 mln Polaków" → w logu „blisko 1…" (19.08).
+
+
 1. 🔴 **Pusta lista jest ścieżką GŁÓWNĄ, nie brzegową.** `trafienia[Count-1]` bez guarda na pustą
    listę wywalił bramkę dla każdego newsa BEZ podobnych w historii — a wyjątek łapał dopiero `catch`
    na końcu `UpdateBriefOnSite`, więc **ubijał całą partię feedu razem z finalnym PUT-em**.
@@ -2029,6 +2084,17 @@ biegami). Angielski oryginał karmi `DeepSeekWyszukiwarkaQueryEN` zamiast być o
 - 8 wpisów w `rejected.json` (pozycje 91–98) nie ma pól `date`/`dose` — panel pokazuje dla nich „—".
 
 ## Odrzucone pomysły (nie wracaj bez nowego powodu)
+
+- ⛔ **Poszerzenie pokrycia bramki eskalacji o tytuł kandydata sprzed podmiany (19.08).** Pomysł
+  wyglądał dobrze: `EskalacjaMaPokrycieWArtykule` przyjmuje liczby z `org`, ale `org` to już
+  PODMIENIONY tytuł, więc liczba z kandydata („150%") przepada. 📊 **Zmierzone i odrzucone:**
+  w całym logu bota dotyczyłoby to **5 kontynuacji** (334 podmiany → 48 gubi liczbę nośną → 5 to
+  kontynuacje), a **dwie z tych pięciu to ta sama historia Moderny** i akurat procent ruchu kursu,
+  czyli liczba, która najszybciej się starzeje („150%" o 17:34 bywa „120%" o 21:00). Do tego
+  przypadek Anthropic pokazał, że **mechanizm już działa sam**: podmiana wyrzuciła „65 mld", a krok
+  eskalacji je przywrócił, bo miały pokrycie w artykule. Zysk znikomy, ryzyko dokładnie tej klasy,
+  przed którą bramka broni. **Właściwy lewar to cap 4 subitemów, nie bramka.**
+
 
 - **Logowanie Google**, **magic link/OTP** — wybrane e-mail + hasło.
 - **Gotowiec `x_post` generowany przez bota** — `gotowiec-x` robi to na żądanie i nadpisuje wynik.
