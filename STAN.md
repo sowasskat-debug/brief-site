@@ -3,6 +3,31 @@
 Zdjęcie stanu na **2026-08-19 (wieczór, po sesji o kadencji nocnej, czujce i diagnozie dubla)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## ⬜ 19.08 noc: NISZOWE WSKAŹNIKI BRANŻOWE — reguła DO DOPISANIA (diagnoza gotowa)
+
+Zgłoszenie właściciela ze zrzutu: „Indeks Cass Freight spadł w lipcu o 4,8% r/r, do 0,96, najniżej
+od 2020 roku; to 42. miesięczny spadek z rzędu, najdłuższa seria w historii indeksu" (finance.yahoo.com,
+19.08 22:44). Komentarz: **„mało interesujący dla Polaka, nawet ja o tym pierwszy raz słyszę"**.
+Właściciel potwierdził, że to właściwy trop.
+
+- 🔴 **Reguła, która powinna to złapać, JUŻ ISTNIEJE** — „Rutynowe ODCZYTY cyklicznych danych
+  makroekonomicznych" mówi wprost: *„Kontynuacja trendu NIE jest wydarzeniem: «piąty miesiąc z rzędu»,
+  «kolejny miesiąc spadku» = dalej odrzuć"*. Nie zadziałała przez DWIE luki:
+- **Luka 1 — rekord serii wygląda jak wyjątek.** „Najdłuższa seria w historii indeksu", „42. spadek
+  z rzędu", „najniżej od 2020" to superlatyw opisujący DŁUGOŚĆ TEJ SAMEJ SERII, a nie nowe wydarzenie.
+  Model najpewniej wziął to za wyjątek „(b) PIERWSZE od dłuższego czasu przejście przez próg".
+- **Luka 2 — lista przykładów zawiera same wskaźniki ROZPOZNAWALNE** (CPI, PKB, PMI, produkcja,
+  bezrobocie). Niszowy prywatny indeks frachtowy do niej „nie pasuje wizualnie", choć merytorycznie należy.
+- ⬜ **Poprawka: dwa zdania dopisane do TEJ SAMEJ reguły** (nie nowa reguła):
+  (a) rekord serii NIE ratuje kontynuacji trendu — superlatyw opisuje długość serii, nie wydarzenie;
+  (b) prywatne/branżowe indeksy bez rozpoznawalności u polskiego czytelnika (Cass Freight, wskaźniki
+  przewozów, barometry pojedynczych branż, indeksy firm doradczych) — odrzucaj.
+  **GRANICA:** wskaźniki rozpoznawalne i ze skutkiem dla PL/UE (CPI, PKB, PMI, payrolls, decyzje
+  Fed/EBC) oceniaj normalnie. Miara niszowości: czy przeciętny czytelnik w Polsce w ogóle o nim słyszał.
+- ⚠️ **Próba wdrożenia 19.08 w nocy NIE POWIODŁA SIĘ** — edycja źle przycięła stringa reguły
+  i rozsypała `Runner.cs` (118 błędów kompilacji). Cofnięte przez `git checkout`, repo zostało czyste.
+  Przyczyną był wyczerpany kontekst sesji, nie sama treść poprawki. **Robić na świeżo.**
+
 ## ✅ 19.08 noc: KARTA OG — pełne zdania i szersza kolumna (WDROŻONE, wersja 22, PR #199)
 
 Zgłoszenie właściciela ze zrzutem: „ucina mi zdania (…) a po lewej i po prawej mamy trochę wolnego
