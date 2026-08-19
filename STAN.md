@@ -3,6 +3,37 @@
 Zdjęcie stanu na **2026-08-19 (wieczór, po sesji o kadencji nocnej, czujce i diagnozie dubla)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## ⬜ 19.08 noc: NISZOWE WSKAŹNIKI — LISTA KLAS DO DOPISANIA (reguła bazowa JUŻ w main, PR #205)
+
+Reguła bazowa weszła (PR #205, `409c4b3`), ale wymienia w zasadzie sam Cass Freight. Uwaga właściciela:
+„cass freight to nie jedyny niszowy wskaźnik" — i to prawda. 📊 Przeszukane 12 470 kandydatów
+z historii `tytuly.txt`, znalezione **19 różnych indeksów**. Klasy do dopisania jako PRZYKŁADY:
+
+- **regionalne oddziały Fed** — Dallas Fed Manufacturing, Philadelphia/Philly Fed, Richmond,
+  Empire State. To sondaże JEDNEGO okręgu, nie dane krajowe.
+- **zagraniczne sondaże konsumenckie** — Westpac-MI (Australia), GfK (UK).
+- **amerykańskie wskaźniki mieszkaniowe** — NAHB Housing Market Index, existing/pending home sales,
+  housing starts, building permits (7 trafień).
+- **PPI/CPI krajów azjatyckich** bez przełożenia na PL/UE — np. „S.Korea June producer price index" (6).
+- ⛔ **Frachtowych POZA Cass Freight nie ma ani jednego** — to była pojedyncza wpadka, nie wyciek
+  całej kategorii. Nie rozdmuchuj tej gałęzi.
+
+✅ **DECYZJA WŁAŚCICIELA (19.08): `Fear & Greed` ZOSTAJE**, reszta „do wyjebania". To najczęstszy
+z wszystkich (16–32 trafienia zależnie od wzorca, `Crypto Fear & Greed Index: 21/100`) — mimo że
+przeciętny czytelnik go nie zna, publikujemy dużo krypto i tam jest rozpoznawalny.
+⚠️ Przy dopisywaniu listy MUSI zostać wyjęty spod reguły wprost, inaczej wypadnie razem z resztą.
+
+⬜ **DO ROZSTRZYGNIĘCIA — benchmarki AI** (Artificial Analysis Intelligence Index, SWE-Bench, LMArena,
+Chatbot Arena; 4 trafienia). Tech to nasza mocna kategoria i granica jest cienka:
+„Grok 4.5 najlepszym modelem poza Anthropic" **JEST** newsem o zmianie układu sił, ale
+„Muse Spark 1.2 zdobywa 54 punkty w Artificial Analysis Intelligence Index" to czysty szum.
+Kryterium do wpisania, gdy właściciel zdecyduje: **zmiana układu sił = przepuść, punktacja w rankingu = odrzuć.**
+
+📊 Zasięg reguły bazowej sprawdzony na 6009 opublikowanych pozycjach: niszowych indeksów **0**
+(Cass Freight był pierwszym, który przeszedł), rekord serii **2** — z czego „Eksport Japonii wzrósł
+o 19,3% rdr, 10. miesiąc wzrostów z rzędu" jest DYSKUSYJNY: +19,3% to realna niespodzianka, seria
+jest tam tylko tłem. Klasa do obserwowania: **duży ruch opisany przy okazji jako seria.**
+
 ## ⬜ 19.08 noc: NISZOWE WSKAŹNIKI BRANŻOWE — reguła DO DOPISANIA (diagnoza gotowa)
 
 Zgłoszenie właściciela ze zrzutu: „Indeks Cass Freight spadł w lipcu o 4,8% r/r, do 0,96, najniżej
