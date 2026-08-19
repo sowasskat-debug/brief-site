@@ -3,6 +3,103 @@
 Zdjęcie stanu na **2026-08-19 (wieczór, po sesji o kadencji nocnej, czujce i diagnozie dubla)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## ⬜ 19.08 noc: KARTA OG — pełne zdania i szersza kolumna (ZROBIONE W REPO, NIEWDROŻONE)
+
+Zgłoszenie właściciela ze zrzutem: „ucina mi zdania (…) a po lewej i po prawej mamy trochę wolnego
+białego miejsca". Zmiany w `supabase/functions/og/index.ts` — **niezacommitowane i NIEWDROŻONE**.
+
+- **Co zmienione:** nowa stała `LIMIT_ETAPU = 150` (było 118, w dwóch miejscach osobno — teraz jedno
+  miejsce prawdy, spięte z modelem wysokości), margines boczny obu kart **62 → 44 px**,
+  `NA_LINIE` w modelu **76 → 78**. Karta wątku i karta klastra ruszone RAZEM — komentarz w pliku
+  wprost wymaga, żeby wyglądały jak jedna rodzina (lądują w tej samej nitce).
+- 📊 **Zmierzone realnym renderem** (satori + resvg lokalnie w node — ten sam stos co produkcja;
+  narzędzie odtworzyło zrzut właściciela co do znaku, z tymi samymi ucięciami):
+  przy marginesie 44 px **160 znaków wypełnia dwie linie dokładnie do krawędzi**, więc 150 zostawia
+  zapas. Sprawdzone na najgorszym przypadku (147 zn samych długich słów) — mieści się.
+- 📊 **Model wysokości przeliczony i zweryfikowany:** render vs `wysokoscKartyWatku` na 1/3/4/8
+  etapach = 346/552/655/1067 px, **różnica ZERO na każdym**. Liczba wyświetlanych etapów się NIE
+  zmienia (150 zn przy `NA_LINIE` 78 to nadal dwie linie, tak jak 118 przy 76) — karta pokazuje tyle
+  samo etapów co dziś, tylko z pełnymi zdaniami.
+- 📊 Na 470 etapach z `threads.json`: ucinanych było **19%**, po zmianie zostaje **7%**.
+- ⚠️ **Deploy NIE idzie przez git.** Po zacommitowaniu trzeba wykonać z Maca:
+  `supabase functions deploy og --no-verify-jwt --project-ref utmvokfjvrthvcmxzowc`.
+  🔴 Commit MUSI poprzedzać deploy — plik sam ostrzega, że układ trzymany tylko we wdrożonej funkcji
+  ginie przy następnym deployu z repo (tak przepadł wariant pełnoszerokościowy 07.08).
+- ⚠️ Stare linki wrzucone już na X zachowają starą kartę (X cache'uje podgląd per URL).
+
+## ⬜ 19.08 noc: OPIS ŹRÓDŁOWY — POLE BYŁO ZANIECZYSZCZONE, naprawa CZEKA W DRZEWIE (nie commitowana)
+
+🔴 **Zmiana w `FinancialNewsBot/Runner.cs` leży NIEZACOMMITOWANA na Macu** — `dotnet build Bot.csproj`
+przechodzi, ale bez commita zginie. To pierwsza rzecz do domknięcia w następnej sesji.
+
+**Co się okazało.** `opis_zrodlowy` był zanieczyszczony w **52% pozycji** wydania 19.08 — do treści
+wjeżdżał surowy `<script async src="https://platform.twitter.com/widgets.js" charset="utf-8">`.
+
+- 🔴 **Przyczyna: zderzenie DWÓCH funkcji, każda z osobna poprawna.** `SanitizeXml` escapuje `<`
+  w każdym tagu, którego nie uzna za poprawny, a jego wzorzec wymaga `nazwa="wartość"` przy KAŻDYM
+  atrybucie — więc nie uznaje atrybutów BOOLOWSKICH (`async`). Tag wjeżdża jako `&lt;script …>`.
+  Potem `OczyscHtml` usuwał tagi PRZED `HtmlDecode`, więc escapowanego nie widział, a dekodowanie
+  ODTWARZAŁO go już po sprzątaniu. Ślad rozpoznawczy: `<script …>` **bez** `</script>` (zamykający
+  miał poprawną składnię, więc ginął normalnie).
+- ✅ **Naprawa: drugie usuwanie tagów PO dekodowaniu** (`Runner.cs`, `OczyscHtml`). Z konstrukcji
+  wyłącznie odejmująca — nie ma jak dołożyć treści.
+- 📊 **Reprodukcja przyczyny:** ten sam feed BEZ `SanitizeXml` → 0/25 zanieczyszczonych,
+  Z `SanitizeXml` → 25/25. **Weryfikacja naprawy** przez pełną ścieżkę produkcyjną
+  (`SanitizeXml` → `WyciagnijOpisRss`) na 6 feedach rss.app: **150 itemów, 0 zanieczyszczonych.**
+- 🔴 **Skutek sięgał dalej niż punkty 3–4:** ten sam tekst idzie do PROMPTU SELEKCJI, więc model
+  dostawał `<script…>` w co drugim kandydacie i płaciliśmy za to missami.
+
+## 📊 19.08 noc: BLOKADA PUNKTÓW 3–4 BYŁA ŹLE ZAPISANA — archiwum nie jest potrzebne
+
+⛔ **„Punkty 3–4 zablokowane, bo archiwum nie ma `opis_zrodlowy`" — NIEPRAWDA dla właściwej ścieżki.**
+Bramka cross-bieg po opisach (`ZbierzOpublikowaneZOpisami`) czyta **bieżący `briefs.json`**, okno
+~24–40 h — nie archiwum. A bieżący ma 100% pokrycia. Materiał był gotowy od razu.
+
+- 🔴 **DRUGA OŚ JUŻ ISTNIEJE od 14.08** — `ZnajdzPodobneOpublikowanePoOpisie`, próg
+  `PROG_POWTORKI_PO_OPISIE` 0,15, wpięta jako trzecia bramka cross-bieg. Ale liczy rdzenie
+  z **naszego artykułu** (`it.Article`), nie z `opis_zrodlowy`. Więc właściwe pytanie to
+  **„opis vs ARTYKUŁ"**, a pomiar z 18.08 zadał „opis vs TYTUŁ" — to nie to samo pytanie.
+- 📊 **Pomiar na 89 pozycjach wydania 19.08 (3916 par), prawdziwe `PodobienstwoJaccarda`
+  i `RdzenieKluczowe` z `Bot.dll` przez refleksję.** Par nad progiem 0,15 po opisie:
+  **1015 → 304 → 5**, kolejno: dane surowe → po usunięciu tagów → po odcięciu stopki.
+  Oś po artykule w tym samym zbiorze: 20. **Pierwszy tysiąc „dubli" to był sam boilerplate.**
+- ⬜ **DRUGIE ŹRÓDŁO SZUMU, JESZCZE NIEUSUNIĘTE: stopka feedu** `— @Polymarket Aug 19, 2026`.
+  Zostaje nawet po naprawie `OczyscHtml` (to legalny tekst po odtagowaniu). Zmierzone udziały słów
+  w opisach: `2026` 54%, `aug` 53%, `19` 46%, `polymarket` 30%, `financialjuice` 20% — czyli dwie
+  DOWOLNE pozycje z tego samego feedu tego samego dnia dzielą datę i uchwyt.
+  **Następny krok: odciąć stopkę w `WyciagnijOpisRss`** (u źródła — zniknie też z promptu selekcji).
+- ✅ **Dowód, że pole ma wartość** (po obu czyszczeniach): para Moderna × Merck — **opis 0,737**,
+  artykuł 0,147, tytuł 0,312. **To jest DOKŁADNIE ten dubel Moderny, który wyszedł osobnym kaflem.**
+  Oś po artykule tam milczy. Przy rekomendowanym progu DOKŁADAJĄCYM 0,30 zostaje sama Moderna:
+  +1 prawdziwy dubel, 0 fałszywych.
+- ⚠️ **Próbka MAŁA** — jedno wydanie, jeden realny dubel. To dowód wykonalności, NIE zmierzony zysk.
+  Pomiar na 40 dniach dopiero gdy nazbiera się archiwum czystych opisów.
+- 📊 Narzędzie pomiarowe (ładuje `Bot.dll` przez refleksję, liczy trzy osie na parach) było
+  w scratchpadzie sesji — przy powrocie do tematu trzeba je odtworzyć.
+
+## ⬜ 19.08 noc: CAP SUBITEMÓW — ZMIERZONE, ŚWIADOMIE ODŁOŻONE
+
+Zmierzone i **nie wdrożone** (właściciel: „zostaw to w spokoju"). Liczby zostają, żeby nie mierzyć drugi raz.
+
+- 📊 **Rozkład 728 klastrów** (archiwum + bieżące): 2 suby 59,2%, 3 suby 20,2%, **4 suby (sufit) 19,2%**,
+  powyżej 4 tylko 5 sztuk (wszystkie z lipca, sprzed capu). Przy naturalnym opadaniu na czwórce
+  powinno być ~7% — **spiętrzenie na suficie jest realne**.
+- 📊 **413 odrzutów capu w 247 biegach**, 71,7% biegów miało dokładnie jeden odrzut. Dolne granice
+  odzysku: próg 5 → ≥43%, **próg 6 → ≥61%**, próg 8 → ≥79%. Ogon to 3 biegi z 13/16/17 odrzutami
+  (tematy-lawiny typu Ormuz — tam publikacja osobno jest właściwa).
+- 🔴 **CAPY SĄ CZTERY, NIE JEDEN.** `STAN.md` wskazywał tylko cross-dose (`SubItems.Count < 4`).
+  In-dose mają własne, twarde `Take(4)` — **bez** gałęzi „publikuję osobno". **Podniesienie samego
+  cross-dose zrobiłoby REGRESJĘ**: klaster rozbudowany do 6 wraca przy następnym biegu do
+  klastrowania in-dose, gdzie `podItemy` = istniejące suby + nowe, i `Take(4)` uciąłby dwie pozycje
+  BEZ LOGU — ta sama klasa cichego gubienia newsa, którą naprawiono 14.08. Cap podnosić wszystkie
+  naraz, jedną stałą.
+- 🔴 **Punkt „fallback crossDose przy złamanym kontrakcie" jest DROŻSZY, niż zapisano.** Guard nie
+  wyrzuca sygnału — wybiera jedno z dwóch umieszczeń, i `groups` wybrano ŚWIADOMIE po awarii 14.08
+  (pozycja w dwóch dawkach → trwała utrata source/reach). Przeniesienie wymaga wyjęcia pozycji
+  z `wynik`, czyli ruszenia slotów. Bezpieczny wariant: przenosić TYLKO gdy pozycja stoi w `groups`
+  sama. 📊 Zmierzone: **13 z 31** przypadków to na pewno taka sytuacja. Zysk 13–31 przypadków przez
+  CAŁY log, wobec 413 dla capu.
+
 ## ✅ 19.08: KARTY OG WDROŻONE — wersja 21, stempel 14:03:29 UTC
 
 `supabase functions deploy og --no-verify-jwt --project-ref utmvokfjvrthvcmxzowc` wykonane z Maca.

@@ -36,6 +36,18 @@ const ORIGIN = 'https://brifup.com';
 const ZAPASOWY_OBRAZEK = `${ORIGIN}/og-image.png?v=2`;
 const CZERWONY = '#DF1F0F';
 
+// 🔴 JEDNO MIEJSCE PRAWDY dla limitu tekstu etapu/pozycji (2026-08-19, zgłoszenie właściciela:
+// „ucina mi zdania, nie musisz dawać … tylko lecieć do końca"). Limit MUSI być spięty z modelem
+// wysokości (`wysokoscKartyWatku`), bo ten liczy linie z `Math.min(dlugosc, LIMIT)` — rozjazd tych
+// dwóch liczb to cicha obcinka dolną krawędzią, dokładnie ta wpadka co przy poprzednim podejściu.
+// 📊 ZMIERZONE realnym renderem (satori + resvg, ten sam stos co produkcja) przy marginesie 44 px:
+// 160 znaków wypełnia dwie linie DOKŁADNIE do prawej krawędzi, więc 150 zostawia widoczny zapas
+// na teksty z dłuższymi słowami. Trzeciej linii być nie może — model zna tylko 1 albo 2.
+// 📊 Na 470 etapach z `threads.json`: dłuższych niż 118 zn było 19%, dłuższych niż 150 zn jest 7% —
+// samo podniesienie limitu usuwa trzy czwarte wielokropków, bez zmiany wysokości karty.
+const LIMIT_ETAPU = 150;
+
+
 // ── Zasoby ładowane RAZ na życie instancji (zimny start), potem z pamięci ──
 let wasmGotowy: Promise<void> | null = null;
 let fontyCache: Promise<any[]> | null = null;
@@ -191,22 +203,24 @@ function karta(naglowek: string, kicker: string, poprzedni: { kiedy: string; tex
 // dopiero po kliknięciu. PODŁOGA 600 = 2:1, poniżej tego obrazek robi się paskiem i też bywa kadrowany.
 // Liczby ze zmierzonego układu karty 630: szkielet (paddingi + nagłówek + tytuł + kreska) ~224 px,
 // wiersz etapu = data 16 + odstęp 3 + linie tekstu po 28 px (23 px × lineHeight 1,22) + 13 px między
-// wierszami. Limit `tnij` to 118 znaków, a przy ~1050 px szerokości w linię wchodzi ~62 znaki,
-// więc etap zajmuje jedną albo dwie linie — nigdy więcej.
+// wierszami. Limit `tnij` to `LIMIT_ETAPU`, a przy ~1074 px szerokości (margines 44 px) w linię wchodzi
+// ~78 znaków, więc etap zajmuje jedną albo dwie linie — nigdy więcej.
 function wysokoscKartyWatku(wezly: { kiedy: string; text: string }[]) {
   // 🔴 STAŁE WYPROWADZONE Z RENDERU, nie z arytmetyki na oko (2026-08-19, przy powiększeniu czcionek).
   // Poprzednie (224/28/62) ZANIŻAŁY wysokość: dla 12 długich etapów model liczył 1267 px, a satori
   // rysował 1324 — czyli treść była CIĘTA dolną krawędzią (`overflow: hidden`), bez żadnego sygnału.
   // Teraz zmierzone realnym renderem (satori + resvg, skan pikseli) na 1, 4 i 12 etapach po pełnym
-  // limicie 118 znaków — model trafia CO DO PIKSELA na wszystkich trzech:
+  // limicie — model trafia CO DO PIKSELA. ⚠️ POWTÓRZONE 2026-08-19 po poszerzeniu karty (margines
+  // 62→44) i podniesieniu limitu (118→150): render vs model na 1/3/4/8 etapach = 346/552/655/1067 px,
+  // różnica ZERO na każdym. Stałe PIONOWE nie zależą od szerokości, więc zmiana ich nie ruszyła:
   //     card = SZKIELET + Σ (STALA + LINIA × linie)
   // ⚠️ STALA zawiera także odstęp między wierszami. Forma jest zweryfikowana JAKO CAŁOŚĆ na obu
   //    krańcach zakresu, więc nie „porządkuj" jej, rozbijając margines na osobny składnik, bez
   //    ponownego pomiaru — dokładnie tak powstał poprzedni, zaniżający model.
-  const SZKIELET = 243, STALA = 37, LINIA = 33, NA_LINIE = 76;
+  const SZKIELET = 243, STALA = 37, LINIA = 33, NA_LINIE = 78;
   let h = SZKIELET;
   wezly.forEach((w) => {
-    const dl = Math.min((w.text || '').length, 118);
+    const dl = Math.min((w.text || '').length, LIMIT_ETAPU);
     const linie = Math.min(2, Math.max(1, Math.ceil(dl / NA_LINIE)));
     h += STALA + linie * LINIA;
   });
@@ -225,7 +239,7 @@ function ileWezlowNaKarte(wezly: { kiedy: string; text: string }[]) {
 
 // 🔴 Ile etapów realnie wejdzie w SZTYWNY kadr 630 px karty `w=1` (2026-08-19, przy powiększeniu
 // czcionek). Zasada ta sama co `ileWezlowNaKarte` dla kwadratu: zdejmujemy NAJSTARSZE, aż się mieści.
-// POWÓD: przy etapie 27 px cztery pozycje po pełnym limicie 118 znaków potrzebują 655 px, czyli
+// POWÓD: przy etapie 27 px cztery pozycje po pełnym limicie potrzebują 655 px, czyli
 // 25 px WIĘCEJ niż kadr — a `overflow: hidden` uciąłby czwarty etap bez żadnego sygnału. Dokładnie
 // ta wpadka zdarzyła się już raz (pierwsze podejście 46/25 px). Lepiej pokazać 3 etapy z pełnym
 // tekstem niż 4, z których ostatni jest przecięty w pół — nagłówek i tak mówi „OSTATNIE N Z M".
@@ -250,8 +264,10 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
   // przy pierwszej zmianie czegokolwiek innego. Nie wdrażaj tej funkcji z kopii innej niż repo.
   //
   // Zysk uboczny: bez lewej kolumny wiersz osi jest o ~250 px szerszy, więc limit znaków na etap
-  // idzie 104 → 118 i typowe nagłówki przestają się urywać wielokropkiem w pół zdania
-  // (drugie zgłoszenie właściciela z tego samego dnia).
+  // szedł 104 → 118 i typowe nagłówki przestały się urywać wielokropkiem w pół zdania
+  // (drugie zgłoszenie właściciela z tego samego dnia). ⚠️ 2026-08-19 limit poszedł dalej, 118 → 150
+  // (`LIMIT_ETAPU`), razem ze zwężeniem marginesu bocznego 62 → 44 px — trzecie zgłoszenie tej samej
+  // klasy: „ucina mi zdania (…) a po lewej i po prawej mamy trochę wolnego białego miejsca".
   const naglowek = ile > wezly.length
     ? `OŚ WĄTKU · OSTATNIE ${wezly.length} Z ${ile} ETAPÓW`
     : `OŚ WĄTKU · ${ile} ${ile === 1 ? 'ETAP' : (ile < 5 ? 'ETAPY' : 'ETAPÓW')}`;
@@ -272,20 +288,20 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
       ]),
       el('div', { display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, paddingLeft: 14 }, [
         el('div', { display: 'flex', fontFamily: 'SM', fontSize: 14, fontWeight: 700, letterSpacing: 1.6, color: akt ? CZERWONY : '#9a9a9a' }, w.kiedy),
-        el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 27, color: akt ? '#111' : '#3d3d3d', lineHeight: 1.22, marginTop: 3 }, tnij(w.text, 118)),
+        el('div', { display: 'flex', fontFamily: 'DMS', fontSize: 27, color: akt ? '#111' : '#3d3d3d', lineHeight: 1.22, marginTop: 3 }, tnij(w.text, LIMIT_ETAPU)),
       ]),
     ]);
   });
 
   // 🔴 ROZMIARY ZMIERZONE NA PRZYPADKU SKRAJNYM, nie dobrane na oko: cztery etapy po pełnym limicie
-  // 118 znaków (każdy zawija się na dwie linie) + tytuł. Pierwsze podejście (tytuł 46 px, etap 25 px)
+  // (każdy zawija się na dwie linie) + tytuł. Pierwsze podejście (tytuł 46 px, etap 25 px)
   // WYCHODZIŁO POZA KADR — czwarty etap był ucięty dolną krawędzią. Przy 38/23 px mieści się z zapasem.
   // ⚠️ Podnosząc którykolwiek rozmiar albo limit `tnij`, przerenderuj przypadek skrajny, nie typowy.
   // ⚠️ `flexShrink: 0` na nagłówku, tytule i bloku osi jest OBOWIĄZKOWE: bez tego satori przy nadmiarze
   // treści ściska pudełko tytułu i pozioma kreska wjeżdża w litery (złapane na podglądzie).
   return el('div', {
     display: 'flex', flexDirection: 'column', width: 1200, height: wysokosc, backgroundColor: '#fff',
-    color: '#111', boxSizing: 'border-box', padding: '54px 62px 50px', overflow: 'hidden',
+    color: '#111', boxSizing: 'border-box', padding: '54px 44px 50px', overflow: 'hidden',
   }, [
     el('div', { display: 'flex', flexShrink: 0, alignItems: 'flex-start', justifyContent: 'space-between' }, [
       el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 16, letterSpacing: 3.4, color: CZERWONY, paddingTop: 8 }, naglowek),
@@ -314,8 +330,8 @@ function kartaWatku(tytulWatku: string, wezly: { kiedy: string; text: string }[]
 // radiowa). Kicker mówi więc o LICZBIE NEWSÓW, nie o wiarygodności, której te nazwy nie dowożą.
 // ⚠️ Trzy pozycje to granica kadru — czwarta wypycha oś poza 630 px. Rozmiary podniesione 2026-08-19
 // razem z kartą wątku (tytuł 44 px, pozycje 27 px), bo obie idą w tej samej nitce i muszą wyglądać
-// jak jedna rodzina. 📊 Zmierzone realnym renderem: trzy pozycje po pełnym limicie 118 znaków to
-// 484 px przy kadrze 630 — zapas jest spory, ale CZWARTEJ nadal nie dokładaj bez ponownego pomiaru.
+// jak jedna rodzina. 📊 Zmierzone realnym renderem: trzy pozycje po pełnym limicie to
+// 552 px przy kadrze 630 (przeliczone 19.08 dla `LIMIT_ETAPU` 150) — zapas jest spory, ale CZWARTEJ nadal nie dokładaj bez ponownego pomiaru.
 // Nagłówek mówi „3 Z N", gdy jest ich więcej.
 const MAX_POZYCJI_KLASTRA = 3;
 
@@ -330,12 +346,12 @@ function kartaKlastra(tytul: string, pozycje: string[], ile: number) {
         el('div', { width: 10, height: 10, borderRadius: 999, marginTop: 9, backgroundColor: CZERWONY }),
       ]),
       el('div', { display: 'flex', flexGrow: 1, minWidth: 0, paddingLeft: 14, fontFamily: 'DMS', fontSize: 27, color: '#222', lineHeight: 1.22 },
-         tnij(t, 118)),
+         tnij(t, LIMIT_ETAPU)),
     ]));
 
   return el('div', {
     display: 'flex', flexDirection: 'column', width: 1200, height: 630, backgroundColor: '#fff',
-    color: '#111', boxSizing: 'border-box', padding: '54px 62px 50px', overflow: 'hidden',
+    color: '#111', boxSizing: 'border-box', padding: '54px 44px 50px', overflow: 'hidden',
   }, [
     el('div', { display: 'flex', flexShrink: 0, alignItems: 'flex-start', justifyContent: 'space-between' }, [
       el('div', { display: 'flex', fontFamily: 'SM', fontWeight: 700, fontSize: 16, letterSpacing: 3.4, color: CZERWONY, paddingTop: 8 }, naglowek),
