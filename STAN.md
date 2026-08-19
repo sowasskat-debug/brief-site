@@ -3,7 +3,7 @@
 Zdjęcie stanu na **2026-08-19 (wieczór, po sesji o kadencji nocnej, czujce i diagnozie dubla)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
-## ⬜ 19.08 noc: KARTA OG — pełne zdania i szersza kolumna (ZROBIONE W REPO, NIEWDROŻONE)
+## ✅ 19.08 noc: KARTA OG — pełne zdania i szersza kolumna (WDROŻONE, wersja 22, PR #199)
 
 Zgłoszenie właściciela ze zrzutem: „ucina mi zdania (…) a po lewej i po prawej mamy trochę wolnego
 białego miejsca". Zmiany w `supabase/functions/og/index.ts` — **niezacommitowane i NIEWDROŻONE**.
@@ -21,16 +21,17 @@ białego miejsca". Zmiany w `supabase/functions/og/index.ts` — **niezacommitow
   zmienia (150 zn przy `NA_LINIE` 78 to nadal dwie linie, tak jak 118 przy 76) — karta pokazuje tyle
   samo etapów co dziś, tylko z pełnymi zdaniami.
 - 📊 Na 470 etapach z `threads.json`: ucinanych było **19%**, po zmianie zostaje **7%**.
-- ⚠️ **Deploy NIE idzie przez git.** Po zacommitowaniu trzeba wykonać z Maca:
+- ✅ **Wdrożone 19.08 17:44 UTC jako wersja 22 i sprawdzone na produkcji** (zdjęte z `functions/v1/og`).
+  Deploy NIE idzie przez git — wykonano z Maca:
   `supabase functions deploy og --no-verify-jwt --project-ref utmvokfjvrthvcmxzowc`.
   🔴 Commit MUSI poprzedzać deploy — plik sam ostrzega, że układ trzymany tylko we wdrożonej funkcji
   ginie przy następnym deployu z repo (tak przepadł wariant pełnoszerokościowy 07.08).
 - ⚠️ Stare linki wrzucone już na X zachowają starą kartę (X cache'uje podgląd per URL).
 
-## ⬜ 19.08 noc: OPIS ŹRÓDŁOWY — POLE BYŁO ZANIECZYSZCZONE, naprawa CZEKA W DRZEWIE (nie commitowana)
+## ✅ 19.08 noc: OPIS ŹRÓDŁOWY — POLE BYŁO ZANIECZYSZCZONE, naprawa ZMERGOWANA (PR #201)
 
-🔴 **Zmiana w `FinancialNewsBot/Runner.cs` leży NIEZACOMMITOWANA na Macu** — `dotnet build Bot.csproj`
-przechodzi, ale bez commita zginie. To pierwsza rzecz do domknięcia w następnej sesji.
+✅ **Zmergowane 19.08 wieczorem (PR #201)** — wjedzie przy najbliższym biegu Hetznera. Pozycje zapisane
+wcześniej tego dnia zostają zanieczyszczone: pole NIE jest przeliczane wstecz.
 
 **Co się okazało.** `opis_zrodlowy` był zanieczyszczony w **52% pozycji** wydania 19.08 — do treści
 wjeżdżał surowy `<script async src="https://platform.twitter.com/widgets.js" charset="utf-8">`.
@@ -271,6 +272,15 @@ klastra), cytat-wabik z Zaporoża (klasa ze świadomie odłożoną bramką). **R
 - **67 mln akrów dna Pacyfiku** — artykuł nie zawiera słowa „akr" ani powierzchni.
 - **IonQ 217 mln USD** — artykuł nie podaje kwoty.
 - **NASDAQ w tyle o sesję** — znany otwarty problem (Yahoo 429 z IP Hetznera).
+
+## ⏸ 19.08: zamrożenie historii — ODŁOŻONE NA PIĄTEK 21.08 (decyzja właściciela)
+
+⏸ **Świadomie odłożone**, nie zapomniane: „boję się, że spierdolimy — poczekamy na piątek wieczór".
+Ustawione przypomnienie `brifup-zamrozenie-historii` na **21.08.2026 18:00 BST**. Właściciel chce to
+robić **na Fable 5**. Pomiar i rekomendacja bez zmian — treść niżej.
+🔴 Przy wdrażaniu pilnuj jednego: zamrażamy WYŁĄCZNIE tekst wstawiany do promptu selekcji.
+Bramka dedupu `ZnajdzPodobnePublikowane` czyta plik NA ŚWIEŻO i zamrażaniu NIE podlega —
+pomylenie tych dwóch rzeczy to duble na froncie.
 
 ## ⬜ 19.08: zamrożenie historii w prompcie selekcji — ZMIERZONE, NIEWDROŻONE
 
