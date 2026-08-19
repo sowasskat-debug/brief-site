@@ -3,6 +3,31 @@
 Zdjęcie stanu na **2026-08-19 (wieczór, po sesji o kadencji nocnej, czujce i diagnozie dubla)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## 🔴 20.08 noc: TRZY DUBLE W DAWCE PORANNEJ — dane naprawione, kod w PR
+
+Zgłoszenie właściciela (zrzuty osi + *„czy da się zrobić tak, żeby bot rozumiał opis, a nie bawił się
+w jaccardy? po tanich kosztach?"*). Poranna 20.08 miała trzy pozycje o wydarzeniach z wieczora 19.08.
+
+📊 **Pomiar odpowiada na pytanie właściciela: Jaccard NIE zawinił.** Wszystkie trzy pary przekroczyły
+próg 0,18, czyli model DOSTAŁ materiał i trzy razy orzekł NOWE — dług USA **0,846**, OpenAI 0,231
+(do tego **ten sam `source_url`** techbuzz.ai!), Moderna 0,222. Bramka pyta model od 16.07; Jaccard
+jest wyłącznie selektorem kandydatów. **Model dostawał jednak SAME NAGŁÓWKI**, a nagłówek kolejnego
+źródła jest pisany pod kątem „co nowego" („potwierdza", „ujawnia CFO", „przebił" zamiast „przekroczył").
+
+- ✅ **Dane naprawione** (ten PR): trzy kafle zdjęte z porannej, węzeł zdjęty z sag w784 (6→5) i w1103
+  (3→2), jednowydarzeniowa saga w1120 usunięta w całości, teksty ZOSTAJĄ w `seen`.
+- ✅ **Kod — dwie warstwy** (FinancialNewsBot, osobny PR): (1) opisy OBU stron w prompcie werdyktu
+  (zero dodatkowych wywołań, ~1-2 grosze/dobę); (2) deterministyczna bramka „ten sam artykuł źródłowy"
+  (0 tokenów, warunek podwójny: ten sam URL **i** tytuły ≥0,18 — sam URL to w 51 dniach 161 par,
+  w większości liveblogów).
+- ⬜ **DO OBEJRZENIA NA HETZNERZE:** `cross_bieg_powtorka_ten_sam_url` (norma ~0,3/dobę),
+  oraz czy `cross_bieg_powtorka` / `_po_opisie` ROSNĄ (to cel dołożenia opisów).
+- ⚠️ **Moderna to trzecia odsłona klasy „eskalacja mierzona liczbą, która sama rośnie"** (19.08):
+  83% → 150% → 212%, ten sam wynik III fazy. Liczby z nagłówka nie mają pokrycia w artykule —
+  siedzą w tweecie. Ta klasa dalej NIE MA własnego mechanizmu, tylko werdykt modelu.
+- ⚠️ **PR z danymi mergować szybko** — bot przepisuje `briefs.json` co ~30 min, więc stary plik
+  z brancha cofnąłby świeże pozycje. Przy konflikcie: odświeżyć branch i nałożyć wycięcie ponownie.
+
 ## ⬜ 19.08 noc: NISZOWE WSKAŹNIKI — LISTA KLAS DO DOPISANIA (reguła bazowa JUŻ w main, PR #205)
 
 Reguła bazowa weszła (PR #205, `409c4b3`), ale wymienia w zasadzie sam Cass Freight. Uwaga właściciela:
