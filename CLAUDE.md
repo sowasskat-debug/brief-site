@@ -943,6 +943,45 @@ poście, nie teoria. Konsekwencje w `knaga.html`:
   (10 miejsc renderu w `index.html`). `zFlaga` wołane tylko z panelu X.
 - **Licznik znaków w punktach kodowych**, nie `.length` — flaga to 4 jednostki UTF-16, a X liczy 2.
 
+## Znacznik kafla: ikona tematyczna + flaga kraju — `znacznikHtml` (2026-08-20) 🔴
+Życzenie właściciela po obejrzeniu podglądu czterech wariantów: *„dobra C, ale też możesz dawać
+flagę obok"* i *„daj rozmiar 16"*. Znacznik ma teraz DWIE części: **ikona (CZEGO dotyczy news)
++ flaga (GDZIE)**, np. 🤖🇺🇸 Anthropic, 🎧🇸🇪 Spotify, 🔬🇹🇼 TSMC.
+- 🔴 **Dlaczego ikony, a nie emoji: systemowego emoji NIE DA SIĘ przefarbować.** To gotowy obrazek
+  w foncie systemu — 🪙 jest żółtą kropką, 🔬 przy 13 px nieczytelny, a każdy system rysuje je
+  inaczej. Rysowana ikona w `currentColor` działa w obu motywach bez osobnych reguł i wygląda
+  identycznie wszędzie. **Ten sam powód, dla którego 🧵 zostało zastąpione przez `WATEK_ICN`.**
+- ⚠️ **FLAGI ZOSTAJĄ EMOJI** — niosą tożsamość, mają własny font na Windowsie (`flagi.js`),
+  a w kresce przy 16 px byłyby nieczytelne. Odrzucone warianty: filtr CSS na emoji (szare plamy,
+  w ciemnym motywie moneta gubi kształt) i ikony w czerwieni (czerwień niesie już numer pozycji
+  i akcent marki — dwie czerwienie konkurują).
+- **`ZNACZNIK_IKONY`** (19 pozycji) + **`znacznikHtml(flaga)`** — dzieli pole `flag` na GRAFEMY
+  (`Intl.Segmenter`; `[...s]` rozsypałby flagę na dwie litery — ta sama pułapka co w `pierwszeEmoji`),
+  mapuje znane emoji na `<svg class="zn-ico">`, resztę zostawia jako tekst. Wpięte w **17 miejsc
+  renderu** w `index.html`.
+- ⚠️ **Emoji spoza mapy renderuje się jak dotąd** — zero regresji dla archiwum i dla znaczników,
+  których jeszcze nie przewidzieliśmy. Świadomie BEZ mapy: **🚨** (PILNE — czerwona syrena niesie
+  sygnał, nie temat) oraz 📰/📢 (fallbacki).
+- **Rozmiar 16 px we wszystkich kontenerach listy** (`.news-flag`, `.hero-flag`, `.sub-item-flag`,
+  `.dt-item-flag`, `.dt-sub-flag`) — wybór właściciela z podglądu 13 / 14,5 / 16.
+  `.dt-detail-flag` (26 px) zostaje: to znacznik nagłówkowy panelu, nie wiersz listy.
+  ⚠️ `.zn-ico` ma **1.15em**, nie 1em — kreska jest rzadsza niż pełnokolorowe emoji i przy 1:1
+  wygląda na mniejszą od flagi stojącej obok. Jedna liczba w kontenerze ustawia obie części.
+- ⚠️ **Bot musi emitować OBA znaczniki** (`FORMAT_JSON_SELEKCJI`, ikona przed flagą, maks. dwa
+  łącznie) — front sam kraju nie zna, w danych nie ma osobnego pola. Bez tamtej zmiany feed
+  wygląda jak dotąd, tylko większy.
+- ⚠️ **`XCzyKrajowy` w bocie wykrywa 🇵🇱 w polu `flag`** — złożony znacznik ⚡🇵🇱 dalej ją zawiera,
+  więc bramka różnorodności na X działa jak dotąd. `pierwszeEmoji` (post na X) weźmie IKONĘ, bo
+  stoi pierwsza — na X i tak nie wyślemy SVG, a jedno emoji to twarda reguła tamtej ścieżki.
+- ⚠️ **ZNANA LUKA: `watki.html` i `fala.html` dalej renderują surowe emoji.** Mapa siedzi
+  w `index.html`, a skopiowanie jej do drugiego pliku to gwarantowany dryf (precedens `itemSlug`).
+  Objęcie ich wymaga wyciągnięcia wspólnego `znaczniki.js` (wzorzec `flagi.js`) + wpisu
+  w `STATIC_ASSETS`. Do zrobienia, gdy właściciel zdecyduje, że ma być wszędzie.
+- ⚠️ **Knaga świadomie pokazuje surowe emoji** — tam patrzysz na to, co realnie pójdzie na X.
+- ✅ Zweryfikowane na PRAWDZIWYM froncie (lokalna kopia, `briefs.json` z podmienionymi znacznikami):
+  ikona + flaga obok siebie w hero, w wierszach listy i przy dwóch flagach (🇺🇸🇨🇺 bez ikony),
+  0 błędów JS. SW → v130.
+
 ## Budżet znaków posta X: liczy go GENERATOR, nie przycinanie po fakcie (2026-08-20) 🔴
 Zgłoszenie właściciela ze zrzutu panelu (*„ucina mi"*): przy dopisku „link w bio" post kończył się
 **„Cała dzisiejsza dawka — link w…"** — ucięta była sama DOKLEJKA, czyli jedyna część, której
