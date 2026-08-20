@@ -943,6 +943,35 @@ poście, nie teoria. Konsekwencje w `knaga.html`:
   (10 miejsc renderu w `index.html`). `zFlaga` wołane tylko z panelu X.
 - **Licznik znaków w punktach kodowych**, nie `.length` — flaga to 4 jednostki UTF-16, a X liczy 2.
 
+## Budżet znaków posta X: liczy go GENERATOR, nie przycinanie po fakcie (2026-08-20) 🔴
+Zgłoszenie właściciela ze zrzutu panelu (*„ucina mi"*): przy dopisku „link w bio" post kończył się
+**„Cała dzisiejsza dawka — link w…"** — ucięta była sama DOKLEJKA, czyli jedyna część, której
+`gotowiec-x` **celowo nie przycina** („obcięta zachęta to najgorszy z możliwych wyników").
+- 🔴 **PRZYCZYNA: DWA BUDŻETY. Knaga nie podawała funkcji `maxZnakow`** — jako jedyna z trzech
+  ścieżek. Funkcja budżetowała więc pełne 270 znaków, nic nie wiedząc o **fladze kraju, którą
+  `zFlaga` dokleja z przodu** już w przeglądarce. Wynik przekraczał limit o flagę i spację,
+  a `zFlaga` ścinała nadmiar **ŚLEPO OD KOŃCA** — a końcem jest doklejka.
+- 📊 **Odtworzone REALNYMI funkcjami z `knaga.html`** (nie z lektury): flaga 🇮🇷, doklejka 35 zn. →
+  funkcja oddaje 270, `zFlaga` tnie do 267 → z „…link w bio." zostaje „…link w…", licznik
+  **269/270** — dokładnie to, co widać na zrzucie. Po poprawce: `maxZnakow` = **267**, funkcja
+  oddaje 267, `zFlaga` **nie tnie nic**, w polu 270/270 i doklejka w całości.
+- **Naprawa: knaga podaje budżet, tak jak bot od 2026-08-12** (`XPobierzGotowiec`:
+  `XBudzetZnakow − flaga − 1`). Wspólny helper `xBudzetTresci(flaga)` — jedna formuła dla
+  generatora i dla składania posta.
+- ⚠️ **Cięcie w `zFlaga` ZOSTAJE jako ostatnia deska ratunku** (ręczna edycja pola), ale przy
+  poprawnym budżecie się nie odpala. **Nie jest to bramka na doklejkę** — tnie od końca i nie wie,
+  co tnie.
+- ⚠️ **Dotyczyło TEŻ wariantu bez dopiska** — tam ślepe cięcie zabierało 2-3 znaki z końca zdania
+  i dokładało drugi wielokropek. Zmierzone na 6 kombinacjach (flaga 1 i 2 punkty kodowe, dopisek
+  wł./wył.): przed poprawką drugie cięcie w 5 z 6, po poprawce w 0 z 6.
+- 🔴 **ZASADA: budżet znaków ma JEDNEGO właściciela — generator.** Kto dokleja cokolwiek PO
+  generowaniu (flaga, doklejka, prefiks), musi to ODJĄĆ od budżetu z góry, nigdy dociąć po fakcie.
+- ⚠️ **Trzy miejsca, jedna liczba**: `MAX_ZNAKOW` w `gotowiec-x` (wymaga redeployu!), `X_TEXT_MAX`
+  w knadze, `XBudzetZnakow` w bocie.
+- ⚠️ **Ta poprawka NIE dotyka przycinania treści przez samą funkcję** — gdy model przegada budżet,
+  post dalej urywa się na granicy zdania (albo wielokropkiem, gdy granicy nie ma powyżej 60%
+  budżetu). To osobna sprawa i **wymaga redeployu `gotowiec-x`**, więc nie idzie przez git.
+
 ## Notowania: znacznik czasu bez widocznej stopki (2026-08-02)
 Linia „Notowania: stan na … · dane opóźnione" **zdjęta z ekranu** na życzenie właściciela, ale
 znacznik ZOSTAJE w `title` kafla (podpowiedź po najechaniu) i w `data-stan`.

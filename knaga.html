@@ -565,11 +565,22 @@ function bezEmoji(s) {
     .trim();
 }
 
+// 🔴 BUDŻET TREŚCI = limit MINUS flaga i spacja, które `zFlaga` dokleja z przodu.
+// Jedna formuła dla generatora i dla składania posta — inaczej wracają dwa budżety
+// i przycinanie po fakcie (patrz komentarz przy `maxZnakow` w `xGenerujGotowiec`).
+// Ten sam rachunek co `XPobierzGotowiec`/`XZlozPost` w bocie: `XBudzetZnakow - flaga - 1`.
+function xBudzetTresci(flaga) {
+  return X_TEXT_MAX - [...flaga].length - 1;
+}
+
 function zFlaga(item, tresc) {
   const flaga = pierwszeEmoji(String(item.flag || '📰').trim());
   const t = bezEmoji(tresc);
   if (!flaga || t.startsWith(flaga)) return t;
-  const budzet = X_TEXT_MAX - [...flaga].length - 1;
+  const budzet = xBudzetTresci(flaga);
+  // Ostatnia deska ratunku (np. po ręcznej edycji pola). Przy poprawnie podanym budżecie
+  // generator oddaje treść, która się mieści, więc ta gałąź nie powinna się odpalać —
+  // tnie ŚLEPO od końca, a końcem bywa stała doklejka „link w bio".
   const ciety = t.length > budzet ? t.slice(0, budzet - 1).trimEnd() + '…' : t;
   return `${flaga} ${ciety}`;
 }
@@ -776,6 +787,15 @@ async function xGenerujGotowiec(item, pod) {
       // zamiast streszczać samą kotwicę (która przy grupie bywa parasolem bez artykułu).
       body: {
         text: item.text, article: item.article, impact: item.impact,
+        // 🔴 BUDŻET PODAJEMY FUNKCJI, zamiast przycinać po fakcie (2026-08-20, zgłoszenie
+        // właściciela „ucina mi"). Knaga tego nie robiła — jako jedyna z trzech ścieżek —
+        // więc `gotowiec-x` budżetował całe 270 znaków, nic nie wiedząc o fladze, którą
+        // `zFlaga` dokleja z przodu. Wynik przekraczał limit o flagę i spację, a `zFlaga`
+        // ścinała nadmiar OD KOŃCA — czyli z doklejki „Cała dzisiejsza dawka — link w bio."
+        // zostawało „link w…". Bot robił to poprawnie od 2026-08-12 (`XPobierzGotowiec`).
+        // ⚠️ Przy wariancie „bio" funkcja odejmuje od tego jeszcze długość doklejki, więc
+        // model dostaje mniejszy budżet i sam pisze krócej — nic się nie przycina po fakcie.
+        maxZnakow: Math.max(120, xBudzetTresci(pierwszeEmoji(String(item.flag || '📰').trim()))),
         ...(zDopiskiem ? { wariant: 'bio' } : {}),
         ...(pod.length ? { pozycje: pod.map((x) => ({ text: x.text, article: x.article })) } : {}),
       },
