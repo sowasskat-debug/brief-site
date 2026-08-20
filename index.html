@@ -756,6 +756,50 @@ const ZNACZNIK_IKONY = {
   '🔒':'<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/>',
 };
 
+// ── WSTECZNE ROZPOZNANIE TEMATU (2026-08-20, życzenie właściciela „żeby działało na
+// poprzednich postach") ────────────────────────────────────────────────────────────────
+// 🔴 Po co: ikonę wskazuje BOT w polu `flag`, ale robi to dopiero od dzisiejszej zmiany reguły.
+// Wszystkie opublikowane pozycje mają tam samą flagę kraju (zmierzone: 🇺🇸 to 40% archiwum),
+// więc bez tego fallbacku archiwum i dzisiejsze dawki wyglądałyby jak dotąd.
+// ⚠️ ARCHIWUM JEST NIEZMIENNE — nie przepisujemy plików `archive/*.json` (to zasada tego repo:
+// dzień raz zamknięty się nie zmienia). Ikonę wyprowadzamy przy RENDERZE, z tekstu i kategorii.
+// ⚠️ Odpala się WYŁĄCZNIE, gdy pozycja nie ma własnego znacznika tematycznego — nowe newsy od
+// bota wygrywają zawsze, bo model widzi treść, a nie same słowa kluczowe.
+// ⚠️ Kolejność w tablicy JEST regułą: pierwszy trafiony wzorzec wygrywa, więc szczegółowe
+// (bitcoin, chipy) stoją nad ogólnymi (giełda). Wzorce mają być WĄSKIE — lepiej zostawić sam
+// znacznik kraju niż dokleić ikonę nie na temat.
+const IKONA_ZE_SLOW = [
+  [/bitcoin|\bbtc\b|ethereum|krypto|stablecoin|coinbase|binance/i, '🪙'],
+  [/spacex|kosmiczn|\bnasa\b|starlink|starship|na orbit|rakiet\w* nośn/i, '🚀'],
+  [/cyberatak|haker|ransomware|wyciek danych|cyberbezpiecz/i, '🔒'],
+  [/\bchip|półprzewodnik|litografi|\btsmc\b|\basml\b|micron|nvidia/i, '🔬'],
+  [/\bai\b|sztuczn\w* inteligencj|openai|anthropic|chatgpt|gemini|\bllm\b|chatbot|deepseek/i, '🤖'],
+  [/\bropa|\bbrent\b|\bwti\b|baryłk|rafineri|\bopec\b|benzyn|diesel|paliw/i, '🛢'],
+  [/elektrown|reaktor|energetyk|gaz ziemn|\blng\b|fotowoltaik|farm\w* wiatrow|sieci przesyłow/i, '⚡'],
+  [/spotify|muzyczn|piosenk|album\b/i, '🎧'],
+  [/netflix|youtube|streaming|serial\b|disney|\bhbo\b|tiktok/i, '🎬'],
+  [/\bgier\b|gaming|playstation|xbox|nintendo|\bsteam\b/i, '🎮'],
+  [/linie lotnicze|ruch lotnicz|samolot|boeing|airbus|ryanair|przewoźnik lotnicz/i, '✈'],
+  [/\btesla\b|samochod|motoryzac|volkswagen|toyota|\bbyd\b|stellantis/i, '🚗'],
+  [/\bfda\b|szczepion|farmaceut|pfizer|moderna|novo nordisk|lek(?:u|i|ów|iem)\b/i, '💊'],
+  [/walmart|e-commerce|handel detaliczn|shein|allegro|sieć handlow|sklep\w*\b/i, '🛒'],
+  [/kontenerow|kolejow|\bpkp\b|autostrad|\bcpk\b|terminal przeładunk/i, '🏗'],
+];
+// Kategoria jako sygnał SŁABSZY — wchodzi dopiero, gdy żadne słowo nie trafiło.
+// Świadomie BEZ kategorii politycznych i wojennych: tam flaga kraju niesie więcej niż ikona.
+const IKONA_Z_KATEGORII = { 'Fed / Banki': '🏦', 'Rynki': '📈', 'Surowce': '🛢' };
+
+function znacznikTematyczny(item) {
+  if (!item) return '';
+  // 🔴 TYLKO NAGŁÓWEK, nigdy artykuł. Zmierzone: skan razem z treścią dawał 57,9% pozycji,
+  // a próbki były bezsensowne — „Udział Alphabet w Anthropic" dostawał 🚀, bo o SpaceX
+  // wspominał artykuł pod spodem. Znacznik opisuje news TAK, JAK JEST ZATYTUŁOWANY.
+  const t = String(item.text || '');
+  for (const [wz, emo] of IKONA_ZE_SLOW) if (wz.test(t)) return emo;
+  const kat = (item.category || '').trim();
+  return IKONA_Z_KATEGORII[kat] || '';
+}
+
 // Podział na GRAFEMY, nie punkty kodowe — flaga to para wskaźników regionalnych i `[...s]`
 // rozsypałby ją na dwie litery (ta sama pułapka co w `pierwszeEmoji` w knadze).
 function znacznikGrafemy(z) {
@@ -767,8 +811,19 @@ function znacznikGrafemy(z) {
   }
 }
 
-function znacznikHtml(flaga) {
-  const z = String(flaga || '📰').trim() || '📰';
+function znacznikHtml(item) {
+  // Zgodność wstecz: wolno podać sam napis znacznika (używa tego podgląd i testy).
+  const surowy = (item && typeof item === 'object') ? item.flag : item;
+  let z = String(surowy || '📰').trim() || '📰';
+  // Fallback wsteczny: pozycja bez znacznika tematycznego dostaje ikonę wyprowadzoną z treści.
+  // ⚠️ NIE dotykamy 🚨 — to znacznik PILNE, niesie sygnał, nie temat.
+  if (item && typeof item === 'object' && !z.includes('🚨')) {
+    const maTemat = znacznikGrafemy(z).some(g => ZNACZNIK_IKONY[g] || ZNACZNIK_IKONY[g.replace('\uFE0F','')]);
+    if (!maTemat) {
+      const dodatkowy = znacznikTematyczny(item);
+      if (dodatkowy) z = dodatkowy + z;
+    }
+  }
   let out = '';
   for (const g of znacznikGrafemy(z)) {
     const ikona = ZNACZNIK_IKONY[g] || ZNACZNIK_IKONY[g.replace('\uFE0F', '')];
@@ -785,7 +840,7 @@ function catMetaRow(item) {
   const src = n >= 2
     ? `<span class="news-cat-sep">·</span><span class="news-cat-src"><span class="src-check">✓</span>${n} ${zrodloPl(n)}</span>`
     : '';
-  return `<div class="news-cat-row"><span class="news-flag">${znacznikHtml(item.flag)}</span><span class="news-cat-name">${cat}</span>${src}${watekBadgeHtml(item)}</div>`;
+  return `<div class="news-cat-row"><span class="news-flag">${znacznikHtml(item)}</span><span class="news-cat-name">${cat}</span>${src}${watekBadgeHtml(item)}</div>`;
 }
 
 // Linia "Wpływ na rynek": koloruje strzałki ↑ (zielony) / ↓ (czerwony)
@@ -1812,7 +1867,7 @@ function renderSubItems(subItems) {
   if (!subItems || subItems.length === 0) return '';
   return subItems.map(sub => `
     <div class="sub-item" id="item-${sub.id}" role="button" tabindex="0" aria-expanded="false" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
-      <span class="sub-item-flag">${znacznikHtml(sub.flag)}</span>
+      <span class="sub-item-flag">${znacznikHtml(sub)}</span>
       <div class="sub-item-text">${escHtml(sub.text)}${sub.added_at || watekBadgeSubHtml(sub) ? `<div class="item-time">${sub.added_at ? formatAddedAt(sub) : ''}${watekBadgeSubHtml(sub)}</div>` : ''}</div>
       <div class="sub-item-arrow">›</div>
     </div>
@@ -1949,7 +2004,7 @@ function renderArchiveItem(item, idx, dateStr, dose) {
     return `
       <div class="news-item" id="group-${item.id}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${item.id}')">
         <div class="news-num">${String(idx + 1).padStart(2, '0')}</div>
-        <div class="news-body"><span class="news-flag">${znacznikHtml(item.flag)}</span><div class="news-title">${escHtml(item.text)}</div></div>
+        <div class="news-body"><span class="news-flag">${znacznikHtml(item)}</span><div class="news-title">${escHtml(item.text)}</div></div>
         <div class="news-arrow">›</div>
       </div>
       <div class="sub-items-container" id="subc-${item.id}">${renderArchiveSubItems(item.subItems, dateStr, dose)}</div>`;
@@ -1958,7 +2013,7 @@ function renderArchiveItem(item, idx, dateStr, dose) {
     <div class="news-item" id="item-${item.id}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${item.id}')">
       <div class="news-num">${String(idx + 1).padStart(2, '0')}</div>
       <div class="news-body">
-        <span class="news-flag">${znacznikHtml(item.flag)}</span>
+        <span class="news-flag">${znacznikHtml(item)}</span>
         <div class="news-title">${escHtml(item.text)}</div>
         ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}
       </div>
@@ -1970,7 +2025,7 @@ function renderArchiveSubItems(subItems, dateStr, dose) {
   if (!subItems || !subItems.length) return '';
   return subItems.map(sub => `
     <div class="sub-item" id="item-${sub.id}" role="button" tabindex="0" aria-expanded="false" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
-      <span class="sub-item-flag">${znacznikHtml(sub.flag)}</span>
+      <span class="sub-item-flag">${znacznikHtml(sub)}</span>
       <div class="sub-item-text">${escHtml(sub.text)}${sub.added_at || watekBadgeSubHtml(sub) ? `<div class="item-time">${sub.added_at ? formatAddedAt(sub) : ''}${watekBadgeSubHtml(sub)}</div>` : ''}</div>
       <div class="sub-item-arrow">›</div>
     </div>
@@ -2052,7 +2107,7 @@ function renderDose(dose, items) {
     <div class="hero-card" id="group-${hero.id}" data-text="${escAttr(hero.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${hero.id}')">
       ${srcBadge(hero) ? `<div class="card-corner">${srcBadge(hero)}</div>` : ''}
       <div class="hero-kicker">
-        <span class="hero-flag">${znacznikHtml(hero.flag)}</span>
+        <span class="hero-flag">${znacznikHtml(hero)}</span>
         <span class="hero-topbadge">★ Top Story</span>
         <span class="hero-kicker-dose">${cfg.label}</span>
       </div>
@@ -2069,7 +2124,7 @@ function renderDose(dose, items) {
     : `
     <div class="hero-card" id="item-${hero.id}" data-text="${escAttr(hero.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${hero.id}')">
       <div class="hero-kicker">
-        <span class="hero-flag">${znacznikHtml(hero.flag)}</span>
+        <span class="hero-flag">${znacznikHtml(hero)}</span>
         <span class="hero-topbadge">★ Top Story</span>
         <span class="hero-kicker-dose">${cfg.label}</span>
       </div>
@@ -3250,13 +3305,13 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
       if (isGroup) {
         const subsHtml = item.subItems.map(sub =>
           `<div class="dt-sub-item" id="dts-${sub.id}" onclick="event.stopPropagation();dtPickItem('${sub.id}')">
-            <span class="dt-sub-flag">${znacznikHtml(sub.flag)}</span>
+            <span class="dt-sub-flag">${znacznikHtml(sub)}</span>
             <div class="dt-sub-text">${escHtml(sub.text)}${watekBadgeSubHtml(sub)}</div>
           </div>`
         ).join('');
         html += `<div class="dt-item group-header" id="dti-${item.id}" onclick="dtToggleGroup('${item.id}')">
           <div class="dt-item-num">${num}</div>
-          <div class="dt-item-flag">${znacznikHtml(item.flag)}</div>
+          <div class="dt-item-flag">${znacznikHtml(item)}</div>
           <div class="dt-item-body">
             ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
             <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`} ${watekBadgeHtml(item)}</div>
@@ -3267,7 +3322,7 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
         const t = formatAddedAt(item);
         html += `<div class="dt-item" id="dti-${item.id}" onclick="dtPickItem('${item.id}')">
           <div class="dt-item-num">${num}</div>
-          <div class="dt-item-flag">${znacznikHtml(item.flag)}</div>
+          <div class="dt-item-flag">${znacznikHtml(item)}</div>
           <div class="dt-item-body">
             ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
             ${(t||item.source_name||threadForItem(item))?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${escHtml(item.source_name)}</span>`:''} ${watekBadgeHtml(item)}</div>`:''}
@@ -3290,13 +3345,13 @@ function dtRenderFeed(items) {
     if (isGroup) {
       const subsHtml = item.subItems.map(sub =>
         `<div class="dt-sub-item" id="dts-${sub.id}" onclick="event.stopPropagation();dtPickItem('${sub.id}')">
-          <span class="dt-sub-flag">${znacznikHtml(sub.flag)}</span>
+          <span class="dt-sub-flag">${znacznikHtml(sub)}</span>
           <div class="dt-sub-text">${escHtml(sub.text)}${watekBadgeSubHtml(sub)}</div>
         </div>`
       ).join('');
       html += `<div class="dt-item group-header${isTop?' top-item':''}" id="dti-${item.id}" onclick="dtToggleGroup('${item.id}')">
         <div class="dt-item-num">${num}</div>
-        <div class="dt-item-flag">${znacznikHtml(item.flag)}</div>
+        <div class="dt-item-flag">${znacznikHtml(item)}</div>
         <div class="dt-item-body">
           ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
           ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
@@ -3308,7 +3363,7 @@ function dtRenderFeed(items) {
       const t = formatAddedAt(item);
       html += `<div class="dt-item${isTop?' top-item':''}" id="dti-${item.id}" onclick="dtPickItem('${item.id}')">
         <div class="dt-item-num">${num}</div>
-        <div class="dt-item-flag">${znacznikHtml(item.flag)}</div>
+        <div class="dt-item-flag">${znacznikHtml(item)}</div>
         <div class="dt-item-body">
           ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
           ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
@@ -3438,7 +3493,7 @@ function dtShowDetail(item) {
   }
   det.innerHTML = `
     <div class="dt-detail-content">
-      <div class="dt-detail-flag">${znacznikHtml(item.flag)}</div>
+      <div class="dt-detail-flag">${znacznikHtml(item)}</div>
       <div class="dt-detail-badges"><span class="dt-detail-badge">${cat.toUpperCase()}</span>${srcBadge(item)}</div>
       <div class="dt-detail-headline">${escHtml(item.text)}</div>
       <div class="dt-detail-time">${time||'—'}</div>
@@ -3462,7 +3517,7 @@ function dtShowDetail(item) {
     </div>
     ${related.length ? `<div class="dt-related">
       <div class="dt-related-title">Inne wpisy</div>
-      ${related.map(r=>`<div class="dt-related-item" onclick="dtPickItem('${r.id}')"><span>${znacznikHtml(r.flag)}</span><span>${escHtml(r.text.length>80?r.text.slice(0,80)+'…':r.text)}</span></div>`).join('')}
+      ${related.map(r=>`<div class="dt-related-item" onclick="dtPickItem('${r.id}')"><span>${znacznikHtml(r)}</span><span>${escHtml(r.text.length>80?r.text.slice(0,80)+'…':r.text)}</span></div>`).join('')}
     </div>` : ''}`;
 }
 
@@ -3756,7 +3811,7 @@ function mobCatCardHtml(item, num) {
         ${srcBadge(item) ? `<div class="card-corner">${srcBadge(item)}</div>` : ''}
         <div class="news-num">${num}</div>
         <div class="news-body">
-          <span class="news-flag">${znacznikHtml(item.flag)}</span>
+          <span class="news-flag">${znacznikHtml(item)}</span>
           <div class="news-title">${escHtml(item.text)}</div>
         </div>
         <div class="news-arrow">›</div>
@@ -3767,7 +3822,7 @@ function mobCatCardHtml(item, num) {
     <div class="news-item" id="item-${item.id}" data-text="${escAttr(item.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${item.id}')">
       <div class="news-num">${num}</div>
       <div class="news-body">
-        <span class="news-flag">${znacznikHtml(item.flag)}</span>
+        <span class="news-flag">${znacznikHtml(item)}</span>
         <div class="news-title">${escHtml(item.text)}</div>
       </div>
       ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}

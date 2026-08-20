@@ -977,6 +977,30 @@ flagę obok"* i *„daj rozmiar 16"*. Znacznik ma teraz DWIE części: **ikona (
   w `index.html`, a skopiowanie jej do drugiego pliku to gwarantowany dryf (precedens `itemSlug`).
   Objęcie ich wymaga wyciągnięcia wspólnego `znaczniki.js` (wzorzec `flagi.js`) + wpisu
   w `STATIC_ASSETS`. Do zrobienia, gdy właściciel zdecyduje, że ma być wszędzie.
+### Wsteczne rozpoznanie tematu — `znacznikTematyczny` (życzenie: „żeby działało na poprzednich postach")
+Ikonę wskazuje BOT w polu `flag`, ale robi to dopiero od dzisiejszej reguły — całe archiwum ma tam
+samą flagę kraju. Dlatego pozycja BEZ znacznika tematycznego dostaje ikonę wyprowadzoną z treści
+**przy renderze**. ⚠️ Plików `archive/*.json` NIE ruszamy: zamknięty dzień jest niezmienny.
+- 🔴 **TYLKO NAGŁÓWEK, nigdy artykuł.** Pierwsza wersja skanowała `text + article` i dawała
+  **57,9% pozycji** z bzdurnymi trafieniami („Udział Alphabet w Anthropic" → 🚀, bo o SpaceX
+  wspominał artykuł pod spodem). Znacznik opisuje news TAK, JAK JEST ZATYTUŁOWANY.
+- 📊 **Kalibracja na 6128 pozycjach, cztery tury zawężania — każde pudło znalezione PRÓBKĄ, nie
+  recenzją:** 57,9% → 38,5% → 34,8% → **32,3%**. Wycięte kolejno:
+  `kolej\w*` łapało **„kolejną transzę"** (398 poz. dostawało 🏗 — ta sama pułapka co `frank\w*`
+  na „Frankfurt"); `satelit` łapało zdjęcia satelitarne z wojny; `lotnisk` łapało **lotniskowiec**;
+  `żeglug` robiło z Ormuza infrastrukturę; **`rakiet` łapało rakiety BALISTYCZNE** (293 poz. — newsy
+  wojenne dostawały 🚀, teraz wymagane `rakiet\w* nośn`); gołe `amazon` robiło z nakładów na AI
+  handel detaliczny; kategoria **`Tech / AI` → 🤖** dawała robota wynikom Apple'a (549 poz.).
+- **Kolejność w `IKONA_ZE_SLOW` JEST regułą** — pierwszy trafiony wzorzec wygrywa, więc szczegółowe
+  (bitcoin, chipy) stoją nad ogólnymi. Kategoria to sygnał SŁABSZY, wchodzi dopiero gdy żadne słowo
+  nie trafiło, i zostały tylko trzy bezpieczne: `Fed / Banki` → 🏦, `Rynki` → 📈, `Surowce` → 🛢.
+  Kategorie polityczne i wojenne świadomie POMINIĘTE — tam flaga niesie więcej niż ikona.
+- ⚠️ **Nowe newsy od bota WYGRYWAJĄ zawsze** — fallback odpala się wyłącznie, gdy pozycja nie ma
+  własnego znacznika tematycznego. Model widzi treść, regex widzi słowa.
+- ⚠️ **🚨 nietykane** — pozycja PILNA nie dostaje ikony, bo ten znacznik niesie sygnał, nie temat.
+- ⚠️ **Dokładając wzorzec: wąsko i ZAWSZE ze skanem archiwum na fałszywe trafienia** (zasada
+  z `AngielskieStopwordy`). Lepiej zostawić samą flagę niż dokleić ikonę nie na temat.
+
 - ⚠️ **Knaga świadomie pokazuje surowe emoji** — tam patrzysz na to, co realnie pójdzie na X.
 - ✅ Zweryfikowane na PRAWDZIWYM froncie (lokalna kopia, `briefs.json` z podmienionymi znacznikami):
   ikona + flaga obok siebie w hero, w wierszach listy i przy dwóch flagach (🇺🇸🇨🇺 bez ikony),
