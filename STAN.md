@@ -3,6 +3,82 @@
 Zdjęcie stanu na **2026-08-20 (po sesji o trzech dublach w dawce porannej i planie na embeddingi)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## 🟢 20.08: EMBEDDINGI — POMIAR ZROBIONY, MIEJSCE D WDROŻONE (bot #209 ZMERGOWANY)
+
+Pomiar z `pomiar_embeddingi.py` puszczony na Macu na **6036 pozycjach** archiwum, trzy modele.
+⚠️ Systemowy Python Apple'a blokuje `pip install` — venv stoi w `~/.venvs/embeddingi`, uruchamiać:
+`~/.venvs/embeddingi/bin/python pomiar_embeddingi.py --repo ~/Documents/brief-site`.
+✅ **Obawa o przekręcone nazwy modeli (19.08) NIEAKTUALNA** — wszystkie trzy odpowiadają 200 na HF.
+
+### 🔴 KRYTERIUM WEJŚCIA NIESPEŁNIONE — i to jest rozstrzygnięcie, nie porażka
+Warunek ustalony Z GÓRY („wszystkie 9 dubli wyżej niż wszystkie 4 etapy") **nie przeszedł u ŻADNEGO
+z trzech modeli**. Najlepszy model: duble min **0,211** (clickbait 18.08), etapy max **0,883**.
+Czyli hipoteza z planu („obie klasy wylądują ~0,95") potwierdzona — **progu deterministycznego
+postawić się nie da i temat „embedding zamiast werdyktu" jest ZAMKNIĘTY.**
+
+### ✅ Ale jako SELEKTOR wektory biją Jaccarda o przepaść
+| miara | AUC |
+|---|---|
+| Jaccard na tytułach (18.08, inny zbiór) | 0,743 |
+| **wektory, max(tytuł, opis)** | **0,941** |
+
+Saga paliwowa, sztandarowy ślepy punkt Jaccarda: **0,053 → 0,555**. Kontrolny, niezwiązany news: 0,112.
+
+### 🏆 MODEL WYBRANY: `sdadas/st-polish-paraphrase-from-mpnet`
+Nie ten o najwyższym AUC — ten o najczystszej SEPARACJI: różne tematy maks. **0,496**, duble mediana
+**0,832**, czyli między „co innego" a „ta sama historia" jest realna szczelina. Stąd próg **0,55**.
+⛔ **`sdadas/mmlw-retrieval-roberta-base` ODRZUCONY mimo AUC 0,943** — ściska WSZYSTKO w górę
+(kompletnie różne tematy dostają 0,69, przy progu 0,60 daje 100% fałszywych par). Nie odgrzewaj
+go „bo miał lepsze AUC" — AUC nie mówi, gdzie postawić próg.
+
+### ✅ WDROŻONE: miejsce D (podpowiedzi wątków) — bot #209
+- **Kształt: DOKŁADKA, NIE ZAMIANA.** Jaccard nietknięty; wektory tylko dopisują kandydatów
+  z dopiskiem `(znaczeniowo)`, prompt tłumaczy modelowi, co to znaczy. Brak sidecara = zero regresji.
+- **Sidecar** w `FinancialNewsBot/embeddingi/`: serwer stdlib **wyłącznie na 127.0.0.1**, unit systemd
+  z `MemoryMax=1500M` i `OMP_NUM_THREADS=1` (serwer ma 2 rdzenie i 3,8 GB dzielone z botem).
+- **Fail-safe SPRAWDZONY, nie założony:** padnięty sidecar i nieistniejący port → `null` + wpis
+  `[INFO]`, bieg leci dalej; po pierwszej awarii bot nie próbuje ponownie w tym biegu.
+- 📊 Wydajność: jedno wywołanie na bieg (macierz), nie jedno na parę — **16 × 220 = 52 ms** przy
+  ciepłym cache tytułów.
+- ⚠️ Python na Hetznerze to **3.14** — `python3.14-venv` trzeba doinstalować z apt, samo `python3 -m venv`
+  nie wystarcza. Torch ma koła `cp314`, ale instaluj go z indeksu **CPU** (`--index-url
+  https://download.pytorch.org/whl/cpu`) — pełna paczka z CUDA to ~1 GB i przerwała pobieranie.
+
+### 🔴 PUŁAPKA ZŁAPANA PRZY INSTALACJI: `pip` cicho unieważnia próg (bot #210)
+`pip install sentence-transformers` bez wersji wziął **6.0.0**, a próg 0,55 kalibrowano pod **5.1.2**.
+Ta sama nazwa modelu, te same teksty, **inne cosinusy**:
+
+| przypadek | st 5.1.2 | st 6.0.0 |
+|---|---|---|
+| ROZNE „halucynacja klastra" | 0,414 | **0,613** ← ponad progiem |
+| ROZNE „kompletnie różne tematy" | 0,127 | 0,377 |
+| DUBEL „bilion != bln" | 0,907 | 0,664 |
+
+Złapane **przed** puszczeniem czegokolwiek do czytelnika, bo zbiór decydujący przepuszczono przez
+sidecar NA SERWERZE, zamiast ufać, że „ten sam model = te same liczby".
+✅ Wersja przypięta w `embeddingi/requirements.txt`, a `embeddingi/sprawdz_prog.py` sprawdza to jednym
+poleceniem (kod 1 = próg unieważniony). Na produkcji przechodzi: różne tematy maks. 0,496.
+🔴 **Zasada: po KAŻDEJ zmianie wersji biblioteki albo modelu — `sprawdz_prog.py`.** Przy zmianie
+modelu dodatkowo pełny `pomiar_embeddingi.py`.
+
+### ✅ STAN PRODUKCJI (20.08, 06:50)
+Usługa `brifup-embeddingi` stoi (systemd, `enable --now`), zdrowa, na przypiętej wersji.
+RAM **978 MB** przy limicie 1500 MB, serwer ma 2,5 GB wolnego. Model wczytuje się w 15 s.
+📊 Zmierzone NA SERWERZE: realny bieg (16 nowych × 220 znanych) **1319 ms**, zimny cache 18,5 s.
+⚠️ Zimny cache zdarza się po restarcie usługi i jest blisko timeoutu 20 s w bocie — ale nawet
+przekroczenie jest nieszkodliwe: fail-safe daje `null`, a sidecar i tak dolicza cache w tle,
+więc następny bieg jest już ciepły.
+
+### ⬜ CO ZOSTAJE OTWARTE
+- **Miejsca A/B/C/E** (bramka cross-bieg, pick artykułu, spójność klastra, różnorodność X) — każde
+  osobno, z własnym pomiarem. Reguła „zmieniasz miarę → PRZEMIERZ KAŻDY PRÓG" obowiązuje.
+- 🔴 **`DeduplikujPodobne` (0,85/0,33) i cross-dose (0,65) DALEJ NIETKNIĘTE** — jedyne miejsca, gdzie
+  miara kasuje bez udziału modelu.
+- 🔴 **Przestroga z planu zostaje w mocy:** pięć miejsc z lepszą miarą to dalej PIĘĆ niezależnych
+  werdyktów. Klasa wróci siódmy raz, jeśli nie zrobimy JEDNEGO werdyktu. Wektory tego nie załatwiają.
+- ⬜ **Do obejrzenia za kilka dni:** liczniki `podpowiedz_wektorowa_watek` / `_luzny` (ile realnie
+  dokładają) oraz `wektory_blad` (czy sidecar stoi).
+
 ## 🔴 20.08 rano: TYTUŁ Z POLSKIEGO ŹRÓDŁA NADPISUJE WŁASNY, LEPSZY — diagnoza gotowa, NIC NIE ZMIENIONE
 
 Zgłoszenie właściciela ze zrzutu (poranna poz. 03, `reach 20`): **„Można powiedzieć, że tanio". Marże
