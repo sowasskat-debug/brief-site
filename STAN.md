@@ -3,6 +3,72 @@
 Zdjęcie stanu na **2026-08-20 (po sesji o trzech dublach w dawce porannej i planie na embeddingi)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## 🔴 20.08 rano: TYTUŁ Z POLSKIEGO ŹRÓDŁA NADPISUJE WŁASNY, LEPSZY — diagnoza gotowa, NIC NIE ZMIENIONE
+
+Zgłoszenie właściciela ze zrzutu (poranna poz. 03, `reach 20`): **„Można powiedzieć, że tanio". Marże
+hipotek blisko wieloletnich minimów** (Bankier.pl, dodane 07:13, `subItems` 0). Cytat bez atrybucji,
+zero faktu w nagłówku — ta sama klasa co `naglowek-cytat-wabik` z 18.08.
+
+🔴 **PRZYCZYNA JEST INNA, NIŻ ZAKŁADAŁA SEKCJA Z 18.08: bot MIAŁ własny, rzeczowy nagłówek i sam go
+wyrzucił.** Z `/var/log/brif_bot.log` (bieg 20.08 rano):
+```
+[INFO] EnrichItem: tytuł z polskiego źródła: Marże kredytów hipotecznych w sierpniu przy średnim poziomie
+    -> „Można powiedzieć, że tanio". Marże hipotek blisko wieloletn
+```
+Robi to podmiana w [Runner.cs:5151](../FinancialNewsBot/Runner.cs) (`TytulZPolskiegoZrodla`): dla polskiego
+źródła `og:title` wydawcy **zastępuje** nagłówek kandydata. Jedyny warunek to `HasloWystepujeWFaktach`,
+czyli „czy słowo z tytułu w ogóle występuje w faktach" — to filtr na cookie-walle i paywalle,
+**o jakości nagłówka nie mówi NIC**. Wabik jest od wydawcy, ale to bot świadomie po niego sięgnął.
+
+📊 **To nie jest jednorazowa wpadka — 350 podmian w logu.** Ręczny przegląd 12 ostatnich (przegląd,
+NIE pomiar): w 10 na 12 podmiana **traci konkret**, najczęściej liczbę:
+
+| własny nagłówek bota (przegrał) | nagłówek wydawcy (wygrał) |
+|---|---|
+| Rosyjskie ataki powietrzne zabijają pięć osób, ranią 23 w Ki… | Ukraina w krytycznej sytuacji, pojawiło się światełko w tune… |
+| PZU: zysk netto w II kwartale wzrósł do 1,647 mld zł, 7,2% p… | PZU bije prognozy. Zysk w II kwartale wyraźnie wyższy od ocz… |
+| Trump obniży cła na auta z Kanady z 25% do 15% w ramach szer… | Przełom w rozmowach z Kanadą? Trump wstrzymał cła |
+| Bitcoin po raz pierwszy od 2 czerwca przekracza 70 000 USD… | Największy wzrost kursu bitcoina od pięciu miesięcy. Rynek z… |
+| Kijów pod ostrzałem rosyjskich rakiet balistycznych — podaje… | KN-23 nazywano „bublami Kima". Teraz to groźna broń, a Kijów… |
+
+⚠️ **TO ZMIENIA KSZTAŁT SEKCJI „CYTAT-WABIK" Z 18.08.** Tam jedynym rozważanym ruchem było **odjęcie**
+cytatu z nagłówka wydawcy (`ZdejmijCytatWabik`) — w 2 z 10 przypadków gubiło sedno i dlatego właściciel
+to odrzucił. Teraz widać trzecie wyjście, którego wtedy nie było na stole: **w ogóle nie podmieniać —
+zostawić nagłówek, który bot już napisał.** Nic nie tnie, więc nie ma jak zgubić sedna; kosztuje 0 tokenów
+i 0 wywołań. 🔴 Nie odgrzewaj `ZdejmijCytatWabik` — to jest inna dźwignia w innym miejscu.
+
+⬜ **DO ROZSTRZYGNIĘCIA (nic nie zmieniane bez decyzji właściciela):**
+- **Dlaczego ta reguła w ogóle powstała** — zanim ją ruszymy. Najpewniej chodziło o translationese
+  („Rosyjskie ataki powietrzne zabijają pięć osób" to kalka z angielskiego) i o polską odmianę nazw.
+  Czyli podmiana bywa słuszna — wariant „wyłączyć całkiem" jest za gruby.
+- 📊 **PIERWSZY POMIAR ZROBIONY 20.08 na 351 parach z logu** (log drukuje obie strony podmiany):
+  wydawca zaczyna CYTATEM **7 (2,0%)**, jest PYTANIEM **7 (2,0%)**, gubi liczbę obecną w naszym
+  **91 (25,9%)**; trzy warunki razem blokują 103 podmiany = **29,3%**.
+  🔴 **POMIAR JEST ŚLEPY ZA 60. ZNAKIEM** — `Runner.cs:5155` tnie OBA tytuły do 60 znaków, więc
+  **98% par (345/351) ma przynajmniej jedną stronę uciętą** i „gubi liczbę" bywa artefaktem cięcia.
+  **Pierwsza zmiana do zrobienia jest więc w logu, nie w regule.**
+- 🔴 **DRUGIE ZNALEZISKO Z TEJ SAMEJ PRÓBKI, GROŹNIEJSZE NIŻ WABIK: podmiana potrafi zmienić TEMAT.**
+  `Norges Bank zgłasza pakiet 7,3 mln akcji SpaceX` → **`Norweski fundusz wyszedł z akcjonariatu GPW`**;
+  `OpenAI prezentuje ultraszybki poziom o prędkości do 14 razy` → **`ChatGPT bez limitu wiadomości
+  w darmowym planie`**. To nie kosmetyka nagłówka — to CUDZY fakt nad już napisanym artykułem,
+  ta sama rodzina co `ArtykulOInnymWydarzeniu` (17.08), tylko z drugiej strony. Przepuszcza to
+  `HasloWystepujeWFaktach`, bo wystarcza mu JEDNO słowo z tytułu w faktach tej samej strony.
+- ⚠️ **Warunek „cytat" wymaga wyjątku na NAZWY WŁASNE:** z 7 trafień jedno to
+  `„Chrobry" zainwestuje 7 mld zł w polskie firmy` — cudzysłów obejmuje nazwę spółki, nie wabik.
+  Precyzja 6/7. Warunek: cudzysłów na początku obejmujący **≥2 słowa**.
+- **Wariant pośredni do zmierzenia:** podmieniaj tylko wtedy, gdy tytuł wydawcy **nie zaczyna się
+  cytatem, nie jest pytaniem i nie gubi liczby, która stoi w naszym nagłówku**. Trzy warunki
+  deterministyczne, 0 tokenów.
+- ⚠️ Zmiana idzie w bocie → **`dotnet build Bot.csproj` przed mergem**, nie ma CI.
+
+⬜ **DRUGA OŚ TEGO SAMEGO KAFLA, osobna sprawa: czy ten news w ogóle powinien wejść.** Źródłem jest
+comiesięczna kolumna rankingowa Bankiera (slug `Najlepsze-kredyty-hipoteczne-ze-zmiennym-oprocentowaniem-sierpien-2026`),
+a treść mówi „stawki zmieniły dwa banki, jeden w górę, jeden w dół" — czyli nic się nie wydarzyło.
+📊 Analogiczna kolumna z 19.08 („Słodko i gorzko w hipotekach") jest w `/var/log/brif_czujnik.log`
+jako NOWY, ale **w archiwum jej nie ma** — czyli klasa normalnie odpada, a dziś przeszła pierwszy raz.
+Blisko reguły „Rutynowe ODCZYTY cyklicznych danych", ale ta mówi o makro, nie o **rankingach ofert
+produktowych**. Do rozważenia razem z niszowymi wskaźnikami (sekcja z 19.08 nocy).
+
 ## 🧭 20.08: PLAN NA EMBEDDINGI — co zmieniamy, gdzie to ma sens i czego NIE ruszamy
 
 Domknięcie rozmowy z 20.08 (*„czy to faktycznie realna poprawa dla nas? … siedzimy miesiąc już razem
