@@ -41,7 +41,33 @@ go „bo miał lepsze AUC" — AUC nie mówi, gdzie postawić próg.
 - 📊 Wydajność: jedno wywołanie na bieg (macierz), nie jedno na parę — **16 × 220 = 52 ms** przy
   ciepłym cache tytułów.
 - ⚠️ Python na Hetznerze to **3.14** — `python3.14-venv` trzeba doinstalować z apt, samo `python3 -m venv`
-  nie wystarcza. Torch ma koła `cp314`, więc wersja jest w porządku.
+  nie wystarcza. Torch ma koła `cp314`, ale instaluj go z indeksu **CPU** (`--index-url
+  https://download.pytorch.org/whl/cpu`) — pełna paczka z CUDA to ~1 GB i przerwała pobieranie.
+
+### 🔴 PUŁAPKA ZŁAPANA PRZY INSTALACJI: `pip` cicho unieważnia próg (bot #210)
+`pip install sentence-transformers` bez wersji wziął **6.0.0**, a próg 0,55 kalibrowano pod **5.1.2**.
+Ta sama nazwa modelu, te same teksty, **inne cosinusy**:
+
+| przypadek | st 5.1.2 | st 6.0.0 |
+|---|---|---|
+| ROZNE „halucynacja klastra" | 0,414 | **0,613** ← ponad progiem |
+| ROZNE „kompletnie różne tematy" | 0,127 | 0,377 |
+| DUBEL „bilion != bln" | 0,907 | 0,664 |
+
+Złapane **przed** puszczeniem czegokolwiek do czytelnika, bo zbiór decydujący przepuszczono przez
+sidecar NA SERWERZE, zamiast ufać, że „ten sam model = te same liczby".
+✅ Wersja przypięta w `embeddingi/requirements.txt`, a `embeddingi/sprawdz_prog.py` sprawdza to jednym
+poleceniem (kod 1 = próg unieważniony). Na produkcji przechodzi: różne tematy maks. 0,496.
+🔴 **Zasada: po KAŻDEJ zmianie wersji biblioteki albo modelu — `sprawdz_prog.py`.** Przy zmianie
+modelu dodatkowo pełny `pomiar_embeddingi.py`.
+
+### ✅ STAN PRODUKCJI (20.08, 06:50)
+Usługa `brifup-embeddingi` stoi (systemd, `enable --now`), zdrowa, na przypiętej wersji.
+RAM **978 MB** przy limicie 1500 MB, serwer ma 2,5 GB wolnego. Model wczytuje się w 15 s.
+📊 Zmierzone NA SERWERZE: realny bieg (16 nowych × 220 znanych) **1319 ms**, zimny cache 18,5 s.
+⚠️ Zimny cache zdarza się po restarcie usługi i jest blisko timeoutu 20 s w bocie — ale nawet
+przekroczenie jest nieszkodliwe: fail-safe daje `null`, a sidecar i tak dolicza cache w tle,
+więc następny bieg jest już ciepły.
 
 ### ⬜ CO ZOSTAJE OTWARTE
 - **Miejsca A/B/C/E** (bramka cross-bieg, pick artykułu, spójność klastra, różnorodność X) — każde
