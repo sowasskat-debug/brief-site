@@ -42,6 +42,35 @@ const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 // ⚠️ ZMIENIAJ RAZEM z `X_TEXT_MAX` w knadze i `XBudzetZnakow` w bocie — trzy miejsca, jedna liczba.
 const MAX_ZNAKOW = 270;
 
+// ── Granica zdania po polsku ─────────────────────────────────────────────────
+// 🔴 ZNALEZIONE 2026-08-20 na podglądzie wątku: `lastIndexOf('.')` traktowało kropkę
+// w SKRÓCIE jak koniec zdania, więc post urywał się na „Wzrosły spółki wrażliwe na stopy,
+// m.in." — zdanie ucięte w pół, a formalnie „na kropce". Polski tekst finansowy jest pełen
+// takich skrótów (m.in., tys., mln, mld, pp, pkt, r., proc.), więc trafiało się to często:
+// po jednej pozycji na pięć w OBU podglądach wątku.
+// Kropka kończy zdanie tylko wtedy, gdy po niej jest koniec tekstu albo spacja i początek
+// nowego zdania (wielka litera lub cyfra — zdania w tych postach zaczynają się też od liczby),
+// a przed nią NIE stoi znany skrót ani pojedyncza litera (inicjał „J. Kowalski").
+const SKROTY_Z_KROPKA = new Set([
+  'm.in', 'ok', 'tys', 'mln', 'mld', 'bln', 'pp', 'pb', 'pkt', 'proc', 'r', 'ul', 'al',
+  'godz', 'np', 'tzw', 'itd', 'itp', 'str', 'nr', 'dr', 'prof', 'inż', 'św', 'gen', 'płk',
+  'ws', 'tj', 'ang', 'mies', 'kw', 'egz', 'wg', 'ds', 'poł', 'cd', 'br', 'min', 'maks', 'śr',
+]);
+
+function ostatniKoniecZdania(t: string): number {
+  for (let i = t.length - 1; i >= 0; i--) {
+    if (t[i] !== '.') continue;
+    const po = t.slice(i + 1);
+    if (po.length > 0 && !/^\s+[A-ZĄĆĘŁŃÓŚŹŻ0-9]/.test(po)) continue;
+    const przed = t.slice(0, i);
+    const ostatni = (przed.match(/[\p{L}\p{N}.]+$/u) || [''])[0].toLowerCase();
+    if (SKROTY_Z_KROPKA.has(ostatni)) continue;
+    if (/^\p{L}$/u.test(ostatni)) continue;
+    return i;
+  }
+  return -1;
+}
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -269,7 +298,7 @@ Deno.serve(async (req) => {
 
   if (post.length > budzetTresci) {
     // Przycinamy na granicy zdania, nie w połowie słowa.
-    const doKropki = post.slice(0, budzetTresci).lastIndexOf('.');
+    const doKropki = ostatniKoniecZdania(post.slice(0, budzetTresci));
     const przyciety = doKropki > budzetTresci * 0.6
       ? post.slice(0, doKropki + 1)
       : post.slice(0, budzetTresci - 1).trimEnd() + '…';
