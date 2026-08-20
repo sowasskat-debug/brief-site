@@ -1376,7 +1376,14 @@ otwartej karty). SW → v121. Szczegóły i pomiary: `CLAUDE.md`, sekcja „Deep
 posta»". ⚠️ Gdyby objaw wrócił: drugie znalezisko (bez naprawy) to `if (!el) return` bez ponowienia
 w mobilnej gałęzi `tryOpen`.
 
-## 🔴 14.08 ~19:15: AUTOMAT X WYŁĄCZONY — `X_AUTO=false`, stan TYLKO NA SERWERZE
+## ⏸ 14.08 ~19:15: AUTOMAT X WYŁĄCZONY — stan CELOWY I DOMYŚLNY, `X_AUTO=false` TYLKO NA SERWERZE
+
+🔴 **NIE jest to zaległość ani awaria — nie zgłaszaj ciszy bota na X jako usterki.** Doprecyzowane
+przez właściciela 20.08: *„x automat będzie działał tylko jak będę na wakacjach"*. Czyli `X_AUTO=false`
+to **stan domyślny**, a włączenie jest wyjątkiem na czas wyjazdu właściciela — nie odwrotnie.
+Instrukcja włączenia niżej ZOSTAJE, ale używa się jej wyłącznie wtedy, gdy właściciel sam o tym powie.
+⚠️ Przełącznik nie istnieje w żadnym repo, więc każda sesja odkrywa ciszę na nowo — stąd ten akapit.
+⚠️ Ręczne wrzucanie przez knagę („Wrzuć na X") działa niezależnie od tej flagi i jest normalną drogą.
 
 Decyzja właściciela („wyłącz na razie X bota"). `X_AUTO=true→false` w `/root/bot_secrets.env`
 (backup: `/root/bot_secrets.env.bak.20260814`). **W żadnym repo tego nie widać** — kod bramki
