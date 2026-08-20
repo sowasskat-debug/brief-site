@@ -1,7 +1,117 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-20 (po sesji o trzech dublach w dawce porannej i planie na embeddingi)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-20 popołudnie (po sesji: embeddingi NA PRODUKCJI w miejscach D/A/B, rozcieńczanie źródeł odblokowane, cap subitemów 4→6, cytat-wabik)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+## ✅ 20.08: KONTROLA POKRYCIA MATERIAŁU ŹRÓDŁOWEGO — HYDRAULIKA DZIAŁA, 100%
+
+Punkt 1 z planu „18.08 noc" (sekcja niżej) WYKONANY. Kryterium było postawione wprost: *„jeśli nie
+skoczy blisko 100% na tytule — hydraulika nie działa"*. Skoczyło.
+
+📊 Zmierzone na `briefs.json` + 51 plikach `archive/*.json`, rekurencyjnie po `subItems`,
+cięte po `added_at` na „2026-08-18 20:00":
+
+| grupa | pozycji | `tytul_oryginalny` | `opis_zrodlowy` |
+|---|---|---|---|
+| PRZED wdrożeniem | 5861 | 524 (**8,9%**) | 0 (**0,0%**) |
+| PO wdrożeniu | 187 | 177 (**94,7%**) | 167 (**89,3%**) |
+
+🔴 **Rozbicie po dniach jest ważniejsze niż średnia — bo średnią psuje sam wieczór wdrożenia:**
+**18.08** 71,4% / 42,9% (35 poz.) · **19.08** **100% / 100%** (117 poz.) · **20.08** **100% / 100%** (35 poz.).
+Czyli **stan ustalony to 100% na OBU polach**, a próbka z 18.08 wieczorem (te słynne 67%/24%) była
+**stanem przejściowym**, nie sufitem. Wszystkie 10 pozycji bez `tytul_oryginalny` ma `added_at`
+z przedziału **18.08 20:35–23:12** i `published_at` o kilka–kilkanaście godzin STARSZY (NY Post 09:47,
+euronews 11:53, BBC 14:27) — to poczekalnia opróżniana pierwszymi biegami po przebudowie, czyli
+pozycje, które przeszły enrich jeszcze STARYM kodem. Po opróżnieniu poczekalni ubytków nie ma ani jednego.
+⚠️ **Nie diagnozuj tego ponownie po `source_name`** — te 10 pozycji nie ma nic wspólnego poza godziną
+(NY Post, IranWire, Polskie Radio 24, شفق نيوز, Benzinga, euronews, BBC, Euronews, antyweb.pl, Bankier.pl).
+Hipotezy „ścieżka X-feeda" i „rozjazd `Idx`" **nie potwierdzają się** — obie przewidywałyby ubytki
+także 19. i 20.08, a tam jest zero.
+
+### 📊 `opis_zrodlowy` niesie realną treść w 87% par — ale 13% to sam nagłówek z doklejką
+Hipoteza z 18.08, że ~24% to trwały efekt MIKSU FEEDÓW (wire'owe „BREAKING:"/„JUST IN:" powtarzają
+nagłówek w `description`, więc `WyciagnijOpisRss` celowo zwraca null) — **OBALONA jako wyjaśnienie
+pokrycia.** Pokrycie jest pełne. Ale sam mechanizm istnieje i widać go w TREŚCI, nie w liczbie pól.
+📊 Na 152 parach z 19–20.08 (obie wartości obecne), po `NormalizujTekst`:
+**44,1% opis całkowicie różny od tytułu · 42,8% tytuł + ≥40 znaków nowego materiału ·
+13,2% tytuł + <40 znaków** (mediana przyrostu długości: **90 znaków**).
+- 🔴 **Bo bramka w `WyciagnijOpisRss` (`Runner.cs:7383`) odrzuca WYŁĄCZNIE `no == nt || nt.StartsWith(no)`**
+  — czyli opis identyczny albo będący PODZBIOREM tytułu. Opis, który tytuł ROZWIJA, zostaje celowo.
+  Feedy wire'owe doklejają do nagłówka podpis źródła i datę („… — @Polymarket Aug 20, 2026"), więc
+  przechodzą bramkę, choć nie wnoszą faktu. **To nie jest bug** — ta reguła jest tam po to, żeby nie
+  odsiewać opisów, które realnie dokładają treść, a nie da się jej zacieśnić bez cięcia tamtych.
+- ⚠️ **Konsekwencja dla progów punktów 3–4: efektywna druga oś to ~87% pozycji, nie 100%.**
+  Dla pozostałych 13% rdzenie opisu ≈ rdzenie tytułu, więc warunek na opisie powtórzy werdykt tytułu
+  zamiast go uzupełnić — nie dołoży sygnału, ale też nic nie zepsuje.
+
+### 🎯 Punkty 3–4 są w POŁOWIE ZROBIONE — i to przez PR-y, które powstały OBOK tego planu
+🔴 **Zanim cokolwiek wepniesz, przeczytaj to — inaczej zbudujesz drugi raz coś, co już stoi.**
+Sekcja „18.08 noc: PLAN" niżej opisuje punkty 3–4 jako nietknięte i **jest już nieaktualna**:
+- **Warunek DOKŁADAJĄCY w bramce cross-bieg ISTNIEJE OD PR #173** — `ZnajdzPodobneOpublikowanePoOpisie`
+  (`Runner.cs:9647`) to drugi selektor kandydatów, `PROG_POWTORKI_PO_OPISIE = 0,15` (`Runner.cs:9532`),
+  wpięty w DWÓCH miejscach: główna pętla (`Runner.cs:3771`) i poczekalnia (`Runner.cs:3527`).
+  **Powstał PRZED całą sprawą materiału źródłowego**, więc plan z 18.08 go po prostu nie zauważył.
+  ⚠️ Jedzie na `it.Article` — na NASZYM polskim artykule z DeepSeeka, nie na opisie źródła.
+- **`opis_zrodlowy` JEST JUŻ CZYTANY — od PR #206 (20.08, 00:31).** `OcenEtapKontynuacji` dostaje go
+  jako materiał NOWEJ strony w bramce PRZED enrichem, gdzie artykułu jeszcze nie ma
+  (`Runner.cs:3662`, `PobierzOpisZrodlowy(text)`). ⚠️ Czytana jest **mapa w pamięci biegu**
+  (`ZapamietajOpisZrodlowy`), NIE pole z `briefs.json`.
+
+**Co z punktów 3–4 zostało realnie do zrobienia — jedna rzecz, i dopiero teraz da się ją zrobić:**
+🔴 **Strona OPUBLIKOWANA nie niesie opisu ŹRÓDŁOWEGO.** `ZbierzOpublikowaneZOpisami`
+(`Runner.cs:9546`) bierze wyłącznie `it.Article` i **pomija pozycje bez artykułu**. Czyli dziś
+porównujemy „opis źródła nowego" z „naszym artykułem opublikowanego" — dwie różne rzeczy.
+Pomiar z 18.08 (AUC **0,764**) mierzył **opis vs opis**, a tego układu w kodzie NIE MA.
+Dopisanie `it.OpisZrodlowy` po stronie opublikowanej to konkretny, mały ruch — i **od 19.08 jest czym
+go zasilić** (pokrycie 100%, patrz wyżej). To jest właściwa treść „punktów 3–4", nie budowanie bramki
+od zera.
+
+📊 **Pokrycie okna, które bramka cross-bieg realnie porównuje** (bo strona opublikowana to archiwum):
+**okno 3-dniowe (próg 0,18): 167/276 = 60,5%** · **okno 7-dniowe (dni 4–7, próg 0,35): 167/598 = 27,9%.**
+Pełne pokrycie okna 3-dniowego wypada **22.08**, siedmiodniowego **25.08**. Warunek jest DOKŁADAJĄCY,
+więc pozycja bez opisu po drugiej stronie zachowa się jak dziś — częściowe pokrycie kosztuje utracone
+trafienia, nie fałszywe. **Można wpinać przed 25.08; efekt narasta sam.**
+
+⚠️ **Warunek ODRZUCAJĄCY przy kotwicy klastra (`opis ≥ 0,05`) — NIE jest zablokowany archiwum.**
+Sprawdzone w kodzie (`Runner.cs:8580–8610`): kotwica porównuje nowego kandydata z tekstami pozycji
+**bieżącego wydania** (`anchor.Text` + `SubItems`), a nie z głębokim archiwum — a bieżące wydanie
+składa się dziś w całości z pozycji po wdrożeniu. Sekcja z 18.08 wrzuciła oba warunki do jednego
+worka „zablokowane czasowo" i dla tego drugiego to nieprawda.
+⚠️ Dziś ta bramka liczy `RdzenieDoKlastrowania(it.Text)` — czyli **wyłącznie po TYTULE**. Oś opisowa
+byłaby tu dołożeniem, nie podmianą.
+
+⚠️ **Progów dalej nie przenoś wprost** (rdzenie opisu 2,4× liczniejsze, zbiór pomiarowy wzbogacony
+z konstrukcji). Dane produkcyjne do przeliczenia JUŻ SĄ: 152 pary `tytuł`+`opis` z 19–20.08,
+przyrost ~76/dobę. ⚠️ `PROG_POWTORKI_PO_OPISIE = 0,15` **nie jest punktem odniesienia dla progu na
+opisie źródłowym** — stoi na innej osi (artykuł) i ma inny rozkład.
+
+### ✅ Zdjęcie The Verge (#198) niczego nie zepsuło — żadne źródło nie spadło do zera
+📊 Z Hetznera, `grep "Źródła zbiorcze -> Znaleziono" /var/log/brif_bot.log` (skumulowane), porównanie
+z rozkładem z 18.08: Bankier **858 → 890**, Techmeme **428 → 473**, Zero Hedge **448 → 464**,
+BBC World **339 → 369**, BBC Science **173 → 178**, Ars Technica **103 → 107**, Insider Paper **58 → 71**,
+Rest of World **32 → 32**, Yahoo Tech **9 → 9**. The Verge nie występuje — zgodnie z zamiarem.
+⚠️ **Rest of World i Yahoo Tech nie dołożyły ANI JEDNEGO kandydata przez dwie doby.** To nie jest
+regres tej zmiany (obie były i przedtem najcieńsze w stawce), ale przy następnej kontroli sprawdź,
+czy to niska kadencja feedu, czy martwy RSS — pasek zdrowia feedów w `lejek.html` odpowiada wprost.
+
+## ✅ 20.08 popołudnie: CAP SUBITEMÓW 4→6 WDROŻONY (bot #214, ZMERGOWANY)
+
+Punkt „pierwsza rzecz na następną sesję" z 19.08 — zrobiony. 🔴 **Capów okazało się PIĘĆ, nie cztery**
+(STAN wcześniej mówił o czterech): piąty siedzi w `RetroMergeSameEvent`. Wszystkie przeszły na JEDNĄ
+stałą `MAX_SUBITEMOW_KLASTRA = 6` z komentarzem wyliczającym całą piątkę.
+- Dlaczego 6, nie 8: próg 6 odzyskuje ≥61% pominiętych sklejeń, a ogon powyżej to tematy-lawiny
+  (Ormuz: biegi po 13–17 odrzutów), gdzie publikacja osobno jest WŁAŚCIWA.
+- ✅ Front zweryfikowany zrzutem (mobile 375px, klaster dopchnięty do 6): renderuje czysto, właściciel
+  obejrzał i zatwierdził. Karta OG pokazuje „3 Z N" — obsługuje dowolne N bez zmian.
+- ⚠️ Prompty modelu liczby 4 nie zawierały — cap był wyłącznie w kodzie. `DeduplikujPodobne` nietknięte.
+- ⬜ Za parę dni: log `klaster pełny (6 subitemów)` powinien spaść z ~1,7/dobę do ~0,7.
+
+## 📋 20.08: CO OBSERWUJEMY PO TEJ SESJI — przypomnienie ZAUTOMATYZOWANE (24.08 09:00)
+
+Scheduled task `brifup-embeddingi-efekt` sam sprawdzi 24.08 i zda raport: zdrowie sidecara
+(`NRestarts`, `wektory_blad`), `sprawdz_prog.py`, liczniki `Kandydat ZNACZENIOWY` (~0,8/dobę),
+`ŹRÓDŁA … ustępuje`, `ŹRÓDŁA Rozcieńczam` (przed zmianą 9/33 dni!), **udział Bankiera 21–24.08
+wobec 15,8% sierpnia** i wątki. Do tego ręcznie: `klaster pełny (6 subitemów)` po capie.
 
 ## 🟢 20.08 rano: ŹRÓDŁA — ROZCIEŃCZANIE BYŁO MARTWE, ODBLOKOWANE (bot #213, ZMERGOWANE)
 
@@ -139,7 +249,7 @@ więc następny bieg jest już ciepły.
 - ⬜ **Do obejrzenia za kilka dni:** liczniki `podpowiedz_wektorowa_watek` / `_luzny` (ile realnie
   dokładają) oraz `wektory_blad` (czy sidecar stoi).
 
-## 🔴 20.08 rano: TYTUŁ Z POLSKIEGO ŹRÓDŁA NADPISUJE WŁASNY, LEPSZY — diagnoza gotowa, NIC NIE ZMIENIONE
+## 🟡 20.08 rano: TYTUŁ Z POLSKIEGO ŹRÓDŁA — bramka na cytat WDROŻONA (bot #208), kafel naprawiony (#203); OTWARTE: zmiana tematu przez podmianę + utrata liczby (pomiar odblokowany pełnym logiem)
 
 Zgłoszenie właściciela ze zrzutu (poranna poz. 03, `reach 20`): **„Można powiedzieć, że tanio". Marże
 hipotek blisko wieloletnich minimów** (Bankier.pl, dodane 07:13, `subItems` 0). Cytat bez atrybucji,
@@ -542,7 +652,7 @@ Bramka cross-bieg po opisach (`ZbierzOpublikowaneZOpisami`) czyta **bieżący `b
 - 📊 Narzędzie pomiarowe (ładuje `Bot.dll` przez refleksję, liczy trzy osie na parach) było
   w scratchpadzie sesji — przy powrocie do tematu trzeba je odtworzyć.
 
-## ⬜ 19.08 noc: CAP SUBITEMÓW — ZMIERZONE, ŚWIADOMIE ODŁOŻONE
+## ✅ 19.08 noc: CAP SUBITEMÓW — WDROŻONY 20.08 jako 4→6 (bot #214, patrz sekcja na górze); liczby pomiaru niżej
 
 Zmierzone i **nie wdrożone** (właściciel: „zostaw to w spokoju"). Liczby zostają, żeby nie mierzyć drugi raz.
 
@@ -578,7 +688,7 @@ Weszły większe czcionki kart wątku i klastra (tytuł 38→44, tekst etapu 23�
 - 💡 Żeby przestało być ręczne: workflow wdrażający `og` przy merge do `main`. Wymaga jednego sekretu
   repo (`SUPABASE_ACCESS_TOKEN`) — da się dodać z telefonu przez GitHub.
 
-## ⬜ 19.08 wieczór: CAP 4 SUBITEMÓW — PIERWSZA RZECZ NA NASTĘPNĄ SESJĘ
+## ✅ 19.08 wieczór: CAP 4 SUBITEMÓW — ZROBIONE 20.08 (bot #214, patrz sekcja na górze)
 
 Wieczorny kafel „Szczepionka Moderny na czerniaka: pierwszy pozytywny wynik III fazy" (Puls Biznesu,
 17:34) to **piąte źródło o tym samym wydarzeniu**. Cztery poprzednie siedzą w popołudniowym klastrze
