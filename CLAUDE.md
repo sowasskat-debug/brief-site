@@ -1018,6 +1018,22 @@ samą flagę kraju. Dlatego pozycja BEZ znacznika tematycznego dostaje ikonę wy
   przypadek ze zgłoszenia: „CEO Microna: pamięć to strategiczna infrastruktura dla AI"), 🚀🤖 (14),
   🔒🤖 (9), 🪙🤖 (8). ⚠️ Kategoria NIE tworzy drugiej ikony — sygnał za słaby.
 - **Rozmiar 14 px** (korekta z 16 tego samego wieczoru) we wszystkich kontenerach listy.
+- 🔴 **DO TRZECH ZNACZNIKÓW, ale trzeci MUSI być flagą** (decyzja właściciela 2026-08-20:
+  „mogą być 3 emoji pod warunkiem, że 3. to flaga"). Najwyżej dwie ikony plus flaga —
+  🛢⚡🇵🇱 przy „Rząd chce 30 proc. CIT dla energetyki i paliw". Nigdy trzy ikony.
+- 🔴 **🇵🇱 NIE PODLEGA BRAMCE KRAJU — i to nie jest wyjątek dla wygody.** Bramka powstała przeciwko
+  fladze ZGADYWANEJ z siedziby spółki („Anthropic" → 🇺🇸), a 🇵🇱 bot nadaje wyłącznie, gdy news
+  bezpośrednio dotyczy Polski (twarda reguła promptu selekcji). Zgłoszenie właściciela: pozycja
+  o CIT dla energetyki **miała 🇵🇱 w danych**, a bramka je zdjęła, bo w nagłówku nie pada słowo
+  „Polska" — dla polskiego czytelnika to najważniejszy znacznik w całym feedzie.
+  📊 Zmierzone: 295 pozycji z 🇵🇱 i ikoną, **flagę zachowuje 295/295**; znaczniki trzyelementowe
+  to 262 pozycje. ⚠️ Przy cięciu do trzech 🇵🇱 ma **pierwszeństwo przed innymi flagami** — bez tego
+  pozycja 🇩🇪🇵🇱 z dwiema ikonami gubiła akurat polską (1 przypadek na 295, czyli regułę łamał sam limit).
+- 🔴 **Ikona krypto to symbol ₿, nie moneta** — zgłoszenie właściciela („emoji bitcoina mi się nie
+  podoba"): okrąg z esem przy 14 px czytał się jak znak zakazu. Teraz litera B z dwiema belkami
+  i wystającym stemem, czyli tak, jak bitcoin jest rozpoznawalny.
+- ⚠️ **Wzorzec ropy łapie ODMIANĘ** (`\brop(?:a|ę|y|ie|ą)\b`) — „sankcje na rosyjską **ropę**"
+  nie trafiało w gołe `\bropa`. Końcówki wyliczone jawnie, żeby nie złapać „ropnia".
 - 🔴 **OPIS JAKO OSTATNIA DESKA: dwa wystąpienia + biała lista czterech ikon.** Pytanie właściciela
   („z opisu nie możesz też brać emoji? bez kosztów?") — kosztów nie ma (regex, 0 tokenów), kosztem
   jest TRAFNOŚĆ i to ona wyznaczyła kształt reguły. 📊 Zmierzone na 4151 pozycjach bez ikony:
