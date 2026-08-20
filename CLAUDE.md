@@ -374,6 +374,11 @@ fallback na pozycję w `items[]`.
   scratchpada i serwuj stamtąd. Bump `CACHE_NAME` (SW) przy każdej zmianie — inaczej desktop/mobile trzymają starą wersję (cache).
 
 ## Mobile: panel Tematy (swipe + peek) i suwak jakości PER TEMAT (2026-07-11)
+⚠️ **Prawa krawędź panelu to HAIRLINE `--rule`, nie czarny pas (2026-08-20).** `.mob-swp-panel`
+miał `border-right: 3px solid var(--text)` — właściciel zgłosił to jako „czarna kreska pionowa".
+Panel i tak odcina się od przyciemnionej nakładki (`.mob-swp-ov.vis` = `rgba(0,0,0,.45)`), więc
+gruby border nie niósł nic poza ciężarem. **Nie przywracaj go** — cały serwis rozdziela treść
+linią `--rule`.
 - **Zmiana dawki swipe'em** (`.scroll-area` touchstart/touchend, IIFE „Swipe między dawkami") — dojście do
   granicy (np. `afternoon→morning`, potem jeszcze raz w tę samą stronę) **kontynuuje ten sam gest**: zamiast
   nic nie robić, wysuwa panel `#mobSwpPanel` do **peeku** (klasa `.peek`, `width: min(60vw, 270px)` — 60%
@@ -1000,6 +1005,26 @@ samą flagę kraju. Dlatego pozycja BEZ znacznika tematycznego dostaje ikonę wy
 - ⚠️ **🚨 nietykane** — pozycja PILNA nie dostaje ikony, bo ten znacznik niesie sygnał, nie temat.
 - ⚠️ **Dokładając wzorzec: wąsko i ZAWSZE ze skanem archiwum na fałszywe trafienia** (zasada
   z `AngielskieStopwordy`). Lepiej zostawić samą flagę niż dokleić ikonę nie na temat.
+
+#### 🎧 dla Apple Music + 🤖 ZAWSZE druga w parze (2026-08-20, zgłoszenie „apple music to muzyka")
+Pozycja „Apple Music będzie oznaczać **utwory** wygenerowane przez AI" dostawała samo 🤖 — wzorzec
+🎧 znał wyłącznie `spotify|muzyczn|piosenk|album`.
+- 📊 **Zmierzone na 6140 nagłówkach; dołożone tylko to, co ma trafienia:** `apple music` (2, oba
+  o muzyce) i `utwór/utwory/utworów/utworami` (1, ten zgłoszony). Stary vs nowy detektor na tych
+  samych danych: **2 zmiany, 2 zyski, 0 strat.**
+- ⛔ **ODRZUCONE PO POMIARZE, nie odgrzewaj:** `utwor\w*` — **14 trafień, z czego 13 to
+  „utworzenia/utworzą/utworzył"** (ta sama pułapka co `frank\w*` łapiące „Frankfurt", tyle że tu
+  kosztowałaby ikonę muzyki pod newsem o osiedlach na Zachodnim Brzegu); `artyst` — bilans 1:1
+  („FIFA … top globalnego **artystę**"); `koncert` — jedyne trafienie to stadion w Albanii;
+  `tidal`/`deezer`/`soundcloud`/`youtube music`/`wytwórni` — 0 trafień, zero zysku.
+- 🔴 **Przy okazji: 🤖 wychodziła PIERWSZA w parze.** `znacznikiTematyczne` zbiera trafienia
+  w kolejności `IKONA_ZE_SLOW`, a 🤖 stoi w ŚRODKU listy — więc dla wszystkiego, co jest za nią
+  (🛢 ⚡ 🎧 🎬 🎮 ✈ 🚗 💊 🛒 🏗), wychodziło `🤖X` zamiast `X🤖`. Zmierzone: **8 par w archiwum**,
+  niezgodnie z konwencją właściciela „szczegółowa ikona przed ogólną" (🔬🤖, 🪙🤖). AI jest
+  kategorią NAJOGÓLNIEJSZĄ, więc przy parze idzie na koniec.
+  ⚠️ **Samej listy NIE ruszamy** — jej kolejność decyduje o tym, KTÓRE dwie ikony wygrywają przy
+  trzech trafieniach. Odwracana jest wyłącznie kolejność WYNIKU (`trafione.reverse()`), już po
+  zebraniu. Przestawienie 🤖 na koniec listy zmieniłoby wygrane pary, nie tylko ich kolejność.
 
 ### Flaga tylko gdy kraj w nagłówku + dwie ikony przy dwóch tematach (doprecyzowania tego samego dnia)
 - 🔴 **`KRAJ_W_NAGLOWKU`** — *„flagi tylko wtedy, kiedy jest kraj w nagłówku wzięty pod uwagę, bo np.
