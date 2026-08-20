@@ -3,6 +3,120 @@
 Zdjęcie stanu na **2026-08-20 popołudnie (po sesji: embeddingi NA PRODUKCJI w miejscach D/A/B, rozcieńczanie źródeł odblokowane, cap subitemów 4→6, cytat-wabik)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## 💡 20.08: AgenticSeek — ODRZUCONY jako całość, JEDEN klocek wart pomiaru (SearXNG jako finder)
+
+Właściciel podrzucił `github.com/Fosowl/agenticSeek` z pytaniem, czy da się to wykorzystać.
+**Odpowiedź: całość nie, ale jeden komponent adresuje realny, udokumentowany ból enrichmentu.**
+Zapisane na później — nic nie jest wdrożone ani zaczęte.
+
+**Czym to jest (sprawdzone, nie z pamięci):** Python + Docker, autonomiczny agent „lokalna
+alternatywa dla Manusa" — sam planuje zadania, przegląda sieć przez **Selenium** i **SearXNG**,
+pisze i uruchamia kod. Lokalne LLM-y (Ollama/LM Studio) albo API. **26,9 tys. ⭐, GPL-3.0.**
+Autor w README sam pisze: *early prototype*, routing agentów niedopracowany.
+
+⛔ **JAKO CAŁOŚĆ ODRZUCONE — i to nie z powodu jakości, tylko kształtu.** AgenticSeek rozwiązuje
+problem „agent sam decyduje, co zrobić". Ten bot **celowo tego nie robi**: cała historia
+`CLAUDE.md` to systematyczne zastępowanie werdyktów modelu zmierzonymi bramkami
+deterministycznymi („prompt negocjuje, regex nie"). Wpięcie autonomicznego plannera cofnęłoby
+projekt tam, skąd wychodził. Do tego prozaicznie: bot to jeden plik C# na cronie, tamto to
+Python w Dockerze na GPL — **nie ma czego przekleić**. Dla `brief-site` **zero** (statyczny
+HTML/JS bez builda, tamten projekt nie ma warstwy frontowej).
+
+💡 **JEDYNY klocek wart testu: SearXNG jako kolejny finder w `ProbujFindery`** (`Runner.cs:5269`).
+Łańcuch dziś: `googlenews → wiarygodne → bing → gdelt`; funkcja przyjmuje listę nazwanych
+getterów, więc dołożenie to **jedna linia plus funkcja `SearxngFindFacts`**. Uzasadnienie
+to zmierzone bóle z tego repo: DuckDuckGo wycięty (100% timeoutów z IP Hetznera), GDELT
+w torze podstawowym **654 próby → 0 sukcesów** (stąd zejście na koniec łańcucha), dekoder
+Google News wisi na wewnętrznym API Google, a itemy bez źródła giną w poczekalni po 4 próbach.
+
+🔴 **KRYTERIUM WEJŚCIA — to jest HIPOTEZA DO POMIARU, nie zadanie do wdrożenia.** SearXNG
+z IP datacenter uderzy **w te same ściany**, przez które wyleciał DuckDuckGo — Google i Bing
+pokazują Hetznerowi captchę niezależnie od tego, kto pyta. Możliwe, że dostaniemy dokładnie
+to, co mamy, tylko przez jednego pośrednika więcej.
+1. **Najtańszy zabójca hipotezy: jedno `curl` Z HETZNERA** (zasada z TVN24, nie z Maca) do
+   publicznej instancji SearXNG — czy w ogóle odpowiada na IP datacenter. Rozstrzyga za darmo.
+2. Dopiero przy odpowiedzi twierdzącej: finder pod `TEST_FINDER` (istnieje, nic nie publikuje),
+   przepuścić przez niego nagłówki ze statusem `utknal`/`poczekalnia` z lejka w Supabase
+   i policzyć, ile dostaje **SERWOWALNE** źródło, którego obecny łańcuch NIE znalazł.
+3. Własna instancja i wpięcie do produkcji — dopiero na dodatnim wyniku.
+
+⛔ **Czego świadomie NIE robimy: Selenium do omijania ścian antybotowych i paywalli.**
+Technicznie to odpowiedź na `_redakcjeBlokujaceDatacenter`, ale mamy to rozstrzygnięte **dwa
+razy** — przy Stooqu („NIE OBCHODZIMY tego headless-przeglądarką") i przy publikacji na X (ToS).
+Przy FT i WSJ dochodzi rzecz innej kategorii niż niewygoda techniczna: to **paywall**, nie
+tylko bot-wall.
+
+⚠️ **Licencja:** SearXNG to **osobny projekt (AGPL-3.0)**, który AgenticSeek też bierze
+z zewnątrz — brać go stamtąd, nie z tamtego repo. Pomysły są darmowe, kod GPL nie.
+
+## 🟡 20.08: FEED FT PO PIERWSZYCH BIEGACH — hydraulika DZIAŁA, publikacji ZERO, dwa znaleziska
+
+Kontrola feedu Financial Times (bot #217, merge **12:01 UTC**). Sandbox oddaje `403 CONNECT`
+na `ft.com`, więc odpowiedziała produkcja — ślady w `wyslane.txt`/`tytuly.txt`.
+
+**✅ Transport działa.** Spalony link znaczy przejście całej ścieżki: HTTP 200 → `XDocument.Parse`
+→ `pubDate` sparsowany → pozycja w oknie 60 min → prefiltr przepuścił → kandydat w promptcie.
+Przed wdrożeniem `ft.com` w historii **zero**.
+
+| bieg (UTC) | wpisy ft.com | unikalnych artykułów |
+|---|---|---|
+| 12:17 | 0 | — (Hetzner miał jeszcze kod sprzed pulla) |
+| 12:37 | 4 | 2 |
+| 13:34 | 5 | 4 |
+
+**⛔ Opublikowanych: 0.** W `briefs.json` ani jednego `ft.com`, w poczekalni też nie.
+
+**✅ Odrzucenia z biegu 13:34 są POPRAWNE — sprawdzone co do pozycji.** Wszystkie cztery tematy
+FT były już opublikowane innym źródłem: „Trump announces new drive to isolate and crush Iranian
+economy" (rano Jerusalem Post + Al Jazeera), „America's national debt hits record $40tn" (rano
+Bankier.pl), „US long-term bonds slide as Bessent intervention fails…" (popołudnie Business
+Insider — dosłownie ta sama historia), „Investors cut bets on US and UK rate rises" (kompleks
+stóp/rentowności). Dedup zadziałał; to nie jest wada feedu.
+
+### 🔴 Znalezisko 1: ten sam artykuł wchodzi do promptu DWA RAZY
+
+Zmierzone na biegu 13:34, parowanie kandydatów po indeksie (obie pętle iterują `wszystkieNewsy`):
+
+```
+Investors cut bets on US and UK rate rises           → …/93992d7a-…?syn-25a6b1a6=1   (feed FT)
+Investors cut bets on US and UK interest rate rises  → …/93992d7a-…                  (rss.app)
+```
+
+Ten sam artykuł, **dwa różne URL-e** (różnica w query) i **dwa różne tytuły**. Ani
+`historia.Contains(link)`, ani porównanie tytułów tego nie łapie — zostaje wyłącznie REGUŁA 1
+(dedup po stronie modelu).
+
+**Przyczyna:** w `CheckMultipleFeedsBatched` `historia.Contains(link)` sprawdza się przy
+**zbieraniu**, a `historia.Add(link)` wykonuje dopiero **po selekcji** (`Runner.cs:1348`) —
+więc w obrębie jednego biegu drugi feed FT nie widzi, że pierwszy wziął już ten artykuł.
+Dotyczy **wyłącznie FT**, bo jako jedyne źródło jest rozbite na trzy adresy (`world`,
+`companies`, mostek rss.app), a ich pokrycie się nakłada (mierzone przy wdrożeniu: 39
+unikalnych z trzech wobec 25).
+
+⚠️ **Sam `HashSet` na surowym linku NIE WYSTARCZY** — URL-e różnią się parametrem `?syn-…`.
+Potrzebny `KluczArtykuluUrl` (host + ścieżka, bez query — **już istnieje w repo**, używa go
+`DeduplikujPodobne`). To nie jest awaria: bramka `idx` i REGUŁA 1 duplikat wyłapią. Koszt to
+tokeny i dwa identyczne wiersze kandydatów.
+
+### 🔴 Znalezisko 2 (ważniejsze): „przy remisie wybierz wersję FT" jest STRUKTURALNIE niewykonalne
+
+Prompt FT mówi wprost: *„gdy ten sam temat masz już z agregatora, wybierz wersję FT"*. **Ta
+instrukcja nie ma jak zadziałać.** Zanim FT dojdzie, wersja agregatora jest już OPUBLIKOWANA
+i siedzi w `[OPUBLIKOWANE WCZEŚNIEJ]`, więc REGUŁA 1 każe temat pominąć. Instrukcja działa
+tylko WEWNĄTRZ jednej paczki, a FT jest wobec Bankiera i wire'ów spóźniony.
+
+📊 **Zmierzone:** „Dług USA przekroczył 40 bln USD" poszedł z **Bankier.pl** (rano) i **Vietnam.vn**
+(wieczór — agregator przedruków), a wersja FT odpadła jako duplikat. Czyli **dokładnie ten
+upgrade jakościowy, po który FT dołożyliśmy, nie zachodzi.**
+
+⚠️ **Nie naprawiać tego promptem** — to kwestia KOLEJNOŚCI W CZASIE, nie sformułowania.
+Kandydat na rozwiązanie: pozwolić FT **PODMIENIĆ źródło już opublikowanej pozycji** (wzorzec
+`ZamienNaRzadszeZrodlo`), zamiast publikować drugi kafel. Do przemyślenia, nie do wdrożenia
+bez pomiaru.
+
+⚠️ **Na wyrok o doborze ZA WCZEŚNIE** — dwa biegi z FT, sześć kandydatów. Wrócić po dobie
+i sprawdzić, czy FT kiedykolwiek wygrywa temat, czy zawsze przegrywa na czas.
+
 ## ✅ 20.08: KONTROLA POKRYCIA MATERIAŁU ŹRÓDŁOWEGO — HYDRAULIKA DZIAŁA, 100%
 
 Punkt 1 z planu „18.08 noc" (sekcja niżej) WYKONANY. Kryterium było postawione wprost: *„jeśli nie
