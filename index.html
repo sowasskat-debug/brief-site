@@ -825,6 +825,30 @@ const KRAJ_W_NAGLOWKU = new RegExp([
 // układa się sama: krypto przed AI (🪙🤖), chipy przed AI (🔬🤖).
 // ⚠️ Kategoria NIE tworzy drugiej ikony — to sygnał słaby, wchodzi tylko gdy nie trafiło ŻADNE
 // słowo. Dwie ikony mają znaczyć „news naprawdę spina dwa tematy", nie „udało się dopasować".
+// 🔴 OPIS JAKO OSTATNIA DESKA — WYMÓG DWÓCH WYSTĄPIEŃ I WĄSKA BIAŁA LISTA (2026-08-20).
+// Pytanie właściciela: „z opisu nie możesz też brać emoji? bez kosztów?". Kosztów rzeczywiście
+// nie ma (regex, zero tokenów) — kosztem jest TRAFNOŚĆ, i to ona wyznaczyła kształt reguły.
+// 📊 Zmierzone na 4151 pozycjach, które nie dostają nic z nagłówka ani z kategorii:
+//   próg 1 wystąpienia → 830 pozycji (20%), próbki bezużyteczne: „Tusk tłumaczy reformę
+//     podatków" dostawało 🛢 (artykuł wspomina paliwa), „Piąty wyciek GTA" dostawało ✈
+//     („Flight Simulator"), „63-letni Ukrainiec usłyszał zarzuty" dostawało 🚗;
+//   próg 2 wystąpień → 300 pozycji (7%), ale trafność ROZJEŻDŻA SIĘ PER IKONA i dopiero
+//     rozbicie na ikony pokazało, co z tym zrobić (przejrzane po 5 próbek na ikonę):
+//       🚀 13/13 dobrze (satelity, Blue Origin, rakiety wielokrotnego użytku)
+//       🛢 ~80% dobrze (baryłki, produkcja ropy Kuwejtu, ceny gazu)
+//       🔬 ~80% dobrze (Sandisk, SK Hynix, Broadcom-Apple)
+//       💊 ~80% dobrze (ebola, apteki, małpy laboratoryjne)
+//       🤖 ~50% („Vance o Iranie: negocjatorzy TECHNICZNI", patenty fintech)
+//       ⚡ ~50% (Ormuz jako energetyka), 🛒 ~50% (VAT, kara dla Google)
+//       ✈ ~30% („Stany Zjednoczone kończą 250 lat"), 🚗 ~30% (negocjacje USMCA),
+//       🪙 ~40% (opcje FX, Situation Room), 🔒 ~25% (AWS, ambasador Rosji)
+// Stąd biała lista: WYŁĄCZNIE cztery wzorce, które przy dwóch wystąpieniach realnie trafiają.
+// ⚠️ NIE dopisuj tu ikony bez powtórzenia pomiaru na archiwum — połowa zestawu go nie przeszła.
+// ⚠️ Opis daje najwyżej JEDNĄ ikonę (nigdy pary) — to sygnał słabszy niż nagłówek, więc nie
+// wolno mu wypełnić całego budżetu znacznika i wypchnąć flagi.
+const IKONA_Z_OPISU = new Set(['🚀', '🛢', '🔬', '💊']);
+const MIN_TRAFIEN_W_OPISIE = 2;
+
 function znacznikiTematyczne(item) {
   if (!item) return [];
   // 🔴 TYLKO NAGŁÓWEK, nigdy artykuł. Zmierzone: skan razem z treścią dawał 57,9% pozycji,
@@ -838,7 +862,17 @@ function znacznikiTematyczne(item) {
   }
   if (trafione.length) return trafione;
   const kat = (item.category || '').trim();
-  return IKONA_Z_KATEGORII[kat] ? [IKONA_Z_KATEGORII[kat]] : [];
+  if (IKONA_Z_KATEGORII[kat]) return [IKONA_Z_KATEGORII[kat]];
+  // Dopiero teraz opis — i tylko dla wzorców z białej listy, przy DWÓCH wystąpieniach.
+  const opis = String(item.article || '');
+  if (opis) {
+    for (const [wz, emo] of IKONA_ZE_SLOW) {
+      if (!IKONA_Z_OPISU.has(emo)) continue;
+      const glob = new RegExp(wz.source, 'gi');
+      if ((opis.match(glob) || []).length >= MIN_TRAFIEN_W_OPISIE) return [emo];
+    }
+  }
+  return [];
 }
 
 // Podział na GRAFEMY, nie punkty kodowe — flaga to para wskaźników regionalnych i `[...s]`

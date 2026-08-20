@@ -1018,6 +1018,18 @@ samą flagę kraju. Dlatego pozycja BEZ znacznika tematycznego dostaje ikonę wy
   przypadek ze zgłoszenia: „CEO Microna: pamięć to strategiczna infrastruktura dla AI"), 🚀🤖 (14),
   🔒🤖 (9), 🪙🤖 (8). ⚠️ Kategoria NIE tworzy drugiej ikony — sygnał za słaby.
 - **Rozmiar 14 px** (korekta z 16 tego samego wieczoru) we wszystkich kontenerach listy.
+- 🔴 **OPIS JAKO OSTATNIA DESKA: dwa wystąpienia + biała lista czterech ikon.** Pytanie właściciela
+  („z opisu nie możesz też brać emoji? bez kosztów?") — kosztów nie ma (regex, 0 tokenów), kosztem
+  jest TRAFNOŚĆ i to ona wyznaczyła kształt reguły. 📊 Zmierzone na 4151 pozycjach bez ikony:
+  **próg 1 wystąpienia → 830 (20%) i próbki bezużyteczne** („Tusk tłumaczy reformę podatków" → 🛢,
+  bo artykuł wspomina paliwa; „Piąty wyciek GTA" → ✈ przez „Flight Simulator"); **próg 2 → 300 (7%),
+  ale trafność ROZJEŻDŻA SIĘ PER IKONA** i dopiero rozbicie po ikonach pokazało, co z tym zrobić:
+  🚀 13/13, 🛢/🔬/💊 ~80%, ale 🤖 i ⚡ ~50%, 🪙 ~40%, ✈ i 🚗 ~30%, 🔒 ~25%.
+  Stąd `IKONA_Z_OPISU` = **wyłącznie 🚀 🛢 🔬 💊** przy `MIN_TRAFIEN_W_OPISIE = 2`.
+  📊 Efekt stary vs nowy detektor na 6140 pozycjach: **32,4% → 34,9% (+154), ZERO pozycji traci ikonę.**
+  ⚠️ **Nie dopisuj tu ikony bez powtórzenia pomiaru** — połowa zestawu go nie przeszła.
+  ⚠️ Opis daje najwyżej JEDNĄ ikonę (nigdy pary): to sygnał słabszy niż nagłówek i nie wolno mu
+  wypchnąć flagi z budżetu znacznika.
 
 - ⚠️ **Knaga świadomie pokazuje surowe emoji** — tam patrzysz na to, co realnie pójdzie na X.
 - ✅ Zweryfikowane na PRAWDZIWYM froncie (lokalna kopia, `briefs.json` z podmienionymi znacznikami):
