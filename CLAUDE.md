@@ -972,6 +972,35 @@ Zgłoszenie właściciela ze zrzutu panelu (*„ucina mi"*): przy dopisku „lin
   post dalej urywa się na granicy zdania (albo wielokropkiem, gdy granicy nie ma powyżej 60%
   budżetu). To osobna sprawa i **wymaga redeployu `gotowiec-x`**, więc nie idzie przez git.
 
+### 🔴 Druga tura tego samego dnia: doklejka „link w bio" WYCHODZI PONAD KADR
+Pomysł właściciela zaraz po pierwszej poprawce: *„można limit zwiększyć na 400 i chyba nawet lepiej
+będzie, jak dopisek pojawi się dopiero po «czytaj dalej»"*. Sedno jest trafne: **doklejka to nie
+jest wartość posta, tylko prośba** — a dotąd odbierała newsowi **37 znaków** (model dostawał 233
+zamiast 270), czyli płaciliśmy treścią za CTA.
+- **Wybór właściciela (z trzech przedstawionych): news w kadrze, doklejka pod zwinięciem.**
+  `budzetTresci = maxZnakow` (koniec odejmowania), a `CTA_BIO` dopina się PONAD limit → w polu
+  **307 znaków**, z czego **270 w kadrze osi czasu** i 35 pod „Pokaż więcej".
+  ⛔ Wariant „twarde 400 na wszystko" ODRZUCONY: przy nim pod zwinięciem lądowała TEŻ końcówka
+  newsa, a post idzie BEZ LINKU — w kadrze musi być treść, nie urwane zdanie.
+- 🔴 **LIMIT POLA ≠ LIMIT KADRU.** `X_TEXT_MAX` (270) pilnuje tego, co widać bez klikania;
+  `xLimitPola` to ile wolno mieć CAŁEMU polu. Licznik w knadze pokazuje przy dopisku **307** i to
+  nie jest przekroczenie. Kto tego nie rozdzieli, wraca do ucinania doklejki.
+- **Długość doklejki knaga bierze z ODPOWIEDZI funkcji** (nowe pole `doklejka`), nie z własnej
+  kopii napisu — treść CTA zostaje w jednym miejscu, panel potrzebuje wyłącznie liczby znaków.
+- ✅ **Kolejność wdrożenia NIE jest pułapką** (zmierzone): stara funkcja nie zwraca `doklejka`,
+  więc panel zostaje na limicie 270, a tamta wersja i tak odejmowała CTA od budżetu — treść się
+  mieści, CTA w całości. Panel działa z obiema wersjami funkcji.
+- 📊 Zweryfikowane realnym `zFlaga`/`xUstawLimitPola` z pliku × wierny port obu wersji funkcji,
+  5 scenariuszy: bio z flagą 2 i 1 punktu kodowego (307/307, kadr 270, CTA cała), kontrola bez
+  dopiska (270/270, bez zmian), krótki post (89/307), stara funkcja + nowy panel (270/270, CTA cała).
+- ⚠️ **ŚWIADOMY KOSZT: zachętę pod zwinięciem widzi mniej ludzi**, a wariant powstał właśnie dla
+  wizyt profilu (20,1 tys. wyświetleń → 12 wizyt). Jeśli wizyt nie przybędzie, **pierwszym
+  podejrzanym jest ten wybór**, nie treść doklejki.
+- ⚠️ **Automat NIE używa wariantu `bio`** (bot: „uruchamia go WYŁĄCZNIE człowiek z panelu"), więc
+  `XZlozPost` w bocie nic nie przycina. Gdyby kiedyś bot miał publikować z dopiskiem — **musi
+  najpierw dostać limit świadomy doklejki**, inaczej utnie ją dokładnie tak, jak robiła to knaga.
+- ⚠️ **Wymaga redeployu:** `supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc`.
+
 ## Notowania: znacznik czasu bez widocznej stopki (2026-08-02)
 Linia „Notowania: stan na … · dane opóźnione" **zdjęta z ekranu** na życzenie właściciela, ale
 znacznik ZOSTAJE w `title` kafla (podpowiedź po najechaniu) i w `data-stan`.

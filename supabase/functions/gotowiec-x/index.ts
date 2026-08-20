@@ -179,12 +179,22 @@ Deno.serve(async (req) => {
   // 🔴 DOKLEJKA JEST STAŁA, NIE GENEROWANA. To NIE jest drugi generator (zasada z 02.08:
   // panel i automat mają jedno źródło) — model dostaje po prostu mniejszy budżet, a linia
   // dopina się po bramkach. Dzięki temu knaga i bot dla `wariant: 'bio'` dostają to samo.
-  // ⚠️ Budżet treści MALEJE o długość doklejki, żeby całość zmieściła się w 270 znakach.
-  // Powód jest ten sam co przy MAX_ZNAKOW: X zwija w osi czasu wszystko powyżej ~280 pod
-  // „Pokaż więcej", a urwany NAGŁÓWEK kosztuje więcej niż zyskuje doklejka pod zwinięciem.
+  // 🔴 BUDŻET TREŚCI NIE MALEJE O DOKLEJKĘ (2026-08-20, decyzja właściciela — zmiana wobec
+  // pierwszej wersji z tego samego dnia). Doklejka dopina się PONAD limit kadru, więc news
+  // dostaje pełne `maxZnakow` i w całości mieści się w osi czasu, a „link w bio." ląduje
+  // ŚWIADOMIE pod „Pokaż więcej".
+  // Uzasadnienie: X zwija wszystko powyżej ~280 znaków, a post idzie BEZ LINKU — w kadrze
+  // musi więc być NEWS, nie zachęta. Wcześniej było odwrotnie: doklejka odbierała treści
+  // 37 znaków (model dostawał 233 zamiast 270), czyli płaciliśmy newsem za CTA.
+  // ⚠️ ZACHĘTA POD ZWINIĘCIEM WIDZI MNIEJ LUDZI — to jest świadomy koszt tej decyzji, nie
+  // przeoczenie. Wariant powstał dla wizyt profilu (20,1 tys. wyświetleń → 12 wizyt), więc
+  // gdyby wizyt nie przybywało, pierwszym podejrzanym jest właśnie ten wybór.
+  // ⚠️ KTO DOKLEJA, TEN LICZY: wołający dostaje w odpowiedzi pole `doklejka` i MUSI dodać
+  // jej długość do własnego limitu pola. Inaczej przytnie ją po fakcie — dokładnie ta wpadka,
+  // przez którą z „link w bio." zostawało „link w…" (patrz `zFlaga` w knadze).
   const CTA_BIO = 'Cała dzisiejsza dawka — link w bio.';
   const zBio = String(body.wariant ?? '').trim() === 'bio';
-  const budzetTresci = zBio ? Math.max(120, maxZnakow - CTA_BIO.length - 2) : maxZnakow;
+  const budzetTresci = maxZnakow;
 
   const pozycje = Array.isArray(body.pozycje)
     ? body.pozycje.map((p) => ({ text: String(p?.text ?? '').trim(), article: String(p?.article ?? '').trim() }))
@@ -295,6 +305,10 @@ Deno.serve(async (req) => {
   // tekstem, więc bramce liczb nie podlega, a przycinaniu podlegać nie może (obcięta zachęta
   // to najgorszy z możliwych wyników).
   const zDoklejka = (tresc: string) => (zBio ? `${tresc}\n\n${CTA_BIO}` : tresc);
+  // Oddajemy ją wołającemu JAWNIE, zamiast kazać mu trzymać własną kopię tego napisu:
+  // knaga potrzebuje wyłącznie jej DŁUGOŚCI, żeby podnieść limit pola, a treść zostaje
+  // w jednym miejscu (ta sama zasada co „panel i automat mają jedno źródło").
+  const doklejka: Record<string, string> = zBio ? { doklejka: CTA_BIO } : {};
 
   if (post.length > budzetTresci) {
     // Przycinamy na granicy zdania, nie w połowie słowa.
@@ -303,9 +317,9 @@ Deno.serve(async (req) => {
       ? post.slice(0, doKropki + 1)
       : post.slice(0, budzetTresci - 1).trimEnd() + '…';
     const gotowy = zDoklejka(przyciety);
-    return json({ post: gotowy, przyciety: true, wariant: zBio ? 'bio' : 'bazowy', dlugosc: gotowy.length });
+    return json({ post: gotowy, przyciety: true, wariant: zBio ? 'bio' : 'bazowy', dlugosc: gotowy.length, ...doklejka });
   }
 
   const gotowy = zDoklejka(post);
-  return json({ post: gotowy, wariant: zBio ? 'bio' : 'bazowy', dlugosc: gotowy.length });
+  return json({ post: gotowy, wariant: zBio ? 'bio' : 'bazowy', dlugosc: gotowy.length, ...doklejka });
 });
