@@ -779,7 +779,7 @@ const IKONA_ZE_SLOW = [
   [/\bai\b|sztuczn\w* inteligencj|openai|anthropic|chatgpt|gemini|\bllm\b|chatbot|deepseek/i, '🤖'],
   [/\brop(?:a|ę|y|ie|ą)\b|\bbrent\b|\bwti\b|baryłk|rafineri|\bopec\b|benzyn|diesel|paliw/i, '🛢'],
   [/elektrown|reaktor|energetyk|gaz ziemn|\blng\b|fotowoltaik|farm\w* wiatrow|sieci przesyłow/i, '⚡'],
-  [/spotify|muzyczn|piosenk|album\b/i, '🎧'],
+  [/spotify|apple music|muzyczn|piosenk|album\b|\butw(?:ór|ory|orów|orami)\b/i, '🎧'],
   [/netflix|youtube|streaming|serial\b|disney|\bhbo\b|tiktok/i, '🎬'],
   [/\bgier\b|gaming|playstation|xbox|nintendo|\bsteam\b/i, '🎮'],
   [/linie lotnicze|ruch lotnicz|samolot|boeing|airbus|ryanair|przewoźnik lotnicz/i, '✈'],
@@ -861,8 +861,13 @@ function znacznikiTematyczne(item) {
   const trafione = [];
   for (const [wz, emo] of IKONA_ZE_SLOW) {
     if (wz.test(t) && !trafione.includes(emo)) trafione.push(emo);
-    if (trafione.length === 2) return trafione;          // maks. dwa znaczniki łącznie
+    if (trafione.length === 2) break;                    // maks. dwa znaczniki łącznie
   }
+  // 🤖 (AI) jest kategorią NAJOGÓLNIEJSZĄ, więc przy parze idzie na koniec — konwencja
+  // właściciela „szczegółowa ikona przed ogólną" (🔬🤖 pamięć+AI, 🪙🤖 krypto+AI, 🎧🤖 muzyka+AI).
+  // Sama lista zbiera trafienia po kolei, więc bez tego 🤖 wychodziłaby pierwsza dla wszystkiego,
+  // co stoi za nią w IKONA_ZE_SLOW (zmierzone: 8 par w archiwum).
+  if (trafione.length === 2 && trafione[0] === '🤖') trafione.reverse();
   if (trafione.length) return trafione;
   const kat = (item.category || '').trim();
   if (IKONA_Z_KATEGORII[kat]) return [IKONA_Z_KATEGORII[kat]];
