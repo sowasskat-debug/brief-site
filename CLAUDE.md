@@ -943,6 +943,133 @@ poście, nie teoria. Konsekwencje w `knaga.html`:
   (10 miejsc renderu w `index.html`). `zFlaga` wołane tylko z panelu X.
 - **Licznik znaków w punktach kodowych**, nie `.length` — flaga to 4 jednostki UTF-16, a X liczy 2.
 
+## Znacznik kafla: ikona tematyczna + flaga kraju — `znacznikHtml` (2026-08-20) 🔴
+Życzenie właściciela po obejrzeniu podglądu czterech wariantów: *„dobra C, ale też możesz dawać
+flagę obok"* i *„daj rozmiar 16"*. Znacznik ma teraz DWIE części: **ikona (CZEGO dotyczy news)
++ flaga (GDZIE)**, np. 🤖🇺🇸 Anthropic, 🎧🇸🇪 Spotify, 🔬🇹🇼 TSMC.
+- 🔴 **Dlaczego ikony, a nie emoji: systemowego emoji NIE DA SIĘ przefarbować.** To gotowy obrazek
+  w foncie systemu — 🪙 jest żółtą kropką, 🔬 przy 13 px nieczytelny, a każdy system rysuje je
+  inaczej. Rysowana ikona w `currentColor` działa w obu motywach bez osobnych reguł i wygląda
+  identycznie wszędzie. **Ten sam powód, dla którego 🧵 zostało zastąpione przez `WATEK_ICN`.**
+- ⚠️ **FLAGI ZOSTAJĄ EMOJI** — niosą tożsamość, mają własny font na Windowsie (`flagi.js`),
+  a w kresce przy 16 px byłyby nieczytelne. Odrzucone warianty: filtr CSS na emoji (szare plamy,
+  w ciemnym motywie moneta gubi kształt) i ikony w czerwieni (czerwień niesie już numer pozycji
+  i akcent marki — dwie czerwienie konkurują).
+- **`ZNACZNIK_IKONY`** (19 pozycji) + **`znacznikHtml(flaga)`** — dzieli pole `flag` na GRAFEMY
+  (`Intl.Segmenter`; `[...s]` rozsypałby flagę na dwie litery — ta sama pułapka co w `pierwszeEmoji`),
+  mapuje znane emoji na `<svg class="zn-ico">`, resztę zostawia jako tekst. Wpięte w **17 miejsc
+  renderu** w `index.html`.
+- ⚠️ **Emoji spoza mapy renderuje się jak dotąd** — zero regresji dla archiwum i dla znaczników,
+  których jeszcze nie przewidzieliśmy. Świadomie BEZ mapy: **🚨** (PILNE — czerwona syrena niesie
+  sygnał, nie temat) oraz 📰/📢 (fallbacki).
+- **Rozmiar 16 px we wszystkich kontenerach listy** (`.news-flag`, `.hero-flag`, `.sub-item-flag`,
+  `.dt-item-flag`, `.dt-sub-flag`) — wybór właściciela z podglądu 13 / 14,5 / 16.
+  `.dt-detail-flag` (26 px) zostaje: to znacznik nagłówkowy panelu, nie wiersz listy.
+  ⚠️ `.zn-ico` ma **1.15em**, nie 1em — kreska jest rzadsza niż pełnokolorowe emoji i przy 1:1
+  wygląda na mniejszą od flagi stojącej obok. Jedna liczba w kontenerze ustawia obie części.
+- ⚠️ **Bot musi emitować OBA znaczniki** (`FORMAT_JSON_SELEKCJI`, ikona przed flagą, maks. dwa
+  łącznie) — front sam kraju nie zna, w danych nie ma osobnego pola. Bez tamtej zmiany feed
+  wygląda jak dotąd, tylko większy.
+- ⚠️ **`XCzyKrajowy` w bocie wykrywa 🇵🇱 w polu `flag`** — złożony znacznik ⚡🇵🇱 dalej ją zawiera,
+  więc bramka różnorodności na X działa jak dotąd. `pierwszeEmoji` (post na X) weźmie IKONĘ, bo
+  stoi pierwsza — na X i tak nie wyślemy SVG, a jedno emoji to twarda reguła tamtej ścieżki.
+- ⚠️ **ZNANA LUKA: `watki.html` i `fala.html` dalej renderują surowe emoji.** Mapa siedzi
+  w `index.html`, a skopiowanie jej do drugiego pliku to gwarantowany dryf (precedens `itemSlug`).
+  Objęcie ich wymaga wyciągnięcia wspólnego `znaczniki.js` (wzorzec `flagi.js`) + wpisu
+  w `STATIC_ASSETS`. Do zrobienia, gdy właściciel zdecyduje, że ma być wszędzie.
+### Wsteczne rozpoznanie tematu — `znacznikTematyczny` (życzenie: „żeby działało na poprzednich postach")
+Ikonę wskazuje BOT w polu `flag`, ale robi to dopiero od dzisiejszej reguły — całe archiwum ma tam
+samą flagę kraju. Dlatego pozycja BEZ znacznika tematycznego dostaje ikonę wyprowadzoną z treści
+**przy renderze**. ⚠️ Plików `archive/*.json` NIE ruszamy: zamknięty dzień jest niezmienny.
+- 🔴 **TYLKO NAGŁÓWEK, nigdy artykuł.** Pierwsza wersja skanowała `text + article` i dawała
+  **57,9% pozycji** z bzdurnymi trafieniami („Udział Alphabet w Anthropic" → 🚀, bo o SpaceX
+  wspominał artykuł pod spodem). Znacznik opisuje news TAK, JAK JEST ZATYTUŁOWANY.
+- 📊 **Kalibracja na 6128 pozycjach, cztery tury zawężania — każde pudło znalezione PRÓBKĄ, nie
+  recenzją:** 57,9% → 38,5% → 34,8% → **32,3%**. Wycięte kolejno:
+  `kolej\w*` łapało **„kolejną transzę"** (398 poz. dostawało 🏗 — ta sama pułapka co `frank\w*`
+  na „Frankfurt"); `satelit` łapało zdjęcia satelitarne z wojny; `lotnisk` łapało **lotniskowiec**;
+  `żeglug` robiło z Ormuza infrastrukturę; **`rakiet` łapało rakiety BALISTYCZNE** (293 poz. — newsy
+  wojenne dostawały 🚀, teraz wymagane `rakiet\w* nośn`); gołe `amazon` robiło z nakładów na AI
+  handel detaliczny; kategoria **`Tech / AI` → 🤖** dawała robota wynikom Apple'a (549 poz.).
+- **Kolejność w `IKONA_ZE_SLOW` JEST regułą** — pierwszy trafiony wzorzec wygrywa, więc szczegółowe
+  (bitcoin, chipy) stoją nad ogólnymi. Kategoria to sygnał SŁABSZY, wchodzi dopiero gdy żadne słowo
+  nie trafiło, i zostały tylko trzy bezpieczne: `Fed / Banki` → 🏦, `Rynki` → 📈, `Surowce` → 🛢.
+  Kategorie polityczne i wojenne świadomie POMINIĘTE — tam flaga niesie więcej niż ikona.
+- ⚠️ **Nowe newsy od bota WYGRYWAJĄ zawsze** — fallback odpala się wyłącznie, gdy pozycja nie ma
+  własnego znacznika tematycznego. Model widzi treść, regex widzi słowa.
+- ⚠️ **🚨 nietykane** — pozycja PILNA nie dostaje ikony, bo ten znacznik niesie sygnał, nie temat.
+- ⚠️ **Dokładając wzorzec: wąsko i ZAWSZE ze skanem archiwum na fałszywe trafienia** (zasada
+  z `AngielskieStopwordy`). Lepiej zostawić samą flagę niż dokleić ikonę nie na temat.
+
+- ⚠️ **Knaga świadomie pokazuje surowe emoji** — tam patrzysz na to, co realnie pójdzie na X.
+- ✅ Zweryfikowane na PRAWDZIWYM froncie (lokalna kopia, `briefs.json` z podmienionymi znacznikami):
+  ikona + flaga obok siebie w hero, w wierszach listy i przy dwóch flagach (🇺🇸🇨🇺 bez ikony),
+  0 błędów JS. SW → v130.
+
+## Budżet znaków posta X: liczy go GENERATOR, nie przycinanie po fakcie (2026-08-20) 🔴
+Zgłoszenie właściciela ze zrzutu panelu (*„ucina mi"*): przy dopisku „link w bio" post kończył się
+**„Cała dzisiejsza dawka — link w…"** — ucięta była sama DOKLEJKA, czyli jedyna część, której
+`gotowiec-x` **celowo nie przycina** („obcięta zachęta to najgorszy z możliwych wyników").
+- 🔴 **PRZYCZYNA: DWA BUDŻETY. Knaga nie podawała funkcji `maxZnakow`** — jako jedyna z trzech
+  ścieżek. Funkcja budżetowała więc pełne 270 znaków, nic nie wiedząc o **fladze kraju, którą
+  `zFlaga` dokleja z przodu** już w przeglądarce. Wynik przekraczał limit o flagę i spację,
+  a `zFlaga` ścinała nadmiar **ŚLEPO OD KOŃCA** — a końcem jest doklejka.
+- 📊 **Odtworzone REALNYMI funkcjami z `knaga.html`** (nie z lektury): flaga 🇮🇷, doklejka 35 zn. →
+  funkcja oddaje 270, `zFlaga` tnie do 267 → z „…link w bio." zostaje „…link w…", licznik
+  **269/270** — dokładnie to, co widać na zrzucie. Po poprawce: `maxZnakow` = **267**, funkcja
+  oddaje 267, `zFlaga` **nie tnie nic**, w polu 270/270 i doklejka w całości.
+- **Naprawa: knaga podaje budżet, tak jak bot od 2026-08-12** (`XPobierzGotowiec`:
+  `XBudzetZnakow − flaga − 1`). Wspólny helper `xBudzetTresci(flaga)` — jedna formuła dla
+  generatora i dla składania posta.
+- ⚠️ **Cięcie w `zFlaga` ZOSTAJE jako ostatnia deska ratunku** (ręczna edycja pola), ale przy
+  poprawnym budżecie się nie odpala. **Nie jest to bramka na doklejkę** — tnie od końca i nie wie,
+  co tnie.
+- ⚠️ **Dotyczyło TEŻ wariantu bez dopiska** — tam ślepe cięcie zabierało 2-3 znaki z końca zdania
+  i dokładało drugi wielokropek. Zmierzone na 6 kombinacjach (flaga 1 i 2 punkty kodowe, dopisek
+  wł./wył.): przed poprawką drugie cięcie w 5 z 6, po poprawce w 0 z 6.
+- 🔴 **ZASADA: budżet znaków ma JEDNEGO właściciela — generator.** Kto dokleja cokolwiek PO
+  generowaniu (flaga, doklejka, prefiks), musi to ODJĄĆ od budżetu z góry, nigdy dociąć po fakcie.
+- ⚠️ **Trzy miejsca, jedna liczba**: `MAX_ZNAKOW` w `gotowiec-x` (wymaga redeployu!), `X_TEXT_MAX`
+  w knadze, `XBudzetZnakow` w bocie.
+- ⚠️ **Ta poprawka NIE dotyka przycinania treści przez samą funkcję** — gdy model przegada budżet,
+  post dalej urywa się na granicy zdania (albo wielokropkiem, gdy granicy nie ma powyżej 60%
+  budżetu). To osobna sprawa i **wymaga redeployu `gotowiec-x`**, więc nie idzie przez git.
+
+### 🔴 Druga tura tego samego dnia: doklejka „link w bio" WYCHODZI PONAD KADR
+Pomysł właściciela zaraz po pierwszej poprawce: *„można limit zwiększyć na 400 i chyba nawet lepiej
+będzie, jak dopisek pojawi się dopiero po «czytaj dalej»"*. Sedno jest trafne: **doklejka to nie
+jest wartość posta, tylko prośba** — a dotąd odbierała newsowi **37 znaków** (model dostawał 233
+zamiast 270), czyli płaciliśmy treścią za CTA.
+- **Wybór właściciela (z trzech przedstawionych): news w kadrze, doklejka pod zwinięciem.**
+  `budzetTresci = maxZnakow` (koniec odejmowania), a `CTA_BIO` dopina się PONAD limit → w polu
+  **307 znaków**, z czego **270 w kadrze osi czasu** i 35 pod „Pokaż więcej".
+  ⛔ Wariant „twarde 400 na wszystko" ODRZUCONY: przy nim pod zwinięciem lądowała TEŻ końcówka
+  newsa, a post idzie BEZ LINKU — w kadrze musi być treść, nie urwane zdanie.
+- 🔴 **LIMIT POLA ≠ LIMIT KADRU.** `X_TEXT_MAX` (270) pilnuje tego, co widać bez klikania;
+  `xLimitPola` to ile wolno mieć CAŁEMU polu. Licznik w knadze pokazuje przy dopisku **307** i to
+  nie jest przekroczenie. Kto tego nie rozdzieli, wraca do ucinania doklejki.
+- **Długość doklejki knaga bierze z ODPOWIEDZI funkcji** (nowe pole `doklejka`), nie z własnej
+  kopii napisu — treść CTA zostaje w jednym miejscu, panel potrzebuje wyłącznie liczby znaków.
+- ✅ **Kolejność wdrożenia NIE jest pułapką W ŻADNĄ STRONĘ** — i to jest zapewnione po OBU stronach:
+  (a) stara funkcja nie zwraca `doklejka`, więc panel zostaje na limicie 270, a tamta wersja i tak
+  odejmowała CTA od budżetu; (b) 🔴 **wołający, który NIE podaje `maxZnakow`, dostaje z funkcji
+  wariant zachowawczy** (doklejka wewnątrz limitu) — bo nie zna kontraktu i przytnie wynik po fakcie.
+  Bez tego bezpiecznika redeploy funkcji PRZED mergem panelu kasowałby CAŁĄ doklejkę (41 znaków
+  nadmiaru wobec 37-znakowej doklejki), czyli byłoby GORZEJ niż przed poprawką.
+  📊 Zmierzone na czterech kombinacjach (stara/nowa knaga × stara/nowa funkcja), realnym `zFlaga`
+  z pliku: `stara+stara` = dzisiejszy błąd (CTA ucięta), **`stara+nowa` = identycznie jak dziś,
+  ani gorzej**, `nowa+stara` = CTA cała, news 233 zn., `nowa+nowa` = CTA cała, news 270 zn. w kadrze.
+- 📊 Zweryfikowane realnym `zFlaga`/`xUstawLimitPola` z pliku × wierny port obu wersji funkcji,
+  5 scenariuszy: bio z flagą 2 i 1 punktu kodowego (307/307, kadr 270, CTA cała), kontrola bez
+  dopiska (270/270, bez zmian), krótki post (89/307), stara funkcja + nowy panel (270/270, CTA cała).
+- ⚠️ **ŚWIADOMY KOSZT: zachętę pod zwinięciem widzi mniej ludzi**, a wariant powstał właśnie dla
+  wizyt profilu (20,1 tys. wyświetleń → 12 wizyt). Jeśli wizyt nie przybędzie, **pierwszym
+  podejrzanym jest ten wybór**, nie treść doklejki.
+- ⚠️ **Automat NIE używa wariantu `bio`** (bot: „uruchamia go WYŁĄCZNIE człowiek z panelu"), więc
+  `XZlozPost` w bocie nic nie przycina. Gdyby kiedyś bot miał publikować z dopiskiem — **musi
+  najpierw dostać limit świadomy doklejki**, inaczej utnie ją dokładnie tak, jak robiła to knaga.
+- ⚠️ **Wymaga redeployu:** `supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc`.
+
 ## Notowania: znacznik czasu bez widocznej stopki (2026-08-02)
 Linia „Notowania: stan na … · dane opóźnione" **zdjęta z ekranu** na życzenie właściciela, ale
 znacznik ZOSTAJE w `title` kafla (podpowiedź po najechaniu) i w `data-stan`.

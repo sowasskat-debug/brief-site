@@ -379,8 +379,10 @@ input[type=password], input[type=text], input[type=email] {
     <!-- Wybór NALEŻY DO CZŁOWIEKA (decyzja właściciela 2026-08-20: „ja sam będę decydował, który
          ma być z dopiskiem, a który nie"). Automat rotacji NIE MA i nie ma jej przywracać.
          Zaznaczenie generuje gotowca OD NOWA z wariantem `bio`, zamiast doklejać linię lokalnie —
-         model dostaje wtedy mniejszy budżet i sam pisze krócej, więc całość mieści się w limicie.
-         Doklejenie po fakcie wypychałoby post ponad 270 znaków i trzeba by ręcznie skracać newsa. -->
+         doklejka jest stała i pilnuje jej Edge Function, więc panel i automat mają jedno źródło.
+         🔴 Od 2026-08-20 doklejka NIE odbiera newsowi znaków: news dostaje pełny limit kadru (270),
+         a zachęta dopina się PONAD niego i ląduje świadomie pod „Pokaż więcej". Dlatego licznik
+         pokazuje wtedy większy limit (patrz `xUstawLimitPola`) — to nie jest przekroczenie. -->
     <label style="display:flex;align-items:center;gap:8px;margin:6px 0 2px;font-size:13px;cursor:pointer">
       <input type="checkbox" id="xDopisek" onchange="xPrzelaczDopisek()">
       <span>Dopisek „link w bio" na końcu posta</span>
@@ -565,11 +567,36 @@ function bezEmoji(s) {
     .trim();
 }
 
-function zFlaga(item, tresc) {
+// 🔴 BUDŻET TREŚCI = limit MINUS flaga i spacja, które `zFlaga` dokleja z przodu.
+// Jedna formuła dla generatora i dla składania posta — inaczej wracają dwa budżety
+// i przycinanie po fakcie (patrz komentarz przy `maxZnakow` w `xGenerujGotowiec`).
+// Ten sam rachunek co `XPobierzGotowiec`/`XZlozPost` w bocie: `XBudzetZnakow - flaga - 1`.
+function xBudzetTresci(flaga, limitPola = X_TEXT_MAX) {
+  return limitPola - [...flaga].length - 1;
+}
+
+// 🔴 LIMIT POLA ≠ LIMIT KADRU (2026-08-20, decyzja właściciela). `X_TEXT_MAX` pilnuje tego, co
+// ma się zmieścić w OSI CZASU — powyżej ~280 znaków X zwija resztę pod „Pokaż więcej".
+// Przy wariancie „bio" doklejka ląduje ŚWIADOMIE pod tym zwinięciem, więc pole wolno mieć
+// dłuższe o jej długość: news dostaje pełny kadr, a zachęta nie odbiera mu ani znaku.
+// Długość bierzemy z ODPOWIEDZI funkcji (pole `doklejka`), zamiast trzymać drugą kopię tego
+// napisu w panelu — treść zostaje w jednym miejscu, tu liczy się wyłącznie ile znaków dołożyć.
+let xLimitPola = X_TEXT_MAX;
+
+function xUstawLimitPola(doklejka) {
+  const d = String(doklejka || '');
+  xLimitPola = X_TEXT_MAX + (d ? [...d].length + 2 : 0);   // +2 = pusta linia przed doklejką
+  return xLimitPola;
+}
+
+function zFlaga(item, tresc, limitPola = X_TEXT_MAX) {
   const flaga = pierwszeEmoji(String(item.flag || '📰').trim());
   const t = bezEmoji(tresc);
   if (!flaga || t.startsWith(flaga)) return t;
-  const budzet = X_TEXT_MAX - [...flaga].length - 1;
+  const budzet = xBudzetTresci(flaga, limitPola);
+  // Ostatnia deska ratunku (np. po ręcznej edycji pola). Przy poprawnie podanym budżecie
+  // generator oddaje treść, która się mieści, więc ta gałąź nie powinna się odpalać —
+  // tnie ŚLEPO od końca, a końcem bywa stała doklejka „link w bio".
   const ciety = t.length > budzet ? t.slice(0, budzet - 1).trimEnd() + '…' : t;
   return `${flaga} ${ciety}`;
 }
@@ -609,6 +636,7 @@ function wstawWatekJakoTekst() {
   const t = xWatekTekst(xBiezacy.item, xBiezacy.watek);
   if (!t) { showToast('Brak danych wątku'); return; }
   document.getElementById('xTresc').value = t;
+  xUstawLimitPola('');   // wątek nie ma doklejki — licznik wraca do limitu kadru
   xPolicz();
   showToast('Wstawiono wątek — oś dołącz jako obrazek w komentarzu');
 }
@@ -760,6 +788,9 @@ async function xGenerujGotowiec(item, pod) {
   const zDopiskiem = !!document.getElementById('xDopisek')?.checked;
 
   // Zaczynamy od fallbacku — gdyby generowanie padło, i tak masz czym wrzucić.
+  // ⚠️ Limit pola wraca do bazowego: fallback to sam nagłówek, bez doklejki. Bez tego resetu
+  // przełączenie dopisku na „nie" zostawiałoby licznik z podniesionym limitem.
+  xUstawLimitPola('');
   pole.value = xPostText(item);
   xPolicz();
 
@@ -776,6 +807,15 @@ async function xGenerujGotowiec(item, pod) {
       // zamiast streszczać samą kotwicę (która przy grupie bywa parasolem bez artykułu).
       body: {
         text: item.text, article: item.article, impact: item.impact,
+        // 🔴 BUDŻET PODAJEMY FUNKCJI, zamiast przycinać po fakcie (2026-08-20, zgłoszenie
+        // właściciela „ucina mi"). Knaga tego nie robiła — jako jedyna z trzech ścieżek —
+        // więc `gotowiec-x` budżetował całe 270 znaków, nic nie wiedząc o fladze, którą
+        // `zFlaga` dokleja z przodu. Wynik przekraczał limit o flagę i spację, a `zFlaga`
+        // ścinała nadmiar OD KOŃCA — czyli z doklejki „Cała dzisiejsza dawka — link w bio."
+        // zostawało „link w…". Bot robił to poprawnie od 2026-08-12 (`XPobierzGotowiec`).
+        // ⚠️ Przy wariancie „bio" funkcja odejmuje od tego jeszcze długość doklejki, więc
+        // model dostaje mniejszy budżet i sam pisze krócej — nic się nie przycina po fakcie.
+        maxZnakow: Math.max(120, xBudzetTresci(pierwszeEmoji(String(item.flag || '📰').trim()))),
         ...(zDopiskiem ? { wariant: 'bio' } : {}),
         ...(pod.length ? { pozycje: pod.map((x) => ({ text: x.text, article: x.article })) } : {}),
       },
@@ -783,7 +823,11 @@ async function xGenerujGotowiec(item, pod) {
     if (error) throw error;
 
     if (data?.post) {
-      pole.value = zFlaga(item, data.post);
+      // Funkcja mówi, czy dopięła doklejkę i jak długą — dopiero wtedy podnosimy limit pola.
+      // ⚠️ Stara wersja funkcji (przed redeployem) tego pola NIE ZWRACA: wtedy limit zostaje
+      // bazowy, a treść i tak się mieści, bo tamta wersja odejmowała doklejkę od budżetu.
+      // Kolejność wdrożenia nie jest więc pułapką — panel działa z obiema wersjami.
+      pole.value = zFlaga(item, data.post, xUstawLimitPola(data.doklejka));
       setNotice('xStatus', '', data.przyciety
         ? 'Gotowiec wygenerowany (przycięty do limitu). Możesz go poprawić.'
         : 'Gotowiec wygenerowany. Możesz go poprawić przed wysłaniem.');
@@ -827,8 +871,10 @@ function xPolicz() {
   const el = document.getElementById('xLicznik');
   // Link nie wchodzi już do posta, więc liczy się sama treść. Licznik spójny z X_TEXT_MAX
   // (300 wymaga Premium — standardowe konto X tnie na 280, patrz komentarz przy stałej).
-  el.textContent = `${n} / ${X_TEXT_MAX}`;
-  el.classList.toggle('zaduzo', n > X_TEXT_MAX);
+  // ⚠️ `xLimitPola`, nie `X_TEXT_MAX` — przy dopisku „link w bio" pole wolno mieć dłuższe
+  // o doklejkę, bo ta z założenia siedzi pod „Pokaż więcej" (patrz `xUstawLimitPola`).
+  el.textContent = `${n} / ${xLimitPola}`;
+  el.classList.toggle('zaduzo', n > xLimitPola);
 }
 
 // 🔴 DWA ADRESY WĄTKU (2026-08-11, życzenie właściciela: „żeby generowało link do 1 posta z wątku

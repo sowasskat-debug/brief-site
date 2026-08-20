@@ -720,13 +720,127 @@ function srcBadge(item) {
 
 // Wiersz meta pod nagłówkiem (mobile feed): mini-kategoria + sygnał źródeł.
 // Źródła: preferuje pole reach (ile redakcji pisze o temacie), fallback na confirmCount (klaster).
+// ── ZNACZNIK KAFLA: ikona tematyczna + flaga kraju ──────────────────────────────
+// 🔴 Po co ikony zamiast emoji (życzenie właściciela 2026-08-20, wybór z czterech wariantów
+// pokazanych na podglądzie): systemowego emoji NIE DA SIĘ przefarbować — to gotowy obrazek
+// w foncie systemu, więc 🪙 jest żółtą kropką, a 🔬 przy 13 px jest nieczytelny, i każdy system
+// rysuje je inaczej. Rysowana ikona w `currentColor` wpisuje się w typograficzny, gazetowy
+// charakter serwisu i wygląda identycznie wszędzie. Ten sam powód, dla którego 🧵 zostało
+// zastąpione przez `WATEK_ICN`: „emoji było kolorową plamą w monochromatycznym UI".
+// ⚠️ FLAGI KRAJÓW ZOSTAJĄ EMOJI — niosą tożsamość, mają własny font na Windowsie (`flagi.js`),
+// a narysowanie ich w kresce byłoby nieczytelne przy 13 px. Znacznik ma więc DWIE części:
+// ikona (CO) + flaga (GDZIE), np. 🤖🇺🇸. Bot emituje je w tej kolejności w polu `flag`.
+// ⚠️ ŚWIADOMIE bez mapy dla 🚨 (znacznik PILNE — czerwona syrena niesie sygnał, nie temat)
+// oraz 📰/📢 (fallbacki, gdy modelowi nic nie pasuje).
+// ⚠️ Emoji spoza mapy renderuje się jak dotąd — zero regresji dla archiwum i dla nowych,
+// nieprzewidzianych znaczników.
+const ZNACZNIK_IKONY = {
+  '🤖':'<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1.3"/><path d="M9 13.5h.01M15 13.5h.01M9.5 17h5"/>',
+  '🪙':'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M9.5 10h4a2 2 0 010 4h-4"/>',
+  '🔬':'<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/>',
+  '🚀':'<path d="M12 2.5c3.5 2.5 5.5 6.5 5.5 11l-2.5 3h-6l-2.5-3c0-4.5 2-8.5 5.5-11z"/><circle cx="12" cy="10" r="1.8"/><path d="M9 20.5c1-1 1.5-2 1.5-3M15 20.5c-1-1-1.5-2-1.5-3"/>',
+  '🎧':'<path d="M4 14v-2a8 8 0 0116 0v2"/><rect x="2.5" y="13.5" width="4.5" height="7" rx="2"/><rect x="17" y="13.5" width="4.5" height="7" rx="2"/>',
+  '🎬':'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M7.5 5.5v13M16.5 5.5v13M3 12h18"/>',
+  '🎮':'<rect x="2.5" y="7.5" width="19" height="9" rx="4.5"/><path d="M7 10.5v3M5.5 12h3M15.5 11.5h.01M17.5 13.5h.01"/>',
+  '🛢':'<path d="M12 3s6 6.5 6 10.5A6 6 0 016 13.5C6 9.5 12 3 12 3z"/>',
+  '⚡':'<path d="M13.5 2.5L5 13.5h6l-1.5 8 8.5-11h-6z"/>',
+  '💊':'<rect x="2.8" y="9" width="18.4" height="6.5" rx="3.25" transform="rotate(-40 12 12)"/><path d="M9.2 8.1l5.6 5.6"/>',
+  '🛒':'<circle cx="9.5" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/><path d="M2.5 3.5h2.6l2.6 12h10.4l2-8H6.5"/>',
+  '✈':'<path d="M2.5 13l19-7.5-4 8.5 2 6-5-4.5-4 3v-4z"/>',
+  '🚗':'<path d="M3 15v-2.5l2-4.5h14l2 4.5V15"/><path d="M3 15h18v3h-3v-1.5H6V18H3z"/><circle cx="7.5" cy="15.5" r="1.2"/><circle cx="16.5" cy="15.5" r="1.2"/>',
+  '🏦':'<path d="M3 9.5L12 4l9 5.5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20.5h18"/>',
+  '📈':'<path d="M3 20.5h18"/><path d="M5.5 16l4.5-5 3.5 3 5-7"/><path d="M18.5 7h-3.5M18.5 7v3.5"/>',
+  '🏗':'<path d="M4 20.5h16"/><path d="M7 20.5V6h10"/><path d="M7 6l6 3.5"/><path d="M15 6v4.5"/><path d="M13.2 10.5h3.6v3h-3.6z"/>',
+  '🌍':'<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.5 2.6 2.5 14.4 0 17-2.5-2.6-2.5-14.4 0-17z"/>',
+  '🏆':'<path d="M7.5 4h9v5a4.5 4.5 0 01-9 0V4z"/><path d="M7.5 5.5H5a2.5 2.5 0 002.5 3M16.5 5.5H19a2.5 2.5 0 01-2.5 3"/><path d="M12 13.5v3.5M8.5 20.5h7"/>',
+  '🔒':'<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/>',
+};
+
+// ── WSTECZNE ROZPOZNANIE TEMATU (2026-08-20, życzenie właściciela „żeby działało na
+// poprzednich postach") ────────────────────────────────────────────────────────────────
+// 🔴 Po co: ikonę wskazuje BOT w polu `flag`, ale robi to dopiero od dzisiejszej zmiany reguły.
+// Wszystkie opublikowane pozycje mają tam samą flagę kraju (zmierzone: 🇺🇸 to 40% archiwum),
+// więc bez tego fallbacku archiwum i dzisiejsze dawki wyglądałyby jak dotąd.
+// ⚠️ ARCHIWUM JEST NIEZMIENNE — nie przepisujemy plików `archive/*.json` (to zasada tego repo:
+// dzień raz zamknięty się nie zmienia). Ikonę wyprowadzamy przy RENDERZE, z tekstu i kategorii.
+// ⚠️ Odpala się WYŁĄCZNIE, gdy pozycja nie ma własnego znacznika tematycznego — nowe newsy od
+// bota wygrywają zawsze, bo model widzi treść, a nie same słowa kluczowe.
+// ⚠️ Kolejność w tablicy JEST regułą: pierwszy trafiony wzorzec wygrywa, więc szczegółowe
+// (bitcoin, chipy) stoją nad ogólnymi (giełda). Wzorce mają być WĄSKIE — lepiej zostawić sam
+// znacznik kraju niż dokleić ikonę nie na temat.
+const IKONA_ZE_SLOW = [
+  [/bitcoin|\bbtc\b|ethereum|krypto|stablecoin|coinbase|binance/i, '🪙'],
+  [/spacex|kosmiczn|\bnasa\b|starlink|starship|na orbit|rakiet\w* nośn/i, '🚀'],
+  [/cyberatak|haker|ransomware|wyciek danych|cyberbezpiecz/i, '🔒'],
+  [/\bchip|półprzewodnik|litografi|\btsmc\b|\basml\b|micron|nvidia/i, '🔬'],
+  [/\bai\b|sztuczn\w* inteligencj|openai|anthropic|chatgpt|gemini|\bllm\b|chatbot|deepseek/i, '🤖'],
+  [/\bropa|\bbrent\b|\bwti\b|baryłk|rafineri|\bopec\b|benzyn|diesel|paliw/i, '🛢'],
+  [/elektrown|reaktor|energetyk|gaz ziemn|\blng\b|fotowoltaik|farm\w* wiatrow|sieci przesyłow/i, '⚡'],
+  [/spotify|muzyczn|piosenk|album\b/i, '🎧'],
+  [/netflix|youtube|streaming|serial\b|disney|\bhbo\b|tiktok/i, '🎬'],
+  [/\bgier\b|gaming|playstation|xbox|nintendo|\bsteam\b/i, '🎮'],
+  [/linie lotnicze|ruch lotnicz|samolot|boeing|airbus|ryanair|przewoźnik lotnicz/i, '✈'],
+  [/\btesla\b|samochod|motoryzac|volkswagen|toyota|\bbyd\b|stellantis/i, '🚗'],
+  [/\bfda\b|szczepion|farmaceut|pfizer|moderna|novo nordisk|lek(?:u|i|ów|iem)\b/i, '💊'],
+  [/walmart|e-commerce|handel detaliczn|shein|allegro|sieć handlow|sklep\w*\b/i, '🛒'],
+  [/kontenerow|kolejow|\bpkp\b|autostrad|\bcpk\b|terminal przeładunk/i, '🏗'],
+];
+// Kategoria jako sygnał SŁABSZY — wchodzi dopiero, gdy żadne słowo nie trafiło.
+// Świadomie BEZ kategorii politycznych i wojennych: tam flaga kraju niesie więcej niż ikona.
+const IKONA_Z_KATEGORII = { 'Fed / Banki': '🏦', 'Rynki': '📈', 'Surowce': '🛢' };
+
+function znacznikTematyczny(item) {
+  if (!item) return '';
+  // 🔴 TYLKO NAGŁÓWEK, nigdy artykuł. Zmierzone: skan razem z treścią dawał 57,9% pozycji,
+  // a próbki były bezsensowne — „Udział Alphabet w Anthropic" dostawał 🚀, bo o SpaceX
+  // wspominał artykuł pod spodem. Znacznik opisuje news TAK, JAK JEST ZATYTUŁOWANY.
+  const t = String(item.text || '');
+  for (const [wz, emo] of IKONA_ZE_SLOW) if (wz.test(t)) return emo;
+  const kat = (item.category || '').trim();
+  return IKONA_Z_KATEGORII[kat] || '';
+}
+
+// Podział na GRAFEMY, nie punkty kodowe — flaga to para wskaźników regionalnych i `[...s]`
+// rozsypałby ją na dwie litery (ta sama pułapka co w `pierwszeEmoji` w knadze).
+function znacznikGrafemy(z) {
+  try {
+    const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    return [...seg.segment(z)].map(g => g.segment);
+  } catch (_) {
+    return (z.match(/\p{Regional_Indicator}\p{Regional_Indicator}|[\s\S]/gu) || []);
+  }
+}
+
+function znacznikHtml(item) {
+  // Zgodność wstecz: wolno podać sam napis znacznika (używa tego podgląd i testy).
+  const surowy = (item && typeof item === 'object') ? item.flag : item;
+  let z = String(surowy || '📰').trim() || '📰';
+  // Fallback wsteczny: pozycja bez znacznika tematycznego dostaje ikonę wyprowadzoną z treści.
+  // ⚠️ NIE dotykamy 🚨 — to znacznik PILNE, niesie sygnał, nie temat.
+  if (item && typeof item === 'object' && !z.includes('🚨')) {
+    const maTemat = znacznikGrafemy(z).some(g => ZNACZNIK_IKONY[g] || ZNACZNIK_IKONY[g.replace('\uFE0F','')]);
+    if (!maTemat) {
+      const dodatkowy = znacznikTematyczny(item);
+      if (dodatkowy) z = dodatkowy + z;
+    }
+  }
+  let out = '';
+  for (const g of znacznikGrafemy(z)) {
+    const ikona = ZNACZNIK_IKONY[g] || ZNACZNIK_IKONY[g.replace('\uFE0F', '')];
+    out += ikona
+      ? `<svg class="zn-ico" viewBox="0 0 24 24" aria-hidden="true">${ikona}</svg>`
+      : escHtml(g);
+  }
+  return `<span class="zn">${out}</span>`;
+}
+
 function catMetaRow(item) {
   const cat = dtGetCategory(item);
   const n = (typeof item.reach === 'number' && item.reach >= 2) ? item.reach : confirmCount(item);
   const src = n >= 2
     ? `<span class="news-cat-sep">·</span><span class="news-cat-src"><span class="src-check">✓</span>${n} ${zrodloPl(n)}</span>`
     : '';
-  return `<div class="news-cat-row"><span class="news-flag">${escHtml(item.flag||'📰')}</span><span class="news-cat-name">${cat}</span>${src}${watekBadgeHtml(item)}</div>`;
+  return `<div class="news-cat-row"><span class="news-flag">${znacznikHtml(item)}</span><span class="news-cat-name">${cat}</span>${src}${watekBadgeHtml(item)}</div>`;
 }
 
 // Linia "Wpływ na rynek": koloruje strzałki ↑ (zielony) / ↓ (czerwony)
@@ -1753,7 +1867,7 @@ function renderSubItems(subItems) {
   if (!subItems || subItems.length === 0) return '';
   return subItems.map(sub => `
     <div class="sub-item" id="item-${sub.id}" role="button" tabindex="0" aria-expanded="false" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
-      <span class="sub-item-flag">${escHtml(sub.flag||'📰')}</span>
+      <span class="sub-item-flag">${znacznikHtml(sub)}</span>
       <div class="sub-item-text">${escHtml(sub.text)}${sub.added_at || watekBadgeSubHtml(sub) ? `<div class="item-time">${sub.added_at ? formatAddedAt(sub) : ''}${watekBadgeSubHtml(sub)}</div>` : ''}</div>
       <div class="sub-item-arrow">›</div>
     </div>
@@ -1890,7 +2004,7 @@ function renderArchiveItem(item, idx, dateStr, dose) {
     return `
       <div class="news-item" id="group-${item.id}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${item.id}')">
         <div class="news-num">${String(idx + 1).padStart(2, '0')}</div>
-        <div class="news-body"><span class="news-flag">${escHtml(item.flag || '📰')}</span><div class="news-title">${escHtml(item.text)}</div></div>
+        <div class="news-body"><span class="news-flag">${znacznikHtml(item)}</span><div class="news-title">${escHtml(item.text)}</div></div>
         <div class="news-arrow">›</div>
       </div>
       <div class="sub-items-container" id="subc-${item.id}">${renderArchiveSubItems(item.subItems, dateStr, dose)}</div>`;
@@ -1899,7 +2013,7 @@ function renderArchiveItem(item, idx, dateStr, dose) {
     <div class="news-item" id="item-${item.id}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${item.id}')">
       <div class="news-num">${String(idx + 1).padStart(2, '0')}</div>
       <div class="news-body">
-        <span class="news-flag">${escHtml(item.flag || '📰')}</span>
+        <span class="news-flag">${znacznikHtml(item)}</span>
         <div class="news-title">${escHtml(item.text)}</div>
         ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}
       </div>
@@ -1911,7 +2025,7 @@ function renderArchiveSubItems(subItems, dateStr, dose) {
   if (!subItems || !subItems.length) return '';
   return subItems.map(sub => `
     <div class="sub-item" id="item-${sub.id}" role="button" tabindex="0" aria-expanded="false" onclick="event.stopPropagation();toggleSubItem('${sub.id}')">
-      <span class="sub-item-flag">${escHtml(sub.flag || '📰')}</span>
+      <span class="sub-item-flag">${znacznikHtml(sub)}</span>
       <div class="sub-item-text">${escHtml(sub.text)}${sub.added_at || watekBadgeSubHtml(sub) ? `<div class="item-time">${sub.added_at ? formatAddedAt(sub) : ''}${watekBadgeSubHtml(sub)}</div>` : ''}</div>
       <div class="sub-item-arrow">›</div>
     </div>
@@ -1993,7 +2107,7 @@ function renderDose(dose, items) {
     <div class="hero-card" id="group-${hero.id}" data-text="${escAttr(hero.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${hero.id}')">
       ${srcBadge(hero) ? `<div class="card-corner">${srcBadge(hero)}</div>` : ''}
       <div class="hero-kicker">
-        <span class="hero-flag">${escHtml(hero.flag||'📰')}</span>
+        <span class="hero-flag">${znacznikHtml(hero)}</span>
         <span class="hero-topbadge">★ Top Story</span>
         <span class="hero-kicker-dose">${cfg.label}</span>
       </div>
@@ -2010,7 +2124,7 @@ function renderDose(dose, items) {
     : `
     <div class="hero-card" id="item-${hero.id}" data-text="${escAttr(hero.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${hero.id}')">
       <div class="hero-kicker">
-        <span class="hero-flag">${escHtml(hero.flag||'📰')}</span>
+        <span class="hero-flag">${znacznikHtml(hero)}</span>
         <span class="hero-topbadge">★ Top Story</span>
         <span class="hero-kicker-dose">${cfg.label}</span>
       </div>
@@ -3191,13 +3305,13 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
       if (isGroup) {
         const subsHtml = item.subItems.map(sub =>
           `<div class="dt-sub-item" id="dts-${sub.id}" onclick="event.stopPropagation();dtPickItem('${sub.id}')">
-            <span class="dt-sub-flag">${escHtml(sub.flag||'📰')}</span>
+            <span class="dt-sub-flag">${znacznikHtml(sub)}</span>
             <div class="dt-sub-text">${escHtml(sub.text)}${watekBadgeSubHtml(sub)}</div>
           </div>`
         ).join('');
         html += `<div class="dt-item group-header" id="dti-${item.id}" onclick="dtToggleGroup('${item.id}')">
           <div class="dt-item-num">${num}</div>
-          <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
+          <div class="dt-item-flag">${znacznikHtml(item)}</div>
           <div class="dt-item-body">
             ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
             <div class="dt-item-meta">${srcBadge(item) || `<span>↓ ${item.subItems.length} powiązane</span>`} ${watekBadgeHtml(item)}</div>
@@ -3208,7 +3322,7 @@ function dtRenderFeedCrossDay(byDate, sortedDates, today) {
         const t = formatAddedAt(item);
         html += `<div class="dt-item" id="dti-${item.id}" onclick="dtPickItem('${item.id}')">
           <div class="dt-item-num">${num}</div>
-          <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
+          <div class="dt-item-flag">${znacznikHtml(item)}</div>
           <div class="dt-item-body">
             ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
             ${(t||item.source_name||threadForItem(item))?`<div class="dt-item-meta">${t?`<span>${t}</span>`:''} ${item.source_name?`<span>${escHtml(item.source_name)}</span>`:''} ${watekBadgeHtml(item)}</div>`:''}
@@ -3231,13 +3345,13 @@ function dtRenderFeed(items) {
     if (isGroup) {
       const subsHtml = item.subItems.map(sub =>
         `<div class="dt-sub-item" id="dts-${sub.id}" onclick="event.stopPropagation();dtPickItem('${sub.id}')">
-          <span class="dt-sub-flag">${escHtml(sub.flag||'📰')}</span>
+          <span class="dt-sub-flag">${znacznikHtml(sub)}</span>
           <div class="dt-sub-text">${escHtml(sub.text)}${watekBadgeSubHtml(sub)}</div>
         </div>`
       ).join('');
       html += `<div class="dt-item group-header${isTop?' top-item':''}" id="dti-${item.id}" onclick="dtToggleGroup('${item.id}')">
         <div class="dt-item-num">${num}</div>
-        <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
+        <div class="dt-item-flag">${znacznikHtml(item)}</div>
         <div class="dt-item-body">
           ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
           ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
@@ -3249,7 +3363,7 @@ function dtRenderFeed(items) {
       const t = formatAddedAt(item);
       html += `<div class="dt-item${isTop?' top-item':''}" id="dti-${item.id}" onclick="dtPickItem('${item.id}')">
         <div class="dt-item-num">${num}</div>
-        <div class="dt-item-flag">${escHtml(item.flag||'📰')}</div>
+        <div class="dt-item-flag">${znacznikHtml(item)}</div>
         <div class="dt-item-body">
           ${isTop?'<div class="dt-item-badges"><span class="dt-badge dt-badge-top">★ TOP STORY</span></div>':''}
           ${watekPasekHtml(item)}<div class="dt-item-headline">${escHtml(item.text)}</div>
@@ -3379,7 +3493,7 @@ function dtShowDetail(item) {
   }
   det.innerHTML = `
     <div class="dt-detail-content">
-      <div class="dt-detail-flag">${escHtml(item.flag||'📰')}</div>
+      <div class="dt-detail-flag">${znacznikHtml(item)}</div>
       <div class="dt-detail-badges"><span class="dt-detail-badge">${cat.toUpperCase()}</span>${srcBadge(item)}</div>
       <div class="dt-detail-headline">${escHtml(item.text)}</div>
       <div class="dt-detail-time">${time||'—'}</div>
@@ -3403,7 +3517,7 @@ function dtShowDetail(item) {
     </div>
     ${related.length ? `<div class="dt-related">
       <div class="dt-related-title">Inne wpisy</div>
-      ${related.map(r=>`<div class="dt-related-item" onclick="dtPickItem('${r.id}')"><span>${escHtml(r.flag||'📰')}</span><span>${escHtml(r.text.length>80?r.text.slice(0,80)+'…':r.text)}</span></div>`).join('')}
+      ${related.map(r=>`<div class="dt-related-item" onclick="dtPickItem('${r.id}')"><span>${znacznikHtml(r)}</span><span>${escHtml(r.text.length>80?r.text.slice(0,80)+'…':r.text)}</span></div>`).join('')}
     </div>` : ''}`;
 }
 
@@ -3697,7 +3811,7 @@ function mobCatCardHtml(item, num) {
         ${srcBadge(item) ? `<div class="card-corner">${srcBadge(item)}</div>` : ''}
         <div class="news-num">${num}</div>
         <div class="news-body">
-          <span class="news-flag">${escHtml(item.flag||'📰')}</span>
+          <span class="news-flag">${znacznikHtml(item)}</span>
           <div class="news-title">${escHtml(item.text)}</div>
         </div>
         <div class="news-arrow">›</div>
@@ -3708,7 +3822,7 @@ function mobCatCardHtml(item, num) {
     <div class="news-item" id="item-${item.id}" data-text="${escAttr(item.text)}" role="button" tabindex="0" aria-expanded="false" onclick="toggleSubItem('${item.id}')">
       <div class="news-num">${num}</div>
       <div class="news-body">
-        <span class="news-flag">${escHtml(item.flag||'📰')}</span>
+        <span class="news-flag">${znacznikHtml(item)}</span>
         <div class="news-title">${escHtml(item.text)}</div>
       </div>
       ${item.added_at ? `<div class="item-time">${formatAddedAt(item)}</div>` : ''}
