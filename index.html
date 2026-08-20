@@ -789,15 +789,56 @@ const IKONA_ZE_SLOW = [
 // Świadomie BEZ kategorii politycznych i wojennych: tam flaga kraju niesie więcej niż ikona.
 const IKONA_Z_KATEGORII = { 'Fed / Banki': '🏦', 'Rynki': '📈', 'Surowce': '🛢' };
 
-function znacznikTematyczny(item) {
-  if (!item) return '';
+// 🔴 KRAJ MA BYĆ W NAGŁÓWKU, INACZEJ FLAGI NIE MA (życzenie właściciela 2026-08-20:
+// „flagi tylko wtedy, kiedy jest kraj w nagłówku wzięty pod uwagę, bo np. przy Anthropic
+// nie trzeba dawać flagi USA"). Sama siedziba spółki to NIE powód — „Anthropic przygotowuje
+// IPO" jest newsem o firmie, nie o Stanach, więc znacznikiem jest samo 🤖.
+// ⚠️ Dotyczy WYŁĄCZNIE pozycji, którym ikonę wyprowadziliśmy wstecznie. Nowe newsy od bota
+// mają znacznik od modelu, który widzi treść — jego nie nadpisujemy.
+// ⚠️ Lista obejmuje nazwy, przymiotniki i INSTYTUCJE jednoznacznie wskazujące kraj (Fed, NBP,
+// Sejm, Kreml, Biały Dom, Bruksela) — nagłówek „Fed obniża stopy" mówi o USA bez słowa „USA".
+// ⚠️ Przymiotniki wyliczone z końcówkami, nigdy `\w*` po rdzeniu: „polsk\w*" złapałoby
+// „polskiego", ale i „polskość", a `chin\w*` złapałoby „chinowce". Ta sama pułapka co
+// `frank\w*` na „Frankfurt".
+const KRAJ_W_NAGLOWKU = new RegExp([
+  '\\bUSA\\b','\\bUS\\b','Stan(?:y|ów|om|ach) Zjednoczon','amerykańsk','Waszyngton','Biały Dom','Pentagon',
+  '\\bFed\\b','Trump','Kongres(?:ie|u|)\\b','Waszyngtonu',
+  'Chin(?:y|ach|om|)\\b','chińsk','Pekin','Rosj(?:a|i|ę|ą)','rosyjsk','Kreml','Moskw',
+  'Polsk(?:a|i|ę|ą|ę)\\b','polsk(?:i|a|ie|iej|ich|im|ą)\\b','\\bNBP\\b','\\bGUS\\b','Sejm','Warszaw',
+  'Niemc(?:y|ech|om)','niemieck','Berlin','Ukrain','ukraińsk','Kijów','Kijowa',
+  'Iran','irańsk','Teheran','Izrael','izraelsk','Japoni','japońsk','Tokio',
+  'Kore(?:a|i|ę)','koreańsk','Indi(?:e|i|ach)','indyjsk','Turcj','tureck',
+  'Wielk(?:a|iej) Brytani','brytyjsk','Londyn','Francj','francusk','Paryż',
+  'Uni(?:a|i|ę) Europejsk','\\bUE\\b','\\bEBC\\b','Bruksel','unijn',
+  'Szwajcari','szwajcarsk','Arabi(?:a|i) Saudyjsk','saudyjsk','Kanad','kanadyjsk',
+  'Meksyk','Brazyli','Węgr(?:y|zech)','węgiersk','Czech','czesk','Szwecj','szwedzk',
+  'Holandi','holendersk','Hiszpani','hiszpańsk','Włoch','włosk','Tajwan','tajwańsk',
+  'Kub(?:a|y|ie|ę)','kubańsk','Wenezuel','Argentyn','Australi','australijsk',
+  'Norwegi','norwesk','Dani(?:a|i)\\b','duńsk','Finlandi','fińsk','Austri','austriack',
+  'Belgi','belgijsk','Portugali','portugalsk','Grecj','greck','Irlandi','irlandzk',
+].join('|'), 'i');
+
+// 🔴 DWA TEMATY = DWIE IKONY (życzenie właściciela 2026-08-20: „jak jest pamięć i AI, to
+// również dwie ikonki, jak jest bitcoin i AI, to też dwie"). Symetrycznie do dwóch flag przy
+// relacji dwustronnej: „CEO Microna: pamięć to strategiczna infrastruktura dla AI" = 🔬🤖.
+// ⚠️ Kolejność wynika z kolejności w `IKONA_ZE_SLOW` (szczegółowe nad ogólnymi), więc para
+// układa się sama: krypto przed AI (🪙🤖), chipy przed AI (🔬🤖).
+// ⚠️ Kategoria NIE tworzy drugiej ikony — to sygnał słaby, wchodzi tylko gdy nie trafiło ŻADNE
+// słowo. Dwie ikony mają znaczyć „news naprawdę spina dwa tematy", nie „udało się dopasować".
+function znacznikiTematyczne(item) {
+  if (!item) return [];
   // 🔴 TYLKO NAGŁÓWEK, nigdy artykuł. Zmierzone: skan razem z treścią dawał 57,9% pozycji,
   // a próbki były bezsensowne — „Udział Alphabet w Anthropic" dostawał 🚀, bo o SpaceX
   // wspominał artykuł pod spodem. Znacznik opisuje news TAK, JAK JEST ZATYTUŁOWANY.
   const t = String(item.text || '');
-  for (const [wz, emo] of IKONA_ZE_SLOW) if (wz.test(t)) return emo;
+  const trafione = [];
+  for (const [wz, emo] of IKONA_ZE_SLOW) {
+    if (wz.test(t) && !trafione.includes(emo)) trafione.push(emo);
+    if (trafione.length === 2) return trafione;          // maks. dwa znaczniki łącznie
+  }
+  if (trafione.length) return trafione;
   const kat = (item.category || '').trim();
-  return IKONA_Z_KATEGORII[kat] || '';
+  return IKONA_Z_KATEGORII[kat] ? [IKONA_Z_KATEGORII[kat]] : [];
 }
 
 // Podział na GRAFEMY, nie punkty kodowe — flaga to para wskaźników regionalnych i `[...s]`
@@ -820,8 +861,15 @@ function znacznikHtml(item) {
   if (item && typeof item === 'object' && !z.includes('🚨')) {
     const maTemat = znacznikGrafemy(z).some(g => ZNACZNIK_IKONY[g] || ZNACZNIK_IKONY[g.replace('\uFE0F','')]);
     if (!maTemat) {
-      const dodatkowy = znacznikTematyczny(item);
-      if (dodatkowy) z = dodatkowy + z;
+      const ikony = znacznikiTematyczne(item);
+      if (ikony.length === 2) {
+        // Dwa tematy wypełniają cały budżet znacznika — flaga ustępuje.
+        z = ikony.join('');
+      } else if (ikony.length === 1) {
+        // Ikona ZASTĘPUJE flagę, gdy w nagłówku nie ma kraju — „Anthropic przygotowuje IPO"
+        // dostaje samo 🤖, a nie 🤖🇺🇸. Gdy kraj w nagłówku jest, znacznik niesie oba.
+        z = KRAJ_W_NAGLOWKU.test(String(item.text || '')) ? ikony[0] + z : ikony[0];
+      }
     }
   }
   let out = '';
