@@ -3,6 +3,66 @@
 Zdjęcie stanu na **2026-08-20 (po sesji o trzech dublach w dawce porannej i planie na embeddingi)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
+## 🟢 20.08 rano: ŹRÓDŁA — ROZCIEŃCZANIE BYŁO MARTWE, ODBLOKOWANE (bot #213, ZMERGOWANE)
+
+Zgłoszenie właściciela: *„25 procent jest z Bankiera … wygląda to jakby mój serwis był ukrytą
+kryptoreklamą Bankiera. Wolę nagłówek brać z Bankiera, ale artykuł z innej strony."*
+
+🔴 **Mechanizm rozcieńczania ISTNIAŁ i przez 33 dni odpalił 9 RAZY — ani razu dla Bankiera.**
+Był martwy z TRZECH niezależnych powodów naraz, każdy wystarczyłby sam:
+1. **Istniał w JEDNYM z pięciu finderów** (`WiarygodneZrodlaFindFacts`). Tor główny — Google News,
+   Google News PL, Bing, wszystkie przez `FetchFactsFromNewsRss` — brał **pierwszego** kandydata z RSS-a.
+2. **Licznik nie widział głównego toru** — rósł tylko w `ZamienNaRzadszeZrodlo`.
+3. **Licznik był per-proces**, a bot startuje co bieg → **pierwsze użycie źródła w biegu miało zero**.
+   📊 Sygnatura: w **55%** godzin, w których Bankier wystąpił, wystąpił **dokładnie raz**.
+
+✅ **Naprawa kosztuje ZERO wywołań modelu:** lista 4 kandydatów i tak była zbierana i przechodzona
+po kolei, więc tylko ją sortujemy po użyciu w wydaniu. **Sortowanie STABILNE** — przy remisie kolejność
+z Google News zostaje, więc to tie-break, a nie nowe kryterium trafności. Zliczanie przeniesione
+do JEDNEGO miejsca: przyjęcia artykułu w `ProbujFindery` (po `related` i obu bramkach).
+Zasiew licznika z realnego wydania przed przetwarzaniem.
+
+📊 Skala do pilnowania: Bankier **24,8%** całego archiwum, ale **15,8%** samego sierpnia — trend
+schodził już wcześniej. ⬜ **Za kilka dni obejrzeć `zrodlo_kolejnosc_zmieniona` i `zrodlo_rozcienczone`.**
+Jeśli Bankier dalej się trzyma — następny krok to **twardy limit na źródło w obrębie wydania**,
+świadomie NIE zrobiony teraz, żeby najpierw zobaczyć efekt samego odblokowania.
+⚠️ Nagłówek dalej może być z Bankiera — taka była decyzja właściciela, zmienia się tylko cel „Czytaj →".
+
+⚠️ **Próg `ProgTegoSamegoWydarzenia` 0,45 → 0,30**: 0,45 było WYŻEJ niż próg bramki dubli (0,18),
+choć pyta o rzecz łatwiejszą. 📊 Na żywej puli 405 kandydatów alternatywę w innej redakcji ma
+**0 z 20** tytułów Bankiera przy 0,45 i **1** przy 0,30 — czyli sam ten próg zmienia niewiele.
+
+## ✅ 20.08 rano: EMBEDDINGI — MIEJSCA A i B WDROŻONE (bot #211, #212, ZMERGOWANE)
+
+**Miejsce A — bramka cross-bieg, próg 0,90.** 📊 Zmierzone na 5926 pozycjach archiwum (50 dni,
+538 946 par cichych dla Jaccarda), dodatkowe pary do modelu: 0,55 → **544,6/dobę** · 0,65 → 166,6 ·
+0,75 → 37,8 · 0,85 → 4,2 · **0,90 → 0,8**. Bramka przepuszcza dziś ~108/dobę, więc próg z podpowiedzi
+byłby PIĘCIOKROTNYM wzrostem wywołań.
+🔴 **Przyczyna strukturalna, nie do obejścia progiem pośrednim:** korpus to newsy finansowe i wojenne,
+więc wszystko jest znaczeniowo podobne. Pasmo 0,80–0,86 to SAME „ten sam konflikt, INNE zdarzenie"
+(ataki na Kijów z dwóch dni, dwie różne rafinerie) — i te MAJĄ przechodzić.
+✅ Od 0,90 pasmo czyste: 39 par/50 dni, w tym klasa nie do złapania Jaccardem — **ten sam news po
+angielsku i po polsku** (`Trump: I had a very good talk with President Putin.` × polskie tłumaczenie,
+cos 0,987 przy Jaccardzie 0,154).
+⚠️ Precyzja NIE jest 100%: siedzi tam „Nvidia wyprzedza Apple" × „Apple wyprzedza Nvidię" — zdarzenia
+ODWROTNE. Nieszkodliwe, bo wektor niczego nie przesądza, tylko dokłada parę do osądu MODELU.
+🔴 **Sagi paliwowej (0,555) ten próg NIE łapie — klasa „parafraza bez wspólnych słów" ZOSTAJE OTWARTA.**
+Nie udawajmy, że embeddingi ją zamknęły.
+
+**Miejsce B — wpięte GŁĘBIEJ, niż zakładał plan.** Plan celował w pre-filtr kandydatów; pomiar pokazał,
+że pre-filtr odcina zerowo tylko **3 nagłówki na 98**, więc to nie on gubi newsy. Prawdziwa blokada
+siedziała w `ZamienNaRzadszeZrodlo`, które pytało o „to samo wydarzenie" Jaccardem — a ten nie połączy
+polskiego tytułu z angielskim. 📊 Na żywej puli 405 kandydatów z 25 feedów: **54,3% puli to feedy
+anglojęzyczne**, a pre-filtr przepuszcza z nich **37,2%**.
+✅ Warunek to teraz Jaccard **albo** wektor ≥ 0,90 — zero dodatkowych wywołań modelu.
+⚠️ **NIE twierdzimy, że artykuły będą TRAFNIEJSZE** — tego nie da się zmierzyć bez etykiet „właściwy
+artykuł". Zmierzone jest wyłącznie to, że pula przestaje być odcinana po języku.
+
+⬜ **Zostają miejsca C (spójność klastra) i E (różnorodność X)** — każde z własnym pomiarem.
+🔴 `DeduplikujPodobne` (0,85/0,33) i cross-dose (0,65) DALEJ NIETKNIĘTE.
+🔴 **Przestroga z planu w mocy:** to dalej PIĘĆ niezależnych werdyktów. Klasa wróci siódmy raz,
+jeśli nie zrobimy JEDNEGO werdyktu.
+
 ## 🟢 20.08: EMBEDDINGI — POMIAR ZROBIONY, MIEJSCE D WDROŻONE (bot #209 ZMERGOWANY)
 
 Pomiar z `pomiar_embeddingi.py` puszczony na Macu na **6036 pozycjach** archiwum, trzy modele.
