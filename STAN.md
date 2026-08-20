@@ -521,7 +521,27 @@ jest wyłącznie selektorem kandydatów. **Model dostawał jednak SAME NAGŁÓWK
 - ⚠️ **PR z danymi mergować szybko** — bot przepisuje `briefs.json` co ~30 min, więc stary plik
   z brancha cofnąłby świeże pozycje. Przy konflikcie: odświeżyć branch i nałożyć wycięcie ponownie.
 
-## ⬜ 19.08 noc: NISZOWE WSKAŹNIKI — LISTA KLAS DO DOPISANIA (reguła bazowa JUŻ w main, PR #205)
+## ✅ 20.08: NISZOWE WSKAŹNIKI — CZTERY KLASY DOPISANE, WYJĄTKI IMIENNE WPISANE WPROST
+
+🔴 **ZROBIONE 20.08 — reguła rozszerzona w `Runner.cs`, wspólna lista odrzuceń, `dotnet build` 0/0.**
+Dopisane wariantem A wg decyzji właściciela z 19.08: **regionalne oddziały Fed** (Dallas, Philly,
+Richmond, Empire State) · **zagraniczne sondaże konsumenckie** (Westpac-MI, GfK) · **amerykańskie
+wskaźniki mieszkaniowe** (NAHB, existing/pending home sales, housing starts, building permits) ·
+**wskaźniki cen krajów azjatyckich** bez przełożenia na PL/UE.
+✅ **`Fear & Greed` i benchmarki AI wpisane jako WYJĄTKI IMIENNE**, nie pominięte milczeniem —
+inaczej wypadłyby razem z resztą przy pierwszej rozsądnej interpretacji modelu.
+🔴 **Dołożone DWA doprecyzowania, których plan nie przewidywał, a bez których reguła by szkodziła:**
+(a) *sondaż* regionalnego oddziału Fed to NIE decyzja ani wypowiedź Fed — bez tego zdania reguła
+kolidowała z GRANICĄ „decyzje i wypowiedzi Fed/EBC/NBP oceniaj normalnie" i mogła wyciąć FOMC;
+(b) wskaźniki cen dotyczą WYŁĄCZNIE krajów bez przełożenia na PL — bo `CPI/HICP` stoi na liście
+„NIE WYCINAJ" w tej samej regule, więc „azjatyckie CPI" bez zawężenia było wprost sprzeczne.
+⚠️ **Do obserwacji — najagresywniejsza z czterech klas to mieszkaniówka USA.** `housing starts`
+i `building permits` to standardowe pozycje kalendarza makro, nie niszowe indeksy prywatne; decyzja
+była świadoma (wariant A), ale jeśli zacznie wycinać coś, co realnie rusza rynkiem — to jest
+pierwszy kandydat do cofnięcia, przed pozostałymi trzema.
+⛔ **Frachtowych poza Cass Freight NIE dokładano** — zgodnie z ustaleniem, to była pojedyncza wpadka.
+
+### Materiał źródłowy decyzji (19.08, bez zmian)
 
 Reguła bazowa weszła (PR #205, `409c4b3`), ale wymienia w zasadzie sam Cass Freight. Uwaga właściciela:
 „cass freight to nie jedyny niszowy wskaźnik" — i to prawda.
@@ -562,7 +582,7 @@ gdyby zaczęły zaśmiecać front punktacjami — ale dziś NIE wpisujemy go jak
 o 19,3% rdr, 10. miesiąc wzrostów z rzędu" jest DYSKUSYJNY: +19,3% to realna niespodzianka, seria
 jest tam tylko tłem. Klasa do obserwowania: **duży ruch opisany przy okazji jako seria.**
 
-## ⬜ 19.08 noc: NISZOWE WSKAŹNIKI BRANŻOWE — reguła DO DOPISANIA (diagnoza gotowa)
+## ✅ 19.08 noc: NISZOWE WSKAŹNIKI BRANŻOWE — reguła bazowa W MAIN (bot #205); rozszerzenie ZROBIONE 20.08, patrz sekcja wyżej
 
 Zgłoszenie właściciela ze zrzutu: „Indeks Cass Freight spadł w lipcu o 4,8% r/r, do 0,96, najniżej
 od 2020 roku; to 42. miesięczny spadek z rzędu, najdłuższa seria w historii indeksu" (finance.yahoo.com,
