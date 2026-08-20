@@ -47,12 +47,12 @@ pokrycia.** Pokrycie jest pełne. Ale sam mechanizm istnieje i widać go w TREŚ
 ### 🎯 Punkty 3–4 są w POŁOWIE ZROBIONE — i to przez PR-y, które powstały OBOK tego planu
 🔴 **Zanim cokolwiek wepniesz, przeczytaj to — inaczej zbudujesz drugi raz coś, co już stoi.**
 Sekcja „18.08 noc: PLAN" niżej opisuje punkty 3–4 jako nietknięte i **jest już nieaktualna**:
-- **Warunek DOKŁADAJĄCY w bramce cross-bieg ISTNIEJE OD PR #173** — `ZnajdzPodobneOpublikowanePoOpisie`
+- **Warunek DOKŁADAJĄCY w bramce cross-bieg ISTNIEJE OD bota #173** — `ZnajdzPodobneOpublikowanePoOpisie`
   (`Runner.cs:9647`) to drugi selektor kandydatów, `PROG_POWTORKI_PO_OPISIE = 0,15` (`Runner.cs:9532`),
   wpięty w DWÓCH miejscach: główna pętla (`Runner.cs:3771`) i poczekalnia (`Runner.cs:3527`).
   **Powstał PRZED całą sprawą materiału źródłowego**, więc plan z 18.08 go po prostu nie zauważył.
   ⚠️ Jedzie na `it.Article` — na NASZYM polskim artykule z DeepSeeka, nie na opisie źródła.
-- **`opis_zrodlowy` JEST JUŻ CZYTANY — od PR #206 (20.08, 00:31).** `OcenEtapKontynuacji` dostaje go
+- **`opis_zrodlowy` JEST JUŻ CZYTANY — od bota #206 (20.08, 00:31).** `OcenEtapKontynuacji` dostaje go
   jako materiał NOWEJ strony w bramce PRZED enrichem, gdzie artykułu jeszcze nie ma
   (`Runner.cs:3662`, `PobierzOpisZrodlowy(text)`). ⚠️ Czytana jest **mapa w pamięci biegu**
   (`ZapamietajOpisZrodlowy`), NIE pole z `briefs.json`.
@@ -79,13 +79,23 @@ składa się dziś w całości z pozycji po wdrożeniu. Sekcja z 18.08 wrzuciła
 worka „zablokowane czasowo" i dla tego drugiego to nieprawda.
 ⚠️ Dziś ta bramka liczy `RdzenieDoKlastrowania(it.Text)` — czyli **wyłącznie po TYTULE**. Oś opisowa
 byłaby tu dołożeniem, nie podmianą.
+🔴 **Cap 4→6 (bot #214, tego samego dnia) PODNOSI wartość tego warunku, a nie obniża — i to jest
+jedyne miejsce, w którym tamta zmiana dotyka tego planu.** Filtr spójności to `kotwiceSlowa.Any(...)`
+po kotwicy ORAZ wszystkich subitemach, więc **im większy klaster, tym ŁATWIEJ do niego dopiąć** —
+przy capie 6 warunek OR biegnie po **7 tekstach zamiast 5**. Koszt pomyłki („fałszywy klaster
+widoczny na froncie") jednocześnie rośnie, bo klastry są większe. Kolejność z 18.08 („zaczynamy tam,
+gdzie błąd kosztuje linijkę promptu") zostaje bez zmian, ale to miejsce awansowało w pilności.
+⚠️ **Napięcie do rozstrzygnięcia przez właściciela, NIE do obejścia po cichu:** obowiązuje zasada
+*„deterministyczne cięcie po progu podobieństwa opisów jest ZAKAZANE od 14.08"*. Warunek przy kotwicy
+nie KASUJE newsa (publikuje go osobno zamiast dopiąć do klastra), więc formalnie nie należy do miejsc
+wyliczonych w „czego NIE ruszać" — ale to dalej deterministyczny próg na opisie. Zapytać przed wpięciem.
 
 ⚠️ **Progów dalej nie przenoś wprost** (rdzenie opisu 2,4× liczniejsze, zbiór pomiarowy wzbogacony
 z konstrukcji). Dane produkcyjne do przeliczenia JUŻ SĄ: 152 pary `tytuł`+`opis` z 19–20.08,
 przyrost ~76/dobę. ⚠️ `PROG_POWTORKI_PO_OPISIE = 0,15` **nie jest punktem odniesienia dla progu na
 opisie źródłowym** — stoi na innej osi (artykuł) i ma inny rozkład.
 
-### ✅ Zdjęcie The Verge (#198) niczego nie zepsuło — żadne źródło nie spadło do zera
+### ✅ Zdjęcie The Verge (bot #198) niczego nie zepsuło — żadne źródło nie spadło do zera
 📊 Z Hetznera, `grep "Źródła zbiorcze -> Znaleziono" /var/log/brif_bot.log` (skumulowane), porównanie
 z rozkładem z 18.08: Bankier **858 → 890**, Techmeme **428 → 473**, Zero Hedge **448 → 464**,
 BBC World **339 → 369**, BBC Science **173 → 178**, Ars Technica **103 → 107**, Insider Paper **58 → 71**,
