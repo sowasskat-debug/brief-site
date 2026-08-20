@@ -42,6 +42,35 @@ const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 // ⚠️ ZMIENIAJ RAZEM z `X_TEXT_MAX` w knadze i `XBudzetZnakow` w bocie — trzy miejsca, jedna liczba.
 const MAX_ZNAKOW = 270;
 
+// ── Granica zdania po polsku ─────────────────────────────────────────────────
+// 🔴 ZNALEZIONE 2026-08-20 na podglądzie wątku: `lastIndexOf('.')` traktowało kropkę
+// w SKRÓCIE jak koniec zdania, więc post urywał się na „Wzrosły spółki wrażliwe na stopy,
+// m.in." — zdanie ucięte w pół, a formalnie „na kropce". Polski tekst finansowy jest pełen
+// takich skrótów (m.in., tys., mln, mld, pp, pkt, r., proc.), więc trafiało się to często:
+// po jednej pozycji na pięć w OBU podglądach wątku.
+// Kropka kończy zdanie tylko wtedy, gdy po niej jest koniec tekstu albo spacja i początek
+// nowego zdania (wielka litera lub cyfra — zdania w tych postach zaczynają się też od liczby),
+// a przed nią NIE stoi znany skrót ani pojedyncza litera (inicjał „J. Kowalski").
+const SKROTY_Z_KROPKA = new Set([
+  'm.in', 'ok', 'tys', 'mln', 'mld', 'bln', 'pp', 'pb', 'pkt', 'proc', 'r', 'ul', 'al',
+  'godz', 'np', 'tzw', 'itd', 'itp', 'str', 'nr', 'dr', 'prof', 'inż', 'św', 'gen', 'płk',
+  'ws', 'tj', 'ang', 'mies', 'kw', 'egz', 'wg', 'ds', 'poł', 'cd', 'br', 'min', 'maks', 'śr',
+]);
+
+function ostatniKoniecZdania(t: string): number {
+  for (let i = t.length - 1; i >= 0; i--) {
+    if (t[i] !== '.') continue;
+    const po = t.slice(i + 1);
+    if (po.length > 0 && !/^\s+[A-ZĄĆĘŁŃÓŚŹŻ0-9]/.test(po)) continue;
+    const przed = t.slice(0, i);
+    const ostatni = (przed.match(/[\p{L}\p{N}.]+$/u) || [''])[0].toLowerCase();
+    if (SKROTY_Z_KROPKA.has(ostatni)) continue;
+    if (/^\p{L}$/u.test(ostatni)) continue;
+    return i;
+  }
+  return -1;
+}
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -121,7 +150,7 @@ Deno.serve(async (req) => {
   // ── Wejście ───────────────────────────────────────────────────────────────
   // `pozycje` = tryb KLASTRA (2026-08-10, życzenie właściciela „udostępnij cały klaster"): kotwica plus
   // wszystkie podpozycje. Bez tego pola funkcja działa dokładnie jak dotąd — pojedynczy news.
-  let body: { text?: string; article?: string; impact?: string; maxZnakow?: number; pozycje?: Array<{ text?: string; article?: string }> };
+  let body: { text?: string; article?: string; impact?: string; maxZnakow?: number; wariant?: string; pozycje?: Array<{ text?: string; article?: string }> };
   try {
     body = await req.json();
   } catch {
@@ -143,6 +172,19 @@ Deno.serve(async (req) => {
   const maxZnakow = Number.isFinite(Number(body.maxZnakow))
     ? Math.min(MAX_ZNAKOW, Math.max(120, Math.floor(Number(body.maxZnakow))))
     : MAX_ZNAKOW;
+
+  // ── WARIANT „bio" (2026-08-20, życzenie właściciela) ──────────────────────
+  // Cel: wizyty profilu. Post kończy się stałą linią kierującą do bio, bo bio niesie link
+  // do serwisu — czyli droga jest „post → bio → profil → strona".
+  // 🔴 DOKLEJKA JEST STAŁA, NIE GENEROWANA. To NIE jest drugi generator (zasada z 02.08:
+  // panel i automat mają jedno źródło) — model dostaje po prostu mniejszy budżet, a linia
+  // dopina się po bramkach. Dzięki temu knaga i bot dla `wariant: 'bio'` dostają to samo.
+  // ⚠️ Budżet treści MALEJE o długość doklejki, żeby całość zmieściła się w 270 znakach.
+  // Powód jest ten sam co przy MAX_ZNAKOW: X zwija w osi czasu wszystko powyżej ~280 pod
+  // „Pokaż więcej", a urwany NAGŁÓWEK kosztuje więcej niż zyskuje doklejka pod zwinięciem.
+  const CTA_BIO = 'Cała dzisiejsza dawka — link w bio.';
+  const zBio = String(body.wariant ?? '').trim() === 'bio';
+  const budzetTresci = zBio ? Math.max(120, maxZnakow - CTA_BIO.length - 2) : maxZnakow;
 
   const pozycje = Array.isArray(body.pozycje)
     ? body.pozycje.map((p) => ({ text: String(p?.text ?? '').trim(), article: String(p?.article ?? '').trim() }))
@@ -195,7 +237,7 @@ Deno.serve(async (req) => {
           'wynik spółki) — bez niej post jest listą liczb i czytelnik nie wie, dlaczego to się dzieje. ' +
           'Najwyżej CZTERY liczby w poście. Gdy materiał podaje kilka etapów tej samej rury ' +
           '(np. kwota autoryzowana, zatwierdzona i wypłacona), podaj SKRAJNE i pomiń środkowe. ' +
-          `TWARDY LIMIT: ${maxZnakow} znaków łącznie. ` +
+          `TWARDY LIMIT: ${budzetTresci} znaków łącznie. ` +
           'ZAKAZANE: zmyślanie jakichkolwiek liczb — każda liczba w poście MUSI dosłownie występować ' +
           'w materiale źródłowym. Jeśli materiał nie podaje liczb, napisz post bez liczb. ' +
           'Zero hashtagów, zero emoji, zero linków, zero clickbaitu, zero pytań retorycznych. ' +
@@ -249,14 +291,21 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (post.length > maxZnakow) {
+  // Doklejka wariantu „bio" dopina się PO bramce pokrycia i PO przycięciu — jest stałym
+  // tekstem, więc bramce liczb nie podlega, a przycinaniu podlegać nie może (obcięta zachęta
+  // to najgorszy z możliwych wyników).
+  const zDoklejka = (tresc: string) => (zBio ? `${tresc}\n\n${CTA_BIO}` : tresc);
+
+  if (post.length > budzetTresci) {
     // Przycinamy na granicy zdania, nie w połowie słowa.
-    const doKropki = post.slice(0, maxZnakow).lastIndexOf('.');
-    const przyciety = doKropki > maxZnakow * 0.6
+    const doKropki = ostatniKoniecZdania(post.slice(0, budzetTresci));
+    const przyciety = doKropki > budzetTresci * 0.6
       ? post.slice(0, doKropki + 1)
-      : post.slice(0, maxZnakow - 1).trimEnd() + '…';
-    return json({ post: przyciety, przyciety: true, dlugosc: przyciety.length });
+      : post.slice(0, budzetTresci - 1).trimEnd() + '…';
+    const gotowy = zDoklejka(przyciety);
+    return json({ post: gotowy, przyciety: true, wariant: zBio ? 'bio' : 'bazowy', dlugosc: gotowy.length });
   }
 
-  return json({ post, dlugosc: post.length });
+  const gotowy = zDoklejka(post);
+  return json({ post: gotowy, wariant: zBio ? 'bio' : 'bazowy', dlugosc: gotowy.length });
 });

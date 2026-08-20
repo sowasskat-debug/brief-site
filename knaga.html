@@ -376,6 +376,15 @@ input[type=password], input[type=text], input[type=email] {
     <div id="xStatus"></div>
     <textarea id="xTresc" rows="6" oninput="xPolicz()" placeholder="Generuję…"></textarea>
     <div class="x-licznik" id="xLicznik"></div>
+    <!-- Wybór NALEŻY DO CZŁOWIEKA (decyzja właściciela 2026-08-20: „ja sam będę decydował, który
+         ma być z dopiskiem, a który nie"). Automat rotacji NIE MA i nie ma jej przywracać.
+         Zaznaczenie generuje gotowca OD NOWA z wariantem `bio`, zamiast doklejać linię lokalnie —
+         model dostaje wtedy mniejszy budżet i sam pisze krócej, więc całość mieści się w limicie.
+         Doklejenie po fakcie wypychałoby post ponad 270 znaków i trzeba by ręcznie skracać newsa. -->
+    <label style="display:flex;align-items:center;gap:8px;margin:6px 0 2px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="xDopisek" onchange="xPrzelaczDopisek()">
+      <span>Dopisek „link w bio" na końcu posta</span>
+    </label>
     <div class="x-modal-akcje">
       <button class="btn" id="xOtworz" onclick="wyslijNaX()">Otwórz X z tą treścią</button>
       <button class="btn" id="xKarta" onclick="pobierzKarte('')">Pobierz kartę</button>
@@ -735,8 +744,20 @@ async function otworzX(slug) {
     btnK.textContent = `Pobierz kartę klastra (${pod.length} newsy)`;
   }
 
+  // Przełącznik dopisku to decyzja PER POST — przy każdym otwarciu wraca do pozycji wyłączonej,
+  // żeby ustawienie z poprzedniego newsa nie przeszło po cichu na następny.
+  const chk = document.getElementById('xDopisek');
+  if (chk) chk.checked = false;
+
+  await xGenerujGotowiec(item, pod);
+}
+
+// Wydzielone z `otworzX`, bo woła to TAKŻE przełącznik dopisku — a przełącznik ma
+// przegenerować sam post, nie otwierać okna od nowa (link, karty i wątek zostają).
+async function xGenerujGotowiec(item, pod) {
   const pole = document.getElementById('xTresc');
   const otworz = document.getElementById('xOtworz');
+  const zDopiskiem = !!document.getElementById('xDopisek')?.checked;
 
   // Zaczynamy od fallbacku — gdyby generowanie padło, i tak masz czym wrzucić.
   pole.value = xPostText(item);
@@ -747,7 +768,7 @@ async function otworzX(slug) {
     return;
   }
 
-  setNotice('xStatus', '', 'Generuję gotowca…');
+  setNotice('xStatus', '', zDopiskiem ? 'Generuję gotowca z dopiskiem…' : 'Generuję gotowca…');
   otworz.disabled = true;
   try {
     const { data, error } = await supa.functions.invoke('gotowiec-x', {
@@ -755,6 +776,7 @@ async function otworzX(slug) {
       // zamiast streszczać samą kotwicę (która przy grupie bywa parasolem bez artykułu).
       body: {
         text: item.text, article: item.article, impact: item.impact,
+        ...(zDopiskiem ? { wariant: 'bio' } : {}),
         ...(pod.length ? { pozycje: pod.map((x) => ({ text: x.text, article: x.article })) } : {}),
       },
     });
@@ -778,6 +800,15 @@ async function otworzX(slug) {
     otworz.disabled = false;
     xPolicz();
   }
+}
+
+// Przegenerowanie tego samego newsa w drugim wariancie. ⚠️ Każde przełączenie to jedno
+// wywołanie modelu — świadomy koszt za to, że post mieści się w limicie bez ręcznego skracania.
+async function xPrzelaczDopisek() {
+  if (!xBiezacy || !xBiezacy.item) return;
+  const item = xBiezacy.item;
+  const pod = Array.isArray(item.subItems) ? item.subItems.filter((x) => x && x.text) : [];
+  await xGenerujGotowiec(item, pod);
 }
 
 function zamknijX() {
