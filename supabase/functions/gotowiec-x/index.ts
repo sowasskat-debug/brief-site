@@ -169,7 +169,8 @@ Deno.serve(async (req) => {
   // i domyślne dla obu ścieżek. ⚠️ Nie podnoś wyżej bez powodu: X zwija w osi czasu wszystko powyżej
   // ~280 pod „Pokaż więcej", więc dłuższy post czytelnik widzi jako URWANY. Premium daje tu swobodę
   // od twardego limitu, nie zachętę do dłuższych postów.
-  const maxZnakow = Number.isFinite(Number(body.maxZnakow))
+  const budzetPodany = Number.isFinite(Number(body.maxZnakow));
+  const maxZnakow = budzetPodany
     ? Math.min(MAX_ZNAKOW, Math.max(120, Math.floor(Number(body.maxZnakow))))
     : MAX_ZNAKOW;
 
@@ -194,7 +195,16 @@ Deno.serve(async (req) => {
   // przez którą z „link w bio." zostawało „link w…" (patrz `zFlaga` w knadze).
   const CTA_BIO = 'Cała dzisiejsza dawka — link w bio.';
   const zBio = String(body.wariant ?? '').trim() === 'bio';
-  const budzetTresci = maxZnakow;
+  // 🔴 WOŁAJĄCY, KTÓRY NIE PODAJE BUDŻETU, DOSTAJE WARIANT ZACHOWAWCZY (doklejka WEWNĄTRZ limitu).
+  // Nie zna naszego kontraktu, więc nie wie, że wolno mu mieć dłuższe pole — a jak przytnie wynik
+  // po fakcie, utnie właśnie doklejkę (stoi na końcu). Kto podaje `maxZnakow`, ten liczy świadomie
+  // i dostaje pełny budżet na treść plus doklejkę ponad nim.
+  // ⚠️ To NIE jest tymczasowa podpórka na czas wdrożenia — to reguła kontraktu. Przy okazji zdejmuje
+  // pułapkę KOLEJNOŚCI: redeploy funkcji przed mergem panelu nie psuje niczego (stara knaga nie
+  // podaje budżetu → zachowanie jak dotąd), a merge przed redeployem tym bardziej.
+  const budzetTresci = (zBio && !budzetPodany)
+    ? Math.max(120, maxZnakow - CTA_BIO.length - 2)
+    : maxZnakow;
 
   const pozycje = Array.isArray(body.pozycje)
     ? body.pozycje.map((p) => ({ text: String(p?.text ?? '').trim(), article: String(p?.article ?? '').trim() }))

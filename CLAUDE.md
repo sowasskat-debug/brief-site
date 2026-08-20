@@ -987,9 +987,15 @@ zamiast 270), czyli płaciliśmy treścią za CTA.
   nie jest przekroczenie. Kto tego nie rozdzieli, wraca do ucinania doklejki.
 - **Długość doklejki knaga bierze z ODPOWIEDZI funkcji** (nowe pole `doklejka`), nie z własnej
   kopii napisu — treść CTA zostaje w jednym miejscu, panel potrzebuje wyłącznie liczby znaków.
-- ✅ **Kolejność wdrożenia NIE jest pułapką** (zmierzone): stara funkcja nie zwraca `doklejka`,
-  więc panel zostaje na limicie 270, a tamta wersja i tak odejmowała CTA od budżetu — treść się
-  mieści, CTA w całości. Panel działa z obiema wersjami funkcji.
+- ✅ **Kolejność wdrożenia NIE jest pułapką W ŻADNĄ STRONĘ** — i to jest zapewnione po OBU stronach:
+  (a) stara funkcja nie zwraca `doklejka`, więc panel zostaje na limicie 270, a tamta wersja i tak
+  odejmowała CTA od budżetu; (b) 🔴 **wołający, który NIE podaje `maxZnakow`, dostaje z funkcji
+  wariant zachowawczy** (doklejka wewnątrz limitu) — bo nie zna kontraktu i przytnie wynik po fakcie.
+  Bez tego bezpiecznika redeploy funkcji PRZED mergem panelu kasowałby CAŁĄ doklejkę (41 znaków
+  nadmiaru wobec 37-znakowej doklejki), czyli byłoby GORZEJ niż przed poprawką.
+  📊 Zmierzone na czterech kombinacjach (stara/nowa knaga × stara/nowa funkcja), realnym `zFlaga`
+  z pliku: `stara+stara` = dzisiejszy błąd (CTA ucięta), **`stara+nowa` = identycznie jak dziś,
+  ani gorzej**, `nowa+stara` = CTA cała, news 233 zn., `nowa+nowa` = CTA cała, news 270 zn. w kadrze.
 - 📊 Zweryfikowane realnym `zFlaga`/`xUstawLimitPola` z pliku × wierny port obu wersji funkcji,
   5 scenariuszy: bio z flagą 2 i 1 punktu kodowego (307/307, kadr 270, CTA cała), kontrola bez
   dopiska (270/270, bez zmian), krótki post (89/307), stara funkcja + nowy panel (270/270, CTA cała).
