@@ -952,7 +952,7 @@ flagę obok"* i *„daj rozmiar 16"*. Znacznik ma teraz DWIE części: **ikona (
   inaczej. Rysowana ikona w `currentColor` działa w obu motywach bez osobnych reguł i wygląda
   identycznie wszędzie. **Ten sam powód, dla którego 🧵 zostało zastąpione przez `WATEK_ICN`.**
 - ⚠️ **FLAGI ZOSTAJĄ EMOJI** — niosą tożsamość, mają własny font na Windowsie (`flagi.js`),
-  a w kresce przy 16 px byłyby nieczytelne. Odrzucone warianty: filtr CSS na emoji (szare plamy,
+  a w kresce przy tym rozmiarze byłyby nieczytelne. Odrzucone warianty: filtr CSS na emoji (szare plamy,
   w ciemnym motywie moneta gubi kształt) i ikony w czerwieni (czerwień niesie już numer pozycji
   i akcent marki — dwie czerwienie konkurują).
 - **`ZNACZNIK_IKONY`** (19 pozycji) + **`znacznikHtml(flaga)`** — dzieli pole `flag` na GRAFEMY
@@ -962,8 +962,8 @@ flagę obok"* i *„daj rozmiar 16"*. Znacznik ma teraz DWIE części: **ikona (
 - ⚠️ **Emoji spoza mapy renderuje się jak dotąd** — zero regresji dla archiwum i dla znaczników,
   których jeszcze nie przewidzieliśmy. Świadomie BEZ mapy: **🚨** (PILNE — czerwona syrena niesie
   sygnał, nie temat) oraz 📰/📢 (fallbacki).
-- **Rozmiar 16 px we wszystkich kontenerach listy** (`.news-flag`, `.hero-flag`, `.sub-item-flag`,
-  `.dt-item-flag`, `.dt-sub-flag`) — wybór właściciela z podglądu 13 / 14,5 / 16.
+- **Rozmiar znacznika** we wszystkich kontenerach listy (`.news-flag`, `.hero-flag`, `.sub-item-flag`,
+  `.dt-item-flag`, `.dt-sub-flag`) — wybór właściciela z podglądu 13 / 14,5 / 16, ostatecznie **14 px**.
   `.dt-detail-flag` (26 px) zostaje: to znacznik nagłówkowy panelu, nie wiersz listy.
   ⚠️ `.zn-ico` ma **1.15em**, nie 1em — kreska jest rzadsza niż pełnokolorowe emoji i przy 1:1
   wygląda na mniejszą od flagi stojącej obok. Jedna liczba w kontenerze ustawia obie części.
@@ -1000,6 +1000,24 @@ samą flagę kraju. Dlatego pozycja BEZ znacznika tematycznego dostaje ikonę wy
 - ⚠️ **🚨 nietykane** — pozycja PILNA nie dostaje ikony, bo ten znacznik niesie sygnał, nie temat.
 - ⚠️ **Dokładając wzorzec: wąsko i ZAWSZE ze skanem archiwum na fałszywe trafienia** (zasada
   z `AngielskieStopwordy`). Lepiej zostawić samą flagę niż dokleić ikonę nie na temat.
+
+### Flaga tylko gdy kraj w nagłówku + dwie ikony przy dwóch tematach (doprecyzowania tego samego dnia)
+- 🔴 **`KRAJ_W_NAGLOWKU`** — *„flagi tylko wtedy, kiedy jest kraj w nagłówku wzięty pod uwagę, bo np.
+  przy Anthropic nie trzeba dawać flagi USA"*. Przy pozycji, której ikonę wyprowadziliśmy wstecznie,
+  ikona **ZASTĘPUJE** flagę, gdy w nagłówku nie ma kraju. 📊 Zmierzone na 1987 pozycjach z ikoną:
+  **60% traci flagę** („Walmart z najwolniejszym wzrostem" → 🛒, „Bitcoin przebija 72 000 USD" → 🪙),
+  **40% ją zachowuje** („Ceny ropy w USA rosną" → 🛢🇺🇸, „Trump podpisuje dyrektywę…" → 🚀🇺🇸).
+  Lista obejmuje nazwy, przymiotniki i INSTYTUCJE jednoznacznie wskazujące kraj (Fed, NBP, Sejm,
+  Kreml, Biały Dom, Bruksela) — „Fed obniża stopy" mówi o USA bez słowa „USA".
+  ⚠️ Przymiotniki wyliczone z końcówkami, nigdy `\w*` po rdzeniu (`polsk\w*` złapałoby „polskość").
+- 🔴 **DWA TEMATY = DWIE IKONY** — *„jak jest pamięć i AI, to również dwie ikonki, jak jest bitcoin
+  i AI, to też dwie"*. `znacznikiTematyczne` zwraca do dwóch trafień w kolejności `IKONA_ZE_SLOW`
+  (szczegółowe nad ogólnymi), więc para układa się sama: 🔬🤖, 🪙🤖, 🚀🤖. Dwie ikony wypełniają
+  budżet znacznika, więc flaga wtedy ustępuje.
+  📊 Zmierzone na 6138 pozycjach: **2,0% dostaje dwie ikony** — najczęściej 🔬🤖 (64, m.in. realny
+  przypadek ze zgłoszenia: „CEO Microna: pamięć to strategiczna infrastruktura dla AI"), 🚀🤖 (14),
+  🔒🤖 (9), 🪙🤖 (8). ⚠️ Kategoria NIE tworzy drugiej ikony — sygnał za słaby.
+- **Rozmiar 14 px** (korekta z 16 tego samego wieczoru) we wszystkich kontenerach listy.
 
 - ⚠️ **Knaga świadomie pokazuje surowe emoji** — tam patrzysz na to, co realnie pójdzie na X.
 - ✅ Zweryfikowane na PRAWDZIWYM froncie (lokalna kopia, `briefs.json` z podmienionymi znacznikami):
