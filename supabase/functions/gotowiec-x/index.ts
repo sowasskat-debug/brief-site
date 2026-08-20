@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
   // ── Wejście ───────────────────────────────────────────────────────────────
   // `pozycje` = tryb KLASTRA (2026-08-10, życzenie właściciela „udostępnij cały klaster"): kotwica plus
   // wszystkie podpozycje. Bez tego pola funkcja działa dokładnie jak dotąd — pojedynczy news.
-  let body: { text?: string; article?: string; impact?: string; maxZnakow?: number; pozycje?: Array<{ text?: string; article?: string }> };
+  let body: { text?: string; article?: string; impact?: string; maxZnakow?: number; wariant?: string; pozycje?: Array<{ text?: string; article?: string }> };
   try {
     body = await req.json();
   } catch {
@@ -143,6 +143,19 @@ Deno.serve(async (req) => {
   const maxZnakow = Number.isFinite(Number(body.maxZnakow))
     ? Math.min(MAX_ZNAKOW, Math.max(120, Math.floor(Number(body.maxZnakow))))
     : MAX_ZNAKOW;
+
+  // ── WARIANT „bio" (2026-08-20, życzenie właściciela) ──────────────────────
+  // Cel: wizyty profilu. Post kończy się stałą linią kierującą do bio, bo bio niesie link
+  // do serwisu — czyli droga jest „post → bio → profil → strona".
+  // 🔴 DOKLEJKA JEST STAŁA, NIE GENEROWANA. To NIE jest drugi generator (zasada z 02.08:
+  // panel i automat mają jedno źródło) — model dostaje po prostu mniejszy budżet, a linia
+  // dopina się po bramkach. Dzięki temu knaga i bot dla `wariant: 'bio'` dostają to samo.
+  // ⚠️ Budżet treści MALEJE o długość doklejki, żeby całość zmieściła się w 270 znakach.
+  // Powód jest ten sam co przy MAX_ZNAKOW: X zwija w osi czasu wszystko powyżej ~280 pod
+  // „Pokaż więcej", a urwany NAGŁÓWEK kosztuje więcej niż zyskuje doklejka pod zwinięciem.
+  const CTA_BIO = 'Cała dzisiejsza dawka — link w bio.';
+  const zBio = String(body.wariant ?? '').trim() === 'bio';
+  const budzetTresci = zBio ? Math.max(120, maxZnakow - CTA_BIO.length - 2) : maxZnakow;
 
   const pozycje = Array.isArray(body.pozycje)
     ? body.pozycje.map((p) => ({ text: String(p?.text ?? '').trim(), article: String(p?.article ?? '').trim() }))
@@ -195,7 +208,7 @@ Deno.serve(async (req) => {
           'wynik spółki) — bez niej post jest listą liczb i czytelnik nie wie, dlaczego to się dzieje. ' +
           'Najwyżej CZTERY liczby w poście. Gdy materiał podaje kilka etapów tej samej rury ' +
           '(np. kwota autoryzowana, zatwierdzona i wypłacona), podaj SKRAJNE i pomiń środkowe. ' +
-          `TWARDY LIMIT: ${maxZnakow} znaków łącznie. ` +
+          `TWARDY LIMIT: ${budzetTresci} znaków łącznie. ` +
           'ZAKAZANE: zmyślanie jakichkolwiek liczb — każda liczba w poście MUSI dosłownie występować ' +
           'w materiale źródłowym. Jeśli materiał nie podaje liczb, napisz post bez liczb. ' +
           'Zero hashtagów, zero emoji, zero linków, zero clickbaitu, zero pytań retorycznych. ' +
@@ -249,14 +262,21 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (post.length > maxZnakow) {
+  // Doklejka wariantu „bio" dopina się PO bramce pokrycia i PO przycięciu — jest stałym
+  // tekstem, więc bramce liczb nie podlega, a przycinaniu podlegać nie może (obcięta zachęta
+  // to najgorszy z możliwych wyników).
+  const zDoklejka = (tresc: string) => (zBio ? `${tresc}\n\n${CTA_BIO}` : tresc);
+
+  if (post.length > budzetTresci) {
     // Przycinamy na granicy zdania, nie w połowie słowa.
-    const doKropki = post.slice(0, maxZnakow).lastIndexOf('.');
-    const przyciety = doKropki > maxZnakow * 0.6
+    const doKropki = post.slice(0, budzetTresci).lastIndexOf('.');
+    const przyciety = doKropki > budzetTresci * 0.6
       ? post.slice(0, doKropki + 1)
-      : post.slice(0, maxZnakow - 1).trimEnd() + '…';
-    return json({ post: przyciety, przyciety: true, dlugosc: przyciety.length });
+      : post.slice(0, budzetTresci - 1).trimEnd() + '…';
+    const gotowy = zDoklejka(przyciety);
+    return json({ post: gotowy, przyciety: true, wariant: zBio ? 'bio' : 'bazowy', dlugosc: gotowy.length });
   }
 
-  return json({ post, dlugosc: post.length });
+  const gotowy = zDoklejka(post);
+  return json({ post: gotowy, wariant: zBio ? 'bio' : 'bazowy', dlugosc: gotowy.length });
 });
