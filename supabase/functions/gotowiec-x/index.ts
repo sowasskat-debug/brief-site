@@ -110,19 +110,23 @@ function liczbyZ(tekst: string): string[] {
 // postaci; zmienia się wyłącznie to, że „pięciu" i „5" przestają być dla niej różnymi liczbami.
 // ⚠️ Liczebnik słowny w POŚCIE nie wymaga niczego — `liczbyZ` wyłuskuje wyłącznie cyfry, więc
 // „pięć lat" w poście i tak nie jest sprawdzane.
+// 🔴 v15 (2026-08-21 wieczór): JS-owe `\b` jest ASCII-owe — po ć/ą/ę nigdy nie trafia, więc
+// „pięć", „sześć", „dziewięć", „dziesięć", „jedną" były MARTWYMI wzorcami i mianownik (najczęstsza
+// forma!) dalej wywalał gotowiec. Zamiast `\b` na końcu: `(?![a-ząćęłńóśźż0-9])` — działa po każdej
+// literze. Dołożone też celowniki „dwóm/dwiema/trzem/czterem" (zmierzone jako brakujące).
 const SLOWNIE: Array<[RegExp, string]> = [
-  [/\bjed(?:en|na|no|nego|nym|ną|nej)\b/gi, '1'],
-  [/\bdw(?:a|ie|óch|oma|u)\b/gi, '2'],
-  [/\btrz(?:y|ech|ema)\b/gi, '3'],
-  [/\bczter(?:y|ech|ema)\b/gi, '4'],
-  [/\bpię(?:ć|ciu|cioma)\b/gi, '5'],
-  [/\bsze(?:ść|ściu|ścioma)\b/gi, '6'],
-  [/\bsied(?:em|miu|mioma)\b/gi, '7'],
-  [/\b(?:osiem|ośmiu|ośmioma)\b/gi, '8'],
-  [/\bdziewię(?:ć|ciu|cioma)\b/gi, '9'],
-  [/\bdziesię(?:ć|ciu|cioma)\b/gi, '10'],
-  [/\bjedenast(?:u|oma)?\b|\bjedenaście\b/gi, '11'],
-  [/\bdwunast(?:u|oma)?\b|\bdwanaście\b/gi, '12'],
+  [/\bjed(?:en|na|no|nego|nym|ną|nej)(?![a-ząćęłńóśźż0-9])/gi, '1'],
+  [/\bdw(?:a|ie|iema|óch|óm|oma|u)(?![a-ząćęłńóśźż0-9])/gi, '2'],
+  [/\btrz(?:y|ech|em|ema)(?![a-ząćęłńóśźż0-9])/gi, '3'],
+  [/\bczter(?:y|ech|em|ema)(?![a-ząćęłńóśźż0-9])/gi, '4'],
+  [/\bpię(?:ć|ciu|cioma)(?![a-ząćęłńóśźż0-9])/gi, '5'],
+  [/\bsze(?:ść|ściu|ścioma)(?![a-ząćęłńóśźż0-9])/gi, '6'],
+  [/\bsied(?:em|miu|mioma)(?![a-ząćęłńóśźż0-9])/gi, '7'],
+  [/\b(?:osiem|ośmiu|ośmioma)(?![a-ząćęłńóśźż0-9])/gi, '8'],
+  [/\bdziewię(?:ć|ciu|cioma)(?![a-ząćęłńóśźż0-9])/gi, '9'],
+  [/\bdziesię(?:ć|ciu|cioma)(?![a-ząćęłńóśźż0-9])/gi, '10'],
+  [/\bjedenast(?:u|oma)?(?![a-ząćęłńóśźż0-9])|\bjedenaście(?![a-ząćęłńóśźż0-9])/gi, '11'],
+  [/\bdwunast(?:u|oma)?(?![a-ząćęłńóśźż0-9])|\bdwanaście(?![a-ząćęłńóśźż0-9])/gi, '12'],
   [/\bdwukrotnie\b/gi, '2'],
   [/\btrzykrotnie\b/gi, '3'],
   [/\bczterokrotnie\b/gi, '4'],
@@ -140,8 +144,11 @@ function liczbyMaterialu(zrodlo: string): Set<string> {
   for (const [wz, cyfra] of SLOWNIE) if (new RegExp(wz.source, 'i').test(zrodlo)) zbior.add(cyfra);
   for (const [wz, mnoznik] of SKALE) {
     for (const m of zrodlo.matchAll(new RegExp(wz.source, 'gi'))) {
-      const wartosc = Number(m[1].replace(',', '.')) * mnoznik;
-      if (Number.isFinite(wartosc)) zbior.add(String(wartosc).replace(/\.0+$/, ''));
+      // 🔴 Math.round obowiązkowy (v15): „4,1 mln" dawało 4.1*1e6 = 4099999.9999999995 i do zbioru
+      // szedł śmieciowy string — post z „4 100 000" i tak odpadał. Rozwinięcie skali jest z natury
+      // całkowite, więc zaokrąglenie niczego nie fałszuje.
+      const wartosc = Math.round(Number(m[1].replace(',', '.')) * mnoznik);
+      if (Number.isFinite(wartosc)) zbior.add(String(wartosc));
     }
   }
   return zbior;
