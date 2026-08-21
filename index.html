@@ -883,7 +883,23 @@ const KRAJ_W_NAGLOWKU = new RegExp([
 const IKONA_Z_OPISU = new Set(['🚀', '🛢', '🔬', '💊']);
 const MIN_TRAFIEN_W_OPISIE = 2;
 
-function znacznikiTematyczne(item) {
+// ── ZDARZENIE BIJE PODMIOT (2026-08-21) ──────────────────────────────────────────────
+// Zgłoszenie właściciela: „dlaczego tu taka emotka jest a nie kłódka?" — kafel „Apollo
+// ujawnia, że hakerzy uzyskali dostęp do danych osobowych w cyberataku" miał 🏦, bo bot
+// oznaczył KOGO news dotyczy (zarządzający aktywami), a nie CO SIĘ STAŁO (cyberatak).
+// Reguła słowna trafiała ten nagłówek dwa razy, ale nigdy się nie odpalała, bo znacznik
+// tematyczny od bota wyłącza cały fallback.
+// 📊 Zmierzone na 6211 pozycjach: 156 ma ikonę od bota, 30 (19%) sprzecznych z regułą słowną.
+// Lista jest ŚWIADOMIE WĄSKA — tylko wzorce opisujące ZDARZENIE, nie branżę. „Haker ukradł
+// dane" to atak niezależnie od tego, czy ofiarą jest bank, sklep czy fundusz. NIE dopisuj
+// tu wzorców branżowych (🤖, 🛢, 📈…) — tam bot może świadomie wybrać inny aspekt i jego
+// wybór ma zostać (przykład: „boom na AI przypomina bańkę dotcomów" z 🏦 od bota — to news
+// o rynkach, nie o AI, i nadpisanie byłoby błędem).
+const ZDARZENIE_ZE_SLOW = [
+  [/cyberatak|haker|ransomware|wyciek danych|cyberbezpiecz/i, '🔒'],
+];
+
+function znacznikiTematyczne(item, bezKategorii) {
   if (!item) return [];
   // 🔴 TYLKO NAGŁÓWEK, nigdy artykuł. Zmierzone: skan razem z treścią dawał 57,9% pozycji,
   // a próbki były bezsensowne — „Udział Alphabet w Anthropic" dostawał 🚀, bo o SpaceX
@@ -901,7 +917,10 @@ function znacznikiTematyczne(item) {
   if (trafione.length === 2 && trafione[0] === '🤖') trafione.reverse();
   if (trafione.length) return trafione;
   const kat = (item.category || '').trim();
-  if (IKONA_Z_KATEGORII[kat]) return [IKONA_Z_KATEGORII[kat]];
+  // `bezKategorii` — pozycje z 🌍 od bota (2026-08-21): globus ustępuje TYLKO regule słownej.
+  // Bez tej bramki „Cena złota 4200 USD za uncję" (kategoria Surowce) dostawała 🛢 — kroplę
+  // ropy przy złocie, czyli GORZEJ niż 🌍. Słowa mówią o temacie, kategoria tylko o dziale.
+  if (!bezKategorii && IKONA_Z_KATEGORII[kat]) return [IKONA_Z_KATEGORII[kat]];
   // Dopiero teraz opis — i tylko dla wzorców z białej listy, przy DWÓCH wystąpieniach.
   const opis = String(item.article || '');
   if (opis) {
@@ -932,9 +951,35 @@ function znacznikHtml(item) {
   // Fallback wsteczny: pozycja bez znacznika tematycznego dostaje ikonę wyprowadzoną z treści.
   // ⚠️ NIE dotykamy 🚨 — to znacznik PILNE, niesie sygnał, nie temat.
   if (item && typeof item === 'object' && !z.includes('🚨')) {
-    const maTemat = znacznikGrafemy(z).some(g => ZNACZNIK_IKONY[g] || ZNACZNIK_IKONY[g.replace('\uFE0F','')]);
+    // 🌍 NIE liczy się jako znacznik tematyczny (2026-08-21): to znak „nie mam zdania",
+    // a blokował regułę słowną jak pełnoprawna decyzja. 📊 11 z 30 zmierzonych sprzeczności
+    // to właśnie 🌍 zasłaniający konkretną ikonę („Brent powyżej 95 USD" → 🌍 zamiast 🛢,
+    // „BitMEX kończy działalność" → 🌍 zamiast ₿, „powrót z ISS" → 🌍 zamiast 🚀).
+    // Gdy reguła słowna nic nie znajdzie, 🌍 zostaje — dalej jest w ZNACZNIK_IKONY.
+    const grafy = znacznikGrafemy(z);
+    const maTemat = grafy.some(g => {
+      const czysty = g.replace('\uFE0F', '');
+      if (czysty === '🌍') return false;
+      return ZNACZNIK_IKONY[g] || ZNACZNIK_IKONY[czysty];
+    });
+    if (maTemat) {
+      // Zdarzenie bije podmiot — wyłącznie wzorce z ZDARZENIE_ZE_SLOW (patrz komentarz przy
+      // stałej). Flagi od bota zostają (wybrał je świadomie), ikona podmiotowa schodzi.
+      // ⚠️ Tylko pozycje, gdzie bot dał ikonę tematyczną — pozycje z samą flagą obsługuje
+      // fallback niżej, z bramką kraju; tu bramki nie ma, bo flag nie zgadujemy, tylko dziedziczymy.
+      const tekst = String(item.text || '');
+      for (const [wz, emo] of ZDARZENIE_ZE_SLOW) {
+        if (wz.test(tekst) && !grafy.some(g => g.replace('\uFE0F', '') === emo)) {
+          const flagi = grafy.filter(g => /\p{Regional_Indicator}/u.test(g)).slice(0, 2);
+          z = emo + flagi.join('');
+          break;
+        }
+      }
+    }
     if (!maTemat) {
-      const ikony = znacznikiTematyczne(item);
+      const bylGlobus = grafy.some(g => g.replace('\uFE0F', '') === '🌍');
+      const ikony = znacznikiTematyczne(item, bylGlobus);
+      // Gdy 🌍 nie znalazł zamiennika w słowach, zostaje globusem — patrz komentarz wyżej.
       if (ikony.length) {
         // 🔴 DO TRZECH ZNACZNIKÓW, ale trzeci MUSI być flagą (decyzja właściciela 2026-08-20:
         // „mogą być 3 emoji pod warunkiem, że 3. to flaga"). Ikony dalej najwyżej dwie.
@@ -949,7 +994,11 @@ function znacznikHtml(item) {
         // ⚠️ Przy cięciu do trzech znaczników 🇵🇱 ma PIERWSZEŃSTWO przed innymi flagami.
         // Bez tego pozycja typu 🇩🇪🇵🇱 z dwiema ikonami gubiła akurat polską flagę (zmierzone:
         // 1 przypadek na 295) — czyli regułę „🇵🇱 nietykalna" łamał sam limit.
-        const wszystkieFlagi = trzymajFlagi ? znacznikGrafemy(z) : [];
+        // Filtr do PRAWDZIWYCH flag: odkąd 🌍 wchodzi do fallbacku, bez tego wracałby
+        // doklejony za ikoną jak flaga kraju.
+        const wszystkieFlagi = trzymajFlagi
+          ? znacznikGrafemy(z).filter(g => /\p{Regional_Indicator}/u.test(g))
+          : [];
         const flagi = wszystkieFlagi
           .slice()
           .sort((a, b) => (b === '🇵🇱' ? 1 : 0) - (a === '🇵🇱' ? 1 : 0))

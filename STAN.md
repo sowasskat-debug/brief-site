@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-21 popołudnie (po sesji: bramka zmyślonej klasy zdarzenia, naprawa wątków, znaczniki 🚢 i 🏠, gotowiec-x v13, dwie ręczne poprawki danych, znacznik nachodzący na nagłówek)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-21 popołudnie (po sesji: bramka zmyślonej klasy zdarzenia, naprawa wątków, znaczniki 🚢 i 🏠, gotowiec-x v13, dwie ręczne poprawki danych, znacznik nachodzący na nagłówek, zdarzenie bije podmiot + 🌍 nie blokuje reguły słownej)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
@@ -48,6 +48,34 @@ cyfrą liczbę, która w materiale stała SŁOWNIE („pięciu lat" → „5 lat
 Naprawa dokłada te postacie do zbioru dozwolonych **po stronie materiału**, więc ochrona przed
 zmyśloną liczbą jest nietknięta (sprawdzone: 7 lat, 99 mld, 81 500 dalej odrzucane).
 
+## ✅ 21.08 popołudnie: ZŁA IKONA OD BOTA — zdarzenie bije podmiot, 🌍 przestał blokować (front)
+Zgłoszenie właściciela: *„dlaczego tu taka emotka jest a nie kłódka?"* — kafel „Apollo ujawnia,
+że hakerzy uzyskali dostęp do danych osobowych w cyberataku" miał 🏦 (bank), nie 🔒.
+- 🔴 **PRZYCZYNA: bot oznaczył KOGO news dotyczy (Apollo = zarządzający aktywami), nie CO SIĘ
+  STAŁO (cyberatak)** — a front z zasady nie poprawia znacznika tematycznego od bota, więc reguła
+  słowna (która trafiała ten nagłówek dwa razy) nigdy się nie odpalała.
+- 📊 Zmierzone na 6236 pozycjach: 156 ma ikonę od bota, **30 (19%) sprzecznych z regułą słowną**;
+  do tego **46 grup, gdzie kafel główny i podpięty mają różny znacznik** (tak to wyszło na jaw:
+  🔒 na głównym, 🏦 na podpiętym tej samej historii).
+- **Naprawa 1 — `ZDARZENIE_ZE_SLOW`**: wąska lista wzorców ZDARZENIOWYCH (cyberatak/haker/wyciek
+  danych → 🔒), które biją znacznik podmiotowy bota. ⚠️ ŚWIADOMIE bez wzorców branżowych —
+  „boom na AI przypomina bańkę dotcomów" z 🏦 od bota to news o rynkach i nadpisanie 🤖 byłoby
+  błędem. Flagi od bota zostają (wybrał je świadomie), 🚨 nietykalne jak dotąd.
+- **Naprawa 2 — 🌍 nie liczy się jako znacznik tematyczny**: to znak „nie mam zdania", a blokował
+  fallback jak decyzja (11 z 30 sprzeczności: „Brent powyżej 95 USD" → 🌍 zamiast 🛢, BitMEX → 🌍
+  zamiast ₿, powrót z ISS → 🌍 zamiast 🚀). Gdy słowa nic nie znajdą, 🌍 zostaje.
+  ⚠️ **🌍 ustępuje TYLKO regule słownej, NIE kategorii** — pierwsza wersja przepuszczała globus
+  do reguły `Surowce → 🛢` i „Cena złota 4200 USD za uncję" dostawała KROPLĘ ROPY. Złapane na
+  pełnym diffie starej i nowej logiki, przed wdrożeniem.
+- **Naprawa 3 (przy okazji, ukryty błąd)**: fallback doklejał jako „flagi" dowolne emoji bota
+  spoza mapy (🔥 📊 🎦 🤝 ☢️) — wbrew regule „trzeci znacznik MUSI być flagą". Teraz filtr
+  `Regional_Indicator` je zrzuca, a w „Polska w systemie rurociągów NATO" (`🇵🇱🤝🇺🇸`) miejsce
+  zjadane przez 🤝 odzyskała flaga 🇺🇸.
+- 📊 **Pełny diff na 6236 pozycjach: zmieniło się 40 (0,64%)** — każda przejrzana ręcznie, zero
+  regresji. Zweryfikowane też w przeglądarce na 9 przypadkach brzegowych (🚨, istniejące 🔒, złoto).
+- ⬜ **Trzecia droga NIE ruszona: prompt bota** (żeby znacznik opisywał zdarzenie, nie branżę) —
+  to zmiana po stronie FinancialNewsBot, działa dopiero od kolejnego biegu. Do rozważenia osobno.
+
 ## ✅ 21.08 popołudnie: ZNACZNIK NACHODZIŁ NA NAGŁÓWEK — naprawione (front, CSS)
 Zgłoszenie właściciela: *„zobacz co się stało z emotkami"* (zrzut z feedu — flaga na pierwszej literze tytułu).
 - 🔴 **PRZYCZYNA NIE MA NIC WSPÓLNEGO Z EMOJI ANI Z FONTEM.** `.dt-item` ma
@@ -82,6 +110,7 @@ Zgłoszenie właściciela: *„zobacz co się stało z emotkami"* (zrzut z feedu
 | Ikony 🚢 i 🏠 na froncie + trzy poprawki wzorca żeglugi | front `b9e66cbeb`, `29be9daf2`, `004a75827` |
 | Notowania: wykres rozszerza się w lewo | front `526691493`, SW v138 |
 | Znacznik nachodzący na nagłówek: komórka gridu 20→38 px | front, `styles.css`, SW v139 |
+| Zła ikona od bota: zdarzenie bije podmiot, 🌍 nie blokuje reguły słownej | front, `index.html`, SW v140 |
 
 ⚠️ **Sesja 20.08 wieczór / 21.08 (znaczniki kafli, front #211–#216, bot #221–#223) NIE MA WŁASNEJ
 SEKCJI w tym pliku** — trwała wiedza z niej siedzi w `FinancialNewsBot/CLAUDE.md` (sekcja o regule `flag`).
