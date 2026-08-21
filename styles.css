@@ -571,7 +571,7 @@ html, body {
 [data-theme="dark"] .dt-feed-list { background: #0f0f0f; }
 
 /* feed items */
-.dt-item { padding: 12px 22px; border-bottom: 1px solid #eae7e1; cursor: pointer; display: grid; grid-template-columns: 28px 20px 1fr; gap: 10px; align-items: flex-start; }
+.dt-item { padding: 12px 22px; border-bottom: 1px solid #eae7e1; cursor: pointer; display: grid; grid-template-columns: 28px 38px 1fr; gap: 10px; align-items: flex-start; }
 [data-theme="dark"] .dt-item { border-bottom-color: #1e1e1e; }
 .dt-item:hover { background: rgba(0,0,0,.025); }
 [data-theme="dark"] .dt-item:hover { background: rgba(255,255,255,.04); }
@@ -585,7 +585,24 @@ html, body {
 [data-theme="dark"] .dt-item.group-header { background: #141414; }
 .dt-item.group-header:hover { background: rgba(0,0,0,.025); }
 .dt-item-num { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); padding-top: 2px; text-align: right; }
-.dt-item-flag { font-size: 14px; padding-top: 1px; }
+/* ── SZEROKOŚĆ KOMÓRKI ZNACZNIKA (2026-08-21) ─────────────────────────────────
+   🔴 Kolumna miała 20 px, bo powstała, gdy `flag` niosła DOKŁADNIE JEDNO emoji.
+   Reguła z 20.08 („do 3 znaczników, trzeci musi być flagą") tego nie tknęła, więc
+   ikona + flaga (37,6 px) i dwie ikony + flaga (57,2 px) WYCHODZIŁY POZA komórkę
+   i nachodziły na nagłówek — grid nie przycina, tylko pozwala przelać w prawo.
+   📊 Zmierzone na wydaniu 21.08 popołudnie: 19 pozycji z 1 znacznikiem (mieściły się),
+   10 z 2 i 1 z 3 — czyli nachodziło 11 z 30.
+   ⚠️ To WIDAĆ tylko w widoku desktopowym. Mobilny `.news-flag` siedzi w kolumnie
+   flex (`.news-body`), więc znacznik ma tam własny wiersz i nic nie przelewa.
+
+   38 px, nie 58 px: mieści dwa znaczniki (29 pozycji z 30), a trzeci zawija się
+   do drugiego wiersza zamiast zjadać 20 px szerokości nagłówka KAŻDEMU wierszowi.
+   `flex-end` — znacznik trzyma się nagłówka, więc pozycje z jednym znacznikiem
+   wyglądają jak przed zmianą, a lewa krawędź kolumny jest tylko rezerwą.
+   `flex-wrap` jest ZABEZPIECZENIEM NA ARCHIWUM: do lipca bot potrafił wysłać
+   5–8 flag naraz (`archive/2026-07-16.json`), a te bez zawijania wróciłyby na tekst. */
+.dt-item-flag { font-size: 14px; padding-top: 1px; display: flex; justify-content: flex-end; }
+.dt-item-flag .zn { flex-wrap: wrap; justify-content: flex-end; max-width: 100%; }
 .dt-item-body { min-width: 0; }
 .dt-item-badges { display: flex; gap: 5px; margin-bottom: 3px; }
 .dt-badge { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 0.5px; padding: 1px 5px; border-radius: 2px; }

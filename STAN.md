@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-21 południe (po sesji: bramka zmyślonej klasy zdarzenia, naprawa wątków, znaczniki 🚢 i 🏠, gotowiec-x v13, dwie ręczne poprawki danych)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-21 popołudnie (po sesji: bramka zmyślonej klasy zdarzenia, naprawa wątków, znaczniki 🚢 i 🏠, gotowiec-x v13, dwie ręczne poprawki danych, znacznik nachodzący na nagłówek)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
@@ -48,6 +48,26 @@ cyfrą liczbę, która w materiale stała SŁOWNIE („pięciu lat" → „5 lat
 Naprawa dokłada te postacie do zbioru dozwolonych **po stronie materiału**, więc ochrona przed
 zmyśloną liczbą jest nietknięta (sprawdzone: 7 lat, 99 mld, 81 500 dalej odrzucane).
 
+## ✅ 21.08 popołudnie: ZNACZNIK NACHODZIŁ NA NAGŁÓWEK — naprawione (front, CSS)
+Zgłoszenie właściciela: *„zobacz co się stało z emotkami"* (zrzut z feedu — flaga na pierwszej literze tytułu).
+- 🔴 **PRZYCZYNA NIE MA NIC WSPÓLNEGO Z EMOJI ANI Z FONTEM.** `.dt-item` ma
+  `grid-template-columns: 28px 20px 1fr` — komórka znacznika miała **20 px**, bo powstała, gdy pole
+  `flag` niosło DOKŁADNIE JEDNO emoji. Reguła z 20.08 („do 3 znaczników, trzeci musi być flagą")
+  tej liczby nie tknęła, a grid nie przycina zawartości — pozwala jej przelać się w prawo, na tekst.
+- 📊 Zmierzone na wydaniu 21.08 popołudnie: 1 znacznik 16–18 px (mieści się, 19 pozycji),
+  ikona + flaga **37,6 px** (wychodzi 7,6 px na nagłówek, 10 pozycji), dwie ikony + flaga
+  **57,2 px** (wychodzi 27,2 px, 1 pozycja). **Nachodziło 11 pozycji z 30.**
+- **Naprawa:** kolumna `20px` → `38px`, `justify-content: flex-end` (znacznik trzyma się nagłówka,
+  więc pozycje z jednym znacznikiem wyglądają jak dotąd), `flex-wrap` na `.zn`.
+- ⚠️ **38 px, nie 58 px** świadomie: 58 mieści trzeci znacznik w jednym wierszu, ale zjada 20 px
+  szerokości nagłówka KAŻDEMU wierszowi. Przy 38 px trzeci znacznik zawija się do drugiego wiersza
+  (1 pozycja z 30), a nagłówki nie tracą szerokości.
+- `flex-wrap` to ZABEZPIECZENIE NA ARCHIWUM, nie kosmetyka: do lipca bot wysyłał 5–8 flag naraz
+  (`archive/2026-07-16.json` — `🇬🇧🏴󠁧󠁢󠁥󠁮󠁧󠁿`, `archive/2026-07-05.json` — `🇸🇦🇴🇵🇪🇨`). Bez zawijania te dni
+  wracałyby na tekst. Test na 8 flagach: zawija do czterech wierszy, zero nachodzenia.
+- **Zweryfikowane na żywych danych, nie na podmianie:** 0 nachodzeń przy 1280 / 1440 / 1600 px,
+  lewa krawędź nagłówka identyczna (319 px) we wszystkich 30 pozycjach.
+
 ## ✅ 21.08: CO ZOSTAŁO ZROBIONE (wszystko na produkcji)
 | co | gdzie |
 |---|---|
@@ -61,6 +81,7 @@ zmyśloną liczbą jest nietknięta (sprawdzone: 7 lat, 99 mld, 81 500 dalej odr
 | `gotowiec-x` **v13** — nowa doklejka „Dokończenie tej historii i całe dzisiejsze wydanie" | front `27dc8a4b9` |
 | Ikony 🚢 i 🏠 na froncie + trzy poprawki wzorca żeglugi | front `b9e66cbeb`, `29be9daf2`, `004a75827` |
 | Notowania: wykres rozszerza się w lewo | front `526691493`, SW v138 |
+| Znacznik nachodzący na nagłówek: komórka gridu 20→38 px | front, `styles.css`, SW v139 |
 
 ⚠️ **Sesja 20.08 wieczór / 21.08 (znaczniki kafli, front #211–#216, bot #221–#223) NIE MA WŁASNEJ
 SEKCJI w tym pliku** — trwała wiedza z niej siedzi w `FinancialNewsBot/CLAUDE.md` (sekcja o regule `flag`).
@@ -77,6 +98,12 @@ Nie szukaj jej tutaj.
   `najm\w*` w „co **najm**niej".
 - **Nazwy przesmyków (Ormuz, Kanał Sueski/Panamski) NIE należą do wzorca żeglugi** — tam flagi krajów
   niosą więcej niż ikona (uwaga właściciela: *„Panama ma swoją flagę przecież"*).
+- 🔴 **Zmieniasz liczbę znaczników — sprawdź KONTENER, nie tylko mapę ikon.** Reguła z 20.08 podniosła
+  limit z 1 do 3 znaczników i nikt nie spytał, ile miejsca ma na nie komórka. `.dt-item` rezerwował
+  20 px i nachodził na nagłówek przez cały dzień. **Grid nie przycina — przelewa.** Ten sam typ błędu
+  co „weryfikacja przez podmianę `flag`" niżej: sprawdzono, czy ikona się RYSUJE, nie czy się MIEŚCI.
+- **Objaw był tylko na desktopie.** Mobilny `.news-flag` siedzi w kolumnie flex (`.news-body`), więc
+  znacznik ma tam własny wiersz i nic nie przelewa — sprawdzając na telefonie NIE zobaczysz usterki.
 - **Service worker serwuje starą wersję mimo podbitego `CACHE_NAME`** — przy sprawdzaniu lokalnie
   wyrejestruj go, inaczej wygląda to jak „zmiana nie działa".
 
