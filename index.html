@@ -793,15 +793,22 @@ const IKONA_ZE_SLOW = [
   [/spotify|apple music|muzyczn|piosenk|album\b|\butw(?:ór|ory|orów|orami)\b/i, '🎧'],
   [/netflix|youtube|streaming|serial\b|disney|\bhbo\b|tiktok/i, '🎬'],
   [/\bgier\b|gaming|playstation|xbox|nintendo|\bsteam\b/i, '🎮'],
-  [/linie lotnicze|ruch lotnicz|samolot|boeing|airbus|ryanair|przewoźnik lotnicz/i, '✈'],
+  // ⚠️ `lotnisk` MUSI tu być i MUSI stać nad 🚢: „lotnisko w Katanii przekierowało 10 REJSÓW”
+  // to samolot, a `\brejs\w*` w regule żeglugi wzięłoby go za statek (złapane pomiarem 2026-08-21).
+  [/linie lotnicze|ruch lotnicz|lotnisk\w*|samolot|boeing|airbus|ryanair|przewoźnik lotnicz/i, '✈'],
   [/\btesla\b|samochod|motoryzac|volkswagen|toyota|\bbyd\b|stellantis/i, '🚗'],
   [/\bfda\b|szczepion|farmaceut|pfizer|moderna|novo nordisk|lek(?:u|i|ów|iem)\b/i, '💊'],
   [/walmart|e-commerce|handel detaliczn|shein|allegro|sieć handlow|sklep\w*\b/i, '🛒'],
   // 🚢 STOI NAD 🏗, bo „kontenerowiec" należy do żeglugi, nie do infrastruktury — dlatego to słowo
   // przeniosło się tutaj z reguły niżej. 📊 Zmierzone na 6171 pozycjach: newsy morskie to **367 = 5,95%**
   // (~7/dobę), czyli więcej niż większość ikon z tej listy.
-  // ⚠️ ŚWIADOMIE BEZ „cieśnin" — Ormuz to 70+ pozycji, ale one mają już DWIE FLAGI (🇺🇸🇮🇷), które niosą
-  // więcej niż ikona. Ta sama zasada co w komentarzu wyżej: lepiej sam kraj niż ikona nie na temat.
+  // ⚠️ ŚWIADOMIE BEZ „cieśnin”, „kanał sueski” i „kanał panamski” — nazwy przesmyków (2026-08-21,
+  // uwaga właściciela: „kanał panamski, Panama ma swoją flagę przecież”). 📊 Sprawdzone na 5 pozycjach
+  // wspominających te kanały: CZTERY to geopolityka („Trump: Nie pozwolimy Chinom przejąć Kanału
+  // Panamskiego” — tam 🇺🇸/🇵🇦 niosą wszystko), a te realnie żeglugowe łapią się na słowach o statkach.
+  // Ta sama zasada, dla której wypadł Ormuz: lepiej sam kraj niż ikona nie na temat.
+  // 🔴 `tankow(?:iec|c\w*)`, NIE `tankowc` — samo `tankowc` NIE ŁAPIE słowa „tankowiec” (jest tam `i`),
+  // przez co „Supertankowiec ominął Kanał Sueski” i „saudyjski tankowiec” wypadały z reguły.
   // 🏠 STOI NAD REGUŁĄ KATEGORII: „Fed / Banki” dałoby 🏦, a news o hipotece jest o MIESZKANIU, nie o banku.
   // 📊 Zmierzone na 6171 pozycjach: 31 trafień = 0,50% (~0,6/dobę) — mało, ale klasa jest czysta.
   // ⚠️ TRZY PUŁAPKI ZŁAPANE POMIAREM, nie zgadywaniem: (1) `najm\w*` łapało „co NAJMniej" i „NAJMocniej",
@@ -809,7 +816,7 @@ const IKONA_ZE_SLOW = [
   // w „zaMIESZKANe" i „adres zaMIESZKANia". Stąd `\bmieszkan\w*` z twardym `n`.
   // ⚠️ `wynajm` MUSI mieć dopełnienie — samo łapało „wynajmu mocy obliczeniowych" (Meta/Anthropic).
   [/hipotek|hipoteczn|\bmieszkan\w*|nieruchomoś|deweloper|czynsz|wynajm\w*\s+(?:mieszka|lokal|dom|nieruchomo)|\bWIBOR\b|\bWIRON\b|zdolnoś\w* kredytow/i, '🏠'],
-  [/kontenerow|frachtow|żeglug|armator|tankowc|masowc|stoczni|statk\w*|statek|port\w* morsk|szlak\w* morsk|kanał sueski|kanał panamski|\bteu\b/i, '🚢'],
+  [/kontenerow|frachtow|żeglug|armator|tankow(?:iec|c\w*)|masowc|stoczni|statk\w*|statek|\brejs\w*|port\w* morsk|szlak\w* (?:morsk|północn)|trasa (?:morsk|północn)|przeładunk|załadunk|\bbandery\b|\bteu\b/i, '🚢'],
   [/kolejow|\bpkp\b|autostrad|\bcpk\b|terminal przeładunk/i, '🏗'],
 ];
 // Kategoria jako sygnał SŁABSZY — wchodzi dopiero, gdy żadne słowo nie trafiło.

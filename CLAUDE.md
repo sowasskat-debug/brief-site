@@ -1189,6 +1189,23 @@ do Europy przez Arktykę" była sama flaga 🇰🇷, a powinna być też ikona s
   w bocie przy tej samej zmianie; front i bot mają teraz ten sam zestaw 20 ikon.
 - ✅ Zweryfikowane na PRAWDZIWYM froncie (lokalna kopia, `briefs.json` z podmienionym znacznikiem na
   `🚢🇰🇷`): ikona renderuje się obok flagi w wierszu listy. SW → v135.
+- 🔴 **TA WERYFIKACJA BYŁA ZA SŁABA I PRZEPUŚCIŁA TRZY BŁĘDY** (poprawione tego samego dnia, SW v137).
+  Sprawdziłem, że ikona się RYSUJE — ale podstawiłem znacznik ręcznie, więc nigdy nie sprawdziłem,
+  czy REGUŁA odpala na nagłówku, który był powodem całej zmiany. Nie odpalała.
+  ⚠️ **Zasada: przy regule wyprowadzającej znacznik z treści testuj na NIETKNIĘTYCH danych.**
+  Podmiana `flag` w `briefs.json` testuje mapę SVG, nie wzorzec.
+  1. **Zgubione `\brejs\w*`** — nagłówek „Korea Południowa rozpoczyna pierwszy komercyjny REJS testowy
+     do Europy przez Arktykę" nie zawiera ani „statku", ani „kontenerowca", ani „żeglugi". Słowo było
+     w moim wzorcu POMIAROWYM, ale wypadło przy zawężaniu do wersji wdrożonej. Stąd też rozjazd liczb:
+     powoływałem się na 367 pozycji (5,95%), a wdrożona reguła łapała 215 (3,48%).
+  2. **`tankowc` NIE ŁAPIE słowa „tankowiec"** (jest tam `i`: t-a-n-k-o-w-**i**-e-c). Przez to
+     „Supertankowiec ominął Kanał Sueski" i „saudyjski tankowiec" wypadały. Poprawnie: `tankow(?:iec|c\w*)`.
+  3. **`rejs` łapie loty** — „lotnisko w Katanii przekierowało 10 REJSÓW". Naprawione po stronie ✈,
+     która nie miała `lotnisk` i przepuszczała takie newsy dalej. ✈ stoi NAD 🚢, więc teraz wygrywa.
+- ⚠️ **NAZWY KANAŁÓW ZDJĘTE ze wzorca** (uwaga właściciela: *„kanał panamski, Panama ma swoją flagę
+  przecież"*). 📊 Sprawdzone na 5 pozycjach: **cztery to geopolityka** („Trump: Nie pozwolimy Chinom
+  przejąć Kanału Panamskiego"), a realnie żeglugowe łapią się na słowach o statkach. Ta sama zasada,
+  dla której wypadł Ormuz.
   ⚠️ Przy sprawdzaniu lokalnie **wyrejestruj service workera** — serwował starą wersję `index.html`
   mimo podbitego `CACHE_NAME`, co przez chwilę wyglądało jak „ikona nie działa".
 
