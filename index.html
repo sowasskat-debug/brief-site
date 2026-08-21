@@ -792,13 +792,20 @@ const ZNACZNIK_IKONY = {
 // ⚠️ Kolejność w tablicy JEST regułą: pierwszy trafiony wzorzec wygrywa, więc szczegółowe
 // (bitcoin, chipy) stoją nad ogólnymi (giełda). Wzorce mają być WĄSKIE — lepiej zostawić sam
 // znacznik kraju niż dokleić ikonę nie na temat.
+// 🔴 ASCII-PUŁAPKA (2026-08-21 wieczór, złapana przeglądem tygodnia): JS-owe `\w` i `\b` NIE ZNAJĄ
+// polskich liter. Wzorzec kończący się na ą/ć/ę/ł/ń/ś/ż przed `\b` NIGDY nie trafia („\bceł\b" było
+// martwe), a `\w*` staje na polskiej literze przed wymaganą spacją („nałoż\w* kar" gubiło „nałożyła
+// karę", „port\w* morsk" gubiło „portów morskich"). Zamiast `\b` PO polskiej literze pisz
+// `(?![\wąćęłńóśźż])`, zamiast `\w*` przed dalszą częścią frazy — `[\wąćęłńóśźż]*`.
+// ⚠️ NIE zamieniaj `\w` hurtowo: `\bmieszkan\w*` celowo NIE przechodzi przez „ń" (anty-„mieszkańców")
+// — tam poprawna jest OSOBNA alternatywa `\bmieszkań(?!c…)`.
 const IKONA_ZE_SLOW = [
   [/bitcoin|\bbtc\b|ethereum|krypto|stablecoin|coinbase|binance/i, '🪙'],
   [/spacex|kosmiczn|\bnasa\b|starlink|starship|na orbit|rakiet\w* nośn/i, '🚀'],
   [/cyberatak|haker|ransomware|wyciek danych|cyberbezpiecz/i, '🔒'],
   [/\bchip|półprzewodnik|litografi|\btsmc\b|\basml\b|micron|nvidia/i, '🔬'],
-  [/\bai\b|sztuczn\w* inteligencj|openai|anthropic|chatgpt|gemini|\bllm\b|chatbot|deepseek/i, '🤖'],
-  [/\brop(?:a|ę|y|ie|ą)\b|\bbrent\b|\bwti\b|baryłk|rafineri|\bopec\b|benzyn|diesel|paliw/i, '🛢'],
+  [/\bai\b|sztuczn[\wąćęłńóśźż]* inteligencj|openai|anthropic|chatgpt|gemini|\bllm\b|chatbot|deepseek/i, '🤖'],
+  [/\brop(?:a|y|ie)\b|\brop[ęą](?![\wąćęłńóśźż])|\bbrent\b|\bwti\b|baryłk|rafineri|\bopec\b|benzyn|diesel|paliw/i, '🛢'],
   [/elektrown|reaktor|energetyk|gaz ziemn|\blng\b|fotowoltaik|farm\w* wiatrow|sieci przesyłow/i, '⚡'],
   [/spotify|apple music|muzyczn|piosenk|album\b|\butw(?:ór|ory|orów|orami)\b/i, '🎧'],
   [/netflix|youtube|streaming|serial\b|disney|\bhbo\b|tiktok/i, '🎬'],
@@ -824,9 +831,17 @@ const IKONA_ZE_SLOW = [
   // ⚠️ TRZY PUŁAPKI ZŁAPANE POMIAREM, nie zgadywaniem: (1) `najm\w*` łapało „co NAJMniej" i „NAJMocniej",
   // (2) alternatywa `mieszkań` trafiała w „mieszkaŃców", (3) bez `\b` wzorzec `mieszkan` wchodził
   // w „zaMIESZKANe" i „adres zaMIESZKANia". Stąd `\bmieszkan\w*` z twardym `n`.
+  // 🔴 ALE twarde `n` wycinało też dopełniacz „mieszkań" — NAJCZĘSTSZĄ formę klasy („ceny mieszkań",
+  // „sprzedaż mieszkań"). Osobna alternatywa `\bmieszkań(?![\wąćęłńóśźż])` łapie ją, a lookahead
+  // dalej blokuje „mieszkańców" (2026-08-21 wieczór). Analogicznie „wynajem" (e ruchome — ta sama
+  // klasa co tankowc/tankowiec) i „zdolność" (ASCII `\w*` nie przechodzi przez „ś/ć").
   // ⚠️ `wynajm` MUSI mieć dopełnienie — samo łapało „wynajmu mocy obliczeniowych" (Meta/Anthropic).
-  [/hipotek|hipoteczn|\bmieszkan\w*|nieruchomoś|deweloper|czynsz|wynajm\w*\s+(?:mieszka|lokal|dom|nieruchomo)|\bWIBOR\b|\bWIRON\b|zdolnoś\w* kredytow/i, '🏠'],
-  [/kontenerow|frachtow|żeglug|armator|tankow(?:iec|c\w*)|masowc|stoczni|statk\w*|statek|\brejs\w*|port\w* morsk|szlak\w* (?:morsk|północn)|trasa (?:morsk|północn)|przeładunk|załadunk|\bbandery\b|\bteu\b/i, '🚢'],
+  [/hipotek|hipoteczn|\bmieszkan\w*|\bmieszkań(?![\wąćęłńóśźż])|nieruchomoś|deweloper|czynsz|wynaj(?:em|m\w*)\s+(?:mieszka|lokal|dom|nieruchomo)|\bWIBOR\b|\bWIRON\b|zdolnoś(?:ć|ci|cią) kredytow/i, '🏠'],
+  // ⚠️ „przeładunek/załadunek/masowiec" — mianowniki z e ruchomym wyliczone jawnie (2026-08-21 wieczór,
+  // ta sama klasa co tankowc/tankowiec, którą commit „trzy poprawki wzorca" deklarował, a nie domknął).
+  // ⚠️ „bandera" TYLKO we frazie „pod (obcą) banderą/bandery" — samo `\bbandery\b` łapało nazwisko
+  // („Marsz zwolenników Bandery" dostawał ikonę statku), a formy „banderą" i tak nie widziało (ą przed `\b`).
+  [/kontenerow|fracht|żeglug|armator|tankow(?:iec|c\w*)|masow(?:iec|c)|stoczni|statk\w*|statek|\brejs\w*|port[\wó]* morsk|szlak[\wó]* (?:morsk|północn)|trasa (?:morsk|północn)|przeładun(?:ek|k)|załadun(?:ek|k)|\bpod\s+(?:\S+\s+)?bander|\bteu\b/i, '🚢'],
   [/kolejow|\bpkp\b|autostrad|\bcpk\b|terminal przeładunk/i, '🏗'],
   // ── ⚖ 💰 🏥 NA KOŃCU LISTY ŚWIADOMIE (2026-08-21): kolejność jest regułą, a te klasy mają
   // PRZEGRYWAĆ ze szczegółowymi. „Apple przegrywa spór z UE o App Store" ma zostać przy 🔬,
@@ -834,13 +849,13 @@ const IKONA_ZE_SLOW = [
   // ⚖ NAD 💰, bo „Apple zapłaciło Irlandii 17 mld USD podatków po wyroku sądu" jest newsem
   // o wyroku (zdarzenie), a podatek to tło — przy parze i tak wyjdą oba (⚖💰).
   // ⚠️ Odmiany sądu wyliczone wprost, NIE `sąd\w*` — rdzeń złapałby „sądzić/osądzać" w opiniach.
-  [/\bsąd(?:u|owi|em|zie|y|ów|om|ami|ach)?\b|sądow\w*|\bpozew\b|\bpozw(?:u|y|em|ie|ów)\b|pozywa|\bwyrok\w*|antymonopolow|\bUOKiK\b|\bKNF\b|regulator\w*|nałoż\w* kar|\bgrzywn\w*|\bugod[aęy]\b|apelacj|\btrybunał\w*/i, '⚖'],
+  [/\bsąd(?:u|owi|em|zie|y|ów|om|ami|ach)?\b|sądow\w*|\bpozew\b|\bpozw(?:u|y|em|ie|ów)\b|pozywa|\bwyrok\w*|antymonopolow|\bUOKiK\b|\bKNF\b|regulator\w*|nałoż[\wąćęłńóśźż]* kar|\bgrzywn\w*|\bugod(?:a|y|zie)\b|\bugod[ąę](?![\wąćęłńóśźż])|apelacj|\btrybunał\w*/i, '⚖'],
   // ⚠️ `cł` z wyliczonymi końcówkami i osobno `ceł` — `cł\w*` złapałoby „cłem" ale i nic więcej
   // nie ryzykujemy; za to samo `\bcl\b` byłoby pułapką na anglicyzmy.
-  [/\bpodat(?:ek|ku|ki|ków|kow\w*|kiem|kach)\b|\bCIT\b|\bVAT\b|\bPIT\b|budżet\w* państw|deficyt\w* budżet|\bakcyz\w*|\bcł(?:o|a|em|ach|ami)\b|\bceł\b|taryf\w* (?:celn|handlow|importow)|opodatkow\w*/i, '💰'],
+  [/\bpodat(?:ek|ku|ki|ków|kow\w*|kiem|kach)\b|\bCIT\b|\bVAT\b|\bPIT\b(?![ -]?stop)|budżet\w* państw|deficyt\w* budżet|\bakcyz\w*|\bcł(?:o|a|em|ach|ami)\b|\bceł(?![\wąćęłńóśźż])|taryf[\wąćęłńóśźż]* (?:celn|handlow|importow)|opodatkow\w*/i, '💰'],
   // ⚠️ `wirus` łapie też wirusy komputerowe — ale te nagłówki mają „cyberatak/haker" i 🔒 stoi
   // WYŻEJ w liście, więc wygrywa. Zmierzone na klasie: 49 trafień, próbka czysta.
-  [/szpital\w*|\bNFZ\b|opiek\w* zdrowotn|służb\w* zdrowia|pacjent\w*|epidemi\w*|\bwirus(?:a|em|ie|y|ów)?\b|zakaże[nń]\w*|\bWHO\b|lekar(?:z\w*|ek)|onkolog\w*/i, '🏥'],
+  [/szpital\w*|\bNFZ\b|opiek[\wąćęłńóśźż]* zdrowotn|służb[\wąćęłńóśźż]* zdrowia|pacjent\w*|epidemi\w*|\bwirus(?:a|em|ie|y|ów)?\b|zakaże[nń]\w*|\bWHO\b|lekar(?:z\w*|ek)|onkolog\w*/i, '🏥'],
 ];
 // Kategoria jako sygnał SŁABSZY — wchodzi dopiero, gdy żadne słowo nie trafiło.
 // Świadomie BEZ kategorii politycznych i wojennych: tam flaga kraju niesie więcej niż ikona.
@@ -861,7 +876,9 @@ const KRAJ_W_NAGLOWKU = new RegExp([
   '\\bUSA\\b','\\bUS\\b','Stan(?:y|ów|om|ach) Zjednoczon','amerykańsk','Waszyngton','Biały Dom','Pentagon',
   '\\bFed\\b','Trump','Kongres(?:ie|u|)\\b','Waszyngtonu',
   'Chin(?:y|ach|om|)\\b','chińsk','Pekin','Rosj(?:a|i|ę|ą)','rosyjsk','Kreml','Moskw',
-  'Polsk(?:a|i|ę|ą|ę)\\b','polsk(?:i|a|ie|iej|ich|im|ą)\\b','\\bNBP\\b','\\bGUS\\b','Sejm','Warszaw',
+  // ⚠️ „Polskę/Polską/polską" osobno, bez `\b` po ą/ę — ASCII `\b` po polskiej literze nigdy nie
+  // trafia (2026-08-21 wieczór; „Trump odwiedzi Polskę" nie przechodziło bramki kraju).
+  'Polsk(?:a|i)\\b','Polsk[ęą](?![\\wąćęłńóśźż])','polsk(?:i|a|ie|iej|ich|im)\\b','polską(?![\\wąćęłńóśźż])','\\bNBP\\b','\\bGUS\\b','Sejm','Warszaw',
   'Niemc(?:y|ech|om)','niemieck','Berlin','Ukrain','ukraińsk','Kijów','Kijowa',
   'Iran','irańsk','Teheran','Izrael','izraelsk','Japoni','japońsk','Tokio',
   'Kore(?:a|i|ę)','koreańsk','Indi(?:e|i|ach)','indyjsk','Turcj','tureck',
@@ -944,6 +961,10 @@ function znacznikiTematyczne(item, bezKategorii) {
   // Bez tej bramki „Cena złota 4200 USD za uncję" (kategoria Surowce) dostawała 🛢 — kroplę
   // ropy przy złocie, czyli GORZEJ niż 🌍. Słowa mówią o temacie, kategoria tylko o dziale.
   if (!bezKategorii && IKONA_Z_KATEGORII[kat]) return [IKONA_Z_KATEGORII[kat]];
+  // 🌍 ustępuje WYŁĄCZNIE regule słownej NAGŁÓWKA — desce opisowej też nie wolno go nadpisać
+  // (2026-08-21 wieczór): artykuł pod „ceną złota" potrafi 2× wspomnieć ropę i 🛢 wracało
+  // tylną furtką, którą poprawka `bezKategorii` zamknęła dla kategorii.
+  if (bezKategorii) return [];
   // Dopiero teraz opis — i tylko dla wzorców z białej listy, przy DWÓCH wystąpieniach.
   const opis = String(item.article || '');
   if (opis) {
@@ -993,7 +1014,11 @@ function znacznikHtml(item) {
       const tekst = String(item.text || '');
       for (const [wz, emo] of ZDARZENIE_ZE_SLOW) {
         if (wz.test(tekst) && !grafy.some(g => g.replace('\uFE0F', '') === emo)) {
-          const flagi = grafy.filter(g => /\p{Regional_Indicator}/u.test(g)).slice(0, 2);
+          // 🇵🇱-first jak w fallbacku niżej (2026-08-21 wieczór) — bez sortu cięcie do dwóch
+          // flag mogło zgubić akurat polską, wbrew regule „🇵🇱 nietykalna".
+          const flagi = grafy.filter(g => /\p{Regional_Indicator}/u.test(g))
+            .sort((a, b) => (b === '🇵🇱' ? 1 : 0) - (a === '🇵🇱' ? 1 : 0))
+            .slice(0, 2);
           z = emo + flagi.join('');
           break;
         }
