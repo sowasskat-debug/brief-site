@@ -1152,6 +1152,28 @@ zamiast 270), czyli płaciliśmy treścią za CTA.
   aktualną długością doklejki.
 - ⚠️ **Wymaga redeployu:** `supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc`.
 
+## Znacznik 🚢 — żegluga (2026-08-21)
+Zgłoszenie właściciela ze zrzutu: przy „Korea Południowa rozpoczyna pierwszy komercyjny rejs testowy
+do Europy przez Arktykę" była sama flaga 🇰🇷, a powinna być też ikona statku.
+- 📊 **Zmierzone na 6171 pozycjach (archiwum + `briefs.json`): newsy morskie to 367 = 5,95%, ~7/dobę** —
+  więcej niż większość ikon z listy. Nie jest to więc martwy znacznik.
+- **Rejs kontenerowca łapał się dotąd na `🏗 kontenerow…`**, czyli „infrastrukturę". To słowo przeniosło
+  się do reguły 🚢, a nowa reguła stoi NAD 🏗 (pierwszy trafiony wzorzec wygrywa).
+- 🔴 **IKONĘ WYBRANO PO RASTERYZACJI DO 13 px**, nie na oko na wektorze. Cztery warianty (kontenerowiec
+  z kominem na dziobie, sylwetka z falą, prosty trapez, kadłub z masztem) narysowane, zrzutowane do
+  13 px i powiększone nearest-neighbour: **trzy z czterech dawały na górze ciemną kaszę** — dokładnie ta
+  wada, przed którą ostrzega komentarz o 🔬 w `index.html`. Wygrał najprostszy: trapez kadłuba +
+  nadbudówka ze skosem + komin, trzy kreski, czytelność jak 🚗.
+- ⚠️ **ŚWIADOMIE BEZ „cieśnin" we wzorcu.** Ormuz to 70+ pozycji, ale one mają już DWIE FLAGI (🇺🇸🇮🇷),
+  które niosą więcej niż ikona. Zasada z tego pliku: lepiej sam kraj niż ikona nie na temat.
+- ⚠️ **Front potrafił rysować 🔬 i 🔒, a bot ich NIE OFEROWAŁ** — 🔬 występowało tylko w przykładach jego
+  promptu, więc model emitował je z naśladownictwa (1 raz na 6171 pozycji), a 🔒 nigdy. Dopisane do listy
+  w bocie przy tej samej zmianie; front i bot mają teraz ten sam zestaw 20 ikon.
+- ✅ Zweryfikowane na PRAWDZIWYM froncie (lokalna kopia, `briefs.json` z podmienionym znacznikiem na
+  `🚢🇰🇷`): ikona renderuje się obok flagi w wierszu listy. SW → v135.
+  ⚠️ Przy sprawdzaniu lokalnie **wyrejestruj service workera** — serwował starą wersję `index.html`
+  mimo podbitego `CACHE_NAME`, co przez chwilę wyglądało jak „ikona nie działa".
+
 ## Notowania: znacznik czasu bez widocznej stopki (2026-08-02)
 Linia „Notowania: stan na … · dane opóźnione" **zdjęta z ekranu** na życzenie właściciela, ale
 znacznik ZOSTAJE w `title` kafla (podpowiedź po najechaniu) i w `data-stan`.

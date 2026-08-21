@@ -750,6 +750,12 @@ const ZNACZNIK_IKONY = {
   '💊':'<rect x="2.8" y="9" width="18.4" height="6.5" rx="3.25" transform="rotate(-40 12 12)"/><path d="M9.2 8.1l5.6 5.6"/>',
   '🛒':'<circle cx="9.5" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/><path d="M2.5 3.5h2.6l2.6 12h10.4l2-8H6.5"/>',
   '✈':'<path d="M2.5 13l19-7.5-4 8.5 2 6-5-4.5-4 3v-4z"/>',
+  // 🚢 wybrany z czterech wariantów PO RASTERYZACJI DO 13 px i powiększeniu nearest-neighbour,
+  // nie „na oko" na wektorze (2026-08-21). Warianty z masztem, kominem na dziobie i z falą pod
+  // kadłubem dawały przy 13 px ciemną kaszę na górze — dokładnie ta wada, przed którą ostrzega
+  // komentarz o 🔬 wyżej. Ten ma trzy kreski: trapez kadłuba (czyta się natychmiast), nadbudówkę
+  // ze skosem i komin. Czytelność porównywalna z 🚗.
+  '🚢':'<path d="M2.8 14.8h18.4l-3 5.7H5.8z"/><path d="M8 14.8V9.8h5.5l2.5 5"/><path d="M10 9.8V6.5h2v3.3"/>',
   '🚗':'<path d="M3 15v-2.5l2-4.5h14l2 4.5V15"/><path d="M3 15h18v3h-3v-1.5H6V18H3z"/><circle cx="7.5" cy="15.5" r="1.2"/><circle cx="16.5" cy="15.5" r="1.2"/>',
   '🏦':'<path d="M3 9.5L12 4l9 5.5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20.5h18"/>',
   '📈':'<path d="M3 20.5h18"/><path d="M5.5 16l4.5-5 3.5 3 5-7"/><path d="M18.5 7h-3.5M18.5 7v3.5"/>',
@@ -786,7 +792,13 @@ const IKONA_ZE_SLOW = [
   [/\btesla\b|samochod|motoryzac|volkswagen|toyota|\bbyd\b|stellantis/i, '🚗'],
   [/\bfda\b|szczepion|farmaceut|pfizer|moderna|novo nordisk|lek(?:u|i|ów|iem)\b/i, '💊'],
   [/walmart|e-commerce|handel detaliczn|shein|allegro|sieć handlow|sklep\w*\b/i, '🛒'],
-  [/kontenerow|kolejow|\bpkp\b|autostrad|\bcpk\b|terminal przeładunk/i, '🏗'],
+  // 🚢 STOI NAD 🏗, bo „kontenerowiec" należy do żeglugi, nie do infrastruktury — dlatego to słowo
+  // przeniosło się tutaj z reguły niżej. 📊 Zmierzone na 6171 pozycjach: newsy morskie to **367 = 5,95%**
+  // (~7/dobę), czyli więcej niż większość ikon z tej listy.
+  // ⚠️ ŚWIADOMIE BEZ „cieśnin" — Ormuz to 70+ pozycji, ale one mają już DWIE FLAGI (🇺🇸🇮🇷), które niosą
+  // więcej niż ikona. Ta sama zasada co w komentarzu wyżej: lepiej sam kraj niż ikona nie na temat.
+  [/kontenerow|frachtow|żeglug|armator|tankowc|masowc|stoczni|statk\w*|statek|port\w* morsk|szlak\w* morsk|kanał sueski|kanał panamski|\bteu\b/i, '🚢'],
+  [/kolejow|\bpkp\b|autostrad|\bcpk\b|terminal przeładunk/i, '🏗'],
 ];
 // Kategoria jako sygnał SŁABSZY — wchodzi dopiero, gdy żadne słowo nie trafiło.
 // Świadomie BEZ kategorii politycznych i wojennych: tam flaga kraju niesie więcej niż ikona.
