@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-21 popołudnie (po sesji: bramka zmyślonej klasy zdarzenia, naprawa wątków, znaczniki 🚢 i 🏠, gotowiec-x v13, dwie ręczne poprawki danych, znacznik nachodzący na nagłówek, zdarzenie bije podmiot + 🌍 nie blokuje reguły słownej)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-21 popołudnie (po sesji: bramka zmyślonej klasy zdarzenia, naprawa wątków, znaczniki 🚢 i 🏠, gotowiec-x v13, dwie ręczne poprawki danych, znacznik nachodzący na nagłówek, zdarzenie bije podmiot + 🌍 nie blokuje reguły słownej, nowe klasy ⚖ 💰 🏥)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
@@ -47,6 +47,19 @@ cyfrą liczbę, która w materiale stała SŁOWNIE („pięciu lat" → „5 lat
 („72 tys." → „72 000"). 📊 **25,3% pozycji ma w materiale liczebnik słowny** — stąd „często".
 Naprawa dokłada te postacie do zbioru dozwolonych **po stronie materiału**, więc ochrona przed
 zmyśloną liczbą jest nietknięta (sprawdzone: 7 lat, 99 mld, 81 500 dalej odrzucane).
+
+## ✅ 21.08 popołudnie: TRZY NOWE KLASY ZNACZNIKÓW — ⚖ sądy, 💰 podatki/cła, 🏥 szpitale (front)
+Wybrane przez właściciela z przeglądu 18 kandydatek (tabela z ikonami w rozmowie), warianty ikon
+zatwierdzone z podglądu rasteryzacji 13 px: **waga z trapezami, procent, krzyż konturowy**.
+- 📊 Pokrycie zmierzone na 6236 pozycjach: ⚖ 2,04% · 💰 1,79% · 🏥 0,79% — **razem 345 pozycji
+  (5,53%, ~6,5/dobę)** dostaje ikonę zamiast samej flagi. Pary sensowne: ⚖🤖 (pozwy wobec AI) 13,
+  🛢💰 (podatki od paliw) 9, ⚖💰 („podatki po wyroku sądu") 2.
+- Reguły NA KOŃCU `IKONA_ZE_SLOW` (mają przegrywać ze szczegółowymi), ⚖ nad 💰 — uzasadnienie
+  i pułapki odmian w `CLAUDE.md` (sekcja „Klasy ⚖ 💰 🏥").
+- Odrzucone po pomiarze i dlaczego — też w `CLAUDE.md`. Otwarte na przyszłość: 🥇 złoto,
+  🧱 metale, 🌾 rolnictwo (każde ~0,5%, czyste — brakuje tylko decyzji i ikony).
+- Zweryfikowane na żywym wydaniu: „Uber grozi kara od regulatora" → ⚖, „Apple zapłaciło Irlandii
+  podatki po wyroku" → ⚖💰🇬🇧 (trzeci znacznik zawija się zgodnie z poprawką kolumny), 0 nachodzeń.
 
 ## ✅ 21.08 popołudnie: ZŁA IKONA OD BOTA — zdarzenie bije podmiot, 🌍 przestał blokować (front)
 Zgłoszenie właściciela: *„dlaczego tu taka emotka jest a nie kłódka?"* — kafel „Apollo ujawnia,
@@ -111,6 +124,7 @@ Zgłoszenie właściciela: *„zobacz co się stało z emotkami"* (zrzut z feedu
 | Notowania: wykres rozszerza się w lewo | front `526691493`, SW v138 |
 | Znacznik nachodzący na nagłówek: komórka gridu 20→38 px | front, `styles.css`, SW v139 |
 | Zła ikona od bota: zdarzenie bije podmiot, 🌍 nie blokuje reguły słownej | front, `index.html`, SW v140 |
+| Trzy nowe klasy znaczników ⚖ 💰 🏥 (345 pozycji archiwum, 5,53%) | front, `index.html`, SW v141 |
 
 ⚠️ **Sesja 20.08 wieczór / 21.08 (znaczniki kafli, front #211–#216, bot #221–#223) NIE MA WŁASNEJ
 SEKCJI w tym pliku** — trwała wiedza z niej siedzi w `FinancialNewsBot/CLAUDE.md` (sekcja o regule `flag`).

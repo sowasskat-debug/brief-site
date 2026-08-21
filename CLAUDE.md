@@ -982,6 +982,40 @@ flagę obok"* i *„daj rozmiar 16"*. Znacznik ma teraz DWIE części: **ikona (
   w `index.html`, a skopiowanie jej do drugiego pliku to gwarantowany dryf (precedens `itemSlug`).
   Objęcie ich wymaga wyciągnięcia wspólnego `znaczniki.js` (wzorzec `flagi.js`) + wpisu
   w `STATIC_ASSETS`. Do zrobienia, gdy właściciel zdecyduje, że ma być wszędzie.
+### Zdarzenie bije podmiot + 🌍 nie blokuje reguły słownej (2026-08-21)
+Zgłoszenie: „Apollo ujawnia, że hakerzy uzyskali dostęp do danych w cyberataku" miało 🏦 —
+bot oznaczył KOGO news dotyczy, nie CO SIĘ STAŁO, a fallback nie odpalał, bo znacznik tematyczny
+od bota wyłącza go w całości. 📊 156 pozycji z ikoną od bota, 30 (19%) sprzecznych z regułą słowną.
+- **`ZDARZENIE_ZE_SLOW`** — wąska lista wzorców ZDARZENIOWYCH (cyberatak/haker/wyciek → 🔒),
+  które nadpisują znacznik podmiotowy bota. ⚠️ NIE dopisuj wzorców branżowych: „boom na AI
+  przypomina bańkę dotcomów" z 🏦 to news o rynkach — bot może świadomie wybrać inny aspekt.
+  Flagi od bota zostają, 🚨 nietykalne.
+- **🌍 nie liczy się jako znacznik tematyczny** w teście `maTemat` — to znak „nie mam zdania".
+  ⚠️ Ustępuje TYLKO regule słownej, NIE kategorii (parametr `bezKategorii`
+  w `znacznikiTematyczne`): przez `Surowce → 🛢` „cena złota za uncję" dostawała KROPLĘ ROPY.
+- **Fallback filtruje „flagi" do par `Regional_Indicator`** — wcześniej doklejał dowolne emoji
+  bota spoza mapy (🔥 📊 🤝) wbrew regule „trzeci znacznik MUSI być flagą"; w `🇵🇱🤝🇺🇸`
+  miejsce po 🤝 odzyskała 🇺🇸.
+- 📊 Pełny diff starej i nowej logiki na 6236 pozycjach: **40 zmian (0,64%)**, wszystkie
+  przejrzane ręcznie. Tak też łap regresje przy KAŻDEJ zmianie tej funkcji — diff, nie recenzja.
+
+### Klasy ⚖ 💰 🏥 (2026-08-21) — sądy/regulatorzy, podatki/cła, szpitale/epidemie
+📊 Zmierzone na 6236 pozycjach: ⚖ 2,04% (~2,4/dobę), 💰 1,79%, 🏥 0,79% — razem 345 pozycji
+(5,53%) dostaje ikonę zamiast samej flagi. Warianty ikon wybrane PO RASTERYZACJI DO 13 px
+(procedura 🚢/🏠, po 4 warianty na klasę) — szczegóły przy `ZNACZNIK_IKONY`.
+- **Stoją na KOŃCU `IKONA_ZE_SLOW`** świadomie: mają przegrywać ze szczegółowymi („Apple
+  przegrywa spór z UE o App Store" zostaje przy 🔬 — sąd bywa mechanizmem newsa, nie tematem).
+- **⚖ nad 💰**: „Apple zapłaciło Irlandii 17 mld USD podatków po wyroku sądu" to news o wyroku;
+  przy parze i tak wychodzą oba (⚖💰).
+- ⚠️ Odmiany wyliczone wprost (`sąd(?:u|owi|…)`, `cł(?:o|a|em|ach|ami)` + osobno `ceł`) —
+  ta sama pułapka co `tankowc` bez „tankowiec". `wirus` łapie też komputerowe, ale 🔒 stoi
+  wyżej w liście i wygrywa.
+- Odrzucone po pomiarze: 📦 logistyka (3 trafienia, wszystkie fałszywe), 🧳 turystyka,
+  💳 fintech, 📱 telekomy, 🎓 edukacja, 🍺 alkohol, 🛡 zbrojeniówka (reguła „bez wojskowych"),
+  🗳 wybory (flaga kraju niesie więcej — reguła kategorii politycznych), 🌪 żywioły (brak
+  wspólnego kształtu ikony), 💼 zwolnienia („zwolnienie" = też z podatku/z NDA). Otwarte,
+  czyste, ale poniżej progu lub bez ikony: 🥇 złoto 0,53%, 🧱 metale 0,53%, 🌾 rolnictwo 0,45%.
+
 ### Wsteczne rozpoznanie tematu — `znacznikTematyczny` (życzenie: „żeby działało na poprzednich postach")
 Ikonę wskazuje BOT w polu `flag`, ale robi to dopiero od dzisiejszej reguły — całe archiwum ma tam
 samą flagę kraju. Dlatego pozycja BEZ znacznika tematycznego dostaje ikonę wyprowadzoną z treści

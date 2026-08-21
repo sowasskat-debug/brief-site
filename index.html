@@ -768,6 +768,16 @@ const ZNACZNIK_IKONY = {
   '🌍':'<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.5 2.6 2.5 14.4 0 17-2.5-2.6-2.5-14.4 0-17z"/>',
   '🏆':'<path d="M7.5 4h9v5a4.5 4.5 0 01-9 0V4z"/><path d="M7.5 5.5H5a2.5 2.5 0 002.5 3M16.5 5.5H19a2.5 2.5 0 01-2.5 3"/><path d="M12 13.5v3.5M8.5 20.5h7"/>',
   '🔒':'<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/>',
+  // ⚖ 💰 🏥 — trzy klasy z pomiaru 2026-08-21 (6236 pozycji archiwum): sądy/regulatorzy 127
+  // trafień (2,04%, ~2,4/dobę), podatki/cła 111 (1,79%), szpitale/epidemie 49 (0,79%).
+  // Warianty wybrane PO RASTERYZACJI DO 13 px (ta sama procedura co 🚢 i 🏠, po 4 warianty
+  // na klasę): waga z miskami-trapezami — wersja „dwukreskowa" zlewała się w krzyż; procent —
+  // banknot i stos monet wychodziły ciemną bryłą, a nagłówki tej klasy SAME są procentowe
+  // („25% cła", „podatek z 8% do 1%"); krzyż konturowy — największy kontrast, wersja w ramce
+  // myliła się ze zwykłym plusem interfejsu.
+  '⚖':'<path d="M12 4.5v15"/><path d="M8 20.5h8"/><path d="M4.5 8h15"/><path d="M4.5 8l-2.2 5h4.4z"/><path d="M19.5 8l-2.2 5h4.4z"/>',
+  '💰':'<circle cx="7" cy="7" r="2.6"/><circle cx="17" cy="17" r="2.6"/><path d="M5.5 18.5L18.5 5.5"/>',
+  '🏥':'<path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/>',
 };
 
 // ── WSTECZNE ROZPOZNANIE TEMATU (2026-08-20, życzenie właściciela „żeby działało na
@@ -818,6 +828,19 @@ const IKONA_ZE_SLOW = [
   [/hipotek|hipoteczn|\bmieszkan\w*|nieruchomoś|deweloper|czynsz|wynajm\w*\s+(?:mieszka|lokal|dom|nieruchomo)|\bWIBOR\b|\bWIRON\b|zdolnoś\w* kredytow/i, '🏠'],
   [/kontenerow|frachtow|żeglug|armator|tankow(?:iec|c\w*)|masowc|stoczni|statk\w*|statek|\brejs\w*|port\w* morsk|szlak\w* (?:morsk|północn)|trasa (?:morsk|północn)|przeładunk|załadunk|\bbandery\b|\bteu\b/i, '🚢'],
   [/kolejow|\bpkp\b|autostrad|\bcpk\b|terminal przeładunk/i, '🏗'],
+  // ── ⚖ 💰 🏥 NA KOŃCU LISTY ŚWIADOMIE (2026-08-21): kolejność jest regułą, a te klasy mają
+  // PRZEGRYWAĆ ze szczegółowymi. „Apple przegrywa spór z UE o App Store" ma zostać przy 🔬,
+  // „FDA zatwierdza lek" przy 💊 — sąd/urząd bywa mechanizmem newsa, nie jego tematem.
+  // ⚖ NAD 💰, bo „Apple zapłaciło Irlandii 17 mld USD podatków po wyroku sądu" jest newsem
+  // o wyroku (zdarzenie), a podatek to tło — przy parze i tak wyjdą oba (⚖💰).
+  // ⚠️ Odmiany sądu wyliczone wprost, NIE `sąd\w*` — rdzeń złapałby „sądzić/osądzać" w opiniach.
+  [/\bsąd(?:u|owi|em|zie|y|ów|om|ami|ach)?\b|sądow\w*|\bpozew\b|\bpozw(?:u|y|em|ie|ów)\b|pozywa|\bwyrok\w*|antymonopolow|\bUOKiK\b|\bKNF\b|regulator\w*|nałoż\w* kar|\bgrzywn\w*|\bugod[aęy]\b|apelacj|\btrybunał\w*/i, '⚖'],
+  // ⚠️ `cł` z wyliczonymi końcówkami i osobno `ceł` — `cł\w*` złapałoby „cłem" ale i nic więcej
+  // nie ryzykujemy; za to samo `\bcl\b` byłoby pułapką na anglicyzmy.
+  [/\bpodat(?:ek|ku|ki|ków|kow\w*|kiem|kach)\b|\bCIT\b|\bVAT\b|\bPIT\b|budżet\w* państw|deficyt\w* budżet|\bakcyz\w*|\bcł(?:o|a|em|ach|ami)\b|\bceł\b|taryf\w* (?:celn|handlow|importow)|opodatkow\w*/i, '💰'],
+  // ⚠️ `wirus` łapie też wirusy komputerowe — ale te nagłówki mają „cyberatak/haker" i 🔒 stoi
+  // WYŻEJ w liście, więc wygrywa. Zmierzone na klasie: 49 trafień, próbka czysta.
+  [/szpital\w*|\bNFZ\b|opiek\w* zdrowotn|służb\w* zdrowia|pacjent\w*|epidemi\w*|\bwirus(?:a|em|ie|y|ów)?\b|zakaże[nń]\w*|\bWHO\b|lekar(?:z\w*|ek)|onkolog\w*/i, '🏥'],
 ];
 // Kategoria jako sygnał SŁABSZY — wchodzi dopiero, gdy żadne słowo nie trafiło.
 // Świadomie BEZ kategorii politycznych i wojennych: tam flaga kraju niesie więcej niż ikona.
