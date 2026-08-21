@@ -1024,6 +1024,79 @@ od bota wyłącza go w całości. 📊 156 pozycji z ikoną od bota, 30 (19%) sp
   wspólnego kształtu ikony), 💼 zwolnienia („zwolnienie" = też z podatku/z NDA). Otwarte,
   czyste, ale poniżej progu lub bez ikony: 🥇 złoto 0,53%, 🧱 metale 0,53%, 🌾 rolnictwo 0,45%.
 
+### 🔴 ASCII-PUŁAPKA W REGEXACH: `\b` i `\w` NIE ZNAJĄ POLSKICH LITER (2026-08-21 wieczór)
+Znaleziona przeglądem całego tygodnia zmian, w SZEŚCIU miejscach naraz — to nie była jedna wpadka,
+tylko klasa, która wracała przy każdej nowej regule.
+- **Wzorzec kończący się polską literą przed `\b` NIGDY nie trafia.** `\bceł\b` było martwe
+  („wojna ceł", „obniżka ceł" nie dostawały 💰), tak samo `\bugod[aęy]\b` dla „ugodę".
+  Poprawnie: `(?![\wąćęłńóśźż])` zamiast `\b` PO polskiej literze.
+- **`\w*` staje na polskiej literze.** `nałoż\w* kar` gubiło „nałożyła karę", `port\w* morsk`
+  gubiło „portów morskich", `zdolnoś\w* kredytow` gubiło „zdolność kredytowa".
+  Poprawnie: `[\wąćęłńóśźż]*`.
+- **E ruchome** — mianownik ma inny temat niż reszta odmiany: „wynajem"≠`wynajm`,
+  „przeładunek"≠`przeładunk`, „masowiec"≠`masowc`. Ta sama rodzina co udokumentowane
+  `tankowc` vs „tankowiec". Wyliczaj oba warianty: `wynaj(?:em|m\w*)`.
+- ⚠️ **NIE zamieniaj `\w` hurtowo.** `\bmieszkan\w*` celowo nie przechodzi przez „ń"
+  (anty-„mieszkańców") — tam poprawna jest OSOBNA alternatywa `\bmieszkań(?![\wąćęłńóśźż])`.
+- 📊 Naprawione tego wieczoru: ceł, mieszkań, wynajem, zdolność kredytowa, przeładunek/załadunek,
+  masowiec, ropę/ropą, sztuczną inteligencją, nałożył karę, portów morskich, ugodę, opieką zdrowotną,
+  Polskę/Polską w `KRAJ_W_NAGLOWKU`. Plus w `gotowiec-x`: „pięć", „sześć", „dziewięć", „dziesięć",
+  „jedną" (mianowniki, czyli najczęstsze formy) — patrz sekcja o bramce pokrycia liczb.
+- ⚠️ **Ta sama pułapka działa w drugą stronę:** `\bPIT\b` z flagą /i łapie „pit stop",
+  a `\bbandery\b` łapało NAZWISKO („Marsz zwolenników Bandery"). Nowy rdzeń → skan archiwum.
+
+### Klasa 🥇 złoto i klasa 📱 firmy tech (2026-08-21 wieczór)
+Dwa zgłoszenia właściciela tego samego wieczoru, jedna przyczyna: **bot oznacza DZIAŁ albo sięga po
+najbliższą ikonę, gdy właściwej NIE MA na jego liście.**
+- 🥇 **złoto**: bot dawał `🪙`, a front rysuje 🪙 jako **symbol ₿** — czyli bitcoin przy złocie.
+  📊 44 pozycje w archiwum (0,71%), z tego 4 z monetą. Wzorzec: `złot(?:o|a|em|u)`, `złotą/złotę`,
+  kruszec, uncja, sztabki złota, XAU.
+  ⚠️ **IDIOMY WYCINANE PRZED TESTEM** (`IDIOMY_ZE_ZLOTEM`): „Patrioty **na wagę złota**" to news
+  o obronności. Zdejmujemy z KOPII tekstu, nie z wzorców — inaczej trzeba by wykluczenie wpisywać
+  do każdej reguły osobno. 📊 W archiwum dwa takie nagłówki (drugi: „nastał złoty wiek").
+  ⚠️ `\bzłot(?:o|a|em|u)\b` z wyliczonymi końcówkami, NIGDY `złot\w*` — ten łapie „złoty"
+  (walutę), „złotówkę" i „Złote Tarasy".
+- 📱 **firmy tech**: uwaga właściciela *„Samsung to bardziej firma tech niż chipowa"*. Klasa objęła
+  **80 pozycji**, które dotąd miały samą flagę (premiery iPhone'ów, sprzęt Sony, Xiaomi).
+  📊 Ciekawostka potwierdzająca, że luka była realna: **model SAM sięgał po 📱 mimo zamkniętej listy
+  ikon** (2 pozycje: GSM, mPay), a front zrzucał ją filtrem stylu jako obcą.
+- 🔴 **📱 STOI NA SAMYM KOŃCU `IKONA_ZE_SLOW` — to jest cała reguła tej klasy.** Nazwa firmy mówi
+  KTO, a nie CO SIĘ STAŁO, więc musi przegrywać z każdą klasą opisującą zdarzenie. 📊 Złapane pełnym
+  diffem, gdy stała wyżej: „Apple pozywa OpenAI" gubiło ⚖, „Apple zapłaciło podatki po wyroku"
+  gubiło 💰, „Apple Music oznacza utwory AI" gubiło 🎧 — informacja słabsza wypierała mocniejszą.
+- ⚠️ **`\bgalaxy\b` USUNIĘTE PO POMIARZE** — łapało „Wrak statku **Galaxy** FPS". Nazwa modelu
+  telefonu to zbyt pospolite słowo (ta sama klasa co `DJI` = dron vs indeks). `\bLG\b` świadomie
+  pominięte: dwie litery łapią skróty i inicjały.
+- **Para 🔬📱 jest ZWIJANA do 🔬** (`trafione.splice`): to ta sama rodzina, a para zjadałaby miejsce
+  flagi. Odwrotnie niż przy 🤖, które jako drugie NIESIE informację („chipy dla AI" to dwa tematy).
+
+### Ikona podmiotu bije ikonę działu — `IKONA_PODMIOTU` (2026-08-21 wieczór) 🔴
+Trzecia warstwa w łańcuchu znacznika, między regułą zdarzeniową a fallbackiem słownym.
+Powstała, bo `🏦🇰🇷` przy newsie „Samsung ogłosił program zwrotu dla akcjonariuszy" opisywało
+MECHANIZM (buyback = finanse), a nie PODMIOT (producent sprzętu).
+- **Nadpisujemy WYŁĄCZNIE ikony nazywające dział, nie podmiot:** 🏦 (banki), 📈 (rynki)
+  oraz 🪙 przy złocie. Każda inna ikona od bota (🔒, 🚀, 🛢…) jest nietykalna, a warunek jest ostry:
+  KAŻDA ikona tematyczna bota musi należeć do zbioru „wolno nadpisać".
+- **Lista jest oparta na NAZWIE WŁASNEJ**, i to jest różnica wobec ostrzeżenia przy
+  `ZDARZENIE_ZE_SLOW`: „boom na AI przypomina bańkę dotcomów" z 🏦 ZOSTAJE, bo w nagłówku nie pada
+  nazwa żadnej spółki z listy.
+- ⚠️ **Blokada na 🪙:** „Złoto **i bitcoin** odnotowują wzrosty" zostaje przy monecie — tam jest
+  na miejscu. Blokada na 📱: news o chipach Samsunga oddaje pole regule 🔬.
+- 📊 Pełny diff starej i nowej logiki na 6252 pozycjach po WSZYSTKICH zmianach wieczoru:
+  **79 zmian semantycznych (1,26%)**, każda przejrzana, plus 12 testów brzegowych.
+
+### 🔴 DESKA OPISOWA MA WŁASNE WZORCE — `WZORZEC_OPISU` (2026-08-21 wieczór)
+Najgroźniejszy błąd tego wieczoru i złapany WYŁĄCZNIE pełnym diffem, nie recenzją.
+Dopisanie nazw firm do wzorca 🔬 przeciekło do deski opisowej (fallback czytający ARTYKUŁ przy
+dwóch wystąpieniach), bo ta iteruje po tej samej liście. Skutek: **przegląd rynkowy o wojnie
+z Iranem wymienia mimochodem Samsunga i SK Hynix**, więc news o Ormuzie dostawał ikonę mikroskopu
+zamiast kropli ropy — 🔬 stoi w liście wyżej niż 🛢.
+- 📊 Diff pokazał **105 zmian zamiast spodziewanych ~40**; po rozdzieleniu wzorców wróciło do 93.
+- **`WZORZEC_OPISU[emo]` nadpisuje wzorzec używany PRZY SKANIE OPISU**, nagłówek zostaje na pełnym.
+- ⚠️ **ZASADA: dokładając NAZWĘ WŁASNĄ do wzorca obecnego w `IKONA_Z_OPISU` (🚀 🛢 🔬 💊), dopisz
+  wariant bez nazw do `WZORZEC_OPISU`.** Nazwy spółek padają w artykułach ubocznie — przeglądy
+  rynkowe wymieniają je dziesiątkami, a opis ma rozpoznawać TEMAT, nie aktorów.
+
 ### Wsteczne rozpoznanie tematu — `znacznikTematyczny` (życzenie: „żeby działało na poprzednich postach")
 Ikonę wskazuje BOT w polu `flag`, ale robi to dopiero od dzisiejszej reguły — całe archiwum ma tam
 samą flagę kraju. Dlatego pozycja BEZ znacznika tematycznego dostaje ikonę wyprowadzoną z treści

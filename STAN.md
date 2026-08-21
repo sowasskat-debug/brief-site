@@ -1,9 +1,61 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-21 popołudnie (po sesji: bramka zmyślonej klasy zdarzenia, naprawa wątków, znaczniki 🚢 i 🏠, gotowiec-x v13, dwie ręczne poprawki danych, znacznik nachodzący na nagłówek, zdarzenie bije podmiot + 🌍 nie blokuje reguły słownej, nowe klasy ⚖ 💰 🏥, filtr stylu znaczników)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-21 WIECZÓR (po sesji: przegląd całego tygodnia zmian + klasy 🥇 i 📱, nowe ikony złota i chipu, ASCII-pułapka w regexach, dedup paczki FT)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## ✅ 21.08 WIECZÓR: PRZEGLĄD CAŁEGO TYGODNIA (bot #174–#230) — 6 recenzentów, wynik niżej
+Zlecenie właściciela: *„przez ostatni tydzień zrobiliśmy sporo zmian, przeleć przez wszystkie,
+sprawdź czy nigdzie błędu nie zrobiliśmy"*. Sześć równoległych recenzji na pełnych diffach.
+**Architektura tygodnia okazała się zdrowa** — zamrożenie historii, budżet wątków, cap 4→6, bramka
+idx i embeddingi są czyste i potwierdzone na produkcji (cache-hit 64–77%, zero urwań wątków).
+- 🔴 **Znaleziona JEDNA klasa systemowa: ASCII-owe `\b`/`\w` w regexach na polskim tekście** —
+  szczegóły i pełna lista napraw w `CLAUDE.md` (sekcja „ASCII-PUŁAPKA"). Naprawione na froncie
+  (13 wzorców) i w `gotowiec-x` (mianowniki liczebników, `Math.round` na skali).
+- ✅ **Zmergowane (bot #231):** guard „NIE PRZECZY/MILCZY" w OBU bramkach PRZECZY (parser był
+  skopiowany dwa razy, oba miały ten sam błąd), shadow mode bez `await` w produkcyjnej ścieżce HTTP,
+  tolerancja „ZMYŚLONE", licznik źródeł `OrdinalIgnoreCase`, `OczyscHtml` zawężone do kształtu tagu,
+  martwe „(albo 🇸🇪)" przy Spotify.
+- ⬜ **OTWARTE — decyzje produktowe, świadomie NIE ruszone:**
+  1. **`housing starts`/`building permits`/`existing home sales` w regule niszowych wskaźników**
+     (#216) — to oficjalne dane USA, więc „housing starts najniżej od 2009" wypadnie z selekcji.
+     Zawęzić czy zostawić?
+  2. **Wątek X o 8:00 (#220)** — czoło i domknięcie nie trafiają do historii wysłanych, więc limit
+     dobowy liczy o 2 za mało; przy padniętych ogniwach drugi bieg opublikuje drugie czoło.
+     `X_AUTO=false`, więc nie pali się.
+  3. **Dubel w obrębie JEDNEGO biegu (#206)** — `opublikowaneUrle` to snapshot robiony raz przed
+     pętlą; naprawa wymaga zmiany w architekturze pętli, nie one-linera.
+
+## ✅ 21.08 WIECZÓR: KLASY 🥇 ZŁOTO I 📱 FIRMY TECH + nowe ikony (front, SW v145)
+Trzy zgłoszenia właściciela, trzy różne przyczyny — wszystkie wdrożone i zweryfikowane na produkcji.
+- **Samsung z 🏦 → 📱**: bot oznaczał MECHANIZM (buyback = finanse), nie PODMIOT. Klasa 📱 objęła
+  **80 pozycji** archiwum, które miały samą flagę. 🔬 zawężone do PRODUCENTÓW półprzewodników.
+  ⚠️ **Rozstrzyga TEMAT, nie nazwa:** „Samsung podnosi ceny pamięci RAM" wraca do 🔬.
+- **Złoto z 🪙 (rysowanego jako ₿) → 🥇**: bot nie miał ikony złota. 44 pozycje w archiwum.
+- **Waymo**: news nie odpadł redakcyjnie — **ten sam artykuł FT wszedł do paczki DWA RAZY**
+  (kody z lejka w Supabase: drugi egzemplarz dostał `duplikat`). 📊 Dubel w **5 z 21 biegów FT (24%)**
+  przy paczkach po 2-5 kandydatów. Naprawa: dedup w obrębie paczki po `KluczArtykuluUrl`.
+- **Ikony wymienione po uwadze właściciela** („trzeba zmienić ikonkę złota i chipów"): złoto sztabka
+  → **stos monet**, chip osiem nóżek → **układ z rdzeniem**. Wybrane po rasteryzacji do 13 px
+  (procedura z 🚢/🏠/⚖); odrzucone: medal, moneta z gwiazdką, wafel, płytka PCB.
+- ⬜ **DO SPRAWDZENIA PRZEZ WŁAŚCICIELA:** czy nowe ikony podobają się na żywym feedzie. Warianty
+  zapasowe (bryłka złota, laptop zamiast telefonu) są zrasteryzowane — podmiana to jedna linia SVG.
+- ⚠️ **PR bota #232 CZEKA NA MERGE** (klasyfikator blokuje merge z sesji): klasa 📱 w prompcie
+  selekcji, 🥇 na liście ikon, dedup paczki FT, kontr-wskaźnik lobbingu w prompcie FT.
+
+## ⚠️ 21.08 WIECZÓR: PUŁAPKI ZŁAPANE TEGO WIECZORU
+- 🔴 **Deska opisowa (fallback z ARTYKUŁU) używa TEJ SAMEJ listy wzorców co nagłówek** — dopisanie
+  nazw firm do 🔬 sprawiło, że przegląd rynkowy o wojnie z Iranem (wymienia Samsunga i SK Hynix
+  mimochodem) dostawał ikonę mikroskopu zamiast ropy. **Diff pokazał 105 zmian zamiast ~40.**
+  Naprawa: `WZORZEC_OPISU` — osobny, wąski wzorzec dla skanu opisu. Szczegóły w `CLAUDE.md`.
+- 🔴 **Nowa klasa postawiona za wysoko w liście KRADNIE informację** — 📱 nad ⚖/💰/🎧 zabierało
+  „Apple pozywa OpenAI" wagę sądu, a „Apple Music" słuchawki. Nazwa firmy mówi KTO, nie CO SIĘ STAŁO.
+- ⚠️ **Idiomy trzeba wycinać PRZED testem wzorca**, nie wykluczać w każdej regule osobno
+  („na wagę złota", „złoty wiek").
+- ⚠️ **Diff porównujący HTML kłamie, gdy zmieniasz kształt ikony** — 356 „zmian" przy 79 realnych.
+  **Porównuj emoji (semantykę), nie wyrenderowany SVG.**
+- ⚠️ **Nazwa modelu produktu to zły klucz:** `\bgalaxy\b` łapało „Wrak statku Galaxy FPS".
 
 ## ✅ 21.08: ZAMROŻENIE HISTORII — WDROŻONE (bot #229, 13:01) I ZWERYFIKOWANE NA ŻYWO
 Zrobione w osobnej sesji ~13:00, ta sekcja była nieaktualna do wieczora (pułapka: praca poszła
