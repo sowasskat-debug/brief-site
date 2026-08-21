@@ -778,6 +778,11 @@ const ZNACZNIK_IKONY = {
   '⚖':'<path d="M12 4.5v15"/><path d="M8 20.5h8"/><path d="M4.5 8h15"/><path d="M4.5 8l-2.2 5h4.4z"/><path d="M19.5 8l-2.2 5h4.4z"/>',
   '💰':'<circle cx="7" cy="7" r="2.6"/><circle cx="17" cy="17" r="2.6"/><path d="M5.5 18.5L18.5 5.5"/>',
   '🏥':'<path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/>',
+  // 🥇 złoto (2026-08-21 wieczór, zgłoszenie „złoto ma emoji bitcoina"). Wariant wybrany
+  // PO RASTERYZACJI DO 13 px, ta sama procedura co 🚢/🏠/⚖: sztabka (trapez) czytelna,
+  // odrzucone — medal z wstążką i moneta z literą (obie dawały ciemną kaszę u góry,
+  // dokładnie wada opisana przy 🔬).
+  '🥇':'<path d="M3.5 19.5h17l-2.6-6H6.1z"/>',
 };
 
 // ── WSTECZNE ROZPOZNANIE TEMATU (2026-08-20, życzenie właściciela „żeby działało na
@@ -799,13 +804,28 @@ const ZNACZNIK_IKONY = {
 // `(?![\wąćęłńóśźż])`, zamiast `\w*` przed dalszą częścią frazy — `[\wąćęłńóśźż]*`.
 // ⚠️ NIE zamieniaj `\w` hurtowo: `\bmieszkan\w*` celowo NIE przechodzi przez „ń" (anty-„mieszkańców")
 // — tam poprawna jest OSOBNA alternatywa `\bmieszkań(?!c…)`.
+// Idiomy, w których „złoto" nie jest kruszcem (patrz komentarz w `znacznikiTematyczne`).
+const IDIOMY_ZE_ZLOTEM = /na wagę złota|wart\w* (?:swojej |swej )?wagi w złocie|złot\w* (?:środek|rączk\w*|era|erze|wiek|wieku|medal\w*|strzał)/gi;
+
 const IKONA_ZE_SLOW = [
   [/bitcoin|\bbtc\b|ethereum|krypto|stablecoin|coinbase|binance/i, '🪙'],
   [/spacex|kosmiczn|\bnasa\b|starlink|starship|na orbit|rakiet\w* nośn/i, '🚀'],
   [/cyberatak|haker|ransomware|wyciek danych|cyberbezpiecz/i, '🔒'],
-  [/\bchip|półprzewodnik|litografi|\btsmc\b|\basml\b|micron|nvidia/i, '🔬'],
+  // ⚠️ NAZWY FIRM Z ODMIANĄ (2026-08-21 wieczór, zgłoszenie „Samsung to też firma tech"):
+  // 📊 zmierzone — 65 pozycji o tych spółkach miało SAMĄ FLAGĘ, bo wzorzec znał wyłącznie
+  // `micron` i `nvidia`. `\bintel\b` NIE łapie „Intela" (po rdzeniu stoi litera), stąd
+  // końcówki wyliczone jawnie — ta sama pułapka co `tankowc` bez „tankowiec".
+  // ⚠️ `\bamd\b` i `\bintel\b` mają granicę słowa OBOWIĄZKOWO: bez niej „intel" wchodzi
+  // w „intelligence", a „amd" w przypadkowe ciągi.
+  [/\bchip|półprzewodnik|litografi|\btsmc\b|\basml\b|micron|nvidia|\bsamsung\w*|\bsk hynix\b|sandisk|\bintel(?:a|em|owi|u)?\b|\bamd\b|broadcom|qualcomm|kioxia|foxconn/i, '🔬'],
   [/\bai\b|sztuczn[\wąćęłńóśźż]* inteligencj|openai|anthropic|chatgpt|gemini|\bllm\b|chatbot|deepseek/i, '🤖'],
   [/\brop(?:a|y|ie)\b|\brop[ęą](?![\wąćęłńóśźż])|\bbrent\b|\bwti\b|baryłk|rafineri|\bopec\b|benzyn|diesel|paliw/i, '🛢'],
+  // 🥇 STOI NAD ⚡ I NAD KATEGORIĄ `Surowce → 🛢` (2026-08-21 wieczór): bez tego „Cena złota
+  // 4200 USD za uncję" dostawała KROPLĘ ROPY z kategorii. 📊 44 pozycje w archiwum (0,71%).
+  // ⚠️ `\bzłot(?:o|a|em|u)\b` z wyliczonymi końcówkami, NIGDY `złot\w*` — ten łapie „złoty"
+  // (waluta), „złotówka" i „Złote Tarasy". „Kruszec" i „uncja" dokładają formy, których
+  // sam rdzeń złota nie ma („NBP dokupił kruszec").
+  [/\bzłot(?:o|a|em|u)\b|\bzłot[ąę](?![\wąćęłńóśźż])|\bkruszc\w*|\bkruszec\b|\buncj\w*|\bXAU\b|sztab\w* złota/i, '🥇'],
   [/elektrown|reaktor|energetyk|gaz ziemn|\blng\b|fotowoltaik|farm\w* wiatrow|sieci przesyłow/i, '⚡'],
   [/spotify|apple music|muzyczn|piosenk|album\b|\butw(?:ór|ory|orów|orami)\b/i, '🎧'],
   [/netflix|youtube|streaming|serial\b|disney|\bhbo\b|tiktok/i, '🎬'],
@@ -922,6 +942,17 @@ const KRAJ_W_NAGLOWKU = new RegExp([
 // wolno mu wypełnić całego budżetu znacznika i wypchnąć flagi.
 const IKONA_Z_OPISU = new Set(['🚀', '🛢', '🔬', '💊']);
 const MIN_TRAFIEN_W_OPISIE = 2;
+// 🔴 DESKA OPISOWA MA WŁASNY, WĘŻSZY WZORZEC DLA 🔬 (2026-08-21 wieczór) — to warunek
+// poprawności, nie drobiazg. Nazwy spółek dopisane do reguły NAGŁÓWKA (Samsung, SK Hynix,
+// Intel…) padają w artykułach UBOCZNIE: przegląd rynkowy o wojnie z Iranem wymienia
+// spadki Samsunga i SK Hynix, więc opis dawał 🔬 zamiast 🛢 — bo 🔬 stoi w liście WYŻEJ.
+// 📊 Złapane PEŁNYM DIFFEM przed wdrożeniem: 105 zmian zamiast 40, w tym newsy o Iranie
+// i o giełdzie w Seulu z ikoną mikroskopu.
+// ⚠️ Dokładając NAZWĘ WŁASNĄ do wzorca obecnego w `IKONA_Z_OPISU`, dopisz tu wariant bez
+// nazw — inaczej wzbogacasz regułę nagłówka i po cichu psujesz deskę opisową.
+const WZORZEC_OPISU = {
+  '\u{1F52C}': /\bchip|półprzewodnik|litografi|\btsmc\b|\basml\b|micron|nvidia/i,
+};
 
 // ── ZDARZENIE BIJE PODMIOT (2026-08-21) ──────────────────────────────────────────────
 // Zgłoszenie właściciela: „dlaczego tu taka emotka jest a nie kłódka?" — kafel „Apollo
@@ -939,12 +970,37 @@ const ZDARZENIE_ZE_SLOW = [
   [/cyberatak|haker|ransomware|wyciek danych|cyberbezpiecz/i, '🔒'],
 ];
 
+// ── PODMIOT BIJE IKONĘ DZIAŁU (2026-08-21 wieczór) ───────────────────────────────────
+// Dwa zgłoszenia właściciela tego samego wieczoru, jedna przyczyna: bot oznacza DZIAŁ
+// („Samsung ogłosił program zwrotu dla akcjonariuszy" → 🏦 bank, bo buyback to finanse),
+// albo sięga po najbliższą ikonę, gdy właściwej NIE MA w jego liście („Złoto najdroższe
+// od maja" → 🪙, a front rysuje 🪙 jako SYMBOL ₿, czyli bitcoin przy złocie).
+// 🔴 LISTA JEST WĄSKA I OPARTA NA NAZWIE WŁASNEJ/RZECZY, nie na branży — i to jest cała
+// różnica wobec ostrzeżenia przy ZDARZENIE_ZE_SLOW. Nadpisujemy WYŁĄCZNIE ikony, które
+// nazywają dział, a nie podmiot: 🏦 (banki), 📈 (rynki) oraz 🪙 przy złocie.
+// ⚠️ „boom na AI przypomina bańkę dotcomów" z 🏦 od bota ZOSTAJE 🏦 — w nagłówku nie pada
+// nazwa żadnej spółki z listy, więc reguła się nie odpala.
+// ⚠️ 🪙 nadpisujemy tylko wtedy, gdy nagłówek NIE mówi też o krypto — „Złoto i bitcoin
+// odnotowują wzrosty" ma zostać przy 🪙, bo tam moneta jest na miejscu.
+const IKONA_PODMIOTU = [
+  { wz: /\bzłot(?:o|a|em|u)\b|\bzłot[ąę](?![\wąćęłńóśźż])|\bkruszc\w*|\bkruszec\b|\buncj\w*|sztab\w* złota/i,
+    emo: '🥇', nadpisuje: ['🪙', '🏦', '📈'],
+    blokada: /bitcoin|\bbtc\b|ethereum|krypto|stablecoin/i },
+  { wz: /\bsamsung\w*|\bsk hynix\b|sandisk|\bintel(?:a|em|owi|u)?\b|\btsmc\b|\basml\b|micron|nvidia|broadcom|qualcomm/i,
+    emo: '🔬', nadpisuje: ['🏦', '📈'], blokada: null },
+];
+
 function znacznikiTematyczne(item, bezKategorii) {
   if (!item) return [];
   // 🔴 TYLKO NAGŁÓWEK, nigdy artykuł. Zmierzone: skan razem z treścią dawał 57,9% pozycji,
   // a próbki były bezsensowne — „Udział Alphabet w Anthropic" dostawał 🚀, bo o SpaceX
   // wspominał artykuł pod spodem. Znacznik opisuje news TAK, JAK JEST ZATYTUŁOWANY.
-  const t = String(item.text || '');
+  // ⚠️ IDIOMY ZE ZŁOTEM ZDEJMOWANE PRZED TESTEM (2026-08-21 wieczór) — złapane pełnym
+  // diffem: „Patrioty NA WAGĘ ZŁOTA. Kosiniak-Kamysz…" to news o obronności, a dostawał 🥇.
+  // 📊 W archiwum takich nagłówków są DWA (drugi to „nastał złoty wiek"), więc reguła jest
+  // tania i wąska. Zdejmujemy z KOPII tekstu, nie ruszając wzorców — inaczej trzeba by
+  // wpisać wykluczenie do każdej reguły osobno.
+  const t = String(item.text || '').replace(IDIOMY_ZE_ZLOTEM, ' ');
   const trafione = [];
   for (const [wz, emo] of IKONA_ZE_SLOW) {
     if (wz.test(t) && !trafione.includes(emo)) trafione.push(emo);
@@ -970,7 +1026,7 @@ function znacznikiTematyczne(item, bezKategorii) {
   if (opis) {
     for (const [wz, emo] of IKONA_ZE_SLOW) {
       if (!IKONA_Z_OPISU.has(emo)) continue;
-      const glob = new RegExp(wz.source, 'gi');
+      const glob = new RegExp((WZORZEC_OPISU[emo] || wz).source, 'gi');
       if ((opis.match(glob) || []).length >= MIN_TRAFIEN_W_OPISIE) return [emo];
     }
   }
@@ -1012,6 +1068,23 @@ function znacznikHtml(item) {
       // ⚠️ Tylko pozycje, gdzie bot dał ikonę tematyczną — pozycje z samą flagą obsługuje
       // fallback niżej, z bramką kraju; tu bramki nie ma, bo flag nie zgadujemy, tylko dziedziczymy.
       const tekst = String(item.text || '');
+      // Podmiot bije ikonę działu — patrz komentarz przy IKONA_PODMIOTU. Warunek jest
+      // ostry: KAŻDA ikona tematyczna od bota musi należeć do zbioru „wolno nadpisać",
+      // więc pozycja z 🔒 albo 🚀 od bota zostaje nietknięta.
+      for (const reg of IKONA_PODMIOTU) {
+        if (!reg.wz.test(tekst)) continue;
+        if (reg.blokada && reg.blokada.test(tekst)) continue;
+        const ikonyBota = grafy
+          .map(g => g.replace('\uFE0F', ''))
+          .filter(g => !/\p{Regional_Indicator}/u.test(g) && (ZNACZNIK_IKONY[g] || g === '🌍'));
+        if (!ikonyBota.length || ikonyBota.some(g => g === reg.emo)) continue;
+        if (!ikonyBota.every(g => reg.nadpisuje.includes(g))) continue;
+        const flagi = grafy.filter(g => /\p{Regional_Indicator}/u.test(g))
+          .sort((a, b) => (b === '🇵🇱' ? 1 : 0) - (a === '🇵🇱' ? 1 : 0))
+          .slice(0, 2);
+        z = reg.emo + flagi.join('');
+        break;
+      }
       for (const [wz, emo] of ZDARZENIE_ZE_SLOW) {
         if (wz.test(tekst) && !grafy.some(g => g.replace('\uFE0F', '') === emo)) {
           // 🇵🇱-first jak w fallbacku niżej (2026-08-21 wieczór) — bez sortu cięcie do dwóch
