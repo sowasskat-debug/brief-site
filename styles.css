@@ -1112,10 +1112,34 @@ html, body {
   display:flex;align-items:center;gap:10px;
   background:var(--bg,#fff);padding:9px 12px;
 }
-.q-head{display:flex;align-items:baseline;gap:9px;flex:1 1 auto;min-width:0;overflow:hidden}
+/* 🔴 WYKRES ROŚNIE, GŁOWA BIERZE TYLE, ILE POTRZEBUJE (2026-08-21, życzenie właściciela:
+   „wykres powinien się rozszerzać w lewo, jak tylko rozdzielczość ekranu pozwala").
+   Dotąd było odwrotnie: `.q-spark` miał SZTYWNE 110 px (84 na wąskich), a całą nadwyżkę
+   zagarniała `.q-head`, więc na szerszym ekranie rosła pusta przestrzeń przy nazwie,
+   a wykres zostawał znaczkiem. Teraz `.q-head` jest `0 1 auto` (nie rośnie, wolno jej się
+   ścisnąć przez `.q-name`), a `.q-spark` zabiera całą resztę.
+   🔴 WAGA KURCZENIA 20, NIE BLOKADA. Pierwsze podejście dawało `.q-head` zwykłe `0 1 auto`
+   i wykres DALEJ zostawał na 84 px (zmierzone na panelu desktopowym 386 px: głowa 109,
+   wykres 84) — bo przy ciasnym wierszu flexbox kurczył OBA proporcjonalnie, a wykres
+   dobijał do swojego `min-width`. Waga 20 sprawia, że nadwyżkę oddaje NAZWA instrumentu,
+   zgodnie z zasadą z nagłówka tej sekcji.
+   ⚠️ NIE ustawiaj `.q-spark{flex-shrink:0}` — wtedy przy naprawdę ciasnym wierszu nie ma już
+   czym oddać nadwyżki i wypychany jest procent zmiany poza `overflow:hidden` kontenera.
+   To dokładnie ta wpadka, którą opisuje komentarz na górze tej sekcji. Wykres MA prawo się
+   ścisnąć — tyle że dopiero jako ostatni, po nazwie.
+   ⚠️ `min-width` ZOSTAJE — bez niego przy długiej nazwie instrumentu wykres schodziłby
+   do zera i kafel wyglądałby na zepsuty.
+   📊 ZMIERZONE PO ZMIANIE (realny render): telefon 375 px → wykres 84→102, panel desktopowy
+   386 px → 84→107. Głowa oddaje: 109→87 i 63. Żaden wiersz się nie przycina (`scrollWidth`
+   równy `clientWidth`), czyli procent zmiany nie wypada poza `overflow:hidden`.
+   🔴 I DLATEGO NIE RUSZAM viewBoxa (110×30): maksimum po zmianie to 107 px, więc wykres NADAL
+   SIĘ ZWĘŻA, nigdy nie rozciąga. Gdyby kiedyś urósł powyżej 110, `preserveAspectRatio="none"`
+   zacznie ROZDYMAĆ kropkę końcową (r=2.4) w jajko — wtedy trzeba podnieść `w`
+   w `sparklineSvg(..., 110, 30)`, a nie samo CSS. */
+.q-head{display:flex;align-items:baseline;gap:9px;flex:0 20 auto;min-width:0;overflow:hidden}
 .q-sym{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.06em;flex:0 0 auto}
 .q-name{font-size:12.5px;color:var(--muted,#6b7280);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.q-spark{flex:0 0 110px;height:30px}
+.q-spark{flex:1 1 110px;height:30px;min-width:84px}
 .q-vals{display:flex;align-items:baseline;gap:9px;flex:0 0 auto}
 .q-px{font-family:'Space Mono',monospace;font-size:13px;white-space:nowrap}
 .q-cur{color:var(--muted,#6b7280);font-size:10px}
@@ -1135,7 +1159,7 @@ html, body {
    więc znika dopiero po nazwie instrumentu, nie przed nią. */
 @media (max-width:460px){
   .q-name{display:none}
-  .q-spark{flex:0 0 84px}
+  .q-spark{flex:1 1 84px;min-width:84px}
   .q-row{gap:8px;padding:9px 10px}
   .q-chg{min-width:0}
   /* Symbol i chip jeden pod drugim — w linii chip był OBCINANY (zmierzone: head potrzebował 92px,
