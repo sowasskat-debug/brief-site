@@ -1152,6 +1152,24 @@ zamiast 270), czyli płaciliśmy treścią za CTA.
   aktualną długością doklejki.
 - ⚠️ **Wymaga redeployu:** `supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc`.
 
+## Znacznik 🏠 — mieszkania i hipoteki (2026-08-21)
+Zgłoszenie właściciela: *„hipoteka dotyczy mieszkań, więc tam też ikonka domu powinna być"* — przy
+„Oprocentowanie hipotek może się zmienić" była sama flaga 🇵🇱.
+- 📊 **Zmierzone na 6171 pozycjach: 31 trafień = 0,50% (~0,6/dobę).** Mniej niż 🚢, ale klasa jest CZYSTA
+  (po zawężeniu wzorca żadnej fałszywki w całym archiwum).
+- 🔴 **TRZY PUŁAPKI ZŁAPANE POMIAREM, NIE ZGADYWANIEM** — pierwszy wzorzec dawał 97 trafień (1,57%),
+  z czego **65 to były fałszywki**:
+  1. `najm\w*` łapało **„co NAJMniej"** i **„NAJMocniej"** — czyli dom przy trzęsieniu ziemi i przy bitcoinie,
+  2. alternatywa `mieszkań` trafiała w **„mieszkaŃców"** (Cyberatak na Łotwie, gminy tracące ludność),
+  3. bez `\b` wzorzec `mieszkan` wchodził w **„zaMIESZKANe"** i **„adres zaMIESZKANia"**.
+  Stąd `\bmieszkan\w*` z **twardym `n`** — łapie mieszkanie/mieszkaniami/mieszkaniowy, a nie tyka „mieszkańców".
+- ⚠️ **`wynajm` MUSI mieć dopełnienie** (`mieszka|lokal|dom|nieruchomo`) — samo łapało „wynajmu mocy
+  obliczeniowych" (Meta/Anthropic). To jedyna fałszywka, która przeżyła pierwsze zawężenie.
+- **Reguła stoi NAD kategorią:** „Fed / Banki" dałoby 🏦, a news o hipotece jest o MIESZKANIU, nie o banku.
+- **Ikona:** dach + bryła, dwie kreski. Wybrana tak samo jak 🚢 — po rasteryzacji do 13 px odpadły warianty
+  z drzwiami (ciemna plama u dołu), z oknem (rozmyta kropka) i z kominem (zlewał się z dachem w narożniku).
+- ✅ Sprawdzone na prawdziwym froncie obok 🚢. SW → v136.
+
 ## Znacznik 🚢 — żegluga (2026-08-21)
 Zgłoszenie właściciela ze zrzutu: przy „Korea Południowa rozpoczyna pierwszy komercyjny rejs testowy
 do Europy przez Arktykę" była sama flaga 🇰🇷, a powinna być też ikona statku.

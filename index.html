@@ -755,6 +755,11 @@ const ZNACZNIK_IKONY = {
   // kadłubem dawały przy 13 px ciemną kaszę na górze — dokładnie ta wada, przed którą ostrzega
   // komentarz o 🔬 wyżej. Ten ma trzy kreski: trapez kadłuba (czyta się natychmiast), nadbudówkę
   // ze skosem i komin. Czytelność porównywalna z 🚗.
+  // 🏠 mieszkania, hipoteki i nieruchomości (2026-08-21, zgłoszenie właściciela: „hipoteka dotyczy
+  // mieszkań, więc tam też ikonka domu powinna być"). Wybrany tak samo jak 🚢 — po rasteryzacji do 13 px:
+  // wariant z drzwiami dawał ciemną plamę u dołu, z oknem rozmytą kropkę w środku, a z kominem zlewał
+  // go z dachem w narożniku. Została sama sylwetka: dach i bryła, dwie kreski.
+  '🏠':'<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.8V20.5h13V9.8"/>',
   '🚢':'<path d="M2.8 14.8h18.4l-3 5.7H5.8z"/><path d="M8 14.8V9.8h5.5l2.5 5"/><path d="M10 9.8V6.5h2v3.3"/>',
   '🚗':'<path d="M3 15v-2.5l2-4.5h14l2 4.5V15"/><path d="M3 15h18v3h-3v-1.5H6V18H3z"/><circle cx="7.5" cy="15.5" r="1.2"/><circle cx="16.5" cy="15.5" r="1.2"/>',
   '🏦':'<path d="M3 9.5L12 4l9 5.5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20.5h18"/>',
@@ -797,6 +802,13 @@ const IKONA_ZE_SLOW = [
   // (~7/dobę), czyli więcej niż większość ikon z tej listy.
   // ⚠️ ŚWIADOMIE BEZ „cieśnin" — Ormuz to 70+ pozycji, ale one mają już DWIE FLAGI (🇺🇸🇮🇷), które niosą
   // więcej niż ikona. Ta sama zasada co w komentarzu wyżej: lepiej sam kraj niż ikona nie na temat.
+  // 🏠 STOI NAD REGUŁĄ KATEGORII: „Fed / Banki” dałoby 🏦, a news o hipotece jest o MIESZKANIU, nie o banku.
+  // 📊 Zmierzone na 6171 pozycjach: 31 trafień = 0,50% (~0,6/dobę) — mało, ale klasa jest czysta.
+  // ⚠️ TRZY PUŁAPKI ZŁAPANE POMIAREM, nie zgadywaniem: (1) `najm\w*` łapało „co NAJMniej" i „NAJMocniej",
+  // (2) alternatywa `mieszkań` trafiała w „mieszkaŃców", (3) bez `\b` wzorzec `mieszkan` wchodził
+  // w „zaMIESZKANe" i „adres zaMIESZKANia". Stąd `\bmieszkan\w*` z twardym `n`.
+  // ⚠️ `wynajm` MUSI mieć dopełnienie — samo łapało „wynajmu mocy obliczeniowych" (Meta/Anthropic).
+  [/hipotek|hipoteczn|\bmieszkan\w*|nieruchomoś|deweloper|czynsz|wynajm\w*\s+(?:mieszka|lokal|dom|nieruchomo)|\bWIBOR\b|\bWIRON\b|zdolnoś\w* kredytow/i, '🏠'],
   [/kontenerow|frachtow|żeglug|armator|tankowc|masowc|stoczni|statk\w*|statek|port\w* morsk|szlak\w* morsk|kanał sueski|kanał panamski|\bteu\b/i, '🚢'],
   [/kolejow|\bpkp\b|autostrad|\bcpk\b|terminal przeładunk/i, '🏗'],
 ];
