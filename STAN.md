@@ -26,6 +26,21 @@ Zgłoszenie właściciela: *„ostatnio trąbimy o bitcoinie dosyć sporo, dlacz
   ⚠️ Bitcoin z 08:46 wskoczy do sagi dopiero, gdy przyjdzie **kolejny news z tej historii** — luźny
   wchodzi tylko razem z nowym nagłówkiem, nigdy sam.
 
+## ✅ 21.08 po domknięciu: CUDZA LINIA WPŁYWU POD NEWSEM — naprawiona (bot #228)
+Zgłoszenie: *„wpływ na rynek się nie zgadza, na chuj tam bitcoin i microsoft"*. Kafel „Przychody SpaceX
+wzrosną o 2090%" dostał linię **„↑ MSFT, ↑ NVDA, ↑ BTC-USD — IPO Anthropic sygnalizuje…"**, a za nią
+poszły kafelki notowań (`chart` wywodzi się z linii wpływu).
+- 🔴 **PRZYCZYNA: `HaikuNapiszWplyw` dawał pierwszeństwo `facts`** — pierwszym 900 znakom SUROWEJ strony.
+  Źródłem był **przegląd dnia** z Invezz, gdzie pierwsze 900 znaków to temat wiodący, nie nasz news.
+- **Naprawa: `article` przed `facts`.** Nasz opis przeszedł `ArtykulOInnymWydarzeniu` i `ZmyslonaKlasaZdarzenia`,
+  surowe fakty nie przeszły żadnej bramki. Zweryfikowane na żywym Haiku (surowe fakty → BTC i XRP,
+  nasz opis → Nasdaq 100 i konkurenci aerospace).
+- ⚠️ **`SprawdzSpojnoscImpactu` NIE jest tu winna** — pyta o sprzeczność kierunku i liczby bez pokrycia,
+  a „72 tys." MIAŁO pokrycie, bo faktami był cały przegląd. Nikt nie pytał, czy wpływ dotyczy TEGO newsa.
+- ⛔ Odrzucone jako prefiltr: „nazwa własna w wyjaśnieniu spoza newsa" — 236/2886 = 8,18%, prawie same
+  trafienia poprawne. Linia wpływu z natury nazywa instrumenty spoza artykułu.
+- Dane poprawione ręcznie: front `70e8d7c2d`.
+
 ## ✅ 21.08 po domknięciu: BRAMKA POKRYCIA LICZB W GOTOWCU — naprawiona (funkcja v14)
 Zgłoszenie: *„często mam problem z generowaniem gotowca"*. Bramka odrzucała post, gdy model zapisał
 cyfrą liczbę, która w materiale stała SŁOWNIE („pięciu lat" → „5 lat") albo rozwinął skalę
