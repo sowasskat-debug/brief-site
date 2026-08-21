@@ -5,10 +5,18 @@ Zdjęcie stanu na **2026-08-21 popołudnie (po sesji: bramka zmyślonej klasy zd
 
 ---
 
-## 🔴 21.08: NIEZROBIONE, TERMIN DZIŚ — zamrożenie historii (18:00 BST, na Fable 5)
-Sesja 21.08 rano **nie tknęła** tego punktu. Termin ustawiony przez właściciela na dziś wieczór,
-przypomnienie `brifup-zamrozenie-historii` stoi. Treść i pomiar bez zmian — patrz sekcja „⏸ 19.08"
-niżej w tym pliku. **To jest pierwsza rzecz do zrobienia w następnej sesji, jeśli zaczyna się po 18:00.**
+## ✅ 21.08: ZAMROŻENIE HISTORII — WDROŻONE (bot #229, 13:01) I ZWERYFIKOWANE NA ŻYWO
+Zrobione w osobnej sesji ~13:00, ta sekcja była nieaktualna do wieczora (pułapka: praca poszła
+w repo BOTA, a zdjęcie stanu mieszka w brief-site — sesja, która merguje w bocie, ma obowiązek
+poprawić TEN plik). Commit `e37e442`, sekcja [OPUBLIKOWANE]+[OCENIONE] zamrażana na 3 biegi,
+stan w `zamrozona_historia.txt` (lokalny per-serwer, .gitignore), fail-safe: błąd = świeża sekcja.
+- ✅ **Zweryfikowane na Hetznerze 21.08 wieczorem** (log `/var/log/brif_bot.log`):
+  cykl działa równo (świeża → 2/3 → 3/3 → świeża, wiele pełnych obrotów), plik stoi.
+- 📊 **Cache-hit DeepSeeka: przed 24–34%, po wdrożeniu 64–76%** (linie `[TOKENY] bieg`).
+  Pomiar z 19.08 obiecywał odzysk 63% missów — dowiezione.
+- ⚠️ Bramki dedupu (`ZnajdzPodobnePublikowane`, `OcenEtapKontynuacji`, historia po linkach)
+  czytają pliki NA ŚWIEŻO i zamrożeniu nie podlegają — tak jak wymagała sekcja 19.08.
+- ⬜ Przypomnienie `brifup-zamrozenie-historii` (dziś 18:00) już niepotrzebne — skasować przy okazji.
 
 ## ⬜ 21.08: SAGA O BITCOINIE — naprawa WDROŻONA, ale NIEZWERYFIKOWANA NA ŻYWO
 Zgłoszenie właściciela: *„ostatnio trąbimy o bitcoinie dosyć sporo, dlaczego o tym sagi skrypt nie zrobił?"*
@@ -125,6 +133,7 @@ Zgłoszenie właściciela: *„zobacz co się stało z emotkami"* (zrzut z feedu
 | Znacznik nachodzący na nagłówek: komórka gridu 20→38 px | front, `styles.css`, SW v139 |
 | Zła ikona od bota: zdarzenie bije podmiot, 🌍 nie blokuje reguły słownej | front, `index.html`, SW v140 |
 | Trzy nowe klasy znaczników ⚖ 💰 🏥 (345 pozycji archiwum, 5,53%) | front, `index.html`, SW v141 |
+| Zamrożenie sekcji historii selekcji na 3 biegi (cache-hit 24–34% → 64–76%) | bot #229, `e37e442` |
 
 ⚠️ **Sesja 20.08 wieczór / 21.08 (znaczniki kafli, front #211–#216, bot #221–#223) NIE MA WŁASNEJ
 SEKCJI w tym pliku** — trwała wiedza z niej siedzi w `FinancialNewsBot/CLAUDE.md` (sekcja o regule `flag`).
@@ -1148,7 +1157,7 @@ klastra), cytat-wabik z Zaporoża (klasa ze świadomie odłożoną bramką). **R
 - **IonQ 217 mln USD** — artykuł nie podaje kwoty.
 - **NASDAQ w tyle o sesję** — znany otwarty problem (Yahoo 429 z IP Hetznera).
 
-## ⏸ 19.08: zamrożenie historii — ODŁOŻONE NA PIĄTEK 21.08 (decyzja właściciela)
+## ✅ 19.08→21.08: zamrożenie historii — WDROŻONE 21.08 (bot #229), szczegóły w sekcji 21.08 wyżej
 
 ⏸ **Świadomie odłożone**, nie zapomniane: „boję się, że spierdolimy — poczekamy na piątek wieczór".
 Ustawione przypomnienie `brifup-zamrozenie-historii` na **21.08.2026 18:00 BST**. Właściciel chce to
@@ -1157,7 +1166,7 @@ robić **na Fable 5**. Pomiar i rekomendacja bez zmian — treść niżej.
 Bramka dedupu `ZnajdzPodobnePublikowane` czyta plik NA ŚWIEŻO i zamrażaniu NIE podlega —
 pomylenie tych dwóch rzeczy to duble na froncie.
 
-## ⬜ 19.08: zamrożenie historii w prompcie selekcji — ZMIERZONE, NIEWDROŻONE
+## ✅ 19.08: zamrożenie historii w prompcie selekcji — ZMIERZONE (pomiar niżej), WDROŻONE 21.08 jako bot #229
 
 Sekcja `[OPUBLIKOWANE WCZEŚNIEJ]` + `[OCENIONE WCZEŚNIEJ]` to **1 744 tokeny miss na wywołanie**
 (sekcja waży 2 300, część już się cache'uje) × ~250 wywołań/dobę = **436 k tok/dobę = 22% missów =
