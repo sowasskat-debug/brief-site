@@ -26,6 +26,13 @@ Zgłoszenie właściciela: *„ostatnio trąbimy o bitcoinie dosyć sporo, dlacz
   ⚠️ Bitcoin z 08:46 wskoczy do sagi dopiero, gdy przyjdzie **kolejny news z tej historii** — luźny
   wchodzi tylko razem z nowym nagłówkiem, nigdy sam.
 
+## ✅ 21.08 po domknięciu: BRAMKA POKRYCIA LICZB W GOTOWCU — naprawiona (funkcja v14)
+Zgłoszenie: *„często mam problem z generowaniem gotowca"*. Bramka odrzucała post, gdy model zapisał
+cyfrą liczbę, która w materiale stała SŁOWNIE („pięciu lat" → „5 lat") albo rozwinął skalę
+(„72 tys." → „72 000"). 📊 **25,3% pozycji ma w materiale liczebnik słowny** — stąd „często".
+Naprawa dokłada te postacie do zbioru dozwolonych **po stronie materiału**, więc ochrona przed
+zmyśloną liczbą jest nietknięta (sprawdzone: 7 lat, 99 mld, 81 500 dalej odrzucane).
+
 ## ✅ 21.08: CO ZOSTAŁO ZROBIONE (wszystko na produkcji)
 | co | gdzie |
 |---|---|

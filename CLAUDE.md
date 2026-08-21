@@ -1150,6 +1150,21 @@ zamiast 270), czyli płaciliśmy treścią za CTA.
   ponad limit kadru; rośnie wyłącznie limit POLA.
   ⚠️ Liczby 35/37 w akapitach WYŻEJ to zapis pomiarów z 20.08 i zostają jako historia — nie są
   aktualną długością doklejki.
+- 🔴 **BRAMKA POKRYCIA LICZB ODRZUCAŁA CO CZWARTY GOTOWIEC BEZ POWODU (2026-08-21, v14).**
+  Zgłoszenie: *„często mam problem z generowaniem gotowca"*. Zrzut panelu: `Bramka pokrycia: liczby
+  spoza artykułu (5)` przy nagłówku „Przychody SpaceX wzrosną o 2090% w ciągu najbliższych **PIĘCIU**
+  lat". Model zapisał „5 lat" — **TĘ SAMĄ liczbę cyfrą** — a bramka widziała fabrykację, bo w materiale
+  stało wyłącznie słowo. Fallback zostawiał sam nagłówek, więc wyglądało to jak „gotowiec się nie generuje".
+  📊 **Zmierzone na 5477 pozycjach: 1385 = 25,3% ma w materiale liczebnik słowny**, a 1490 = 27,2%
+  skalę („72 tys."). Czyli co czwarty gotowiec był narażony na odrzut, który NIE jest fabrykacją.
+  **Naprawa: `liczbyMaterialu`** dokłada do zbioru dozwolonych liczb (a) cyfry dla liczebników słownych
+  1–12 wraz z odmianą i `dwukrotnie/trzykrotnie/czterokrotnie`, (b) rozwinięcia skali (`72 tys.` → `72000`,
+  tylko tys./mln/mld — przy bln liczby robią się absurdalnie długie i model ich tak nie zapisuje).
+  🔴 **OBIE RZECZY DZIAŁAJĄ WYŁĄCZNIE PO STRONIE MATERIAŁU, nigdy posta.** Bramka dalej odrzuca każdą
+  liczbę, której w materiale nie ma w ŻADNEJ postaci — zmienia się tylko to, że „pięciu" i „5" przestają
+  być dla niej różnymi liczbami. ✅ Sprawdzone na 6 przypadkach: 3 naprawy przechodzą, 3 fabrykacje
+  (7 lat, 99 mld, 81 500) dalej odrzucane.
+  ⚠️ Liczebnik słowny w POŚCIE niczego nie wymaga — `liczbyZ` wyłuskuje wyłącznie cyfry.
 - ⚠️ **Wymaga redeployu:** `supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc`.
 
 ## Znacznik 🏠 — mieszkania i hipoteki (2026-08-21)

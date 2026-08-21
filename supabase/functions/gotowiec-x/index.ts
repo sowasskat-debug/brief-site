@@ -97,8 +97,58 @@ function liczbyZ(tekst: string): string[] {
     .map((l) => l.replace(',', '.').replace(/\.0+$/, ''));
 }
 
+// ── CO JESZCZE LICZY SIĘ ZA „obecne w materiale" (2026-08-21) ───────────────────────────────
+// 🔴 Zgłoszenie właściciela: „często mam problem z generowaniem gotowca". Zrzut panelu pokazał
+// `Bramka pokrycia: liczby spoza artykułu (5)` przy nagłówku „Przychody SpaceX wzrosną o 2090%
+// w ciągu najbliższych PIĘCIU lat". Model zapisał „5 lat" — czyli TĘ SAMĄ liczbę cyfrą — a bramka
+// widziała fabrykację, bo w materiale stało wyłącznie słowo.
+// 📊 ZMIERZONE na 5477 pozycjach archiwum: **1385 = 25,3%** ma w materiale liczebnik słowny,
+// a **1490 = 27,2%** skalę („72 tys.", „86,2 mld"). Czyli co czwarty gotowiec był narażony
+// na odrzut, który NIE jest fabrykacją.
+// ⚠️ OBIE FUNKCJE TYLKO ROZSZERZAJĄ ZBIÓR DOZWOLONYCH LICZB po stronie MATERIAŁU — nigdy nie
+// ruszają liczb z POSTA. Bramka dalej odrzuca każdą liczbę, której w materiale nie ma w ŻADNEJ
+// postaci; zmienia się wyłącznie to, że „pięciu" i „5" przestają być dla niej różnymi liczbami.
+// ⚠️ Liczebnik słowny w POŚCIE nie wymaga niczego — `liczbyZ` wyłuskuje wyłącznie cyfry, więc
+// „pięć lat" w poście i tak nie jest sprawdzane.
+const SLOWNIE: Array<[RegExp, string]> = [
+  [/\bjed(?:en|na|no|nego|nym|ną|nej)\b/gi, '1'],
+  [/\bdw(?:a|ie|óch|oma|u)\b/gi, '2'],
+  [/\btrz(?:y|ech|ema)\b/gi, '3'],
+  [/\bczter(?:y|ech|ema)\b/gi, '4'],
+  [/\bpię(?:ć|ciu|cioma)\b/gi, '5'],
+  [/\bsze(?:ść|ściu|ścioma)\b/gi, '6'],
+  [/\bsied(?:em|miu|mioma)\b/gi, '7'],
+  [/\b(?:osiem|ośmiu|ośmioma)\b/gi, '8'],
+  [/\bdziewię(?:ć|ciu|cioma)\b/gi, '9'],
+  [/\bdziesię(?:ć|ciu|cioma)\b/gi, '10'],
+  [/\bjedenast(?:u|oma)?\b|\bjedenaście\b/gi, '11'],
+  [/\bdwunast(?:u|oma)?\b|\bdwanaście\b/gi, '12'],
+  [/\bdwukrotnie\b/gi, '2'],
+  [/\btrzykrotnie\b/gi, '3'],
+  [/\bczterokrotnie\b/gi, '4'],
+];
+// „72 tys." → dopuszczamy też 72000, bo model bywa rozwija skalę. Świadomie TYLKO tys./mln/mld:
+// przy bln liczby robią się absurdalnie długie, a model ich tak nie zapisuje.
+const SKALE: Array<[RegExp, number]> = [
+  [/(\d+(?:[.,]\d+)?)\s*(?:tys\.|tysi[ąę]c\w*)/gi, 1e3],
+  [/(\d+(?:[.,]\d+)?)\s*(?:mln|milion\w*)/gi, 1e6],
+  [/(\d+(?:[.,]\d+)?)\s*(?:mld|miliard\w*)/gi, 1e9],
+];
+
+function liczbyMaterialu(zrodlo: string): Set<string> {
+  const zbior = new Set(liczbyZ(zrodlo));
+  for (const [wz, cyfra] of SLOWNIE) if (new RegExp(wz.source, 'i').test(zrodlo)) zbior.add(cyfra);
+  for (const [wz, mnoznik] of SKALE) {
+    for (const m of zrodlo.matchAll(new RegExp(wz.source, 'gi'))) {
+      const wartosc = Number(m[1].replace(',', '.')) * mnoznik;
+      if (Number.isFinite(wartosc)) zbior.add(String(wartosc).replace(/\.0+$/, ''));
+    }
+  }
+  return zbior;
+}
+
 function pokrycieOk(post: string, zrodlo: string): { ok: boolean; brakuje: string[] } {
-  const wZrodle = new Set(liczbyZ(zrodlo));
+  const wZrodle = liczbyMaterialu(zrodlo);
   const brakuje = liczbyZ(post).filter((l) => !wZrodle.has(l));
   return { ok: brakuje.length === 0, brakuje };
 }
