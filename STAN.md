@@ -1,7 +1,72 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-20 popołudnie (po sesji: embeddingi NA PRODUKCJI w miejscach D/A/B, rozcieńczanie źródeł odblokowane, cap subitemów 4→6, cytat-wabik)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-21 południe (po sesji: bramka zmyślonej klasy zdarzenia, naprawa wątków, znaczniki 🚢 i 🏠, gotowiec-x v13, dwie ręczne poprawki danych)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+---
+
+## 🔴 21.08: NIEZROBIONE, TERMIN DZIŚ — zamrożenie historii (18:00 BST, na Fable 5)
+Sesja 21.08 rano **nie tknęła** tego punktu. Termin ustawiony przez właściciela na dziś wieczór,
+przypomnienie `brifup-zamrozenie-historii` stoi. Treść i pomiar bez zmian — patrz sekcja „⏸ 19.08"
+niżej w tym pliku. **To jest pierwsza rzecz do zrobienia w następnej sesji, jeśli zaczyna się po 18:00.**
+
+## ⬜ 21.08: SAGA O BITCOINIE — naprawa WDROŻONA, ale NIEZWERYFIKOWANA NA ŻYWO
+Zgłoszenie właściciela: *„ostatnio trąbimy o bitcoinie dosyć sporo, dlaczego o tym sagi skrypt nie zrobił?"*
+- **Przyczyna znaleziona i naprawiona** (bot #225): bieg wątków kończył się na `finish=length`, urwany
+  JSON, wyjątek przy parsowaniu i **cichy przepadek wszystkich nagłówków z tego biegu**.
+  📊 Zmierzone na 1291 biegach: **116 urwanych (9,0%), 723 utracone nagłówki.**
+- 🔴 **Przyczyna NIE była taka, jak wyglądała** — rozumowanie NIE rośnie z liczbą nagłówków (max ~30 tys.
+  znaków niezależnie od N). `max_tokens=8000` było za małe ZAWSZE, a liczba nagłówków decydowała tylko
+  o tym, ile TREŚCI musi się zmieścić PO rozumowaniu. Stąd formuła podnosi PODŁOGĘ, nie skaluje od zera.
+- **Druga warstwa:** `loose` był cmentarzem — prompt opisywał luźne wyłącznie jako materiał na NOWY
+  wątek, mimo że kod pozwalał doszyć je do istniejącej sagi. 📊 33 zszyte wobec 723 utraconych.
+- ⬜ **CO SPRAWDZIĆ NA STARCIE NASTĘPNEJ SESJI** (jedna komenda, log Hetznera):
+  `grep "wątków (budżet" /var/log/brif_bot.log | tail -5` — jeśli pusto, nowy kod jeszcze nie biegł.
+  Potem: czy `ODPOWIEDŹ URWANA NA BUDŻECIE` się nie pojawia i czy `zszytych luźnych` bywa > 0.
+  ⚠️ Bitcoin z 08:46 wskoczy do sagi dopiero, gdy przyjdzie **kolejny news z tej historii** — luźny
+  wchodzi tylko razem z nowym nagłówkiem, nigdy sam.
+
+## ✅ 21.08: CO ZOSTAŁO ZROBIONE (wszystko na produkcji)
+| co | gdzie |
+|---|---|
+| Bramka zmyślonej klasy zdarzenia („jutrzejszy debiut giełdowy" przy wygasającym lock-upie) | bot #224 |
+| Wątki: budżet wyjścia skalowany + odzysk luźnych + głośny log urwania | bot #225 |
+| Znaczniki: 🚢 żegluga, plus brakujące 🔬 i 🔒 (front rysował, bot nie oferował) | bot #226 |
+| Znacznik 🏠 mieszkania i hipoteki | bot #227 |
+| Ręczna poprawka: „debiut giełdowy SpaceX" → wygaśnięcie lock-upu | front `aefc04004` |
+| Ręczna poprawka: nagłówek o norweskim szelfie bez horyzontu („do 2050 r.") | front `53bd191b7` |
+| `gotowiec-x` **v12** — redeploy z 20.08, który nigdy nie poszedł | Supabase |
+| `gotowiec-x` **v13** — nowa doklejka „Dokończenie tej historii i całe dzisiejsze wydanie" | front `27dc8a4b9` |
+| Ikony 🚢 i 🏠 na froncie + trzy poprawki wzorca żeglugi | front `b9e66cbeb`, `29be9daf2`, `004a75827` |
+| Notowania: wykres rozszerza się w lewo | front `526691493`, SW v138 |
+
+⚠️ **Sesja 20.08 wieczór / 21.08 (znaczniki kafli, front #211–#216, bot #221–#223) NIE MA WŁASNEJ
+SEKCJI w tym pliku** — trwała wiedza z niej siedzi w `FinancialNewsBot/CLAUDE.md` (sekcja o regule `flag`).
+Nie szukaj jej tutaj.
+
+## ⚠️ 21.08: PUŁAPKI ZŁAPANE TEGO DNIA — czytaj przed dotykaniem znaczników
+- 🔴 **Weryfikacja przez podmianę `flag` w `briefs.json` NIE TESTUJE REGUŁY, tylko mapę SVG.**
+  Tak sprawdziłem ikonę statku i przepuściłem to, że wzorzec **nie odpalał na nagłówku, który był
+  powodem całej zmiany** („Korea… komercyjny REJS testowy" nie zawiera słowa „statek"). **Przy regule
+  wyprowadzającej znacznik z treści testuj na NIETKNIĘTYCH danych.**
+- **`tankowc` nie łapie słowa „tankowiec"** (jest tam `i`). Przy każdym nowym rdzeniu sprawdź odmianę.
+- **Polska palatalizacja:** debiut → debiu**c**ie, więc rdzeń to `debiu[tc]`.
+- **`\b` obowiązkowe:** `skazan\w*` trafia w „w**skazan**ych", `mieszkan` w „za**mieszkan**e",
+  `najm\w*` w „co **najm**niej".
+- **Nazwy przesmyków (Ormuz, Kanał Sueski/Panamski) NIE należą do wzorca żeglugi** — tam flagi krajów
+  niosą więcej niż ikona (uwaga właściciela: *„Panama ma swoją flagę przecież"*).
+- **Service worker serwuje starą wersję mimo podbitego `CACHE_NAME`** — przy sprawdzaniu lokalnie
+  wyrejestruj go, inaczej wygląda to jak „zmiana nie działa".
+
+## 🗂 21.08: PORZĄDKI W PR-ACH
+Zamknięte jako **nieaktualne, nie odrzucone** (gałęzie zostają, da się otworzyć ponownie):
+**#82** karta wątku · **#34** liczniki kategorii z archiwum · **#31** fala.html z Wikipedii ·
+**#27** śmieci w briefs.json.
+⬜ **Otwarty świadomie: #167** „Powrót do apki po ≥5 min otwiera odświeżoną dawkę na top story" (szkic).
+⚠️ Rusza `service-worker.js`, a ten dziś przeszedł cztery bumpy (v134 → v138) — **konflikt na
+`CACHE_NAME` jest pewny**, przy scalaniu nie cofnij numeru.
+
+---
 
 ## 💡 20.08: AgenticSeek — ODRZUCONY jako całość, JEDEN klocek wart pomiaru (SearXNG jako finder)
 
