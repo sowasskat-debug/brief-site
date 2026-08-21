@@ -193,7 +193,12 @@ Deno.serve(async (req) => {
   // ⚠️ KTO DOKLEJA, TEN LICZY: wołający dostaje w odpowiedzi pole `doklejka` i MUSI dodać
   // jej długość do własnego limitu pola. Inaczej przytnie ją po fakcie — dokładnie ta wpadka,
   // przez którą z „link w bio." zostawało „link w…" (patrz `zFlaga` w knadze).
-  const CTA_BIO = 'Cała dzisiejsza dawka — link w bio.';
+  // ⚠️ TREŚĆ DOKLEJKI ŻYJE TYLKO TUTAJ. Knaga bierze jej DŁUGOŚĆ z pola `doklejka` w odpowiedzi
+  // (nie ma własnej kopii napisu), więc zmiana tego stringa wystarcza — panel dostosuje limit pola sam.
+  // 2026-08-21, życzenie właściciela: doklejka ma zapowiadać JEDNO I DRUGIE — dokończenie tego newsa
+  // ORAZ całe wydanie dnia. Wydłużenie z 35 na 64 znaki nic nie kosztuje treści, bo od 20.08 doklejka
+  // dopina się PONAD limit kadru (patrz `budzetTresci` niżej) — rośnie tylko limit POLA.
+  const CTA_BIO = 'Dokończenie tej historii i całe dzisiejsze wydanie — link w bio.';
   const zBio = String(body.wariant ?? '').trim() === 'bio';
   // 🔴 WOŁAJĄCY, KTÓRY NIE PODAJE BUDŻETU, DOSTAJE WARIANT ZACHOWAWCZY (doklejka WEWNĄTRZ limitu).
   // Nie zna naszego kontraktu, więc nie wie, że wolno mu mieć dłuższe pole — a jak przytnie wynik

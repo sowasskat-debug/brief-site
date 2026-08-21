@@ -1139,6 +1139,17 @@ zamiast 270), czyli płaciliśmy treścią za CTA.
 - ⚠️ **Automat NIE używa wariantu `bio`** (bot: „uruchamia go WYŁĄCZNIE człowiek z panelu"), więc
   `XZlozPost` w bocie nic nie przycina. Gdyby kiedyś bot miał publikować z dopiskiem — **musi
   najpierw dostać limit świadomy doklejki**, inaczej utnie ją dokładnie tak, jak robiła to knaga.
+- ✅ **WDROŻONE 2026-08-21, funkcja v12** — panel był zmergowany od 20.08, ale sam redeploy nie poszedł,
+  więc przez dobę działał układ „nowa knaga + stara funkcja": CTA w całości, ale news dostawał 233
+  znaki zamiast 270. Potwierdzone wywołaniem produkcyjnym: odpowiedź zawiera pole `doklejka`.
+- **Treść doklejki zmieniona 2026-08-21** (życzenie właściciela: ma zapowiadać JEDNO I DRUGIE):
+  `Cała dzisiejsza dawka — link w bio.` (35 zn.) → **`Dokończenie tej historii i całe dzisiejsze
+  wydanie — link w bio.`** (64 zn.), limit pola przy pełnym kadrze **336**.
+  🔴 **To jedna linia w `gotowiec-x`** — napis nie ma drugiej kopii nigdzie indziej, knaga bierze
+  DŁUGOŚĆ z pola `doklejka` w odpowiedzi. Wydłużenie nie kosztuje treści, bo doklejka dopina się
+  ponad limit kadru; rośnie wyłącznie limit POLA.
+  ⚠️ Liczby 35/37 w akapitach WYŻEJ to zapis pomiarów z 20.08 i zostają jako historia — nie są
+  aktualną długością doklejki.
 - ⚠️ **Wymaga redeployu:** `supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc`.
 
 ## Notowania: znacznik czasu bez widocznej stopki (2026-08-02)
