@@ -740,7 +740,14 @@ const ZNACZNIK_IKONY = {
   // okrąg z esem przy 14 px czytał się jak znak zakazu). Rysowany jako litera B z dwiema
   // belkami i wystającym stemem, czyli tak, jak bitcoin jest rozpoznawalny.
   '🪙':'<path d="M8.5 5.5v13"/><path d="M11 3.5v2.5M15 3.5v2.5M11 18v2.5M15 18v2.5"/><path d="M8.5 5.5h5.4a3.2 3.2 0 010 6.4H8.5"/><path d="M8.5 11.9h6.1a3.3 3.3 0 010 6.6H8.5"/>',
-  '🔬':'<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/>',
+  // 🔬 układ z widocznym RDZENIEM (wariant B). Poprzednia wersja miała osiem nóżek z każdej
+  // strony i przy 13 px robiła się gęstą gwiazdką. Tu zostają cztery nóżki i kwadrat w środku
+  // — mniej kresek, wyraźniejszy kształt.
+  '🔬':'<rect x="5.5" y="5.5" width="13" height="13" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9.5 2.5v3M14.5 2.5v3M9.5 18.5v3M14.5 18.5v3"/>',
+  // 📱 firmy technologiczne i elektronika użytkowa (2026-08-21 wieczór, uwaga właściciela:
+  // „Samsung to bardziej firma tech niż chipowa"). Smartfon — najczystszy z czterech
+  // wariantów przy 13 px (laptop i zestaw urządzeń zlewały się w plamę).
+  '📱':'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 5.5h3"/>',
   '🚀':'<path d="M12 2.5c3.5 2.5 5.5 6.5 5.5 11l-2.5 3h-6l-2.5-3c0-4.5 2-8.5 5.5-11z"/><circle cx="12" cy="10" r="1.8"/><path d="M9 20.5c1-1 1.5-2 1.5-3M15 20.5c-1-1-1.5-2-1.5-3"/>',
   '🎧':'<path d="M4 14v-2a8 8 0 0116 0v2"/><rect x="2.5" y="13.5" width="4.5" height="7" rx="2"/><rect x="17" y="13.5" width="4.5" height="7" rx="2"/>',
   '🎬':'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M7.5 5.5v13M16.5 5.5v13M3 12h18"/>',
@@ -782,7 +789,10 @@ const ZNACZNIK_IKONY = {
   // PO RASTERYZACJI DO 13 px, ta sama procedura co 🚢/🏠/⚖: sztabka (trapez) czytelna,
   // odrzucone — medal z wstążką i moneta z literą (obie dawały ciemną kaszę u góry,
   // dokładnie wada opisana przy 🔬).
-  '🥇':'<path d="M3.5 19.5h17l-2.6-6H6.1z"/>',
+  // 🥇 stos monet (wariant D). Sztabka z pierwszego podejścia ODRZUCONA przez właściciela:
+  // przy 13 px czytała się jak pudełko, a nie jak kruszec. Stos ma trzy poziomy krawędzi,
+  // więc nawet w rastrze widać „warstwy" — a to jest sygnał rezerw, nie pojedynczej bryły.
+  '🥇':'<ellipse cx="12" cy="6.5" rx="6.5" ry="2.5"/><path d="M5.5 6.5v4c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v-4"/><path d="M5.5 10.5v4c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v-4"/>',
 };
 
 // ── WSTECZNE ROZPOZNANIE TEMATU (2026-08-20, życzenie właściciela „żeby działało na
@@ -817,7 +827,12 @@ const IKONA_ZE_SLOW = [
   // końcówki wyliczone jawnie — ta sama pułapka co `tankowc` bez „tankowiec".
   // ⚠️ `\bamd\b` i `\bintel\b` mają granicę słowa OBOWIĄZKOWO: bez niej „intel" wchodzi
   // w „intelligence", a „amd" w przypadkowe ciągi.
-  [/\bchip|półprzewodnik|litografi|\btsmc\b|\basml\b|micron|nvidia|\bsamsung\w*|\bsk hynix\b|sandisk|\bintel(?:a|em|owi|u)?\b|\bamd\b|broadcom|qualcomm|kioxia|foxconn/i, '🔬'],
+  // ⚠️ SAMSUNG CELOWO NIE MA TU NAZWY (2026-08-21 wieczór) — jest producentem pamięci, ale
+  // przede wszystkim firmą tech (telefony, TV, robotyka), więc trafia do 📱 niżej. Wraca tu
+  // WYŁĄCZNIE tematem: „Samsung podnosi ceny pamięci RAM" łapie się na `pamięci RAM`.
+  // 📊 Zmierzone: z 18 newsów o Samsungu większość mówi o pamięciach i chipach — te dostają
+  // 🔬 przez temat, a Galaxy, robotyka i buyback dostają 📱.
+  [/\bchip|półprzewodnik|litografi|pamię(?:ci|ć|ciami|ciach) (?:RAM|DRAM|HBM|flash|NAND)|\btsmc\b|\basml\b|micron|nvidia|\bsk hynix\b|sandisk|\bintel(?:a|em|owi|u)?\b|\bamd\b|broadcom|qualcomm|kioxia|foxconn/i, '🔬'],
   [/\bai\b|sztuczn[\wąćęłńóśźż]* inteligencj|openai|anthropic|chatgpt|gemini|\bllm\b|chatbot|deepseek/i, '🤖'],
   [/\brop(?:a|y|ie)\b|\brop[ęą](?![\wąćęłńóśźż])|\bbrent\b|\bwti\b|baryłk|rafineri|\bopec\b|benzyn|diesel|paliw/i, '🛢'],
   // 🥇 STOI NAD ⚡ I NAD KATEGORIĄ `Surowce → 🛢` (2026-08-21 wieczór): bez tego „Cena złota
@@ -876,6 +891,15 @@ const IKONA_ZE_SLOW = [
   // ⚠️ `wirus` łapie też wirusy komputerowe — ale te nagłówki mają „cyberatak/haker" i 🔒 stoi
   // WYŻEJ w liście, więc wygrywa. Zmierzone na klasie: 49 trafień, próbka czysta.
   [/szpital\w*|\bNFZ\b|opiek[\wąćęłńóśźż]* zdrowotn|służb[\wąćęłńóśźż]* zdrowia|pacjent\w*|epidemi\w*|\bwirus(?:a|em|ie|y|ów)?\b|zakaże[nń]\w*|\bWHO\b|lekar(?:z\w*|ek)|onkolog\w*/i, '🏥'],
+  // 📱 NA SAMYM KOŃCU LISTY — i to jest cała reguła tej klasy (2026-08-21 wieczór).
+  // Nazwa firmy mówi KTO, a nie CO SIĘ STAŁO, więc musi przegrywać z każdą klasą opisującą
+  // ZDARZENIE. 📊 Złapane pełnym diffem, gdy stała wyżej: „Apple pozywa OpenAI" gubiło ⚖,
+  // „Apple zapłaciło podatki po wyroku" gubiło 💰, a „Apple Music oznacza utwory AI" gubiło
+  // 🎧 — wszystkie trzy na rzecz ikony telefonu, czyli informacja słabsza wypierała mocniejszą.
+  // ⚠️ `\bgalaxy\b` USUNIĘTE PO POMIARZE: łapało „Wrak statku Galaxy FPS". Model telefonu
+  // to zbyt pospolite słowo — ta sama pułapka co `DJI` (dron vs indeks).
+  // ⚠️ `\bLG\b` świadomie pominięte — dwie litery łapią skróty i inicjały, zysk zerowy.
+  [/\bsamsung\w*|\bapple\w*|\biphone\w*|\bipad\w*|\bmacbook\w*|\bsony\b|xiaomi|huawei|lenovo|\bdell\b|\bmotorola\b/i, '📱'],
 ];
 // Kategoria jako sygnał SŁABSZY — wchodzi dopiero, gdy żadne słowo nie trafiło.
 // Świadomie BEZ kategorii politycznych i wojennych: tam flaga kraju niesie więcej niż ikona.
@@ -986,8 +1010,14 @@ const IKONA_PODMIOTU = [
   { wz: /\bzłot(?:o|a|em|u)\b|\bzłot[ąę](?![\wąćęłńóśźż])|\bkruszc\w*|\bkruszec\b|\buncj\w*|sztab\w* złota/i,
     emo: '🥇', nadpisuje: ['🪙', '🏦', '📈'],
     blokada: /bitcoin|\bbtc\b|ethereum|krypto|stablecoin/i },
-  { wz: /\bsamsung\w*|\bsk hynix\b|sandisk|\bintel(?:a|em|owi|u)?\b|\btsmc\b|\basml\b|micron|nvidia|broadcom|qualcomm/i,
+  // Producent półprzewodników — ikona chipu. Samsung tu NIE występuje (patrz niżej).
+  { wz: /\bsk hynix\b|sandisk|\bintel(?:a|em|owi|u)?\b|\btsmc\b|\basml\b|micron|nvidia|broadcom|qualcomm/i,
     emo: '🔬', nadpisuje: ['🏦', '📈'], blokada: null },
+  // Firma tech (Samsung, Apple, Sony…) — ikona urządzenia, CHYBA że news jest o chipach
+  // albo pamięciach; wtedy blokada oddaje pole regule 🔬 wyżej.
+  { wz: /\bsamsung\w*|\bapple\w*|\bsony\b|xiaomi|huawei|lenovo/i,
+    emo: '📱', nadpisuje: ['🏦', '📈'],
+    blokada: /\bchip|półprzewodnik|pamię(?:ci|ć|ciami|ciach) (?:RAM|DRAM|HBM|flash|NAND)/i },
 ];
 
 function znacznikiTematyczne(item, bezKategorii) {
@@ -1011,6 +1041,13 @@ function znacznikiTematyczne(item, bezKategorii) {
   // Sama lista zbiera trafienia po kolei, więc bez tego 🤖 wychodziłaby pierwsza dla wszystkiego,
   // co stoi za nią w IKONA_ZE_SLOW (zmierzone: 8 par w archiwum).
   if (trafione.length === 2 && trafione[0] === '🤖') trafione.reverse();
+  // 🔬 I 📱 TO TA SAMA RODZINA — para „chip + urządzenie" nic nie wnosi, a zjada miejsce
+  // flagi (2026-08-21 wieczór, złapane testem: „Samsung podnosi ceny pamięci RAM" dostawał
+  // 🔬📱). Szczegółowa zostaje, ogólna odpada — odwrotnie niż przy 🤖, które jako drugie
+  // NIESIE informację („chipy dla AI" to realnie dwa tematy).
+  if (trafione.includes('🔬') && trafione.includes('📱')) {
+    trafione.splice(trafione.indexOf('📱'), 1);
+  }
   if (trafione.length) return trafione;
   const kat = (item.category || '').trim();
   // `bezKategorii` — pozycje z 🌍 od bota (2026-08-21): globus ustępuje TYLKO regule słownej.
