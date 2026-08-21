@@ -982,6 +982,14 @@ flagę obok"* i *„daj rozmiar 16"*. Znacznik ma teraz DWIE części: **ikona (
   w `index.html`, a skopiowanie jej do drugiego pliku to gwarantowany dryf (precedens `itemSlug`).
   Objęcie ich wymaga wyciągnięcia wspólnego `znaczniki.js` (wzorzec `flagi.js`) + wpisu
   w `STATIC_ASSETS`. Do zrobienia, gdy właściciel zdecyduje, że ma być wszędzie.
+### Filtr stylu: obce emoji spoza mapy (2026-08-21)
+Bot mimo zamkniętej listy ikon w prompcie potrafi wymyślić własne emoji (🚁 przy AeroVironment) —
+jego bramka `ZnacznikJestEmoji` sprawdza „czy emoji", nie „czy z listy". 📊 64 różne obce emoji
+w archiwum. `znacznikHtml` zrzuca grafemy spoza `ZNACZNIK_IKONY` przy renderze, O ILE zostaje
+znana ikona albo flaga; pozycja z samym obcym emoji zostaje jak była. 🚨 i 📰 nietykane.
+⚠️ To ZASTĘPUJE dawną własność „emoji spoza mapy renderuje się jak dotąd" — tamta była o zgodności
+wstecznej przy WPROWADZANIU mapy, ta jest o spójności stylu wiersza (decyzja właściciela).
+
 ### Zdarzenie bije podmiot + 🌍 nie blokuje reguły słownej (2026-08-21)
 Zgłoszenie: „Apollo ujawnia, że hakerzy uzyskali dostęp do danych w cyberataku" miało 🏦 —
 bot oznaczył KOGO news dotyczy, nie CO SIĘ STAŁO, a fallback nie odpalał, bo znacznik tematyczny

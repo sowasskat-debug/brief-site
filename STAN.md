@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-21 popołudnie (po sesji: bramka zmyślonej klasy zdarzenia, naprawa wątków, znaczniki 🚢 i 🏠, gotowiec-x v13, dwie ręczne poprawki danych, znacznik nachodzący na nagłówek, zdarzenie bije podmiot + 🌍 nie blokuje reguły słownej, nowe klasy ⚖ 💰 🏥)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-21 popołudnie (po sesji: bramka zmyślonej klasy zdarzenia, naprawa wątków, znaczniki 🚢 i 🏠, gotowiec-x v13, dwie ręczne poprawki danych, znacznik nachodzący na nagłówek, zdarzenie bije podmiot + 🌍 nie blokuje reguły słownej, nowe klasy ⚖ 💰 🏥, filtr stylu znaczników)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
@@ -55,6 +55,21 @@ cyfrą liczbę, która w materiale stała SŁOWNIE („pięciu lat" → „5 lat
 („72 tys." → „72 000"). 📊 **25,3% pozycji ma w materiale liczebnik słowny** — stąd „często".
 Naprawa dokłada te postacie do zbioru dozwolonych **po stronie materiału**, więc ochrona przed
 zmyśloną liczbą jest nietknięta (sprawdzone: 7 lat, 99 mld, 81 500 dalej odrzucane).
+
+## ✅ 21.08 wieczór: OBCE EMOJI W ZNACZNIKU — filtr stylu na froncie + doszczelniony prompt bota
+Zgłoszenie właściciela: *„helikopter na mainie emoji jest inne niż reszta, chodzi mi o styl"* —
+AeroVironment (poz. 30 popołudniówki) dostał od bota `🚁🇬🇷`, a 🚁 nie ma w `ZNACZNIK_IKONY`,
+więc renderował się jako KOLOROWE emoji systemowe obok kreskowych SVG.
+- 🔴 **Przyczyna systemowa, nie jednostkowa:** prompt bota MA zamkniętą listę 21 ikon, ale to
+  warstwa miękka — bramka `ZnacznikJestEmoji` w bocie sprawdza tylko „czy emoji", nie „czy
+  z listy". 📊 **64 RÓŻNE obce emoji w archiwum** (📢 🌐 💻 ☢ 📉 🪖 ☕…).
+- **Front (twarda warstwa, działa też na archiwum):** `znacznikHtml` zrzuca grafemy spoza mapy,
+  O ILE zostaje cokolwiek (znana ikona albo flaga) — `🚁🇬🇷` → `🇬🇷`. Pozycja z SAMYM obcym
+  emoji zostaje jak była (obcy znak niesie więcej niż pusty wiersz). 🚨 i 📰 nietykane.
+- **Bot (u źródła, od następnego biegu):** linia w prompcie „UŻYWAJ WYŁĄCZNIE ikon z listy —
+  żadnych innych emoji; gdy nic nie pasuje: flaga, a bez wątku państwowego 🌍". `dotnet build` czysty.
+- Zweryfikowane na żywych danych: kafel AeroVironment pokazuje samą 🇬🇷; testy brzegowe
+  (sam 📢 zostaje, `🤖💻` → samo 🤖 jako SVG, 🚨 nietknięte) przechodzą.
 
 ## ✅ 21.08 popołudnie: TRZY NOWE KLASY ZNACZNIKÓW — ⚖ sądy, 💰 podatki/cła, 🏥 szpitale (front)
 Wybrane przez właściciela z przeglądu 18 kandydatek (tabela z ikonami w rozmowie), warianty ikon
@@ -134,6 +149,7 @@ Zgłoszenie właściciela: *„zobacz co się stało z emotkami"* (zrzut z feedu
 | Zła ikona od bota: zdarzenie bije podmiot, 🌍 nie blokuje reguły słownej | front, `index.html`, SW v140 |
 | Trzy nowe klasy znaczników ⚖ 💰 🏥 (345 pozycji archiwum, 5,53%) | front, `index.html`, SW v141 |
 | Zamrożenie sekcji historii selekcji na 3 biegi (cache-hit 24–34% → 64–76%) | bot #229, `e37e442` |
+| Filtr stylu znaczników (obce emoji spoza mapy zrzucane przy renderze) | front `index.html` SW v142 + prompt bota |
 
 ⚠️ **Sesja 20.08 wieczór / 21.08 (znaczniki kafli, front #211–#216, bot #221–#223) NIE MA WŁASNEJ
 SEKCJI w tym pliku** — trwała wiedza z niej siedzi w `FinancialNewsBot/CLAUDE.md` (sekcja o regule `flag`).

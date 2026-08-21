@@ -1030,6 +1030,22 @@ function znacznikHtml(item) {
       }
     }
   }
+  // ── STYL: emoji spoza mapy nie wchodzi do wiersza (2026-08-21) ────────────────────────
+  // Zgłoszenie właściciela: „helikopter na mainie jest inny stylem niż reszta" — AeroVironment
+  // dostał od bota `🚁🇬🇷`, a 🚁 nie ma w ZNACZNIK_IKONY, więc renderował się jako KOLOROWE
+  // emoji systemowe obok kreskowych ikon. Prompt bota ma zamkniętą listę ikon, ale to warstwa
+  // miękka — model potrafi ją złamać (bramka `ZnacznikJestEmoji` w bocie sprawdza tylko
+  // „czy emoji", nie „czy z listy"). 📊 Zmierzone: 64 RÓŻNE takie emoji w archiwum.
+  // Zrzucamy obce, O ILE zostaje cokolwiek (znana ikona albo flaga) — pozycja z SAMYM obcym
+  // emoji zostaje jak była (obcy znak niesie więcej niż pusty wiersz). 🚨 i 📰 nietykane.
+  {
+    const gr = znacznikGrafemy(z);
+    const czyste = gr.filter(g => {
+      const c = g.replace('\uFE0F', '');
+      return /\p{Regional_Indicator}/u.test(g) || ZNACZNIK_IKONY[g] || ZNACZNIK_IKONY[c] || c === '🚨' || c === '📰';
+    });
+    if (czyste.length && czyste.length < gr.length) z = czyste.join('');
+  }
   let out = '';
   for (const g of znacznikGrafemy(z)) {
     const ikona = ZNACZNIK_IKONY[g] || ZNACZNIK_IKONY[g.replace('\uFE0F', '')];
