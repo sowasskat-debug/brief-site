@@ -422,6 +422,11 @@ function npZapadkaHtml(item) {
   if (!item || typeof item !== 'object') return '';
   const o = npOpcje(item);
   if (!o.razem) return '';
+  // Jedna opcja — zapadka z sekcjami to przerost formy, zostaje zwykły chip (jak na mobile).
+  if (o.razem === 1) {
+    const x = [...o.pary, ...o.modkat, ...o.glob][0];
+    return `<div class="np-box"><span class="np-label">Nie pokazuj mi:</span>${npChip(x, x.os === 'typ' ? '' : ' np-chip-mod')}</div>`;
+  }
   const sekcja = (tytul, lista, mod) => lista.length
     ? `<div class="np-sekcja">${tytul}</div><div class="np-chips">${lista.map(x => npChip(x, mod ? ' np-chip-mod' : '')).join('')}</div>`
     : '';
@@ -443,6 +448,12 @@ function npMniejHtml(item) {
   if (!item || typeof item !== 'object') return '';
   const o = npOpcje(item);
   if (!o.razem) return '';
+  // Jedna opcja (typowo mod=fakt → został sam kształt) — arkusz na całą szerokość dla
+  // jednego wiersza to przerost formy; zwykły chip jak przed rozbudową.
+  if (o.razem === 1) {
+    const x = [...o.pary, ...o.modkat, ...o.glob][0];
+    return `<div class="np-box"><span class="np-label">Nie pokazuj mi:</span>${npChip(x, x.os === 'typ' ? '' : ' np-chip-mod')}</div>`;
+  }
   const wiersze = [...o.pary, ...o.modkat, ...o.glob].map(x =>
     `<button class="np-row" onclick="event.stopPropagation();ukryjOs('${x.os}','${escAttr(x.kod)}')">
        <span class="np-row-what">${escHtml(x.label)}<small>${NP_OPIS_ZAKRESU[x.os]}</small></span>
