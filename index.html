@@ -903,6 +903,30 @@ const IKONA_ZE_SLOW = [
 ];
 // Kategoria jako sygnał SŁABSZY — wchodzi dopiero, gdy żadne słowo nie trafiło.
 // Świadomie BEZ kategorii politycznych i wojennych: tam flaga kraju niesie więcej niż ikona.
+// ── RĘCZNE NADPISANIE ZNACZNIKA, PER POZYCJA (2026-08-22) ────────────────────────────
+// Zgłoszenie właściciela: „dlaczego dolar ma ikonkę bitcoina?" — kafel „Dolar pod presją
+// po fiasku, Fed wstrzymuje zakupy w ramach RMP" miał 🪙 od bota (znacznik osierocony przez
+// podmianę nagłówka — przyczyna i bramka po stronie bota: FinancialNewsBot#233). Po zdjęciu
+// 🪙 z danych front dołożył 📈 z `IKONA_Z_KATEGORII`, bo kategoria to „Rynki" — a właściciel
+// chciał przy tej pozycji SAMĄ FLAGĘ.
+// 🔴 DLACZEGO OSOBNY MECHANIZM, A NIE ZAWĘŻENIE REGUŁY: 📈 przy „Rynkach" nie jest wąską
+// regułą. 📊 Zmierzone na 6236 pozycjach: 567 kafli ma kategorię „Rynki", z czego **345
+// (61%) całą swoją ikonę bierze WYŁĄCZNIE z tej mapy** (Żabka, Commerzbank, Revolut, PPK,
+// Goldman Sachs…). Zdjęcie linii naprawiłoby jeden kafel i rozebrało 344 inne — także
+// w archiwum, bo reguła liczy się przy renderze, nie przy zapisie.
+// ⚠️ KLUCZEM JEST `source_url`, NIE NAGŁÓWEK. Nagłówek do tego się nie nadaje: bot przepisuje
+// go po publikacji (`TytulZPolskiegoZrodla`, eskalacja kontynuacji, naprawa liczb i clickbaitu),
+// więc nadpisanie kluczowane tekstem przestałoby pasować po cichu — dokładnie tą samą drogą,
+// którą powstał błąd, który tu naprawiamy. `source_url` jest stały od chwili enrichu i już
+// pełni rolę identyfikatora w dedupie (`DubelPoAdresieArtykulu` w bocie).
+// ⚠️ Nadpisanie jest TWARDE: wyłącza cały fallback (reguły słowne, kategorię, deskę opisową),
+// bo inaczej „sama flaga" nie byłaby osiągalna — każdy z tych torów dokłada ikonę.
+// ⚠️ To jest miejsce na POJEDYNCZE poprawki redakcyjne, nie na regułę. Gdy ta mapa urośnie
+// powyżej kilku wpisów, to znaczy, że wzorzec jest systemowy i należy go opisać regułą.
+const ZNACZNIK_RECZNIE = {
+  'https://forexclub.pl/dolar-pod-presja-po-probie-uspokojenia-rynku-dlugu/': '🇺🇸',
+};
+
 const IKONA_Z_KATEGORII = { 'Fed / Banki': '🏦', 'Rynki': '📈', 'Surowce': '🛢' };
 
 // 🔴 KRAJ MA BYĆ W NAGŁÓWKU, INACZEJ FLAGI NIE MA (życzenie właściciela 2026-08-20:
@@ -1085,9 +1109,14 @@ function znacznikHtml(item) {
   // Zgodność wstecz: wolno podać sam napis znacznika (używa tego podgląd i testy).
   const surowy = (item && typeof item === 'object') ? item.flag : item;
   let z = String(surowy || '📰').trim() || '📰';
+  // Ręczne nadpisanie per pozycja — patrz ZNACZNIK_RECZNIE. Stoi PRZED wszystkim i wyłącza
+  // cały fallback: to jedyny sposób, żeby pozycja mogła zostać przy samej fladze.
+  const reczny = (item && typeof item === 'object' && item.source_url)
+    ? ZNACZNIK_RECZNIE[item.source_url] : null;
+  if (reczny) z = reczny;
   // Fallback wsteczny: pozycja bez znacznika tematycznego dostaje ikonę wyprowadzoną z treści.
   // ⚠️ NIE dotykamy 🚨 — to znacznik PILNE, niesie sygnał, nie temat.
-  if (item && typeof item === 'object' && !z.includes('🚨')) {
+  if (item && typeof item === 'object' && !reczny && !z.includes('🚨')) {
     // 🌍 NIE liczy się jako znacznik tematyczny (2026-08-21): to znak „nie mam zdania",
     // a blokował regułę słowną jak pełnoprawna decyzja. 📊 11 z 30 zmierzonych sprzeczności
     // to właśnie 🌍 zasłaniający konkretną ikonę („Brent powyżej 95 USD" → 🌍 zamiast 🛢,
