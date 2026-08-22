@@ -304,32 +304,59 @@ const TYP_NAZWY = {
   'protest-strajk':'Protesty i strajki','sondaz-wybory':'Sondaże wyborcze','rekord':'Rekordy',
 };
 const MOD_NAZWY = { 'zapowiedz':'Zapowiedzi i plany','wypowiedz-o':'Wypowiedzi i komentarze','dementi':'Dementi','skutek':'Następstwa wydarzeń' };
-let ukryte = { typy: [], mody: [] };
+// Krótkie formy modalności do składania etykiet reguł („zapowiedzi · premiery produktów").
+const MOD_KROTKO = { 'zapowiedz':'zapowiedzi','wypowiedz-o':'wypowiedzi i komentarze','dementi':'dementi','skutek':'następstwa' };
+// Cztery osie ukrywania: typ (kształt, globalnie), mod (modalność, globalnie),
+// para "typ|mod" (najwęższa: „zapowiedzi premier produktów"), modKat "mod|kategoria"
+// („zapowiedzi w temacie Tech / AI"). Modalność solo jest ZA SZEROKA — nikt nie chce ukryć
+// „zapowiedzi jako takich", tylko zapowiedzi CZEGOŚ — stąd pary jako poziom podstawowy.
+let ukryte = { typy: [], mody: [], pary: [], modKat: [] };
 try { const u = JSON.parse(localStorage.getItem('brifup_ukryte') || '{}');
-      ukryte = { typy: Array.isArray(u.typy)?u.typy:[], mody: Array.isArray(u.mody)?u.mody:[] }; } catch (e) {}
+      ukryte = { typy: Array.isArray(u.typy)?u.typy:[], mody: Array.isArray(u.mody)?u.mody:[],
+                 pary: Array.isArray(u.pary)?u.pary:[], modKat: Array.isArray(u.modKat)?u.modKat:[] }; } catch (e) {}
 function zapiszUkryte() { try { localStorage.setItem('brifup_ukryte', JSON.stringify(ukryte)); } catch (e) {} }
 function typKody(item) { return String((item && item.typ) || '').split(',').filter(Boolean); }
+function ukryteCel(os) {
+  return os === 'typ' ? ukryte.typy : os === 'mod' ? ukryte.mody
+       : os === 'para' ? ukryte.pary : ukryte.modKat;
+}
+function reguleEtykieta(os, kod) {
+  if (os === 'typ') return TYP_NAZWY[kod] || kod;
+  if (os === 'mod') return MOD_NAZWY[kod] || kod;
+  if (os === 'para') { const [t, m] = kod.split('|');
+    return (MOD_KROTKO[m] || m) + ' · ' + (TYP_NAZWY[t] || t).toLowerCase(); }
+  const [m, kat] = kod.split('|');
+  return (MOD_KROTKO[m] || m) + ' w: ' + kat;
+}
 function jestUkryty(item) {
   if (!item) return false;
   if (String(item.flag || '').includes('🚨')) return false;          // PILNE niechowalne
   if (typKody(item).some(k => ukryte.typy.includes(k))) return true;
-  if (item.mod && ukryte.mody.includes(item.mod)) return true;
+  if (item.mod) {
+    if (ukryte.mody.includes(item.mod)) return true;
+    if (typKody(item).some(k => ukryte.pary.includes(k + '|' + item.mod))) return true;
+    if (ukryte.modKat.length) {
+      const kat = (typeof dtGetCategory === 'function') ? dtGetCategory(item) : '';
+      if (kat && ukryte.modKat.includes(item.mod + '|' + kat)) return true;
+    }
+  }
   return false;
 }
 function filterByUkryte(items) {
   if (!items || items.length <= 1) return items;
-  if (!ukryte.typy.length && !ukryte.mody.length) return items;
+  if (!ukryte.typy.length && !ukryte.mody.length && !ukryte.pary.length && !ukryte.modKat.length) return items;
   return items.filter((it, i) => i === 0 || !jestUkryty(it));        // top story zawsze
 }
 function ukryjOs(os, kod) {
-  const cel = os === 'typ' ? ukryte.typy : ukryte.mody;
+  const cel = ukryteCel(os);
   if (!cel.includes(kod)) cel.push(kod);
   zapiszUkryte();
-  showToast('Ukryto: ' + ((os==='typ'?TYP_NAZWY:MOD_NAZWY)[kod] || kod) + ' — cofniesz w Tematach');
+  npZamknijWszystkie();
+  showToast('Ukryto: ' + reguleEtykieta(os, kod) + ' — cofniesz w Tematach');
   renderDoseZachowujacWidok();
 }
 function cofnijUkrycie(os, kod) {
-  const cel = os === 'typ' ? ukryte.typy : ukryte.mody;
+  const cel = ukryteCel(os);
   const i = cel.indexOf(kod); if (i >= 0) cel.splice(i, 1);
   zapiszUkryte();
   renderDoseZachowujacWidok();
@@ -341,29 +368,98 @@ function cofnijUkrycie(os, kod) {
 // Licznik do panelu: ile pozycji BIEŻĄCEGO widoku (dawka + wczytane archiwum) łapie ta reguła.
 function ukryciaLicznik(os, kod) {
   let traf = 0, wsz = 0;
-  function jeden(it) {
-    wsz++;
-    if (os === 'typ' ? typKody(it).includes(kod) : it.mod === kod) traf++;
+  function pasuje(it) {
+    if (os === 'typ') return typKody(it).includes(kod);
+    if (os === 'mod') return it.mod === kod;
+    if (os === 'para') { const [t, m] = kod.split('|'); return it.mod === m && typKody(it).includes(t); }
+    const [m, kat] = kod.split('|');
+    return it.mod === m && (typeof dtGetCategory === 'function' ? dtGetCategory(it) : '') === kat;
   }
-  (typeof dtAllItems !== 'undefined' ? dtAllItems : []).forEach(it =>
+  function jeden(it) { wsz++; if (pasuje(it)) traf++; }
+  // Na telefonie dtAllItems bywa puste (wypełnia je ścieżka desktopowa) — wtedy licz po dawce.
+  let zrodlo = (typeof dtAllItems !== 'undefined' && dtAllItems.length) ? dtAllItems
+             : ((typeof cache !== 'undefined' && cache[currentDose]) || []);
+  zrodlo.forEach(it =>
     it.subItems && it.subItems.length ? it.subItems.forEach(jeden) : jeden(it));
   return { traf, wsz };
 }
-// Chipy „nie pokazuj mi takich" pod artykułem — tylko osie, które ta pozycja realnie niesie.
-function niePokazujHtml(item) {
+// Opcje ukrywania dla pozycji, od najwęższej do najszerszej — wspólne dla zapadki (desktop)
+// i arkusza (mobile). Zwraca trzy grupy; już ukryte reguły nie wracają jako opcje.
+// 'fakt' nie ma wpisu w MOD_NAZWY, więc naturalnie nie tworzy żadnej reguły modalnościowej.
+function npOpcje(item) {
+  const m = (item.mod && MOD_NAZWY[item.mod]) ? item.mod : null;
+  const kat = (typeof dtGetCategory === 'function') ? dtGetCategory(item) : '';
+  const pary = [], modkat = [], glob = [];
+  typKody(item).forEach(t => {
+    if (!TYP_NAZWY[t]) return;
+    if (m && !ukryte.pary.includes(t + '|' + m))
+      pary.push({ os: 'para', kod: t + '|' + m, label: reguleEtykieta('para', t + '|' + m) });
+    if (!ukryte.typy.includes(t)) glob.push({ os: 'typ', kod: t, label: TYP_NAZWY[t] });
+  });
+  if (m) {
+    if (kat && !ukryte.modKat.includes(m + '|' + kat))
+      modkat.push({ os: 'modkat', kod: m + '|' + kat, label: (MOD_KROTKO[m]) + ' w: ' + kat });
+    if (!ukryte.mody.includes(m)) glob.push({ os: 'mod', kod: m, label: 'wszystkie ' + MOD_KROTKO[m] });
+  }
+  return { pary, modkat, glob, razem: pary.length + modkat.length + glob.length };
+}
+function npChip(o, extraCls) {
+  return `<button class="np-chip${extraCls || ''}" onclick="event.stopPropagation();ukryjOs('${o.os}','${escAttr(o.kod)}')">${escHtml(o.label)}</button>`;
+}
+// DESKTOP — wariant „zapadka": dyskretny wiersz „Nie pokazuj mi… ▾", tap rozsuwa sekcje
+// od najwęższej do najszerszej. Wszystko w miejscu, bez nakładek.
+function npZapadkaHtml(item) {
   if (!item || typeof item !== 'object') return '';
-  const chipy = [];
-  typKody(item).forEach(k => { if (TYP_NAZWY[k] && !ukryte.typy.includes(k))
-    chipy.push(`<button class="np-chip" onclick="event.stopPropagation();ukryjOs('typ','${k}')">${TYP_NAZWY[k]}</button>`); });
-  const m = item.mod;
-  if (m && MOD_NAZWY[m] && !ukryte.mody.includes(m))
-    chipy.push(`<button class="np-chip np-chip-mod" onclick="event.stopPropagation();ukryjOs('mod','${m}')">${MOD_NAZWY[m]}</button>`);
-  if (!chipy.length) return '';
-  return `<div class="np-box"><span class="np-label">Nie pokazuj mi:</span>${chipy.join('')}</div>`;
+  const o = npOpcje(item);
+  if (!o.razem) return '';
+  const sekcja = (tytul, lista, mod) => lista.length
+    ? `<div class="np-sekcja">${tytul}</div><div class="np-chips">${lista.map(x => npChip(x, mod ? ' np-chip-mod' : '')).join('')}</div>`
+    : '';
+  return `<div class="np-wrap">
+    <button class="np-toggle" onclick="event.stopPropagation();this.parentElement.classList.toggle('np-open')">
+      <span class="np-label">Nie pokazuj mi…</span><span class="np-arrow">▾</span></button>
+    <div class="np-body">
+      ${sekcja('Dokładnie takich', o.pary, true)}
+      ${sekcja('Szerzej — w tym temacie', o.modkat, true)}
+      ${sekcja('Najszerzej — wszędzie', o.glob, false)}
+    </div></div>`;
+}
+// MOBILE — wariant „arkusz dolny": pod artykułem jeden przycisk, wybór w arkuszu od dołu
+// (ten sam wzorzec co panel Tematów). Markup arkusza siedzi w karcie (hidden) — zero
+// rejestrów itemów, zero sieci; npOtworz tylko zdejmuje hidden.
+const NP_OPIS_ZAKRESU = { para: 'dokładnie takie jak ten', modkat: 'szerzej — cały temat',
+  typ: 'ten kształt zdarzenia, wszędzie', mod: 'najszerzej — każdy temat' };
+function npMniejHtml(item) {
+  if (!item || typeof item !== 'object') return '';
+  const o = npOpcje(item);
+  if (!o.razem) return '';
+  const wiersze = [...o.pary, ...o.modkat, ...o.glob].map(x =>
+    `<button class="np-row" onclick="event.stopPropagation();ukryjOs('${x.os}','${escAttr(x.kod)}')">
+       <span class="np-row-what">${escHtml(x.label)}<small>${NP_OPIS_ZAKRESU[x.os]}</small></span>
+       <span class="np-row-btn">Ukryj</span></button>`).join('');
+  return `<div class="np-box">
+    <button class="np-chip np-mniej" onclick="event.stopPropagation();npOtworz(this)">✕ Mniej takich newsów</button>
+    <div class="np-sheet-wrap" hidden onclick="event.stopPropagation();if(event.target===this)npZamknij(this)">
+      <div class="np-sheet"><div class="np-grip"></div>
+        <div class="np-sheet-title">Mniej takich newsów</div>
+        <div class="np-sheet-sub">Wybierz, co dokładnie chować — cofniesz w Tematach.</div>
+        ${wiersze}
+      </div></div></div>`;
+}
+function npOtworz(btn) {
+  const w = btn.parentElement.querySelector('.np-sheet-wrap');
+  if (w) { w.hidden = false; document.body.classList.add('np-noscroll'); }
+}
+function npZamknij(wrap) { wrap.hidden = true; document.body.classList.remove('np-noscroll'); }
+function npZamknijWszystkie() {
+  document.querySelectorAll('.np-sheet-wrap:not([hidden])').forEach(w => { w.hidden = true; });
+  document.body.classList.remove('np-noscroll');
 }
 // Panel „Ukryte przez Ciebie" — jedno miejsce odwracania, w Tematach (desktop i telefon).
 function ukrytePanelHtml() {
   const wpisy = [];
+  ukryte.pary.forEach(k => wpisy.push(['para', k, reguleEtykieta('para', k)]));
+  ukryte.modKat.forEach(k => wpisy.push(['modkat', k, reguleEtykieta('modkat', k)]));
   ukryte.typy.forEach(k => wpisy.push(['typ', k, TYP_NAZWY[k] || k]));
   ukryte.mody.forEach(k => wpisy.push(['mod', k, MOD_NAZWY[k] || k]));
   if (!wpisy.length) return '';
@@ -2333,7 +2429,7 @@ function expandBlock(item) {
       ${quotesHtml(item)}
       ${sagaRynekHtml(item)}
       ${watekHtml(item)}
-      ${niePokazujHtml(item)}
+      ${npMniejHtml(item)}
       <div class="expand-divider"></div>
       <div class="expand-source-row">
         <div class="expand-source-left">
@@ -2541,7 +2637,7 @@ function expandBlockArchive(item, dateStr, dose) {
       ${quotesHtml(item)}
       ${sagaRynekHtml(item)}
       ${watekHtml(item)}
-      ${niePokazujHtml(item)}
+      ${npMniejHtml(item)}
       <div class="expand-divider"></div>
       <div class="expand-source-row">
         <div class="expand-source-left">
@@ -3994,7 +4090,7 @@ function dtShowDetail(item) {
       ${quotesHtml(item)}
       ${sagaRynekHtml(item)}
       ${watekHtml(item)}
-      ${niePokazujHtml(item)}
+      ${npZapadkaHtml(item)}
       <div class="dt-source-row">
         <div>
           <div class="dt-source-label">ŹRÓDŁO</div>
