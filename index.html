@@ -330,6 +330,16 @@ function reguleEtykieta(os, kod) {
 }
 function jestUkryty(item) {
   if (!item) return false;
+  // KLASTER znika tylko, gdy reguła łapie KAŻDĄ pozycję w nim. Ocena samej kotwicy zabierała
+  // czytelnikowi podpięte fakty: 📊 zmierzone na 755 klastrach archiwum — 53% ma podpozycje
+  // o INNEJ modalności niż kotwica („filtr na zapowiedź, znika fakt"). Podpozycja bez tagów
+  // = klaster zostaje (ta sama podłoga co „pozycja bez taga zawsze widoczna").
+  if (item.subItems && item.subItems.length)
+    return jestUkrytyPojedynczy(item) && item.subItems.every(jestUkrytyPojedynczy);
+  return jestUkrytyPojedynczy(item);
+}
+function jestUkrytyPojedynczy(item) {
+  if (!item) return false;
   if (String(item.flag || '').includes('🚨')) return false;          // PILNE niechowalne
   if (typKody(item).some(k => ukryte.typy.includes(k))) return true;
   if (item.mod) {
