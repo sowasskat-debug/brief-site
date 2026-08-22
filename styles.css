@@ -1471,3 +1471,27 @@ html, body {
 /* Sygnał „to się klika" — bez tego wiersz wygląda jak zwykły tekst (tak było do 12.08). */
 .watek-node, .sr-leg { cursor: pointer; }
 .watek-node.exopen .watek-head, .sr-leg.exopen .sr-leg-tx { color: var(--red); }
+
+/* ══ „Nie pokazuj mi" — chipy pod artykułem + panel ukrytych (2026-08-22) ══
+   Monochromatycznie, w konwencji serwisu: kreska w currentColor, zero kolorowych plam.
+   Baza = motyw jasny, ciemny przez [data-theme="dark"] — jak .impact-box wyżej. */
+.np-box { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:14px 0 2px;
+  padding-top:10px; border-top:1px dashed rgba(0,0,0,.16); }
+.np-label { font-size:11px; letter-spacing:.06em; text-transform:uppercase; opacity:.55; margin-right:2px; }
+.np-chip { font:inherit; font-size:12px; line-height:1; padding:5px 9px; border-radius:999px;
+  border:1px solid rgba(0,0,0,.28); background:transparent; color:inherit; cursor:pointer; opacity:.8; }
+.np-chip:hover { opacity:1; border-color:rgba(0,0,0,.55); }
+.np-chip-mod { border-style:dashed; }  /* modalność wizualnie odróżniona od kształtu */
+.ukr-panel { margin-top:14px; padding-top:10px; border-top:1px solid rgba(0,0,0,.12); }
+.ukr-title { font-size:10px; letter-spacing:.08em; text-transform:uppercase; opacity:.5; margin-bottom:7px; }
+.ukr-chip { display:flex; align-items:center; gap:7px; width:100%; text-align:left; font:inherit; font-size:12px;
+  padding:5px 7px; margin:2px 0; border:0; border-radius:6px; background:transparent; color:inherit;
+  cursor:pointer; opacity:.75; }
+.ukr-chip:hover { opacity:1; background:rgba(0,0,0,.05); }
+.ukr-chip .ukr-n { margin-left:auto; font-size:10px; opacity:.55; }
+.ukr-chip .ukr-x { opacity:.6; font-size:14px; }
+[data-theme="dark"] .np-box { border-top-color:rgba(255,255,255,.14); }
+[data-theme="dark"] .np-chip { border-color:rgba(255,255,255,.24); }
+[data-theme="dark"] .np-chip:hover { border-color:rgba(255,255,255,.5); }
+[data-theme="dark"] .ukr-panel { border-top-color:rgba(255,255,255,.10); }
+[data-theme="dark"] .ukr-chip:hover { background:rgba(255,255,255,.06); }

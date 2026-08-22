@@ -278,6 +278,104 @@ function setCatPct(cat, pct) {
   try { localStorage.setItem('brifup_cat_pct', JSON.stringify(catMeatPct)); } catch (e) {}
 }
 
+// ══ „NIE POKAZUJ MI" — filtr po osi typ (kształt) i mod (modalność) (2026-08-22) ══
+// Projekt z 13.08 (wybór właściciela: jawny przycisk zamiast lajków), dane z 22.08: bot taguje
+// nowe pozycje w selekcji (`typ` = kształt zdarzenia, `mod` = modalność), archiwum dostało
+// backfill DeepSeekiem (ta sama lista, zmierzona: kształt 100%, modalność 98% na wzorcu
+// 49 najtrudniejszych przypadków). Szczegóły pomiaru: FinancialNewsBot PR #234.
+// 🔴 FAIL-SAFE W DOBRĄ STRONĘ: pozycja BEZ taga przechodzi ZAWSZE (stare/nieotagowane nie
+//    znikają), 🚨 PILNE jest niechowalne żadną osią, items[0] (top story) zawsze zostaje —
+//    te same podłogi redakcyjne co w suwaku jakości wyżej.
+// 🔴 ODWRACALNOŚĆ WAŻNIEJSZA OD FILTRA (ustalenie 13.08): panel „Ukryte przez Ciebie"
+//    w Tematach pokazuje każdą regułę z licznikiem i krzyżykiem. Bez tego user po miesiącu
+//    ma pusty feed, nie pamięta czemu i uznaje, że produkt się zepsuł.
+// ⚠️ Modalności „fakt" celowo NIE da się ukryć — „nie pokazuj mi faktów" to nonsens,
+//    a przycisk, który chowa 60% feedu, to broń na własną stopę.
+const TYP_NAZWY = {
+  'wyniki-kwartalne':'Wyniki kwartalne','ruch-kursu':'Ruchy kursów akcji','ipo-debiut':'IPO i debiuty',
+  'przejecie':'Przejęcia i fuzje','finansowanie':'Rundy finansowania','inwestycja-capex':'Inwestycje i budowy',
+  'zwolnienia':'Zwolnienia','decyzja-stop':'Decyzje o stopach','dane-makro':'Dane makro',
+  'rynek-dlugu':'Rynek długu','cena-surowca':'Ceny surowców','produkcja-zapasy':'Produkcja i zapasy',
+  'sad-pozew':'Sądy i pozwy','kara-regulatora':'Kary regulatorów','sledztwo':'Śledztwa',
+  'legislacja':'Ustawy i legislacja','cla-sankcje':'Cła i sankcje','decyzja-administracyjna':'Decyzje administracyjne',
+  'budzet-wydatki':'Budżet i wydatki','nominacja-dymisja':'Nominacje i dymisje','atak-militarny':'Ataki i uderzenia',
+  'negocjacje':'Negocjacje i porozumienia','spotkanie':'Spotkania dyplomatyczne','premiera-produktu':'Premiery produktów',
+  'partnerstwo':'Partnerstwa','cyber-wyciek':'Cyberataki i wycieki','katastrofa':'Katastrofy i wypadki',
+  'protest-strajk':'Protesty i strajki','sondaz-wybory':'Sondaże wyborcze','rekord':'Rekordy',
+};
+const MOD_NAZWY = { 'zapowiedz':'Zapowiedzi i plany','wypowiedz-o':'Wypowiedzi i komentarze','dementi':'Dementi','skutek':'Następstwa wydarzeń' };
+let ukryte = { typy: [], mody: [] };
+try { const u = JSON.parse(localStorage.getItem('brifup_ukryte') || '{}');
+      ukryte = { typy: Array.isArray(u.typy)?u.typy:[], mody: Array.isArray(u.mody)?u.mody:[] }; } catch (e) {}
+function zapiszUkryte() { try { localStorage.setItem('brifup_ukryte', JSON.stringify(ukryte)); } catch (e) {} }
+function typKody(item) { return String((item && item.typ) || '').split(',').filter(Boolean); }
+function jestUkryty(item) {
+  if (!item) return false;
+  if (String(item.flag || '').includes('🚨')) return false;          // PILNE niechowalne
+  if (typKody(item).some(k => ukryte.typy.includes(k))) return true;
+  if (item.mod && ukryte.mody.includes(item.mod)) return true;
+  return false;
+}
+function filterByUkryte(items) {
+  if (!items || items.length <= 1) return items;
+  if (!ukryte.typy.length && !ukryte.mody.length) return items;
+  return items.filter((it, i) => i === 0 || !jestUkryty(it));        // top story zawsze
+}
+function ukryjOs(os, kod) {
+  const cel = os === 'typ' ? ukryte.typy : ukryte.mody;
+  if (!cel.includes(kod)) cel.push(kod);
+  zapiszUkryte();
+  showToast('Ukryto: ' + ((os==='typ'?TYP_NAZWY:MOD_NAZWY)[kod] || kod) + ' — cofniesz w Tematach');
+  renderDoseZachowujacWidok();
+}
+function cofnijUkrycie(os, kod) {
+  const cel = os === 'typ' ? ukryte.typy : ukryte.mody;
+  const i = cel.indexOf(kod); if (i >= 0) cel.splice(i, 1);
+  zapiszUkryte();
+  renderDoseZachowujacWidok();
+  // Panel bywa klikany z OTWARTEGO arkusza Tematów na telefonie — przerysuj go w miejscu,
+  // inaczej martwy chip wisi do następnego otwarcia arkusza.
+  try { if (typeof mobSwpBuildCats === 'function' && document.getElementById('mobSwpCats')?.innerHTML)
+          mobSwpBuildCats((typeof cache !== 'undefined' && cache[currentDose]) || []); } catch (e) {}
+}
+// Licznik do panelu: ile pozycji BIEŻĄCEGO widoku (dawka + wczytane archiwum) łapie ta reguła.
+function ukryciaLicznik(os, kod) {
+  let traf = 0, wsz = 0;
+  function jeden(it) {
+    wsz++;
+    if (os === 'typ' ? typKody(it).includes(kod) : it.mod === kod) traf++;
+  }
+  (typeof dtAllItems !== 'undefined' ? dtAllItems : []).forEach(it =>
+    it.subItems && it.subItems.length ? it.subItems.forEach(jeden) : jeden(it));
+  return { traf, wsz };
+}
+// Chipy „nie pokazuj mi takich" pod artykułem — tylko osie, które ta pozycja realnie niesie.
+function niePokazujHtml(item) {
+  if (!item || typeof item !== 'object') return '';
+  const chipy = [];
+  typKody(item).forEach(k => { if (TYP_NAZWY[k] && !ukryte.typy.includes(k))
+    chipy.push(`<button class="np-chip" onclick="event.stopPropagation();ukryjOs('typ','${k}')">${TYP_NAZWY[k]}</button>`); });
+  const m = item.mod;
+  if (m && MOD_NAZWY[m] && !ukryte.mody.includes(m))
+    chipy.push(`<button class="np-chip np-chip-mod" onclick="event.stopPropagation();ukryjOs('mod','${m}')">${MOD_NAZWY[m]}</button>`);
+  if (!chipy.length) return '';
+  return `<div class="np-box"><span class="np-label">Nie pokazuj mi:</span>${chipy.join('')}</div>`;
+}
+// Panel „Ukryte przez Ciebie" — jedno miejsce odwracania, w Tematach (desktop i telefon).
+function ukrytePanelHtml() {
+  const wpisy = [];
+  ukryte.typy.forEach(k => wpisy.push(['typ', k, TYP_NAZWY[k] || k]));
+  ukryte.mody.forEach(k => wpisy.push(['mod', k, MOD_NAZWY[k] || k]));
+  if (!wpisy.length) return '';
+  return `<div class="ukr-panel"><div class="ukr-title">Ukryte przez Ciebie</div>` +
+    wpisy.map(([os, kod, nazwa]) => {
+      const { traf, wsz } = ukryciaLicznik(os, kod);
+      const pct = wsz ? Math.round(traf * 100 / wsz) : 0;
+      return `<button class="ukr-chip" onclick="cofnijUkrycie('${os}','${kod}')" title="Kliknij, żeby przywrócić">
+        <span>${nazwa}</span><span class="ukr-n">${pct}%</span><span class="ukr-x">×</span></button>`;
+    }).join('') + `</div>`;
+}
+
 // Zostaw top ceil(pct% * N) pozycji wg score (min 1 = podłoga: temat nigdy nie pustoszeje).
 function topPctByScore(arr, pct, scoreOf) {
   if (pct >= 100) return arr.slice();
@@ -289,6 +387,7 @@ function topPctByScore(arr, pct, scoreOf) {
 // items[0] (top story) zawsze zostaje.
 function filterByCatMeat(items) {
   if (!items || items.length <= 1) return items;
+  items = filterByUkryte(items);   // „nie pokazuj mi" działa NAD suwakiem jakości — obie podłogi zostają
   if (!Object.keys(catMeatPct).some(c => getCatPct(c) < 100)) return items; // wszystko na 100% → nie filtruj
   const keep = new Set([0]);
   const byCat = {};
@@ -2234,6 +2333,7 @@ function expandBlock(item) {
       ${quotesHtml(item)}
       ${sagaRynekHtml(item)}
       ${watekHtml(item)}
+      ${niePokazujHtml(item)}
       <div class="expand-divider"></div>
       <div class="expand-source-row">
         <div class="expand-source-left">
@@ -2441,6 +2541,7 @@ function expandBlockArchive(item, dateStr, dose) {
       ${quotesHtml(item)}
       ${sagaRynekHtml(item)}
       ${watekHtml(item)}
+      ${niePokazujHtml(item)}
       <div class="expand-divider"></div>
       <div class="expand-source-row">
         <div class="expand-source-left">
@@ -3500,7 +3601,7 @@ function dtRenderSidebar(items) {
           <span class="dt-index-n">${counts[c]}</span>
           ${catLevelBarHtml(c)}
         </div>`
-      ).join('');
+      ).join('') + ukrytePanelHtml();
   }
   dtRenderArchiveSidebar();
 }
@@ -3613,7 +3714,7 @@ function dtRenderSidebarCounts() {
         <span class="dt-index-n">${counts[c]}</span>
         ${catLevelBarHtml(c)}
       </div>`
-    ).join('');
+    ).join('') + ukrytePanelHtml();
 }
 
 function dtFilterCat(el) {
@@ -3644,7 +3745,7 @@ function dtRenderCatFilter(cat) {
   dtArchiveAllItems.filter(matchesCat).forEach(it => matching.push({ it, d: it._archiveDate }));
 
   const pct = getCatPct(cat);
-  let survivors = matching;
+  let survivors = matching.filter(x => !jestUkryty(x.it));   // „nie pokazuj mi" obowiązuje też tutaj
   if (pct < 100) {
     survivors = topPctByScore(matching, pct, x => meatScore(x.it));
   }
@@ -3893,6 +3994,7 @@ function dtShowDetail(item) {
       ${quotesHtml(item)}
       ${sagaRynekHtml(item)}
       ${watekHtml(item)}
+      ${niePokazujHtml(item)}
       <div class="dt-source-row">
         <div>
           <div class="dt-source-label">ŹRÓDŁO</div>
@@ -4177,7 +4279,7 @@ function mobSwpBuildCats(items) {
         <span class="mob-swp-cat-cnt">${counts[c]}</span>
         ${catLevelBarHtml(c)}
       </button>`
-    ).join(''); })();
+    ).join(''); })() + ukrytePanelHtml();
   const meta = document.getElementById('mobSwpMeta');
   const doseLabels = { morning: 'PORANNA ☀️', afternoon: 'POŁUDNIOWA 🌤', evening: 'WIECZORNA 🌛' };
   if (meta) meta.textContent = doseLabels[currentDose] || '';
@@ -4242,7 +4344,7 @@ function mobileFilterCat(cat) {
 
   // Suwak jakości PER TEMAT = percentyl (top X% tematu wg meatScore). Podłoga: min 1 (nie pustoszej).
   const pct = getCatPct(c);
-  let survivors = matching;
+  let survivors = matching.filter(x => !jestUkryty(x.it));   // „nie pokazuj mi" obowiązuje też tutaj
   if (pct < 100) {
     survivors = topPctByScore(matching, pct, x => meatScore(x.it));
   }
