@@ -302,6 +302,7 @@ const TYP_NAZWY = {
   'negocjacje':'Negocjacje i porozumienia','spotkanie':'Spotkania dyplomatyczne','premiera-produktu':'Premiery produktów',
   'partnerstwo':'Partnerstwa','cyber-wyciek':'Cyberataki i wycieki','katastrofa':'Katastrofy i wypadki',
   'protest-strajk':'Protesty i strajki','sondaz-wybory':'Sondaże wyborcze','rekord':'Rekordy',
+  'transport-logistyka':'Transport i logistyka','decyzja-firmy':'Decyzje firm',
 };
 const MOD_NAZWY = { 'zapowiedz':'Zapowiedzi i plany','wypowiedz-o':'Wypowiedzi i komentarze','dementi':'Dementi','skutek':'Następstwa wydarzeń' };
 // Krótkie formy modalności do składania etykiet reguł („zapowiedzi · premiery produktów").
@@ -310,19 +311,21 @@ const MOD_KROTKO = { 'zapowiedz':'zapowiedzi','wypowiedz-o':'wypowiedzi i koment
 // para "typ|mod" (najwęższa: „zapowiedzi premier produktów"), modKat "mod|kategoria"
 // („zapowiedzi w temacie Tech / AI"). Modalność solo jest ZA SZEROKA — nikt nie chce ukryć
 // „zapowiedzi jako takich", tylko zapowiedzi CZEGOŚ — stąd pary jako poziom podstawowy.
-let ukryte = { typy: [], mody: [], pary: [], modKat: [] };
+let ukryte = { typy: [], mody: [], pary: [], modKat: [], luzne: [] };
 try { const u = JSON.parse(localStorage.getItem('brifup_ukryte') || '{}');
       ukryte = { typy: Array.isArray(u.typy)?u.typy:[], mody: Array.isArray(u.mody)?u.mody:[],
-                 pary: Array.isArray(u.pary)?u.pary:[], modKat: Array.isArray(u.modKat)?u.modKat:[] }; } catch (e) {}
+                 pary: Array.isArray(u.pary)?u.pary:[], modKat: Array.isArray(u.modKat)?u.modKat:[],
+                 luzne: Array.isArray(u.luzne)?u.luzne:[] }; } catch (e) {}
 function zapiszUkryte() { try { localStorage.setItem('brifup_ukryte', JSON.stringify(ukryte)); } catch (e) {} }
 function typKody(item) { return String((item && item.typ) || '').split(',').filter(Boolean); }
 function ukryteCel(os) {
   return os === 'typ' ? ukryte.typy : os === 'mod' ? ukryte.mody
-       : os === 'para' ? ukryte.pary : ukryte.modKat;
+       : os === 'para' ? ukryte.pary : os === 'luzne' ? ukryte.luzne : ukryte.modKat;
 }
 function reguleEtykieta(os, kod) {
   if (os === 'typ') return TYP_NAZWY[kod] || kod;
   if (os === 'mod') return MOD_NAZWY[kod] || kod;
+  if (os === 'luzne') return 'luźne ' + (MOD_KROTKO[kod] || kod) + ' (bez zdarzenia)';
   if (os === 'para') { const [t, m] = kod.split('|');
     return (MOD_KROTKO[m] || m) + ' · ' + (TYP_NAZWY[t] || t).toLowerCase(); }
   const [m, kat] = kod.split('|');
@@ -344,6 +347,7 @@ function jestUkrytyPojedynczy(item) {
   if (typKody(item).some(k => ukryte.typy.includes(k))) return true;
   if (item.mod) {
     if (ukryte.mody.includes(item.mod)) return true;
+    if (!typKody(item).length && ukryte.luzne.includes(item.mod)) return true;
     if (typKody(item).some(k => ukryte.pary.includes(k + '|' + item.mod))) return true;
     if (ukryte.modKat.length) {
       const kat = (typeof dtGetCategory === 'function') ? dtGetCategory(item) : '';
@@ -354,7 +358,7 @@ function jestUkrytyPojedynczy(item) {
 }
 function filterByUkryte(items) {
   if (!items || items.length <= 1) return items;
-  if (!ukryte.typy.length && !ukryte.mody.length && !ukryte.pary.length && !ukryte.modKat.length) return items;
+  if (!ukryte.typy.length && !ukryte.mody.length && !ukryte.pary.length && !ukryte.modKat.length && !ukryte.luzne.length) return items;
   return items.filter((it, i) => i === 0 || !jestUkryty(it));        // top story zawsze
 }
 function ukryjOs(os, kod) {
@@ -382,6 +386,7 @@ function ukryciaLicznik(os, kod) {
     if (os === 'typ') return typKody(it).includes(kod);
     if (os === 'mod') return it.mod === kod;
     if (os === 'para') { const [t, m] = kod.split('|'); return it.mod === m && typKody(it).includes(t); }
+    if (os === 'luzne') return it.mod === kod && !typKody(it).length;
     const [m, kat] = kod.split('|');
     return it.mod === m && (typeof dtGetCategory === 'function' ? dtGetCategory(it) : '') === kat;
   }
@@ -407,6 +412,8 @@ function npOpcje(item) {
     if (!ukryte.typy.includes(t)) glob.push({ os: 'typ', kod: t, label: TYP_NAZWY[t] });
   });
   if (m) {
+    if (!pary.length && !typKody(item).some(t => TYP_NAZWY[t]) && !ukryte.luzne.includes(m))
+      pary.push({ os: 'luzne', kod: m, label: reguleEtykieta('luzne', m) });
     if (kat && !ukryte.modKat.includes(m + '|' + kat))
       modkat.push({ os: 'modkat', kod: m + '|' + kat, label: (MOD_KROTKO[m]) + ' w: ' + kat });
     if (!ukryte.mody.includes(m)) glob.push({ os: 'mod', kod: m, label: 'wszystkie ' + MOD_KROTKO[m] });
@@ -443,7 +450,8 @@ function npZapadkaHtml(item) {
 // (ten sam wzorzec co panel Tematów). Markup arkusza siedzi w karcie (hidden) — zero
 // rejestrów itemów, zero sieci; npOtworz tylko zdejmuje hidden.
 const NP_OPIS_ZAKRESU = { para: 'dokładnie takie jak ten', modkat: 'szerzej — cały temat',
-  typ: 'ten kształt zdarzenia, wszędzie', mod: 'najszerzej — każdy temat' };
+  typ: 'ten kształt zdarzenia, wszędzie', mod: 'najszerzej — każdy temat',
+  luzne: 'komentarze i opinie bez przypiętego zdarzenia' };
 function npMniejHtml(item) {
   if (!item || typeof item !== 'object') return '';
   const o = npOpcje(item);
@@ -480,6 +488,7 @@ function npZamknijWszystkie() {
 function ukrytePanelHtml() {
   const wpisy = [];
   ukryte.pary.forEach(k => wpisy.push(['para', k, reguleEtykieta('para', k)]));
+  ukryte.luzne.forEach(k => wpisy.push(['luzne', k, reguleEtykieta('luzne', k)]));
   ukryte.modKat.forEach(k => wpisy.push(['modkat', k, reguleEtykieta('modkat', k)]));
   ukryte.typy.forEach(k => wpisy.push(['typ', k, TYP_NAZWY[k] || k]));
   ukryte.mody.forEach(k => wpisy.push(['mod', k, MOD_NAZWY[k] || k]));
