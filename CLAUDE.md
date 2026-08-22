@@ -2131,3 +2131,29 @@ ma już dwa modele wyprowadzone „na oko" i oba zaniżały.**
 ⚠️ **DEPLOY NIE IDZIE PRZEZ GIT:** `supabase functions deploy og --no-verify-jwt --project-ref utmvokfjvrthvcmxzowc`.
 Do czasu wdrożenia karty wyglądają jak dotąd. Zmiana JEST w repo — i musi tam być, patrz ostrzeżenie
 „wygląd trzymany tylko na serwerze NIE ISTNIEJE".
+
+## Oś `typ` + `mod` i filtr „nie pokazuj mi" (2026-08-22)
+
+Każda pozycja niesie (od 22.08) dwie osie personalizacji: **`typ`** — kształt zdarzenia
+(1–2 kody po przecinku z zamkniętej listy 31, np. `atak-militarny`, `wyniki-kwartalne`) —
+i **`mod`** — modalność (`fakt`/`zapowiedz`/`wypowiedz-o`/`dementi`/`skutek`). Taguje bot
+w selekcji (FinancialNewsBot #234); archiwum ma jednorazowy backfill. Brak pola = pozycja
+starsza/nieotagowana i **filtr jej NIGDY nie chowa** (fail-safe w dobrą stronę).
+
+Front (`index.html`, blok za `setCatPct`): `TYP_NAZWY`/`MOD_NAZWY` (etykiety PL),
+`brifup_ukryte` w localStorage, `jestUkryty`/`filterByUkryte` (wpięte W ŚRODKU
+`filterByCatMeat` + w obu widokach cross-day per temat), `niePokazujHtml` (chipy pod
+artykułem w 3 widokach — kształt ramka ciągła, modalność przerywana; „fakt" celowo bez
+chipa), `ukrytePanelHtml` (panel „Ukryte przez Ciebie" w Tematach, % z `ukryciaLicznik`).
+Podłogi jak w suwaku jakości: 🚨 niechowalne, `items[0]` zostaje.
+⚠️ Lista kodów jest ZMIERZONA (kształt 100% / modalność 98% na wzorcu ręcznym) — dokładając
+kod: NAJPIERW front (etykieta w `TYP_NAZWY`), potem bot (`_dozwoloneTypy` + prompt),
+i powtórzyć pomiar. Ta sama reguła co `_dozwoloneKategorie`.
+
+## `ZNACZNIK_RECZNIE` — nadpisanie znacznika per pozycja (2026-08-22)
+
+Mapa w `index.html` nad `IKONA_Z_KATEGORII`: `source_url → znacznik`. Nadpisanie jest
+twarde (wyłącza cały fallback — inaczej „sama flaga" nieosiągalna, bo każdy tor dokłada
+ikonę). Klucz to `source_url`, NIE nagłówek — bot przepisuje nagłówki po publikacji,
+klucz tekstowy przestałby pasować po cichu. ⚠️ Miejsce na POJEDYNCZE poprawki redakcyjne;
+gdy urośnie ponad kilka wpisów, wzorzec jest systemowy i należy go opisać regułą.

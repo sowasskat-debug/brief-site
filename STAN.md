@@ -1,9 +1,55 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-21 WIECZÓR (po sesji: przegląd całego tygodnia zmian + klasy 🥇 i 📱, nowe ikony złota i chipu, ASCII-pułapka w regexach, dedup paczki FT)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-22 NOC (po sesji: znacznik osierocony przez podmianę nagłówka + „nie pokazuj mi" na dwóch osiach typ/mod + incydent nadpisania dawek)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## ✅ 22.08: „NIE POKAZUJ MI" — WDROŻONE END-TO-END (projekt z 13.08 dowieziony)
+Dwie osie zamiast jednej: **`typ`** (kształt zdarzenia, 31 kodów) + **`mod`** (fakt / zapowiedz /
+wypowiedz-o / dementi / skutek). Rozdzielenie z pomiaru: jednoosiowa taksonomia myliła „Iran
+dementuje atak" z atakiem, a „wypowiedź" (23% feedu) okazała się modalnością, nie kształtem.
+- 📊 **Taksonomia zmierzona PRZED implementacją** (174-elementowa próbka warstwowa z 6119 nagłówków,
+  ręczny wzorzec 49 najtrudniejszych): DeepSeek kształt 100% / modalność 98%; embeddingi 63-65%
+  (widzą temat, nie modalność); regex 0% na modalności (homonim „premiera" itd.). Prompt 1:1
+  ze zmierzonego — NIE zmieniać listy kodów bez powtórzenia pomiaru.
+- ✅ **Bot #234 (MERGED)**: typ+mod w JSON selekcji, wzorzec `kategoria` end-to-end, liczniki
+  `selekcja_typ_nieznany`/`selekcja_mod_nieznany`; pola na BriefItem z WhenWritingNull.
+- ✅ **Backfill**: archiwum 52 pliki + dzisiejsze dawki (6119 + 32 nagłówki, ~13 min, ~0,5 mln tok).
+  Pokrycie: 95% typ / 100% mod. Wstawki chirurgiczne po zeskapowanym `"text"` (dekodowanie OD
+  strony pliku — nie odtwarzać eskejpowania .NET-u w Pythonie).
+- ✅ **Front (SW v147)**: chipy „Nie pokazuj mi:" pod artykułem (3 widoki; kształt ramka ciągła,
+  modalność przerywana), panel „Ukryte przez Ciebie" w Tematach (desktop + mobilny arkusz,
+  licznik % feedu, krzyżyk cofa), filtr w `filterByCatMeat` + widoki cross-day.
+  Podłogi: 🚨 niechowalne, top story zostaje, pozycja BEZ taga zawsze widoczna, „fakt" nieukrywalny.
+- ⬜ **OBSERWACJA (nowa sesja)**: liczniki `selekcja_typ_nieznany`/`selekcja_mod_nieznany` w lejku
+  po kilku dniach; przejrzeć rozjazdy tagów bota vs oczekiwania (tryb cienia był zalecany,
+  właściciel wdrożył od razu — tym ważniejszy przegląd po tygodniu).
+
+## ✅ 22.08 RANO: ZNACZNIK OSIEROCONY PRZEZ PODMIANĘ NAGŁÓWKA (zgłoszenie: „dolar z ikonką bitcoina")
+`flag` nadawany RAZ przy selekcji, a nagłówek podmieniany potem w 5 miejscach — czytelnik widział
+ikonę nagłówka, którego nie ma. Kandydat FT „Bitcoin i złoto zyskują…" → 🪙 poprawne → podmiana
+na tytuł forexclubu „Dolar pod presją…" → 🪙 osierocone.
+- ✅ Bot #233 (MERGED): `ZrzucOsieroconeIkony` za całym blokiem przepisywania — asymetryczna
+  (zrzuca TYLKO gdy nagłówek PRZED miał pokrycie słowne, a PO nie ma; mierzy ZMIANĘ, nie trafność).
+  Test na 17 realnych podmianach z ikoną: 16 bez zmian, 1 zrzucona (zgłoszona). Licznik
+  `znacznik_osierocony_zrzucony` — ⬜ zmierzyć po tygodniu na sensownym n.
+- ✅ Front: mapa `ZNACZNIK_RECZNIE` (nadpisanie znacznika per pozycja, klucz `source_url` — NIE
+  nagłówek, bo ten się podmienia; wyłącza cały fallback). Kafel dolara = sama 🇺🇸 (życzenie).
+  ⚠️ To miejsce na POJEDYNCZE poprawki — jak mapa urośnie ponad kilka wpisów, opisać regułą.
+- ✅ Bot #232 (MERGED, wisiał z 21.08).
+
+## 🔴 22.08: INCYDENT — nadpisanie dawek starą kopią (naprawiony w ~10 min od zgłoszenia)
+Commit z tagami wjechał ze STARĄ lokalną kopią briefs.json → bot zobaczył wieczorną z wczorajszą
+datą → założył świeżą pustą → placeholder na produkcji (zgłoszenie 22:06). Drugi odprysk:
+`archive/2026-08-21.json` poszedł na produkcję z markerami `<<<<<<<` (git add -A w pętli push
+zacommitował plik konfliktowy żywcem) — wczorajsze archiwum było ~1,5 h zepsutym JSON-em.
+- Odzysk: dawki z `402d17fec`, archiwum z `84d15d269` + tagi ponownie; pełny skan repo na markery czysty.
+- 🔴 **Pułapki na stałe** (też w pamięci użytkownika): w REBASE `--theirs` = WŁASNA wersja
+  (odwrotnie niż merge) — dla plików bota zawsze `--ours` + idempotentne nałożenie; `git pull`
+  TUŻ przed commitem plików bota, nie godziny wcześniej; NIGDY `git add -A` w pętli rebase
+  (dodaje pliki z markerami); po pushu sprawdzić na origin liczby pozycji i DATY trzech dawek.
+
 
 ## ✅ 21.08 WIECZÓR: PRZEGLĄD CAŁEGO TYGODNIA (bot #174–#230) — 6 recenzentów, wynik niżej
 Zlecenie właściciela: *„przez ostatni tydzień zrobiliśmy sporo zmian, przeleć przez wszystkie,
@@ -41,7 +87,7 @@ Trzy zgłoszenia właściciela, trzy różne przyczyny — wszystkie wdrożone i
   (procedura z 🚢/🏠/⚖); odrzucone: medal, moneta z gwiazdką, wafel, płytka PCB.
 - ⬜ **DO SPRAWDZENIA PRZEZ WŁAŚCICIELA:** czy nowe ikony podobają się na żywym feedzie. Warianty
   zapasowe (bryłka złota, laptop zamiast telefonu) są zrasteryzowane — podmiana to jedna linia SVG.
-- ⚠️ **PR bota #232 CZEKA NA MERGE** (klasyfikator blokuje merge z sesji): klasa 📱 w prompcie
+- ✅ **PR bota #232 ZMERGOWANY 22.08** (razem z #233 i #234): klasa 📱 w prompcie
   selekcji, 🥇 na liście ikon, dedup paczki FT, kontr-wskaźnik lobbingu w prompcie FT.
 
 ## ⚠️ 21.08 WIECZÓR: PUŁAPKI ZŁAPANE TEGO WIECZORU
@@ -70,7 +116,7 @@ stan w `zamrozona_historia.txt` (lokalny per-serwer, .gitignore), fail-safe: bł
   czytają pliki NA ŚWIEŻO i zamrożeniu nie podlegają — tak jak wymagała sekcja 19.08.
 - ⬜ Przypomnienie `brifup-zamrozenie-historii` (dziś 18:00) już niepotrzebne — skasować przy okazji.
 
-## ⬜ 21.08: SAGA O BITCOINIE — naprawa WDROŻONA, ale NIEZWERYFIKOWANA NA ŻYWO
+## ✅ 21.08: SAGA O BITCOINIE — naprawa ZWERYFIKOWANA NA ŻYWO 22.08 (370 biegów, 0 urwań, 39 biegów z zszytymi luźnymi, budżet działa)
 Zgłoszenie właściciela: *„ostatnio trąbimy o bitcoinie dosyć sporo, dlaczego o tym sagi skrypt nie zrobił?"*
 - **Przyczyna znaleziona i naprawiona** (bot #225): bieg wątków kończył się na `finish=length`, urwany
   JSON, wyjątek przy parsowaniu i **cichy przepadek wszystkich nagłówków z tego biegu**.
