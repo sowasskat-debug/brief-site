@@ -311,21 +311,24 @@ const MOD_KROTKO = { 'zapowiedz':'zapowiedzi','wypowiedz-o':'wypowiedzi i koment
 // para "typ|mod" (najwęższa: „zapowiedzi premier produktów"), modKat "mod|kategoria"
 // („zapowiedzi w temacie Tech / AI"). Modalność solo jest ZA SZEROKA — nikt nie chce ukryć
 // „zapowiedzi jako takich", tylko zapowiedzi CZEGOŚ — stąd pary jako poziom podstawowy.
-let ukryte = { typy: [], mody: [], pary: [], modKat: [], luzne: [] };
+let ukryte = { typy: [], mody: [], pary: [], modKat: [], luzne: [], typKat: [] };
 try { const u = JSON.parse(localStorage.getItem('brifup_ukryte') || '{}');
       ukryte = { typy: Array.isArray(u.typy)?u.typy:[], mody: Array.isArray(u.mody)?u.mody:[],
                  pary: Array.isArray(u.pary)?u.pary:[], modKat: Array.isArray(u.modKat)?u.modKat:[],
-                 luzne: Array.isArray(u.luzne)?u.luzne:[] }; } catch (e) {}
+                 luzne: Array.isArray(u.luzne)?u.luzne:[], typKat: Array.isArray(u.typKat)?u.typKat:[] }; } catch (e) {}
 function zapiszUkryte() { try { localStorage.setItem('brifup_ukryte', JSON.stringify(ukryte)); } catch (e) {} }
 function typKody(item) { return String((item && item.typ) || '').split(',').filter(Boolean); }
 function ukryteCel(os) {
   return os === 'typ' ? ukryte.typy : os === 'mod' ? ukryte.mody
-       : os === 'para' ? ukryte.pary : os === 'luzne' ? ukryte.luzne : ukryte.modKat;
+       : os === 'para' ? ukryte.pary : os === 'luzne' ? ukryte.luzne
+       : os === 'typkat' ? ukryte.typKat : ukryte.modKat;
 }
 function reguleEtykieta(os, kod) {
   if (os === 'typ') return TYP_NAZWY[kod] || kod;
   if (os === 'mod') return MOD_NAZWY[kod] || kod;
   if (os === 'luzne') return 'luźne ' + (MOD_KROTKO[kod] || kod) + ' (bez zdarzenia)';
+  if (os === 'typkat') { const [t, kat] = kod.split('|');
+    return (TYP_NAZWY[t] || t).toLowerCase() + ' w: ' + kat; }
   if (os === 'para') { const [t, m] = kod.split('|');
     return (MOD_KROTKO[m] || m) + ' · ' + (TYP_NAZWY[t] || t).toLowerCase(); }
   const [m, kat] = kod.split('|');
@@ -345,6 +348,10 @@ function jestUkrytyPojedynczy(item) {
   if (!item) return false;
   if (String(item.flag || '').includes('🚨')) return false;          // PILNE niechowalne
   if (typKody(item).some(k => ukryte.typy.includes(k))) return true;
+  if (ukryte.typKat.length) {
+    const kat = (typeof dtGetCategory === 'function') ? dtGetCategory(item) : '';
+    if (kat && typKody(item).some(k => ukryte.typKat.includes(k + '|' + kat))) return true;
+  }
   if (item.mod) {
     if (ukryte.mody.includes(item.mod)) return true;
     if (!typKody(item).length && ukryte.luzne.includes(item.mod)) return true;
@@ -358,7 +365,7 @@ function jestUkrytyPojedynczy(item) {
 }
 function filterByUkryte(items) {
   if (!items || items.length <= 1) return items;
-  if (!ukryte.typy.length && !ukryte.mody.length && !ukryte.pary.length && !ukryte.modKat.length && !ukryte.luzne.length) return items;
+  if (!ukryte.typy.length && !ukryte.mody.length && !ukryte.pary.length && !ukryte.modKat.length && !ukryte.luzne.length && !ukryte.typKat.length) return items;
   return items.filter((it, i) => i === 0 || !jestUkryty(it));        // top story zawsze
 }
 function ukryjOs(os, kod) {
@@ -387,6 +394,8 @@ function ukryciaLicznik(os, kod) {
     if (os === 'mod') return it.mod === kod;
     if (os === 'para') { const [t, m] = kod.split('|'); return it.mod === m && typKody(it).includes(t); }
     if (os === 'luzne') return it.mod === kod && !typKody(it).length;
+    if (os === 'typkat') { const [t, kat] = kod.split('|');
+      return typKody(it).includes(t) && (typeof dtGetCategory === 'function' ? dtGetCategory(it) : '') === kat; }
     const [m, kat] = kod.split('|');
     return it.mod === m && (typeof dtGetCategory === 'function' ? dtGetCategory(it) : '') === kat;
   }
@@ -409,6 +418,8 @@ function npOpcje(item) {
     if (!TYP_NAZWY[t]) return;
     if (m && !ukryte.pary.includes(t + '|' + m))
       pary.push({ os: 'para', kod: t + '|' + m, label: reguleEtykieta('para', t + '|' + m) });
+    if (kat && !ukryte.typKat.includes(t + '|' + kat))
+      modkat.push({ os: 'typkat', kod: t + '|' + kat, label: reguleEtykieta('typkat', t + '|' + kat) });
     if (!ukryte.typy.includes(t)) glob.push({ os: 'typ', kod: t, label: TYP_NAZWY[t] });
   });
   if (m) {
@@ -451,7 +462,7 @@ function npZapadkaHtml(item) {
 // rejestrów itemów, zero sieci; npOtworz tylko zdejmuje hidden.
 const NP_OPIS_ZAKRESU = { para: 'dokładnie takie jak ten', modkat: 'szerzej — cały temat',
   typ: 'ten kształt zdarzenia, wszędzie', mod: 'najszerzej — każdy temat',
-  luzne: 'komentarze i opinie bez przypiętego zdarzenia' };
+  luzne: 'komentarze i opinie bez przypiętego zdarzenia', typkat: 'ten kształt, tylko w tym temacie' };
 function npMniejHtml(item) {
   if (!item || typeof item !== 'object') return '';
   const o = npOpcje(item);
@@ -489,6 +500,7 @@ function ukrytePanelHtml() {
   const wpisy = [];
   ukryte.pary.forEach(k => wpisy.push(['para', k, reguleEtykieta('para', k)]));
   ukryte.luzne.forEach(k => wpisy.push(['luzne', k, reguleEtykieta('luzne', k)]));
+  ukryte.typKat.forEach(k => wpisy.push(['typkat', k, reguleEtykieta('typkat', k)]));
   ukryte.modKat.forEach(k => wpisy.push(['modkat', k, reguleEtykieta('modkat', k)]));
   ukryte.typy.forEach(k => wpisy.push(['typ', k, TYP_NAZWY[k] || k]));
   ukryte.mody.forEach(k => wpisy.push(['mod', k, MOD_NAZWY[k] || k]));
