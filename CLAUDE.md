@@ -2157,3 +2157,22 @@ twarde (wyłącza cały fallback — inaczej „sama flaga" nieosiągalna, bo ka
 ikonę). Klucz to `source_url`, NIE nagłówek — bot przepisuje nagłówki po publikacji,
 klucz tekstowy przestałby pasować po cichu. ⚠️ Miejsce na POJEDYNCZE poprawki redakcyjne;
 gdy urośnie ponad kilka wpisów, wzorzec jest systemowy i należy go opisać regułą.
+
+## Limity GitHub Pages — bot MUSI zbijać zapisy do jednego commita na bieg (2026-08-27) 🔴
+GitHub Pages ma **miękki limit 10 buildów na godzinę**. Każdy push na `main` = osobny build.
+Bot pchał 3–4 osobne commity na bieg (`briefs.json`, `quotes.json`, `threads.json`, stuby `s/`),
+co dawało **średnio 12,8 builda/h, a w szczycie 16/h** — czyli limit był łamany STALE, cały dzień,
+nie incydentalnie. To najpoważniejszy kandydat na wyzwalacz shadow-flagi z 26.08 (patrz `STAN.md`).
+
+- **Zasada na stałe:** jeden bieg bota = **jeden commit**. Nie dokładać osobnych commitów per plik.
+- Limit 10/h **nie obowiązuje**, gdy publikacja idzie własnym workflow GitHub Actions — ale u nas
+  to ślepa uliczka: commity bota mają `[skip ci]`, więc Actions by je pomijał i strona
+  przestałaby się odświeżać. Zbicie commitów rozwiązuje problem u źródła, bez zmiany deployu.
+- Czego NIE naruszamy (sprawdzone u źródła 27.08): brak reklam i monetyzacji (zero trafień na
+  adsense/googlesyndication/doubleclick/adsbygoogle/amazon-adsystem), więc zapis „free web hosting
+  to run your online business" nas nie dotyczy; repo 191 MB przy zalecanym 1 GB; bandwidth
+  100 GB/mies. nieosiągalny przy naszym ruchu.
+- Źródła: `docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits`
+  oraz `docs.github.com/en/site-policy/acceptable-use-policies/github-acceptable-use-policies`
+  (sekcja o „excessive automated bulk activity" i o zużyciu „significantly excessive in relation
+  to other users" — 556 commitów/48 h wpada w tę kategorię).

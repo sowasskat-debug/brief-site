@@ -1,9 +1,53 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-22 NOC (po sesji: znacznik osierocony przez podmianę nagłówka + „nie pokazuj mi" na dwóch osiach typ/mod + incydent nadpisania dawek)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-27 RANO (po sesji: shadow-flaga konta GitHub — cała produkcja leży, ticket u supportu)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 🔴🔴 27.08: KONTO GITHUB SHADOW-FLAGOWANE — CAŁA PRODUKCJA LEŻY (OTWARTE, czeka na support)
+**Stan na 27.08 05:14 UTC: `brifup.com`, `flusso.brifup.com` i profil `sowasskat-debug` → 404
+dla wszystkich niezalogowanych.** Zaczęło się 26.08 ~17:54 UTC. Przez zalogowane API i gita
+wszystko działa normalnie (pull/push/gh OK) — to właśnie kształt shadow-flagi.
+
+**Dowód rozstrzygający, że to flaga konta, a NIE nasz build/kod:** Flusso ma w API
+`status=built` i `cname=flusso.brifup.com` (instancja zdrowa, build UDANY, repo nietykane
+od dawna) — i mimo to serwuje „Site not found". Zdrowy build + zdrowa konfiguracja + 404
+= blokada nałożona PONAD Pages.
+
+**Fałszywe tropy — NIE wracać do nich:** „zawieszony build 8db32ba8c", „zator kolejki legacy",
+„błąd w ostatnich commitach" (to były: 1 linia `threads.json`, 1 linia `quotes.json`, 3 stuby),
+„przejście na Actions" (repo ma ZERO runów Actions; commity bota mają `[skip ci]`, więc Actions
+by je pomijał i strona przestałaby się odświeżać).
+
+### 🔴 Znaleziona realna przyczyna po naszej stronie: ŁAMANY LIMIT BUILDÓW
+Miękki limit Pages to **10 buildów/h**. Nasze liczby z dnia awarii: **16 w godzinie 17:00–17:59
+UTC**, **średnio 12,8/h** w oknie 10:06–17:54 (100 buildów / 7 h 48 min). Przyczyna: bot pchał
+3–4 osobne commity na bieg, a każdy push = osobny build. Łamane STALE, nie incydentalnie.
+➜ Reguła i pełne rozliczenie z regulaminem: `CLAUDE.md`, sekcja „Limity GitHub Pages" (27.08).
+
+### ⬜ OTWARTE — do zrobienia w następnej sesji
+1. **Odpowiedź do supportu.** Ticket „Account flagged: Pages site…" założony, GitHub Support
+   (Cora) odpisał 27.08 ~00:00 UTC z pytaniem *„how do you plan to use GitHub?"* — **czeka na
+   odpowiedź właściciela**. Gotowy tekst odpowiedzi (z przyznaniem się do limitu 10/h
+   i deklaracją naprawy) powstał w sesji 27.08. ⚠️ Nie klikać „Close ticket".
+2. **Zbicie commitów bota do JEDNEGO na bieg** — naprawa u źródła, 12,8/h → ~1/h.
+   Warto mieć wdrożone ZANIM support odpisze, żeby napisać „zrobione", a nie „obiecuję".
+3. **Po zdjęciu flagi — dług po odtworzeniu Pages brief-site** (DELETE+POST zrobiony 26.08
+   za zgodą właściciela, gdy diagnoza nie była jeszcze pełna):
+   - instancja Pages jest ODTWORZONA OD ZERA — **bez `cname` i bez certu HTTPS**,
+   - sprawdzić, czy build przechodzi i czy plik `CNAME` z repo przypiął `brifup.com`;
+     jak nie: `gh api -X PUT repos/sowasskat-debug/brief-site/pages -f 'cname=brifup.com'`,
+   - poczekać na cert HTTPS (stary, ważny do 29.09, przepadł przy DELETE), potem `https_enforced=true`,
+   - sprawdzić, czy `flusso.brifup.com` wróciło samo (tam NIC nie ruszaliśmy).
+   Stara konfiguracja do odtworzenia: `build_type=legacy`, `source=main:/`, `cname=brifup.com`,
+   `https_enforced=true`.
+
+### ⚠️ Pułapka: `gh api` „queued" nie znaczy, że build wystartował
+Przy fladze `POST /pages/builds` zwraca `{"status":"queued"}`, a lista buildów NIE rośnie —
+ani po pushu bota, ani po pustym commicie, ani po żądaniu z API. Trzy niezależne drogi bez
+efektu = sygnał, że problem jest NAD Pages, i moment, żeby przestać dłubać w deployu.
+
 
 ## ✅ 22.08: „NIE POKAZUJ MI" — WDROŻONE END-TO-END (projekt z 13.08 dowieziony)
 Dwie osie zamiast jednej: **`typ`** (kształt zdarzenia, 31 kodów) + **`mod`** (fakt / zapowiedz /
