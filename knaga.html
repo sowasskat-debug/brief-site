@@ -1072,7 +1072,10 @@ function showToast(msg) {
 }
 
 async function ghRequest(method, path, body) {
-  const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
+  // Faza 2 uwolnienia od GitHuba (2026-08-29): zapis idzie przez lokalny zamiennik
+  // Contents API na Hetznerze (/gh-api -> brif_contents_api.py), nie przez api.github.com.
+  // Ta sama semantyka sha/409, ten sam token. Wzgledny URL = ta sama domena, zero CORS.
+  const res = await fetch(`/gh-api/repos/${OWNER}/${REPO}/contents/${path}`, {
     method,
     headers: {
       'Authorization': `Bearer ${token}`,
