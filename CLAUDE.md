@@ -8,6 +8,28 @@ Statyczna strona + PWA z newsami finansowo-polityczno-gospodarczymi po polsku.
 Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 (repo `financialnewsbot`) i zapisuje jako `briefs.json`.
 
+
+## Hosting: Caddy na Hetznerze, GitHub tylko kopią zapasową (2026-08-28/30) 🔴
+Po shadow-fladze konta (26.08) produkcja zjechała z GitHub Pages NA STAŁE. To zmienia trzy
+rzeczy, które dotąd ten plik zakładał milcząco:
+- **Serwowanie**: Caddy (`/etc/caddy/Caddyfile` na Hetznerze), certy Let's Encrypt automatem,
+  gzip/zstd, CORS `*` (Flusso czyta cross-origin — bez tego oślepnie). 🔴 **Blok `@zaplecze`
+  w Caddyfile duplikuje listę `exclude` z `_config.yml`** — `_config.yml` nic już nie serwuje
+  (Jekyll nie biega), ale zostaje jako dokumentacja intencji; **dokładając plik do ukrycia,
+  wpisz go w OBA miejsca**.
+- 🔴 **Źródłem prawdy jest `/var/www/brifup` na serwerze.** Bot i knaga piszą przez lokalny
+  zamiennik Contents API (szczegóły: CLAUDE.md bota + STAN.md tutaj). GitHub dostaje push co
+  5 min (`brifup-push.sh`); klon na Macu bywa w tyle jak zawsze — `git pull` przed robotą.
+  Deploy frontu: push z Maca do origin przejdzie (skrypt push na serwerze robi pull --rebase),
+  ale większe zmiany bezpieczniej edytować na serwerze i commitować stamtąd.
+- **Knaga**: `ghRequest` bije w `/gh-api/*` (względny URL, ta sama domena, zero CORS) —
+  Caddy proxuje do zamiennika. Autoryzacja sekretem `brifup_…` z `/root/shim_tokens.extra`
+  (NIE jest to PAT GitHuba; w Supabase `sekrety.github_token` leży właśnie ten sekret).
+  „Token odrzucony" w panelu = sekret w Supabase ≠ żaden z listy zamiennika.
+- **service worker v154** — bump przy przełączeniu knagi (reguła CACHE_NAME bez zmian).
+- ⚠️ Instancja GitHub Pages celowo ZOSTAWIONA jako zimny zapas (rollback = DNS w GoDaddy
+  z powrotem na 185.199.108-111.153 + przypięcie cname). Nie kasować.
+
 ## Co NIE jest serwowane pod brifup.com — `_config.yml` (2026-08-07) 🔴
 GitHub Pages serwuje **DOMYŚLNIE każdy plik z repo**, więc dokumentacja wewnętrzna i źródła lądowałyby
 publicznie pod domeną produktu. `_config.yml` (`exclude:`) zdejmuje je z buildu Jekylla → **404 pod

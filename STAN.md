@@ -1,11 +1,44 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-27 RANO (po sesji: shadow-flaga konta GitHub — cała produkcja leży, ticket u supportu)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-08-30 NOC (po sesji: przeprowadzka produkcji na Hetzner — GitHub tylko kopią zapasową)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
-## 🔴🔴 27.08: KONTO GITHUB SHADOW-FLAGOWANE — CAŁA PRODUKCJA LEŻY (OTWARTE, czeka na support)
+## 🟢🟢 28-30.08: PRZEPROWADZKA NA HETZNER — GitHub wycięty ze ścieżki życia produktu (ZAMKNIĘTE)
+Po 3 dobach shadow-flagi (26-28.08, sekcja niżej) produkcja zjechała z GitHub Pages NA STAŁE.
+**Nowa architektura — przeczytaj, zanim cokolwiek zdeployujesz:**
+- **Serwuje Caddy na Hetznerze** (`/etc/caddy/Caddyfile`): `brifup.com`+`www` z `/var/www/brifup`,
+  `flusso.brifup.com` z `/var/www/flusso`; certy Let's Encrypt automatem. Blok `@zaplecze`
+  w Caddyfile = dawna lista `exclude` z `_config.yml` — **zmieniasz jedną, zmień drugą**.
+- **DNS w GoDaddy**: `@` A → 167.233.149.245, `www`/`flusso` CNAME → `@`. Rollback na Pages
+  = przywrócenie 4 adresów 185.199.108-111.153 (instancja Pages zostawiona jako zimny zapas).
+- 🔴 **ŹRÓDŁEM PRAWDY JEST `/var/www/brifup` NA SERWERZE, nie GitHub i nie klon na Macu.**
+  Bot pisze przez lokalny zamiennik Contents API (`/usr/local/bin/brif_contents_api.py`,
+  systemd `brif-contents-api`, 127.0.0.1:8787) — pełna semantyka sha/409 + Git Data API
+  (blob→tree→commit→ref, stuby i strony SEO). `SITE_API_BASE` w `/root/bot_secrets.env`
+  przekierowuje bota; unset = rollback na api.github.com (patrz CLAUDE.md bota).
+- **GitHub = kopia zapasowa**: cron `brifup-push.sh` co 5 min (push z tolerancją na trupa);
+  Flusso dalej pull (tam nic nie piszemy). **Deploy frontu z Maca**: push do origin → skrypt
+  push na serwerze zrobi `pull --rebase` przy najbliższym cyklu — ale przy większych zmianach
+  bezpieczniej edytować NA SERWERZE i commitować stamtąd (tak wszedł knaga/gh-api i ta sekcja).
+- **Knaga pisze przez `/gh-api/*`** (Caddy → zamiennik, ta sama domena, zero CORS); autoryzuje
+  się sekretem `brifup_…` z `/root/shim_tokens.extra` (wklejony w panel 30.08, siedzi w Supabase
+  `sekrety.github_token`). PAT GitHuba zniknął z obiegu panelu; unieważnienie sekretu = usunięcie
+  linii z pliku + restart usługi.
+- ⚠️ **Pułapki**: (a) restart zamiennika w trakcie biegu bota = pojedynczy „error sending request"
+  w [STUBY] — samonaprawialne w kolejnym biegu, nie diagnozować jako awarii; (b) unattended-upgrades
+  restartuje usługę ~06:10 — to nie crash; (c) audyt po 27 h: 44 biegi, 0×5xx, 0×409, kopia
+  w pełnej synchronizacji, pierwszy rollover doby przez zamiennik czysty.
+- **Limit 10 buildów/h przestał istnieć** — punkt „zbić commity bota do jednego na bieg" jest
+  BEZPRZEDMIOTOWY dla produkcji (dla higieny kopii zapasowej można kiedyś wrócić, ale nic nie pali).
+- ⬜ **OTWARTE po tej sesji**: (1) odpowiedź do supportu GitHuba — tekst w
+  `~/Documents/github-support-odpowiedz.txt` na Macu właściciela, wysyłka = jego klik; konto warte
+  odczyszczenia dla kopii zapasowej; (2) opcjonalnie Cloudflare przed serwer (CDN + zapas przy
+  padzie Hetznera) — decyzja właściciela; (3) OneSignal NIE dotykać — „nigdy nie działało",
+  błędy Unauthorized w logu to stan zastany, nie regresja.
+
+## 🔴 27.08: KONTO GITHUB SHADOW-FLAGOWANE (produkcji JUŻ NIE DOTYCZY — patrz sekcja wyżej; ticket dalej otwarty)
 **Stan na 27.08 05:14 UTC: `brifup.com`, `flusso.brifup.com` i profil `sowasskat-debug` → 404
 dla wszystkich niezalogowanych.** Zaczęło się 26.08 ~17:54 UTC. Przez zalogowane API i gita
 wszystko działa normalnie (pull/push/gh OK) — to właśnie kształt shadow-flagi.
