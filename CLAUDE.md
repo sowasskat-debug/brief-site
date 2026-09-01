@@ -2180,6 +2180,53 @@ ikonę). Klucz to `source_url`, NIE nagłówek — bot przepisuje nagłówki po 
 klucz tekstowy przestałby pasować po cichu. ⚠️ Miejsce na POJEDYNCZE poprawki redakcyjne;
 gdy urośnie ponad kilka wpisów, wzorzec jest systemowy i należy go opisać regułą.
 
+## Gest dwustopniowy: 1. pociągnięcie ODŚWIEŻA, 2. otwiera WĄTKI (2026-09-01) 🔴
+Życzenie właściciela: *„pierwszy scroll w dół to ma być odświeżenie, a po raz drugi mają być wątki —
+tylko żeby użytkownik jakoś to widział"*. **Cofa decyzję z 13.08** („gest przestał odświeżać"), bo gest
+robił rzecz NIEOCZEKIWANĄ: wszędzie indziej pociągnięcie w dół odświeża, a u nas otwierało panel.
+- **Mechanizm:** `gestEtap` (0 = odśwież, 1 = wątki) + pasek `#ptrOkno` z odliczaniem `GEST_OKNO_S = 6`.
+  Pierwsze pociągnięcie ≥150 px → `refresh()`, potem `gestOtworzOkno()`. Drugie w oknie → `otworzWatkiPanel()`.
+- 🔴 **PASEK JEST JEDYNYM SYGNAŁEM, że okno trwa** — bez niego funkcja byłaby niewykrywalna. Dlatego
+  odliczanie, a nie ciche zapamiętanie stanu. Po wygaśnięciu wracamy do etapu 0; **stan nie może być
+  trwały i niewidoczny**, bo to dokładnie to, przed czym broni pasek.
+- ⚠️ **Okno otwieramy PO odświeżeniu, nie przed** — `refresh()` woła `wrocNaPoczatekWidoku`, które ZAMYKA
+  panel wątków i zamknęłoby własny pasek.
+- ⚠️ **Etykieta wskaźnika mówi, co zrobi TO pociągnięcie** („↓ Odśwież" vs „↓ Wątki tej dawki") — inaczej
+  pasek obiecywałby wątki przy odświeżaniu.
+- ⚠️ Okno gaśnie w `switchDose` (jest własnością DAWKI) i w `otworzWatkiPanel` (panel już otwarty,
+  więc obietnica straciła sens). Próg 150 px NIETKNIĘTY — kalibrowany kciukiem właściciela 14.08.
+- ⚠️ `#ptrOkno` ma własne `display:flex`, więc potrzebuje JAWNEGO `[hidden]{display:none}` (ta sama
+  pułapka co `.sr-podetapy` i `.sr-legenda`).
+- **Wariant wybrany z CZTERECH pokazanych w klikalnej makiecie** (artefakt „Gest wątków — cztery
+  warianty"): A okno czasowe (wdrożone), B trwała zakładka, C jeden gest z dwoma progami, D rozdzielenie
+  powierzchni. ⚠️ Robiąc taką makietę: **gest dotykowy wymaga `touchmove` z `passive:false` +
+  `preventDefault`** — na `pointer events` przy `scrollTop===0` stronę przejmuje scroll i leci
+  `pointercancel`, więc myszą działa, a palcem nie.
+
+## Filtr „nie pokazuj mi" a KLASTRY — parasol nie może wetować (2026-09-01) 🔴
+Zgłoszenie właściciela ze zrzutu klastra o Iranie. `jestUkryty` wymagał, by ukryta była kotwica
+**ORAZ** wszystkie podpozycje — a **kotwica klastra to SYNTETYCZNY tytuł pisany przez model**, który
+nie przechodzi przez selekcję, więc nie ma `typ` ani `mod`. Warunek był niespełnialny z definicji
+i **filtr z 22.08 nie działał na ŻADNYM klastrze**, czyli akurat na najgrubszych pozycjach dawki.
+- 📊 Zmierzone: **9 z 9 klastrów bez `typ` na kotwicy**, wobec 11 ze 100 pozycji pojedynczych (tam to
+  stare, nieotagowane wpisy). Zweryfikowane na żywym froncie: klaster o jednolitym typie stara logika
+  `false` → nowa `true`.
+- **Reguła:** kotwica z własnymi tagami działa jak dotąd (`kotwica ORAZ wszystkie suby`); kotwica BEZ
+  tagów nie wetuje — rozstrzygają podpozycje.
+- ⚠️ **🚨 sprawdzane osobno na kotwicy**, bo gałąź parasola pomija ją w ocenie.
+- ⚠️ Podłoga „pozycja bez taga zawsze widoczna" ZOSTAJE dla pozycji pojedynczych — parasol nie jest
+  pozycją, tylko pojemnikiem. **Nie ujednolicaj tego.**
+- ⚠️ To obejście, nie naprawa u źródła: `typ`/`mod` na kotwicy dalej są puste w DANYCH, więc każdy
+  inny konsument ma tę samą ślepotę. Naprawa właściwa = dziedziczenie tagów przez parasol w bocie.
+
+## 🔴 Chirurgia na `briefs.json`: `raw_decode` zwraca indeks ABSOLUTNY (2026-09-01)
+Przy wycinaniu podpozycji z klastra `dec.raw_decode(s, j)` oddaje `(obj, end)`, gdzie **`end` jest
+indeksem w CAŁYM napisie**, nie długością obiektu. Użycie `j+end` wycięło **189 KB zamiast 2 KB**
+i uszkodziło plik. ⚠️ **Przed pierwszą edycją `briefs.json` zawsze `cp` do scratchpada** — to jedyne,
+co uratowało tamten plik. ⚠️ Druga pułapka z tej samej sesji: **podpozycje MAJĄ klucz `subItems`**
+(pusty), więc strażnik „czy to klaster" musi patrzeć na `obj.get('subItems')` (niepustą listę),
+a nie na obecność klucza.
+
 ## Limity GitHub Pages — bot MUSI zbijać zapisy do jednego commita na bieg (2026-08-27) 🔴
 GitHub Pages ma **miękki limit 10 buildów na godzinę**. Każdy push na `main` = osobny build.
 Bot pchał 3–4 osobne commity na bieg (`briefs.json`, `quotes.json`, `threads.json`, stuby `s/`),

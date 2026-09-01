@@ -1,7 +1,108 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-08-30 NOC (po sesji: przeprowadzka produkcji na Hetzner — GitHub tylko kopią zapasową)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-01 WIECZÓR (po sesji: gest dwustopniowy, filtr na klastrach, dwie bramki klastrowania)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
+
+---
+
+## 🟡 01.09: CO ZOSTAŁO OTWARTE PO TEJ SESJI — czytaj najpierw
+
+1. **KLASA POD OBSERWACJĄ: to samo zdarzenie od kolejnego źródła dobę później.**
+   Klaster o Iranie miał dwie podpozycje opisujące WCZORAJSZE uderzenie na Larak, publikowane
+   u nas już trzy razy (30.08 wieczorem, 31.08 rano, 31.08 wieczorem). 🔴 **Bramka cross-bieg te
+   pary WIDZIAŁA** — zmierzone `PodobienstwoRdzeni` **0,429** i **0,333** przy progu 0,18 — i model
+   dwa razy orzekł `NOWE`. Czyli zawiódł WERDYKT, nie mechanizm (ta sama klasa co 20.08).
+   ⛔ **DWIE DROGI ZMIERZONE I ODRZUCONE — nie odgrzewaj:**
+   • **data z treści artykułu**: tylko **14,4%** artykułów w ogóle wspomina dzień, a z tych
+     **17,1% podaje więcej niż jeden** — i to w kształcie „w nocy **z poniedziałku na wtorek**",
+     czyli JEDNO zdarzenie na dwóch dniach. Reguła myliłaby się na NAJŚWIEŻSZYCH newsach
+     (obawa właściciela, potwierdzona pomiarem).
+   • **wiek materiału źródłowego** (metadane, bez czytania treści): NIE ROZDZIELA klas —
+     wśród par nad progiem starsze niż 6 h jest **33,3%** dubli i **33,1%** realnych etapów,
+     a mediana wieku dubli (0,9 h) jest NIŻSZA niż etapów (3,0 h).
+   ➜ Jedyna uzasadniona naprawa to doprecyzowanie promptu `OcenEtapKontynuacji` (precedens:
+   klauzula o parafrazie z 18.08). Wymaga kontroli po tygodniu — bazy do porównania NIE ZEBRANO.
+
+2. **Bramka „temat, nie wydarzenie" NIE obejmuje klastrów rosnących przez cross-dose** (bot #247
+   działa przy tworzeniu ŚWIEŻEJ grupy). A parasole narastają właśnie przez dokładanie.
+   Po tygodniu sprawdzić w logu linie „to TEMAT, nie wydarzenie" i czy parasole dalej przechodzą;
+   jeśli tak — **podnieś próg do 0,08 (140 klastrów), NIE luzuj warunku wspólnego typu**.
+
+3. **Kotwica klastra dalej nie ma `typ`/`mod` w DANYCH** — front to obchodzi (patrz punkt niżej),
+   ale samo pole zostaje puste, więc każdy inny konsument tych danych ma tę samą ślepotę.
+   Naprawa u źródła = dziedziczenie tagów przez parasol w `MergeNewItemsIntoClusters`.
+
+4. **GDELT po poprawce timeoutu** (bot #245): obejrzeć `finder_gdelt_fakty` na OBU torach.
+   Jeśli zero — uczciwą decyzją jest wyrzucenie findera z łańcucha (kryterium z 02.08).
+
+5. **Nowe feedy** (bot #244): Politico Europe pojawiło się już w licznikach, **Investing.com
+   Commodities jeszcze nie dał kandydata** — sprawdzić po dobie roboczej (weekend go zaniżył).
+
+6. **Polska pozycja o G20 na 30. miejscu dawki** (31.08) — wątek z 31.08 dalej nietknięty:
+   dlaczego jedyna pozycja z polskim haczykiem wylądowała pod dwoma parasolami o tym samym szczycie.
+
+---
+
+## ✅ 01.09: CO ZROBIONE TEJ SESJI (wszystko na produkcji)
+
+- **GEST DWUSTOPNIOWY** (front, SW v155): 1. pociągnięcie **odświeża** i pokazuje pasek
+  `✓ Zaktualizowano — pociągnij ponownie, by zobaczyć wątki` z odliczaniem 6 s; 2. pociągnięcie
+  w tym oknie otwiera wątki; po wygaśnięciu gest wraca do odświeżania.
+  🔴 **Cofa decyzję z 13.08** („gest przestał odświeżać") — powód: gest robił rzecz NIEOCZEKIWANĄ,
+  bo wszędzie indziej odświeża. Przycisk ↻ zostaje jako druga droga.
+  ⚠️ Wariant wybrany przez właściciela z **czterech pokazanych w klikalnej makiecie**
+  (artefakt: „Gest wątków — cztery warianty"). Okno gaśnie przy zmianie dawki i przy otwarciu
+  panelu inną drogą. Etykieta wskaźnika mówi, co zrobi TO pociągnięcie.
+  ⚠️ Próg 150 px NIETKNIĘTY — kalibrowany kciukiem właściciela 14.08.
+
+- **FILTR „MNIEJ TAKICH NEWSÓW" DZIAŁA WRESZCIE NA KLASTRACH** (front, SW v156).
+  🔴 Kotwica klastra to SYNTETYCZNY tytuł od modelu — nie przechodzi przez selekcję, więc nie ma
+  `typ` ani `mod`. Warunek „ukryta kotwica ORAZ wszystkie podpozycje" był **niespełnialny
+  z definicji**, czyli filtr z 22.08 **nie działał na ŻADNYM klastrze** — akurat na najgrubszych
+  pozycjach dawki. 📊 Zmierzone: **9 z 9 klastrów bez `typ` na kotwicy** (wobec 11 ze 100 pozycji
+  pojedynczych). Teraz parasol bez tagów nie wetuje — rozstrzygają podpozycje; 🚨 dalej niechowalne.
+
+- **BOT #244 — dwa nowe feedy**: Politico Europe (`politico.eu/feed/`, max 1/bieg) i Investing.com
+  Commodities (`rss/news_11.rss`, max 1/bieg). Powód: analiza skrótu @GPW_Trader2022 pokazała lukę
+  w geopolityce europejskiej i surowcach rolnych/EM. Oba sprawdzone **z serwera**; artykuły obu
+  domen dają 403 z datacenter → `politico.eu` dopisane do `_redakcjeBlokujaceDatacenter` (wzorzec FT).
+
+- **BOT #245 — GDELT: własny timeout 25 s + KAŻDA awaria otwiera breaker.**
+  🔴 Breaker liczył WYŁĄCZNIE 429; timeouty, SSL i odpowiedzi nie-JSON leciały wyjątkiem, omijały
+  pętlę i **nigdy go nie otwierały** — ~2000 takich awarii w logu, każda płacąca pełne 100 s.
+  📊 Pomiar z Hetznera: GDELT nie jest martwy, jest **katastrofalnie wolny** (sukcesy po 87/63/24/23 s).
+
+- **BOT #247 — bramka „temat, nie wydarzenie"** (szczegóły w `FinancialNewsBot/CLAUDE.md`).
+
+- **DANE:** klaster o Iranie rozdzielony — usunięte 2 powtórki wczorajszego zdarzenia (NBC, invezz),
+  wydzielony skutek rynkowy (Parkiet, `cena-surowca`). Wcześniej tej samej doby: parasol G20
+  rozdzielony, znacznik kotwicy poprawiony 🇺🇸🇯🇵 → 🇩🇪🇷🇺.
+
+## ⚠️ 01.09: PUŁAPKI ZŁAPANE TEJ SESJI
+
+- 🔴 **PUSH NA GITHUBA NIE JEST DEPLOYEM.** Po migracji źródłem prawdy jest `/var/www/brifup`
+  na serwerze, a serwer **sam z GitHuba nie pobiera**. Poprawka danych wisiała na GitHubie,
+  a `brifup.com` pokazywał stary stan, dopóki nie zrobiłem `git pull` NA SERWERZE.
+  **Każdą zmianę frontu/danych kończ pullem na Hetznerze i sprawdzeniem `curl https://brifup.com/...`.**
+- 🔴 **`raw_decode` zwraca indeks ABSOLUTNY**, nie względny — `j+end` zamiast `end` przy chirurgii
+  na `briefs.json` wyciął 189 KB zamiast 2 KB i uszkodził plik. Ratunek: kopia przed edycją.
+  ⚠️ Przy edycji `briefs.json` ZAWSZE `cp` do scratchpada przed pierwszą zmianą.
+- ⚠️ **Podpozycje MAJĄ klucz `subItems`** (pusty) — strażnik „czy to klaster" musi sprawdzać
+  `obj.get('subItems')` (niepustą listę), nie samą obecność klucza.
+- ⚠️ **Makieta w artefakcie: gest dotykowy ≠ pointer events.** Przy `scrollTop === 0` pociągnięcie
+  w dół oddaje gest STRONIE (`pointercancel`), więc na telefonie nic nie działało, a myszą tak.
+  Potrzebne `touchmove` z `passive:false` + `preventDefault`. Do tego bez `<meta viewport>` strona
+  renderuje się jak desktop, a sztywna szerokość makiety rozpycha stronę w poziomie.
+
+## ⛔ 01.09: ODRZUCONE POMYSŁY (zmierzone, nie odgrzewać)
+
+- **Nazwy szczytów w `_rdzenieNieNosne`** (parasol G20): **0 par zyskuje, 0 traci** na 816 klastrach.
+  Bramka nośnego rdzenia nigdy tych pozycji nie wpuściła — 4 z 6 miały z kotwicą ZERO wspólnych rdzeni.
+- **Warianty na poziomie CZŁONKA klastra**: „wymagaj ogniwa z kotwicą" wyrzuca **154 podpozycje (7,3%)**,
+  „wymagaj ≥2 ogniw" **229 (10,8%)** — w tym całkowicie poprawne (drugi usuwa z klastra TĘ podpozycję,
+  o której mówi tytuł). Przyczyna: kotwicą bywa syntetyczny tytuł, który nie dzieli słownictwa
+  z własnymi członkami.
+- **Data zdarzenia z treści artykułu** i **wiek materiału źródłowego** — patrz punkt 1 wyżej.
 
 ---
 
