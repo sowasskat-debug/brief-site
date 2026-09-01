@@ -760,6 +760,19 @@ html, body {
 }
 #ptr.pulling { height: 48px; }
 #ptr.refreshing { height: 48px; }
+/* Pasek okna drugiego gestu — patrz komentarz przy #ptrOkno w index.html.
+   ⚠️ `[hidden]` musi być JAWNE, bo element ma własne `display:flex` (ta sama pułapka co .sr-podetapy). */
+#ptrOkno {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 16px; background: var(--bg);
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  font-family: 'Space Mono', monospace;
+  font-size: 8px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--muted);
+}
+#ptrOkno[hidden] { display: none; }
+#ptrOkno .po-l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ptrOkno .po-cd { flex: 0 0 auto; color: var(--red); font-variant-numeric: tabular-nums; }
 .ptr-spinner {
   width: 18px; height: 18px; border: 2px solid var(--rule);
   border-top-color: var(--red); border-radius: 50%;

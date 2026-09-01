@@ -115,7 +115,15 @@
 <div class="mob-edge-grip" id="mobEdgeGrip" onclick="mobSwpOpen()" title="Tematy / dawka"></div>
 
 <div class="scroll-area" id="scrollArea">
-  <div id="ptr"><span class="ptr-arrow">↓ Wątki tej dawki</span></div>
+  <div id="ptr"><span class="ptr-arrow">↓ Odśwież</span></div>
+  <!-- 🔴 OKNO DRUGIEGO GESTU (2026-09-01, życzenie właściciela: „pierwszy scroll w dół to ma być
+       odświeżenie, a drugi wątki — żeby użytkownik widział, że drugim scrollem mu się pokażą").
+       Pasek jest JEDYNYM sygnałem, że okno trwa — bez niego drugie pociągnięcie byłoby wiedzą tajemną.
+       Odliczanie jest częścią tego sygnału: mówi, ile czasu zostało, zamiast kazać zgadywać. -->
+  <div id="ptrOkno" hidden>
+    <span class="po-l">✓ Zaktualizowano — pociągnij ponownie, by zobaczyć wątki</span>
+    <span class="po-cd" id="ptrOknoCd">6</span>
+  </div>
   <!-- 🔴 PANEL WĄTKÓW nad feedem (2026-08-13, życzenie właściciela) — zastąpił cienki pasek-link
        do watki.html. Pociągnięcie w dół rozwija PEŁNE wątki tej dawki (jak na /watki), zamiast
        odsyłać na podstronę. Poza #content, żeby przeżywał re-render dawki (ten sam powód co pasek).
@@ -1831,6 +1839,9 @@ function wpPrzewinDoNajnowszej(){
 function otworzWatkiPanel(){
   const p = document.getElementById('watkiPanel');
   if (!p) return;
+  // Panel jest już otwarty, więc okno „pociągnij ponownie" straciło sens — bez tego pasek
+  // wisiałby nad rozwiniętymi wątkami i obiecywał to, co czytelnik właśnie dostał.
+  if (typeof gestZamknijOkno === 'function') gestZamknijOkno();
   renderWatkiPanel();
   p.hidden = false;
   watkiPanelOtwarty = true;
@@ -3016,6 +3027,9 @@ function toggleSubItem(id) {
 function switchDose(dose) {
   const prevDose = currentDose;
   currentDose = dose;
+  // Okno drugiego gestu jest własnością DAWKI — po przełączeniu pasek mówiłby o wątkach
+  // poprzedniej (panel i tak zamyka się przy zmianie dawki, decyzja z 13.08).
+  if (typeof gestZamknijOkno === 'function') gestZamknijOkno();
   suppressScrollHide = true;
   setTimeout(() => { suppressScrollHide = false; }, 400);
   document.querySelectorAll('.dose-tab').forEach(t=>t.classList.remove('active'));
@@ -3288,6 +3302,41 @@ function toggleTheme() {
 // + GUARD KIERUNKU `dy > |dx| * 1.5` — dotąd liczyła się sama oś pionowa, więc ukośne machnięcie
 // (np. zamiana dawki swipe'em zahaczająca o pion) też otwierało panel. Wskaźnik `↓ Wątki`
 // pokazuje się od 24 px zamiast 10 — mniej migotania przy zwykłym dotyku.
+// ══ 2026-09-01: GEST DWUSTOPNIOWY — 1. pociągnięcie ODŚWIEŻA, 2. otwiera WĄTKI ═══════════════
+// Życzenie właściciela: *„pierwszy scroll w dół to ma być odświeżenie, a po raz drugi mają być
+// wątki — tylko żeby użytkownik jakoś to widział"*. Wariant wybrany z czterech pokazanych
+// w klikalnej makiecie (A: okno czasowe z komunikatem).
+// 🔴 ODŚWIEŻANIE WRACA POD GEST — cofa decyzję z 13.08 („gest przestał odświeżać"), bo dotąd
+// pociągnięcie robiło rzecz NIEOCZEKIWANĄ: wszędzie indziej ten gest odświeża, a u nas otwierał
+// panel. Przycisk ↻ zostaje jako druga droga.
+// ⚠️ OKNO JEST JEDYNYM SYGNAŁEM, że drugie pociągnięcie zrobi co innego — stąd pasek `#ptrOkno`
+// z odliczaniem, a nie ciche zapamiętanie stanu. Bez niego funkcja byłaby niewykrywalna.
+// ⚠️ Po wygaśnięciu okna gest wraca do ODŚWIEŻANIA (etap 0), a nie zostaje na wątkach — inaczej
+// stan byłby trwały i niewidoczny, czyli dokładnie to, przed czym broni pasek.
+const GEST_OKNO_S = 6;
+let gestEtap = 0;               // 0 = następne pociągnięcie odświeża, 1 = otwiera wątki
+let gestOknoTimer = null;
+function gestZamknijOkno() {
+  clearInterval(gestOknoTimer); gestOknoTimer = null;
+  gestEtap = 0;
+  const el = document.getElementById('ptrOkno');
+  if (el) el.hidden = true;
+}
+function gestOtworzOkno() {
+  gestEtap = 1;
+  const el = document.getElementById('ptrOkno'), cd = document.getElementById('ptrOknoCd');
+  if (!el) return;
+  el.hidden = false;
+  let zostalo = GEST_OKNO_S;
+  if (cd) cd.textContent = zostalo;
+  clearInterval(gestOknoTimer);
+  gestOknoTimer = setInterval(() => {
+    zostalo--;
+    if (cd) cd.textContent = Math.max(0, zostalo);
+    if (zostalo <= 0) gestZamknijOkno();
+  }, 1000);
+}
+
 (function() {
   const ptr = document.getElementById('ptr');
   const area = document.getElementById('scrollArea');
@@ -3309,8 +3358,11 @@ function toggleTheme() {
     const dx = e.touches[0].clientX - startX;
     if (dy > 24 && zamierzone(dy, dx)) {
       ptr.classList.add('pulling');
-      ptr.innerHTML = dy > PROG ? '<span class="ptr-arrow">↑ Puść, by pokazać wątki</span>'
-                                : '<span class="ptr-arrow">↓ Wątki tej dawki</span>';
+      // Etykieta mówi, co zrobi TO pociągnięcie — inaczej pasek obiecywałby wątki przy odświeżaniu.
+      const doWatkow = gestEtap === 1 || watkiPanelOtwarty;
+      ptr.innerHTML = dy > PROG
+        ? `<span class="ptr-arrow">↑ Puść, by ${doWatkow ? 'pokazać wątki' : 'odświeżyć'}</span>`
+        : `<span class="ptr-arrow">↓ ${doWatkow ? 'Wątki tej dawki' : 'Odśwież'}</span>`;
     } else {
       ptr.classList.remove('pulling');
     }
@@ -3322,10 +3374,17 @@ function toggleTheme() {
     const dx = e.changedTouches[0].clientX - startX;
     pulling = false;
     ptr.classList.remove('pulling');
-    ptr.innerHTML = '<span class="ptr-arrow">↓ Wątki tej dawki</span>';
+    ptr.innerHTML = '<span class="ptr-arrow">↓ Odśwież</span>';
+    if (!(dy > PROG && zamierzone(dy, dx))) return;
+
     // Powtórzony gest przy JUŻ otwartym panelu (czytelnik doscrollował do samej góry) nie otwiera
     // go drugi raz — wraca na najnowszy wątek, czyli tam, gdzie gest stawia za pierwszym razem.
-    if (dy > PROG && zamierzone(dy, dx)) { if (watkiPanelOtwarty) wpPrzewinDoNajnowszej(); else otworzWatkiPanel(); }
+    if (watkiPanelOtwarty) { wpPrzewinDoNajnowszej(); return; }
+
+    if (gestEtap === 1) { gestZamknijOkno(); otworzWatkiPanel(); return; }
+    // ⚠️ `refresh()` woła `wrocNaPoczatekWidoku`, które ZAMYKA panel wątków — dlatego okno
+    // otwieramy PO odświeżeniu, nie przed (inaczej zamknęłoby własny pasek).
+    refresh().then(gestOtworzOkno, gestOtworzOkno);
   }, { passive: true });
 })();
 
