@@ -349,8 +349,22 @@ function jestUkryty(item) {
   // czytelnikowi podpięte fakty: 📊 zmierzone na 755 klastrach archiwum — 53% ma podpozycje
   // o INNEJ modalności niż kotwica („filtr na zapowiedź, znika fakt"). Podpozycja bez tagów
   // = klaster zostaje (ta sama podłoga co „pozycja bez taga zawsze widoczna").
-  if (item.subItems && item.subItems.length)
-    return jestUkrytyPojedynczy(item) && item.subItems.every(jestUkrytyPojedynczy);
+  if (item.subItems && item.subItems.length) {
+    // PILNE niechowalne także na parasolu — gałąź niżej pomija kotwicę, więc 🚨 trzeba sprawdzić tutaj.
+    if (String(item.flag || '').includes('🚨')) return false;
+    // 🔴 PARASOL NIE MOŻE WETOWAĆ (2026-09-01, zgłoszenie właściciela ze zrzutu klastra o Iranie).
+    // Kotwica klastra to SYNTETYCZNY tytuł napisany przez model — nie przechodzi przez selekcję,
+    // więc nie ma `typ` ani `mod`. Warunek „kotwica ORAZ wszystkie podpozycje" był wtedy
+    // niespełnialny z definicji i filtr „Mniej takich newsów" NIE DZIAŁAŁ NA ŻADNYM KLASTRZE.
+    // 📊 Zmierzone na dzisiejszym wydaniu: **9 z 9 klastrów bez `typ` na kotwicy**, przy 11 ze 100
+    // pozycji pojedynczych (tam to zwykle stare, nieotagowane wpisy). A klastry to najgrubsze
+    // pozycje — top story dawki było niefiltrowalne.
+    // ⚠️ Podłoga „pozycja bez taga zawsze widoczna" ZOSTAJE dla pozycji pojedynczych; parasol nie
+    // jest pozycją, tylko pojemnikiem, więc rozstrzygają jego podpozycje.
+    const kotwicaMaTagi = typKody(item).length > 0 || !!item.mod;
+    const wszystkieSuby = item.subItems.every(jestUkrytyPojedynczy);
+    return kotwicaMaTagi ? (jestUkrytyPojedynczy(item) && wszystkieSuby) : wszystkieSuby;
+  }
   return jestUkrytyPojedynczy(item);
 }
 function jestUkrytyPojedynczy(item) {
