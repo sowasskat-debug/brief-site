@@ -1,11 +1,116 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-01 WIECZÓR (po sesji: gest dwustopniowy, filtr na klastrach, dwie bramki klastrowania)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-02 WIECZÓR (po sesji: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
-## 🟡 01.09: CO ZOSTAŁO OTWARTE PO TEJ SESJI — czytaj najpierw
+## 🟡 02.09: CO ZOSTAŁO OTWARTE PO TEJ SESJI — czytaj najpierw
+
+1. **NIEZWERYFIKOWANE NA PRODUKCJI (sesja zamknięta o 18:57 UTC, przed biegiem 19:00):** bot #252
+   (GDELT poza torem głównym, feed X wyłączony), #253 (`FLUSSO_OFF=true` — zmienna JUŻ w
+   `/root/bot_secrets.env`) i #254 (bramka etapu przepisuje nagłówek). Bieg 18:30 startował
+   przed merge'ami. **Pierwsza rzecz w nowej sesji:** w logu ostatniego biegu ma być linia
+   `[FLUSSO] Wyłączone`, ZERO linii `GDELT`, brak etapów `flusso-*` w `[TOKENY]`, a przy werdykcie
+   NOWE linie `[ETAP] Nagłówek przepisany … było/jest`. Liczniki: `etap_naglowek_przepisany`,
+   `etap_naglowek_odrzucony_bez_pokrycia` w `brief_health`.
+2. **Flaga 🇹🇼 w DANYCH dalej wywala pojedyncze wywołanie DeepSeeka** (klastrowanie, wątki, każdy prompt,
+   który niesie flagę pozycji). #249 usunął ją tylko ze stałego przykładu w `FORMAT_JSON_SELEKCJI`.
+   Potrzebna sanityzacja wejścia do DeepSeeka w jednym miejscu (np. `_watkiClient`/SendAsync wrapper).
+   Dziś w dawkach 0 pozycji z 🇹🇼, więc nic nie pali — ale news o Tajwanie to kwestia dni.
+3. **Wyzwalacz zdarzeniowy z czujki — ODŁOŻONY przez właściciela („wrócimy do tego").** Pomiar gotowy:
+   czujka widzi nagłówek w 1–2 min, bot czeka na cron **mediana 16 min, p90 27 min**, potem 3 min
+   (p90 7) do publikacji. 🔴 alerty: 184 na 11 579 nagłówków (2%, ~9/dobę). Koszt tokenów: jedno
+   wywołanie selekcji ≈ 26k in, 91% cache ≈ 0,001 USD; +100 biegów/dobę ≈ +3 USD/mies. — pod warunkiem
+   trybu „tylko newsy" (bez notowań/Flusso/wątków; bieg nadrabiający zrobił 121 wywołań, z tego selekcja 6)
+   i zamrożenia sekcji historii **po czasie**, nie po liczbie biegów (inaczej cache pęka).
+   Pomysł na publikację dwufazową (nagłówek od razu, enrich potem) — też odłożony, nietknięty.
+4. **GDELT tor awaryjny EN zostaje do decyzji właściciela:** 476 prób → 3 sukcesy w 200 biegach,
+   ~60 s czekania w biegach z pozycją bez źródła. Tor główny wycięty (771 → 0).
+5. **Wykop po tygodniu:** w lejku `feed=Wykop` — ile kandydatów/bieg, co przeszło, czy dedup wobec
+   `tytuly.txt` łapie powtórki z prasy dobę później. Pierwsze dwa biegi: 25 → 10 do okna → 6–10 do
+   selekcji → 1 wybrany (Zaorski, wp.pl) / 0; drugi bieg odrzucił 10 jako „już oceniane z innego źródła".
+6. **Wypowiedzi i zapowiedzi w dawkach:** przegląd 51 pozycji z 02.09 — 15 do wyrzucenia, z czego 8 to
+   zapowiedzi/wypowiedzi bez decyzji (Trump spotka się z CEO, OPEC+ „nie podejmie decyzji", Lutnick
+   o chipach, JPMorgan lubi Amazon, Altman o boomie, Musk o Groku, Kiyosaki, monety z Trumpem).
+   Reguły to zakazują, pole `mod` pozwala to ZMIERZYĆ z danych zamiast z oka — nie zrobione.
+7. **Cron live-poll wyników sportowych** (`LIVE_SCORES_ONLY`, co 1 min) dalej chodzi mimo FLUSSO_OFF —
+   nie woła DeepSeeka, ale to `dotnet run` co minutę dla nieużywanego produktu. Do wyłączenia jedną
+   linią w crontabie, gdy właściciel potwierdzi.
+8. **Chmurowa czujka `brifup-kontrola`** czyta repo anonimowo → 404 przez flagę konta GitHub. Do przepięcia
+   na Hetzner. (Czujka `czujnik.py` NA SERWERZE działa normalnie — to dwie różne rzeczy.)
+9. **Dołek 26–30.08:** przepuszczalność selekcji spadła do 27–30% (opublikowane 45–74/dobę wobec
+   112–148 w połowie sierpnia i 170–182 od 31.08). „Podwojony ruch do DeepSeeka od 31.08" z handoffu
+   to POWRÓT do normy po dołku, nie nowe wywołania (wywołań/dobę: 18–25.08 1853–2444, dołek 1155–1947,
+   31.08–01.09 2450–2759). Co zbiło przepuszczalność w dołku — nierozstrzygnięte (Supabase `lejek`
+   ma retencję ~2 dni, brak danych sprzed 31.08).
+10. Punkty z 01.09 niżej (duble dobę później, bramka „temat, nie wydarzenie" a cross-dose, kotwica
+    bez `typ`/`mod`, Investing.com Commodities) — bez zmian. Nowe feedy: Investing.com dał 10–19
+    kandydatów/dobę, Politico 12–18. `pubDate` Investing.com jest w UTC, serwer w UTC — bez błędu.
+
+## ✅ 02.09: CO ZROBIONE TEJ SESJI (wszystko na produkcji, chyba że zaznaczono)
+
+- **AWARIA SELEKCJI 07:02–13:41 UTC — ROZWIĄZANA (bot #249).** 98/98 wywołań selekcji wracało
+  `400 Content Exists Risk`. Zmierzone z Hetznera na PRAWDZIWYM prompcie, bisekcją po liniach:
+  historia 200, reguły 200, `FORMAT_JSON_SELEKCJI` 400 → jedna linia z przykładem `🔬🇹🇼 „Tajwański TSMC…”`.
+  Sama flaga 🇹🇼 → 400; słowo „Tajwan" → 200; 🇨🇳 i 🇭🇰 → 200. Kod nie ruszany od nocy, która działała
+  = filtr zmienił się po stronie DeepSeeka. Hipotezy z handoffu (timeout, max_tokens, wyjątek w historii)
+  — wszystkie fałszywe. Bieg nadrabiający `CATCHUP_MINUTES=360`: 6 wywołań, 0×400, 16 publikacji.
+- **SYNCHRONIZACJA brief-site ODBLOKOWANA — inna przyczyna niż w handoffie.** Klon `/var/www/brifup`
+  nie miał `user.email`/`user.name`, więc każdy `pull --rebase` w `brifup-push.sh` stawał w połowie
+  („unable to auto-detect email address"), a zamiennik Contents API dopisywał commity bota na
+  ODŁĄCZONYM HEAD. Naprawa: `git config` lokalnie (`Brif Bot <bot@hetzner.local>`), powrót na czubek
+  z commitami bota, MERGE (nie rebase) `origin/main`, push. „3 pushe w 15 min" nie były przyczyną.
+- **PR #248** (seria sabotażu jako etap wątku) zbudowany i zmergowany.
+- **WYKOPALISKO przez API Wykopu (bot #250).** Klucz+sekret aplikacji właściciela w env
+  (`WYKOP_API_KEY/SECRET`). `wykop.pl/rss` = strona główna (mediana wieku 30 h), HTML Wykopaliska = Vue
+  bez adresów; API `links?type=upcoming&sort=newest` = 25 linków z ostatnich 2 h, każdy z `source.url`.
+  Helper buduje RSS w pamięci pod `wykop://upcoming` → `CheckPolishFeedBatched` (ścieżka bez zmian).
+  Filtr domen bez artykułu (YouTube/X/FB/IG/TikTok/wykop.pl = ~40%), dedup Jaccard ≥ 0,5 w paczce
+  i wobec `tytuly.txt`, max 2/bieg. Zmierzone: ~147 linków/dobę, ~14 z domen biznesowych.
+- **Kolejka ręczna `reczne.json` z polem `link` (bot #251) + formularz w knadze (brief-site #219, SW v157).**
+  Link właściciela = pierwszy finder w `EnrichItem`, bez limitu wieku 24 h i bez bramki słownej.
+  Formularz w zakładce „Czeka": tekst, flaga, kategoria, link, lista kolejki z usuwaniem.
+- **Lotniskowce USA (USNI tracker) w dawce wieczornej** — ręcznie przez zamiennik API z kopią zapasową
+  (`/root/briefs.json.bak-*`): `news.usni.org` = 403 Cloudflare z Hetznera I z Maca, findery 0 wyników.
+- **BALAST (bot #252):** GDELT poza torem głównym, feed X (rss.app, martwy od 18.08) wyłączony w bocie
+  i w `czujnik.py` (kopia `/root/czujnik.py.bak-20260902`). Ostrzeżenie CS0219 o `rssUrlX` celowe.
+- **FLUSSO_OFF=true (bot #253)** — cały strumień Flusso poza biegiem głównym (ok. 400 wywołań
+  DeepSeeka/dobę = ~15%). `TRENDS_ONLY` i live-poll bez zmian.
+- **Nagłówek etapu z bramki (bot #254):** `OcenEtapKontynuacji` oddaje `NOWE: <nagłówek>` (max_tokens
+  10 → 90, ten sam call), walidacja i przepięcie map selekcji; tylko główna ścieżka przed enrichem.
+  Zmierzone: 38 NOWE od 01.09, 7 brzmiało jak etap.
+- **Handoff z Windowsa** (`docs/handoff/2026-09-02-awaria-selekcji.md`) — przerobiony w całości.
+
+## ⚠️ 02.09: PUŁAPKI ZŁAPANE TEJ SESJI
+
+- 🔴 **DeepSeek odrzuca KAŻDE wejście z emoji 🇹🇼** (od ~07:00 UTC 02.09). Nie wstawiać do stałych
+  tekstów promptów; flaga w danych to punkt 2 wyżej. Test wprost na API z serwera (skrypt bisekcji)
+  rozstrzyga w 2 minuty — nie zgadywać timeoutu.
+- 🔴 **`rebase --abort` w klonie na serwerze cofa `main` do orig-head** — commity, które zamiennik
+  dopisał na odłączonym HEAD w trakcie rebase, wypadają z gałęzi. Zapisać `git rev-parse HEAD` PRZED,
+  po abort `reset --hard` na ten czubek. Preferować merge.
+- ⚠️ **`reczne.json` bez `link` = enrich szuka sam; wydawca blokujący datacenter (USNI, FT, Politico)
+  i tak da poczekalnię** — wtedy zostaje chirurgia na `briefs.json` (kopia przed edycją!).
+- ⚠️ **Wykop: strona Wykopaliska pokazuje link 2–4 h po dodaniu (sortowanie po wykopach)** — bez API
+  okno 60 min odrzuciłoby wszystko. API z `sort=newest` nie ma tego opóźnienia.
+- ⚠️ **Podgląd knagi z Maca:** proces serwera podglądu NIE widzi `~/Documents` (uprawnienia macOS) —
+  kopiować pliki do scratchpada i serwować stamtąd (`knaga-preview` w `~/.claude/launch.json`).
+- ⚠️ Foreach z dekonstrukcją (`foreach (var (flag, text, …) in noweItems)`) — `text` jest tylko do
+  odczytu; przepisany nagłówek idzie osobną zmienną (`tekstEtapu`) i wymaga przepięcia map selekcji.
+
+## ⛔ 02.09: ODRZUCONE (zmierzone, nie odgrzewać)
+
+- **Wykop jako RSS** (`/rss` = główna, mediana 30 h, 36/50 starsze niż doba) i **parsowanie HTML
+  Wykopaliska** (brak adresów artykułów, opóźnienie 2–4 h). Tylko API.
+- **Wyciąganie sekretu aplikacji Wykopu z bundla frontu** — zatrzymane celowo (podszywanie pod ich
+  front, ryzyko dla marki); własny klucz z dev.wykop.pl jest darmowy i legalny.
+- **Hipotezy z handoffu o awarii:** timeout na dużym prompcie, `max_tokens = 2500`, wyjątek
+  w `SekcjaHistoriiSelekcji` — wszystkie obalone jedną linią z logu.
+
+---
+
+## 🟡 01.09: CO ZOSTAŁO OTWARTE PO TEJ SESJI
 
 1. **KLASA POD OBSERWACJĄ: to samo zdarzenie od kolejnego źródła dobę później.**
    Klaster o Iranie miał dwie podpozycje opisujące WCZORAJSZE uderzenie na Larak, publikowane

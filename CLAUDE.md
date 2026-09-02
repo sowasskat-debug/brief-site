@@ -2245,3 +2245,14 @@ nie incydentalnie. To najpoważniejszy kandydat na wyzwalacz shadow-flagi z 26.0
   oraz `docs.github.com/en/site-policy/acceptable-use-policies/github-acceptable-use-policies`
   (sekcja o „excessive automated bulk activity" i o zużyciu „significantly excessive in relation
   to other users" — 556 commitów/48 h wpada w tę kategorię).
+
+## Knaga: formularz „Dodaj ręcznie" do kolejki `reczne.json` (2026-09-02)
+
+Zakładka „Czeka", kafel nad poczekalnią: nagłówek, flaga, kategoria (10 nazw z `_dozwoloneKategorie`
+bota), link do artykułu, przycisk; pod spodem lista kolejki z usuwaniem (`wczytajReczne` /
+`dodajReczne` / `usunReczne`). Zapis przez `/gh-api` z `sha` jak reszta knagi — wyścig z botem, który
+opróżnia kolejkę w każdym biegu, kończy się 409 i komunikatem, nie nadpisaniem. Walidacja: nagłówek
+≥ 15 zn., link tylko `http(s)://`, ten sam nagłówek dwa razy nie wejdzie. Pole `link` konsumuje bot
+(#251) jako pierwsze źródło enrichu; bez linku bot szuka sam. Kolejka ładuje się w osobnym
+`try/catch` — błąd nie blokuje listy poczekalni. SW v157.
+⚠️ Podgląd knagi z Maca: proces serwera podglądu nie widzi `~/Documents` — kopiować do scratchpada.
