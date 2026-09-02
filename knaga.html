@@ -81,6 +81,18 @@ html, body { min-height: 100%; font-family: 'Space Mono', monospace; background:
 .kok-dawka { flex: 1; text-align: center; }
 .kok-feedy { display: flex; gap: 6px; overflow-x: auto; padding-top: 4px; }
 
+/* ── RĘCZNE DODANIE (kolejka reczne.json, 2026-09-02) ── */
+.reczne-box { margin-bottom: 14px; }
+.reczne-row { display: grid; grid-template-columns: 64px 1fr; gap: 8px; }
+.reczne-box select { width: 100%; font-family: 'Space Mono', monospace; font-size: 12px; padding: 11px 12px;
+  border: 1px solid var(--rule); border-radius: 2px; margin-bottom: 10px; background: transparent; color: var(--text); }
+.reczne-kolejka { font-size: 11px; line-height: 1.6; margin-top: 8px; }
+.reczne-kolejka .poz { display: flex; gap: 8px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--rule); }
+.reczne-kolejka .poz .tekst { flex: 1; }
+.reczne-kolejka .poz a { color: var(--blue); font-size: 10px; word-break: break-all; }
+.reczne-kolejka .poz button { font-family: 'Space Mono', monospace; font-size: 9px; background: none; border: 1px solid var(--rule);
+  border-radius: 2px; padding: 4px 8px; cursor: pointer; color: var(--red); }
+
 /* ── LOGIN ── */
 .login-box { padding: 40px 16px; max-width: 420px; margin: 0 auto; }
 .login-title { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 10px; }
@@ -326,6 +338,22 @@ input[type=password], input[type=text], input[type=email] {
       Newsy, które przeszły selekcję, ale <strong>enrich nie znalazł jeszcze źródła</strong> —
       strona ich nie pokazuje. Bot ponawia do 4 prób, potem item ginie. Stąd można go wyrzucić
       wcześniej (trafi do nauki filtra jak przy zwykłym usunięciu).
+    </div>
+    <div class="kok-kafel reczne-box" id="reczneBox">
+      <div class="kok-label">Dodaj ręcznie · omija selekcję, reszta potoku normalnie (kolejka reczne.json, bot bierze w najbliższym biegu)</div>
+      <input type="text" id="reczneText" placeholder="Nagłówek po polsku, jedno zdanie" autocomplete="off" maxlength="300">
+      <div class="reczne-row">
+        <input type="text" id="reczneFlag" placeholder="🇺🇸" autocomplete="off" maxlength="8" title="Flaga / ikona (opcjonalnie)">
+        <select id="reczneKat">
+          <option value="">Kategoria (opcjonalnie)</option>
+          <option>Polityka lokalna</option><option>Fed / Banki</option><option>Geopolityka</option><option>Polityka</option>
+          <option>Tech / AI</option><option>Surowce</option><option>Świat</option><option>Rynki</option>
+          <option>Wojna na Ukrainie</option><option>Wojna w Iranie</option>
+        </select>
+      </div>
+      <input type="text" id="reczneLink" inputmode="url" placeholder="https://… link do artykułu (opcjonalnie — bot weźmie go jako źródło)" autocomplete="off">
+      <button class="btn" id="reczneBtn" onclick="dodajReczne()">Dodaj do kolejki</button>
+      <div class="reczne-kolejka" id="reczneKolejka"></div>
     </div>
     <div class="refresh-row"><button onclick="wczytajCzekalnie(true)">↻ Odśwież</button></div>
     <div id="czekTresc"></div>
@@ -1882,7 +1910,70 @@ function renderCzekalnia() {
   wczytajCzekalnie();
 }
 
+// ══ RĘCZNA KOLEJKA (reczne.json) — 2026-09-02 ══
+// Formularz do kolejki, którą bot opróżnia w każdym biegu (PrzetworzReczneDodania w Runner.cs):
+// pozycja omija SELEKCJĘ, ale przechodzi enrich, bramki, dedup i klastrowanie jak każda inna.
+// `link` (bot #251) = adres artykułu, który enrich bierze jako PIERWSZE źródło — bez niego bot
+// szuka sam (Google News/Bing), a gdy nie znajdzie, pozycja ląduje w poczekalni poniżej.
+// Zapis przez /gh-api z sha (409 przy wyścigu z botem → komunikat, nie nadpisanie).
+async function wczytajReczne() {
+  const el = document.getElementById('reczneKolejka');
+  if (!el) return;
+  try {
+    const { data } = await ghGetJson('reczne.json');
+    const arr = Array.isArray(data) ? data : [];
+    if (!arr.length) { el.innerHTML = '<div class="kok-sub">Kolejka pusta.</div>'; return; }
+    el.innerHTML = `<div class="kok-sub">W kolejce: ${arr.length} — czeka na najbliższy bieg bota</div>` + arr.map((x, i) => `
+      <div class="poz">
+        <span>${escapeHtml(x.flag || '📢')}</span>
+        <div class="tekst">${escapeHtml(x.text || '')}${x.kategoria ? ` <span class="kok-sub">· ${escapeHtml(x.kategoria)}</span>` : ''}
+          ${x.link ? `<br><a href="${escapeHtml(x.link)}" target="_blank" rel="noopener">${escapeHtml(x.link)}</a>` : ''}</div>
+        <button onclick="usunReczne(${i})" title="Usuń z kolejki">✕</button>
+      </div>`).join('');
+  } catch (e) { el.innerHTML = `<div class="kok-sub">Nie udało się wczytać kolejki: ${escapeHtml(e.message)}</div>`; }
+}
+
+async function dodajReczne() {
+  const text = document.getElementById('reczneText').value.trim();
+  const flag = document.getElementById('reczneFlag').value.trim();
+  const kategoria = document.getElementById('reczneKat').value;
+  const link = document.getElementById('reczneLink').value.trim();
+  if (text.length < 15) { showToast('Nagłówek za krótki'); return; }
+  if (link && !/^https?:\/\/\S+$/i.test(link)) { showToast('Link musi zaczynać się od http(s)://'); return; }
+  const btn = document.getElementById('reczneBtn');
+  btn.disabled = true;
+  try {
+    const { sha, data } = await ghGetJson('reczne.json');
+    const arr = Array.isArray(data) ? data : [];
+    if (arr.some(x => (x.text || '').trim() === text)) { showToast('Już jest w kolejce'); return; }
+    const wpis = { text };
+    if (flag) wpis.flag = flag;
+    if (kategoria) wpis.kategoria = kategoria;
+    if (link) wpis.link = link;
+    arr.push(wpis);
+    await ghPutJson('reczne.json', arr, sha, `Ręczne dodanie z knagi: ${text.slice(0, 60)} [skip ci]`);
+    document.getElementById('reczneText').value = '';
+    document.getElementById('reczneLink').value = '';
+    showToast('Dodano do kolejki — bot weźmie w najbliższym biegu');
+    await wczytajReczne();
+  } catch (e) { showToast('Błąd: ' + e.message); }
+  finally { btn.disabled = false; }
+}
+
+async function usunReczne(i) {
+  try {
+    const { sha, data } = await ghGetJson('reczne.json');
+    const arr = Array.isArray(data) ? data : [];
+    if (!arr[i]) { await wczytajReczne(); return; }
+    const [usuniety] = arr.splice(i, 1);
+    await ghPutJson('reczne.json', arr, sha, `Ręczna kolejka: usunięto „${(usuniety.text || '').slice(0, 50)}” [skip ci]`);
+    showToast('Usunięto z kolejki');
+    await wczytajReczne();
+  } catch (e) { showToast('Błąd: ' + e.message); }
+}
+
 async function wczytajCzekalnie(pokazToast) {
+  wczytajReczne();   // kolejka ręczna nad poczekalnią — osobny try/catch, nie blokuje listy
   const el = document.getElementById('czekTresc');
   el.innerHTML = '<div class="empty">Ładowanie…</div>';
   try {
