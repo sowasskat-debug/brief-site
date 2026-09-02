@@ -1496,7 +1496,7 @@ async function wczytajKokpit() {
     //    etapów żyła — kafel "dziś" sumuje dobę i tego nie pokazuje). Wiersz = bieg, kolumna = etap,
     //    komórka = wywołania / tys. tokenów in / tokeny out. CZERWONE = były wywołania, zero odpowiedzi.
     try {
-      const etapy = [...new Set(usage.flatMap(w => Object.keys((w.payload || {}).stages || {})))].sort();
+      const etapy = [...new Set(usage.flatMap(w => Object.keys((w.payload || {}).stages || {})))].sort((a, b) => (/selekcj/i.test(b) - /selekcj/i.test(a)) || a.localeCompare(b));
       if (etapy.length) {
         const wiersze = usage.slice(0, 30).map(w => {
           const st = (w.payload || {}).stages || {};
