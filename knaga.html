@@ -1492,6 +1492,32 @@ async function wczytajKokpit() {
     html += `<div class="kok-kafel"><div class="kok-label">DeepSeek dziś</div>
              <div class="kok-duze">$${koszt.toFixed(2)}</div>
              <div class="kok-sub">${usage.length} biegów · ${(tin/1000).toFixed(0)}k in / ${(tout/1000).toFixed(0)}k out</div></div>`;
+    // ── DeepSeek per bieg (dołożone 2026-09-02: selekcja zwracała null przez wiele biegów, a reszta
+    //    etapów żyła — kafel "dziś" sumuje dobę i tego nie pokazuje). Wiersz = bieg, kolumna = etap,
+    //    komórka = wywołania / tys. tokenów in / tokeny out. CZERWONE = były wywołania, zero odpowiedzi.
+    try {
+      const etapy = [...new Set(usage.flatMap(w => Object.keys((w.payload || {}).stages || {})))].sort();
+      if (etapy.length) {
+        const wiersze = usage.slice(0, 30).map(w => {
+          const st = (w.payload || {}).stages || {};
+          const t = new Date(w.ts);
+          const hh = isNaN(t) ? escapeHtml(String(w.ts || '').slice(11, 16))
+                              : t.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+          const kom = etapy.map(e => {
+            const v = st[e] || {};
+            const calls = v.calls != null ? v.calls : null, inn = v.in || 0, out = v.out || 0;
+            const zle = (calls || 0) > 0 && !(out > 0);
+            const txt = calls == null ? '·' : `${calls} / ${(inn / 1000).toFixed(0)}k / ${out}`;
+            return `<td style="padding:2px 8px;${zle ? 'color:var(--red);font-weight:700' : ''}">${escapeHtml(txt)}</td>`;
+          }).join('');
+          return `<tr><td style="padding:2px 8px;font-weight:700">${hh}</td>${kom}</tr>`;
+        }).join('');
+        html += `<div class="kok-kafel szeroki"><div class="kok-label">DeepSeek per bieg · etap: wywołania / in / out · czerwone = wywołania bez odpowiedzi</div>
+                 <div style="overflow-x:auto"><table style="font-size:10px;border-collapse:collapse;white-space:nowrap">
+                 <thead><tr><th style="padding:2px 8px;text-align:left">bieg</th>${etapy.map(e => `<th style="padding:2px 8px;text-align:left">${escapeHtml(e)}</th>`).join('')}</tr></thead>
+                 <tbody>${wiersze}</tbody></table></div></div>`;
+      }
+    } catch (e) { console.warn('Kafel DeepSeek per bieg nieudany:', e.message); }
   }
 
   html += '</div>';
