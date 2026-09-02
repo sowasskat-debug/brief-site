@@ -1431,15 +1431,34 @@ async function pobierzUzycieDeepSeek() {
   }
 }
 
+// Liczniki zdrowia bota (LiczLejek) — snapshot per bieg w Supabase `brief_health`, payload płaski:
+// {ts, prefiltr_sprawdzone, selekcja_json_blad, …}. Dołożone 2026-09-02 do diagnostyki selekcji.
+async function pobierzBriefHealth() {
+  if (!supa) return null;
+  const odPolnocy = new Date(); odPolnocy.setHours(0, 0, 0, 0);
+  try {
+    const { data, error } = await supa
+      .from('brief_health').select('ts,payload')
+      .gte('ts', odPolnocy.toISOString())
+      .order('ts', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (e) {
+    console.warn('brief_health z Supabase nieudany:', e.message);
+    return null;
+  }
+}
+
 async function wczytajKokpit() {
   const el = document.getElementById('kokTresc');
   el.innerHTML = '<div class="empty">Ładowanie…</div>';
 
   // Trzy źródła równolegle; każde pada osobno — kokpit z dziurą jest lepszy niż pusty.
-  const [briefs, lejek, usage] = await Promise.all([
+  const [briefs, lejek, usage, zdrowie] = await Promise.all([
     fetch('./briefs.json?_=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).catch(() => null),
     pobierzLejekDane().catch(() => null),
     pobierzUzycieDeepSeek(),
+    pobierzBriefHealth(),
   ]);
 
   let html = '<div class="kok-siatka">';
@@ -1492,6 +1511,60 @@ async function wczytajKokpit() {
     html += `<div class="kok-kafel"><div class="kok-label">DeepSeek dziś</div>
              <div class="kok-duze">$${koszt.toFixed(2)}</div>
              <div class="kok-sub">${usage.length} biegów · ${(tin/1000).toFixed(0)}k in / ${(tout/1000).toFixed(0)}k out</div></div>`;
+    // ── DeepSeek per bieg (dołożone 2026-09-02: selekcja zwracała null przez wiele biegów, a reszta
+    //    etapów żyła — kafel "dziś" sumuje dobę i tego nie pokazuje). Wiersz = bieg, kolumna = etap,
+    //    komórka = wywołania / tys. tokenów in / tokeny out. CZERWONE = były wywołania, zero odpowiedzi.
+    try {
+      const etapy = [...new Set(usage.flatMap(w => Object.keys((w.payload || {}).stages || {})))].sort((a, b) => (/selekcj/i.test(b) - /selekcj/i.test(a)) || a.localeCompare(b));
+      if (etapy.length) {
+        const wiersze = usage.slice(0, 30).map(w => {
+          const st = (w.payload || {}).stages || {};
+          const t = new Date(w.ts);
+          const hh = isNaN(t) ? escapeHtml(String(w.ts || '').slice(11, 16))
+                              : t.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+          const kom = etapy.map(e => {
+            const v = st[e] || {};
+            const calls = v.calls != null ? v.calls : null, inn = v.in || 0, out = v.out || 0;
+            const zle = (calls || 0) > 0 && !(out > 0);
+            const txt = calls == null ? '·' : `${calls} / ${(inn / 1000).toFixed(0)}k / ${out}`;
+            return `<td style="padding:2px 8px;${zle ? 'color:var(--red);font-weight:700' : ''}">${escapeHtml(txt)}</td>`;
+          }).join('');
+          return `<tr><td style="padding:2px 8px;font-weight:700">${hh}</td>${kom}</tr>`;
+        }).join('');
+        html += `<div class="kok-kafel szeroki"><div class="kok-label">DeepSeek per bieg · etap: wywołania / in / out · czerwone = wywołania bez odpowiedzi</div>
+                 <div style="overflow-x:auto"><table style="font-size:10px;border-collapse:collapse;white-space:nowrap">
+                 <thead><tr><th style="padding:2px 8px;text-align:left">bieg</th>${etapy.map(e => `<th style="padding:2px 8px;text-align:left">${escapeHtml(e)}</th>`).join('')}</tr></thead>
+                 <tbody>${wiersze}</tbody></table></div></div>`;
+      }
+    } catch (e) { console.warn('Kafel DeepSeek per bieg nieudany:', e.message); }
+  }
+
+  // ── Liczniki bota per bieg (brief_health) — dołożone 2026-09-02: rozróżnia „nie zebrał paczki”
+  //    (prefiltr_sprawdzone = 0) od „zebrał, a wywołanie selekcji padło” (selekcja_json_blad > 0).
+  try {
+    if (zdrowie && zdrowie.length) {
+      const wiersze0 = zdrowie.slice(0, 30).map(w => {
+        const p = w.payload || {}; const t = new Date(w.ts);
+        const hh = isNaN(t) ? String(w.ts || '').slice(11, 16)
+                            : t.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+        return { hh, p };
+      });
+      const klucze = [...new Set(wiersze0.flatMap(r => Object.keys(r.p)))]
+        .filter(k => k !== 'ts' && wiersze0.some(r => typeof r.p[k] === 'number' && r.p[k] !== 0))
+        .sort((a, b) => (/selekcj|prefiltr|historii/i.test(b) - /selekcj|prefiltr|historii/i.test(a)) || a.localeCompare(b));
+      if (klucze.length) {
+        const wiersze = wiersze0.map(r => `<tr><td style="padding:2px 8px;font-weight:700">${escapeHtml(r.hh)}</td>${
+          klucze.map(k => { const v = r.p[k]; const zle = /blad/i.test(k) && v > 0;
+            return `<td style="padding:2px 8px;${zle ? 'color:var(--red);font-weight:700' : ''}">${v == null ? '·' : escapeHtml(String(v))}</td>`; }).join('')
+        }</tr>`).join('');
+        html += `<div class="kok-kafel szeroki"><div class="kok-label">Liczniki bota per bieg (brief_health) · czerwone = błędy</div>
+                 <div style="overflow-x:auto"><table style="font-size:10px;border-collapse:collapse;white-space:nowrap">
+                 <thead><tr><th style="padding:2px 8px;text-align:left">bieg</th>${klucze.map(k => `<th style="padding:2px 8px;text-align:left">${escapeHtml(k)}</th>`).join('')}</tr></thead>
+                 <tbody>${wiersze}</tbody></table></div></div>`;
+      }
+    }
+  } catch (e) { console.warn('Kafel liczników bota nieudany:', e.message); }
+  if (false) {
   }
 
   html += '</div>';
