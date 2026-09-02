@@ -1,23 +1,34 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-02 WIECZÓR (po sesji: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-02 PÓŹNY WIECZÓR (po sesjach: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
 ## 🟡 02.09: CO ZOSTAŁO OTWARTE PO TEJ SESJI — czytaj najpierw
 
-1. **NIEZWERYFIKOWANE NA PRODUKCJI (sesja zamknięta o 18:57 UTC, przed biegiem 19:00):** bot #252
-   (GDELT poza torem głównym, feed X wyłączony), #253 (`FLUSSO_OFF=true` — zmienna JUŻ w
-   `/root/bot_secrets.env`) i #254 (bramka etapu przepisuje nagłówek). Bieg 18:30 startował
-   przed merge'ami. **Pierwsza rzecz w nowej sesji:** w logu ostatniego biegu ma być linia
-   `[FLUSSO] Wyłączone`, ZERO linii `GDELT`, brak etapów `flusso-*` w `[TOKENY]`, a przy werdykcie
-   NOWE linie `[ETAP] Nagłówek przepisany … było/jest`. Liczniki: `etap_naglowek_przepisany`,
-   `etap_naglowek_odrzucony_bez_pokrycia` w `brief_health`.
-2. **Flaga 🇹🇼 w DANYCH dalej wywala pojedyncze wywołanie DeepSeeka** (klastrowanie, wątki, każdy prompt,
-   który niesie flagę pozycji). #249 usunął ją tylko ze stałego przykładu w `FORMAT_JSON_SELEKCJI`.
-   Potrzebna sanityzacja wejścia do DeepSeeka w jednym miejscu (np. `_watkiClient`/SendAsync wrapper).
-   Dziś w dawkach 0 pozycji z 🇹🇼, więc nic nie pali — ale news o Tajwanie to kwestia dni.
+1. ✅ **#252–#254 ZWERYFIKOWANE na biegu 19:00 UTC** (pierwszy bieg po merge'ach): `[FLUSSO] Wyłączone`,
+   zero etapów `flusso-*` w `[TOKENY]`, 1× `[ETAP] Nagłówek przepisany` (Trump/Iran), 0× `400`.
+   ⚠️ GDELT: 4 linie, ale WSZYSTKIE z toru awaryjnego EN (pozycja bez źródła) — 3 próby, 3 padły
+   (SSL + 2× timeout), breaker. Tor główny faktycznie wycięty (bieg 18:30: 6 linii). To jest punkt 4 niżej.
+   ⬜ Jedna próbka pod #254: przepisany nagłówek wyszedł wyraźnie dłuższy i „ekspercki" („…co stanowi nowe
+   stanowisko w sprawie przebiegu działań wojennych") — oglądać, czy prompt nie rozwleka.
+2. **NIEZWERYFIKOWANE NA PRODUKCJI: bot #256** (merge 19:30:05 UTC — bieg 19:30 startował w tej samej
+   sekundzie, więc realnie pierwszy bieg z tym kodem to 20:00 UTC). Co ma być w logu: linia
+   `[DEEPSEEK] Sanityzacja: zdjęto flagę 🇹🇼` pojawi się TYLKO gdy jakaś pozycja/etap/klaster niesie flagę
+   (dziś 0 takich), więc brak linii ≠ awaria; przy podmianie tytułu ze źródła z parą nad progiem — linia
+   `Pominięto powtórkę wykrytą PO podmianie tytułu ze źródła (bramka przed enrichem mówiła NOWE o INNYM
+   nagłówku)` i licznik `cross_bieg_po_tytule_mimo_nowe`. Lokalnie zweryfikowane `TEST_FINDER` z atrapą klucza
+   (3 wywołania, każde oczyszczone) + API z Hetznera (flaga → 400, bez flagi → 200).
+   **Kafel „Trump chce zmienić nazwę cieśniny Ormuz na «Cieśninę Trumpa»" (dawka wieczorna 02.09 21:04)
+   ZOSTAŁ na stronie** — właściciel zgłosił go jako dubel; do decyzji właściciela, czy zdjąć chirurgią na
+   `briefs.json` (kopia przed edycją). Fakty: samego przemianowania NIE było wcześniej na stronie (grep
+   `briefs.json` + `archive/`), bot odrzucił je tego dnia dwa razy (POWTORKA po opisie, COFNIĘCIE etapu)
+   jako powtórkę wobec pozycji o kontroli USA nad Ormuz — a potem wpuścił przez podmianę tytułu.
+   ⬜ **Guard na zmianę TEMATU przez podmianę tytułu** (otwarte od 20.08, teraz z pierwszym egzemplarzem):
+   `tytul_oryginalny` kafla mówi „campaign against Iran won't last long", nagłówek o Trump Strait. Zmierzyć
+   z par `tytuł z polskiego źródła: A -> B` w logu, jaki odsetek podmian nie dzieli rdzeni z A
+   (`PodobienstwoRdzeni`), zanim się cokolwiek wytnie — #256 daje tylko werdykt modelu, nie zakaz podmiany.
 3. **Wyzwalacz zdarzeniowy z czujki — ODŁOŻONY przez właściciela („wrócimy do tego").** Pomiar gotowy:
    czujka widzi nagłówek w 1–2 min, bot czeka na cron **mediana 16 min, p90 27 min**, potem 3 min
    (p90 7) do publikacji. 🔴 alerty: 184 na 11 579 nagłówków (2%, ~9/dobę). Koszt tokenów: jedno
@@ -49,6 +60,15 @@ Zdjęcie stanu na **2026-09-02 WIECZÓR (po sesji: awaria selekcji 🇹🇼, Wyk
     kandydatów/dobę, Politico 12–18. `pubDate` Investing.com jest w UTC, serwer w UTC — bez błędu.
 
 ## ✅ 02.09: CO ZROBIONE TEJ SESJI (wszystko na produkcji, chyba że zaznaczono)
+
+- **SANITYZACJA 🇹🇼 NA KLIENCIE DEEPSEEKA (bot #256, sesja późnowieczorna).** `SanityzacjaDeepSeek` —
+  `DelegatingHandler` na każdym kliencie wołającym `api.deepseek.com` (główny `client`, `_watkiClient`,
+  warstwa nad `ShadowHandler`): zdejmuje flagę z body w obu zapisach (surowy UTF-8 i escape JSON), loguje,
+  liczy `deepseek_sanityzacja_tw`. Odpowiedzi nietknięte. Zamyka dawny punkt 2.
+- **BRAMKA CROSS-BIEG PO PODMIANIE TYTUŁU odpala także po werdykcie NOWE (bot #256).** Dotąd warunek
+  `podobnyOpub == null` wyłączał ją, gdy bramka przed enrichem coś znalazła — a NOWE dotyczyło INNEGO
+  nagłówka. Porównanie z tekstem faktycznie ocenionym (`tekstEtapu ?? text`, po #254). Przyczyna kafla
+  „Cieśnina Trumpa" (punkt 2 wyżej).
 
 - **AWARIA SELEKCJI 07:02–13:41 UTC — ROZWIĄZANA (bot #249).** 98/98 wywołań selekcji wracało
   `400 Content Exists Risk`. Zmierzone z Hetznera na PRAWDZIWYM prompcie, bisekcją po liniach:
@@ -83,6 +103,13 @@ Zdjęcie stanu na **2026-09-02 WIECZÓR (po sesji: awaria selekcji 🇹🇼, Wyk
 - **Handoff z Windowsa** (`docs/handoff/2026-09-02-awaria-selekcji.md`) — przerobiony w całości.
 
 ## ⚠️ 02.09: PUŁAPKI ZŁAPANE TEJ SESJI
+
+- 🔴 **Łańcuch bramek warunkowany `podobnyOpub == null` milczy dokładnie wtedy, gdy wcześniejsza bramka
+  COŚ znalazła** — a każda późniejsza zmiana `item.Text` (podmiana tytułu ze źródła, przepisanie X-feed,
+  eskalacja) unieważnia tamten werdykt. Przy dokładaniu bramek pytaj „czego dotyczył werdykt", nie „czy był".
+- ⚠️ **Mac: `dotnet` 10 nie odpali `Bot.dll` (net8) bez `DOTNET_ROLL_FORWARD=Major`**, a `timeout` nie istnieje
+  (brak coreutils) — lokalny bieg testowy: `DOTNET_ROLL_FORWARD=Major DEEPSEEK_API_KEY=x TEST_FINDER="…"
+  dotnet bin/Debug/net8.0/Bot.dll` (atrapa klucza wystarczy, żeby zobaczyć linie sanityzacji przed 401).
 
 - 🔴 **DeepSeek odrzuca KAŻDE wejście z emoji 🇹🇼** (od ~07:00 UTC 02.09). Nie wstawiać do stałych
   tekstów promptów; flaga w danych to punkt 2 wyżej. Test wprost na API z serwera (skrypt bisekcji)
