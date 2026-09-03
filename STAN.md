@@ -7,6 +7,11 @@ Zdjęcie stanu na **2026-09-03 WIECZÓR (sesja: WIG20/PLN dopięte na siłę —
 
 ## 🟡 03.09: SESJA WIECZORNA — wpływ na rynek dopięty na siłę
 
+- ✅ **Flagi na Windowsie — TRZECIA poprawka (front, SW v158).** Zgłoszenie: „wciąż nie widzę flag", trzy komputery.
+  Przyczyna: `.dt-app` (układ desktopowy) ma własny `font-family: Inter` i nie dziedziczył fontu Twemoji z `body`;
+  dwie poprzednie poprawki testowano w 390 px (mobile). Teraz font dopięty do `.dt-app` i wprost do kontenerów flag.
+  Zweryfikowane w 1400 px. Opis w `CLAUDE.md` frontu. ⬜ **Właściciel: sprawdzić na Windowsie po odświeżeniu
+  (SW v158; w razie czego Ctrl+F5 albo `?flagi=diag` i zrzut panelu).**
 - ✅ **Bot #259 (do zweryfikowania na produkcji): „naprawdę fajne ciekawostki" w polskich feedach.** Zgłoszenie
   ze zrzutów lejka (Wykop): rocznica „87 lat temu…", „AI znalazła tysiąc luk w Linuksie", PKP Intercity + internet
   satelitarny, „Polska docisnęła Metę" — wszystkie odrzucone. Przyczyna: „TYLKO" w REGULE 2 promptu polskich feedów
