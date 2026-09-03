@@ -1,12 +1,19 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-03 WIECZÓR (sesja: WIG20/PLN dopięte na siłę do newsa Zaorskiego — bot #258; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-03 WIECZÓR (sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
 ## 🟡 03.09: SESJA WIECZORNA — wpływ na rynek dopięty na siłę
 
+- ✅ **Bot #259 (do zweryfikowania na produkcji): „naprawdę fajne ciekawostki" w polskich feedach.** Zgłoszenie
+  ze zrzutów lejka (Wykop): rocznica „87 lat temu…", „AI znalazła tysiąc luk w Linuksie", PKP Intercity + internet
+  satelitarny, „Polska docisnęła Metę" — wszystkie odrzucone. Przyczyna: „TYLKO" w REGULE 2 promptu polskich feedów
+  kasowało wyjątek na ciekawostki. Nowy wyjątek z 4 klasami (rocznica rangi światowej także nieokrągła; tech/AI
+  z liczbą; nowa technologia w polskiej infrastrukturze; decyzja wielkiej platformy wobec Polski) — w OBU kopiach
+  promptu (`CheckMultipleFeedsBatched` + `CheckPolishFeedBatched`). Opis w `FinancialNewsBot/CLAUDE.md`.
+  ⬜ Po tygodniu w lejku: ile wchodzi tym wyjątkiem, czy klasa „AI z liczbą" nie wpuszcza PR-u firm AI.
 - ✅ **Zgłoszenie ze zrzutu:** kafel „Rafał Zaorski tymczasowo aresztowany…" z „↓ WIG20, ↓ Kurs PLN" i kaflami
   WIG20 + EUR/PLN. Jeden błąd, nie dwa: kafle notowań wywodzą się z linii wpływu. Kafel zdjęty ręcznie na Hetznerze
   (`impact`/`chart` → null, kopia `/root/briefs.json.bak-20260903-173159`).
