@@ -1,9 +1,26 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-02 PÓŹNY WIECZÓR (po sesjach: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-03 WIECZÓR (sesja: WIG20/PLN dopięte na siłę do newsa Zaorskiego — bot #258; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 🟡 03.09: SESJA WIECZORNA — wpływ na rynek dopięty na siłę
+
+- ✅ **Zgłoszenie ze zrzutu:** kafel „Rafał Zaorski tymczasowo aresztowany…" z „↓ WIG20, ↓ Kurs PLN" i kaflami
+  WIG20 + EUR/PLN. Jeden błąd, nie dwa: kafle notowań wywodzą się z linii wpływu. Kafel zdjęty ręcznie na Hetznerze
+  (`impact`/`chart` → null, kopia `/root/briefs.json.bak-20260903-173159`).
+- ✅ **Bot #257 (do zweryfikowania na produkcji):** KROK 3 DeepSeeka + prompt Haiku (sprawa osoby/firmy spoza
+  giełdy ≠ rynek; WIG20/PLN tylko przy mechanizmie na cały rynek) + bramka `ZdejmijWplywKrajowyNaSile` dla typów
+  prawno-osobowych. Zmierzone na archiwum: 6 dotkniętych na 126, 2 wyzerowane. Opis w `FinancialNewsBot/CLAUDE.md`.
+  ⬜ Co oglądać: linie `[WPŁYW] Zdjęto indeks krajowy/walutę` w logu, liczniki `wplyw_krajowy_*`; po tygodniu
+  policzyć, ile polskich newsów straciło `chart` i czy Haiku dalej dopina WIG20 przy typach SPOZA listy
+  (Agora/Wiedźmin/Nitroerg to typy wyniki-kwartalne/premiera/capex — tam działa tylko prompt, bez bramki).
+- ⚠️ Nowa pułapka: **`WalutaJestTematemNewsa` przepuszcza PLN, gdy artykuł podaje KWOTĘ w złotych** („straty na
+  miliony złotych") — wzorzec `złot(y|ych…)` nie odróżnia kursu od jednostki kwoty. Nie naprawione osobno, bo
+  nowa bramka zdejmuje to wyżej dla typów prawnych; przy innych typach luka zostaje.
+- Sprawdzone przy starcie: linie `400 Content Exists Risk` w logu bota wszystkie sprzed 13:01 UTC 02.09, potem zero;
+  bot #256 dalej bez żywego przypadku z flagą 🇹🇼 (punkt 2 niżej bez zmian).
 
 ## 🟡 02.09: CO ZOSTAŁO OTWARTE PO TEJ SESJI — czytaj najpierw
 
