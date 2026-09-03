@@ -1,12 +1,16 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-03 WIECZÓR (sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; flagi na Windowsie 3. poprawka — SW v158; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-03 WIECZÓR (sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
 ## 🟡 03.09: SESJA WIECZORNA — wpływ na rynek dopięty na siłę
 
+- ✅ **Bot #261 (do zweryfikowania): meta-komentarz modelu w opisie.** Zgłoszenie ze zrzutu: „…uzyskał 98,6%
+  (nagłówek podaje 62,7% — to rozbieżność, ale … uznaję za zgodne)" w kaflu GPT-6 Astra. Prompt miał zakaz od lipca
+  bez bramki obok; archiwum: 39 wycieków. Bramka `ZdejmijMetaKomentarz` tnie nawias/zdanie z markerem, precyzja
+  39/39 na archiwum. Kafel poprawiony ręcznie na Hetznerze. ⬜ Liczniki `meta_komentarz_*` w logu.
 - ✅ **Bot #260 (do zweryfikowania): dzień tygodnia przekręcony względem źródła.** Zgłoszenie ze zrzutu: „W piątek
   po południu ewakuowano…" (Berlin BER) przy źródle „w czwartek" i czwartkowej dacie. Prompt opisu dostał zakaz
   przeliczania dni, bramka `PoprawDzienTygodnia` podmienia dzień na ten ze źródła (tylko gdy fakty podają dokładnie
