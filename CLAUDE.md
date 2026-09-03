@@ -1955,6 +1955,33 @@ na początku aktualnej dawki, nawet jak jesteśmy przy wątkach"* — decyzja: t
   zamknięty, `scrollTop` 0, hero na `y=130` (stan identyczny jak po świeżym wejściu); (b) mobilny feed
   przewinięty na 2958 → 0; (c) desktop — otwarty inny artykuł wraca do top story, `#dtFeedList` na 0.
 
+## Gotowiec X pisze naturalnie — blok STYL w `gotowiec-x` (2026-09-03, noc) 🔴
+Życzenie właściciela po przeglądzie trzech postów z 03.09 (gaz UE, Zaorski, Zełenski): *„żeby gotowiec bardziej
+naturalnie pisał, ale jednocześnie profesjonalnie i żeby nie było widać, że to AI"*. ⚠️ **Limit liczb ZOSTAJE**
+(*„z liczbami to zostaw"*) — zmienia się rytm i składnia, nie treść.
+- **Ślady AI nazwane na realnych postach:** myślnik jako spoiwo zdań; wyliczanka faktów bez łącznika („protokół");
+  strona bierna i rzeczowniki odsłowne („straty szacowane są", „sygnał ożywienia rozmów"); jeden blok bez pustej
+  linii; wypełniacze („łącznie", „ok." przy każdej liczbie, „w sprawie" dwa razy).
+- **Blok STYL (8 punktów) w system prompcie:** hook z nazwanym podmiotem sam w pierwszej linii, pusta linia,
+  najwyżej dwa zdania; kropka zamiast myślnika; strona czynna; zdanie po hooku mówi CO Z TEGO WYNIKA; zero
+  wypełniaczy i formułek; **(8) news bez liczb = post KRÓTSZY, nie mądrzejszy** — jeśli jest `impact`, drugie
+  zdanie może go przepisać wprost, jeśli nie ma, post kończy się po fakcie. Punkt (8) wziął się z pomiaru:
+  Zełenski (news bez liczb) w pierwszej turze dostał „sygnalizuje ożywienie dyplomacji" i 343 znaki.
+- 📊 **Zmierzone na żywej funkcji (v16/v17), pięć newsów z 03.09:** Zaorski 190 zn., Zełenski 194, Berlin 220,
+  gaz 233 — wszystkie z hookiem, pustą linią, stroną czynną, bez wypełniaczy. Stary prompt na tym samym
+  materiale: 214–271 zn., jeden blok, myślniki.
+- 🔴 **Cięcie nadmiaru: pełne zdanie zawsze wygrywa z wielokropkiem.** Próg 60% budżetu pochodził z czasów
+  jednego bloku; przy stylu hook + pusta linia pierwsze pełne zdanie kończy się koło 45–50% budżetu i gaz
+  wyszedł ucięty w pół słowa („wynoszą ok…") mimo pełnego zdania tuż przed. Teraz zdanie wystarcza, gdy sięga
+  poza hook (pierwsze `\n\n`) albo poza 40% budżetu. Wielokropek tylko, gdy nie mieści się nawet hook.
+- ⚠️ Do obserwacji: model bywa o krok za daleko w „co z tego wynika" — Berlin dostał „Nikt nie ucierpiał", gdy
+  artykuł mówił „na razie nie ma informacji o poszkodowanych". To ta sama klasa co eskalacja w nagłówkach;
+  jeśli się powtórzy, dopisać do (5): „wynik, nie domysł — pisz tylko to, co materiał stwierdza".
+- **Deploy przez CLI, nie panel:** właściciel nie ma dostępu do panelu Supabase (flaga konta GitHub), ale CLI na
+  Macu jest zalogowane własnym tokenem: `supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc`.
+  Test na żywej funkcji z serwera (klucz w `/root/bot_secrets.env`): payload `{text, article, impact, maxZnakow}`
+  z nagłówkiem `Authorization: Bearer <SUPABASE_SERVICE_KEY>`.
+
 ## Flagi na Windowsie — TRZECIA poprawka: układ desktopowy nie dziedziczył fontu (2026-09-03) 🔴
 Zgłoszenie właściciela: *„na Windowsie wciąż nie widzę flag"* — na trzech komputerach (dwa w pracy, jeden w domu).
 - 🔴 **Przyczyna: dwie poprzednie poprawki testowano w 390 px, czyli w układzie MOBILNYM.** Windows to zawsze
