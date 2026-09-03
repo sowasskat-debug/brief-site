@@ -1,12 +1,18 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-03 WIECZÓR (sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-03 WIECZÓR (sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
 ## 🟡 03.09: SESJA WIECZORNA — wpływ na rynek dopięty na siłę
 
+- ✅ **Gotowiec X pisze naturalnie — `gotowiec-x` v17 WDROŻONY przez CLI** (panel Supabase niedostępny przez flagę
+  GitHuba, CLI na Macu zalogowane). Blok STYL: hook + pusta linia + max 2 zdania, kropka nie myślnik, strona
+  czynna, zero wypełniaczy, news bez liczb = krótszy post. Limit liczb bez zmian. Cięcie nadmiaru po zdaniu
+  zamiast wielokropka. Zmierzone na 4 newsach z 03.09: 190–233 zn. Opis w `CLAUDE.md` frontu.
+  ⬜ Obejrzeć pierwsze posty automatu jutro; ⬜ Berlin dostał „Nikt nie ucierpiał" przy źródle „brak informacji
+  o poszkodowanych" — jeśli się powtórzy, dopisać „wynik, nie domysł" do punktu (5).
 - ✅ **Bot #261 (do zweryfikowania): meta-komentarz modelu w opisie.** Zgłoszenie ze zrzutu: „…uzyskał 98,6%
   (nagłówek podaje 62,7% — to rozbieżność, ale … uznaję za zgodne)" w kaflu GPT-6 Astra. Prompt miał zakaz od lipca
   bez bramki obok; archiwum: 39 wycieków. Bramka `ZdejmijMetaKomentarz` tnie nawias/zdanie z markerem, precyzja

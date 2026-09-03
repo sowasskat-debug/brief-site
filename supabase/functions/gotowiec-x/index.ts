@@ -323,6 +323,23 @@ Deno.serve(async (req) => {
           'ZAKAZANE: zmyślanie jakichkolwiek liczb — każda liczba w poście MUSI dosłownie występować ' +
           'w materiale źródłowym. Jeśli materiał nie podaje liczb, napisz post bez liczb. ' +
           'Zero hashtagów, zero emoji, zero linków, zero clickbaitu, zero pytań retorycznych. ' +
+          // ── STYL: naturalnie i profesjonalnie, bez śladów automatu (życzenie właściciela 2026-09-03) ──
+          // Zmierzone na trzech postach z 03.09 (gaz UE, Zaorski, Zełenski), stary vs nowy prompt na tym samym
+          // materiale: ślady AI to myślnik jako spoiwo zdań, wyliczanka faktów bez łącznika („protokół"),
+          // strona bierna i rzeczowniki odsłowne („straty szacowane są", „sygnał ożywienia rozmów"),
+          // jeden blok bez oddechu, wypełniacze („łącznie", „ok." przy każdej liczbie). Po zmianie Zaorski
+          // i gaz wyszły jak od dziennikarza; news bez liczb (Zełenski) dalej ciągnął do frazesu — stąd (8).
+          // ⚠️ Limit liczb (CZTERY) ZOSTAJE bez zmian — decyzja właściciela: „z liczbami to zostaw".
+          'STYL — pisz jak doświadczony dziennikarz ekonomiczny na własnym profilu, nie jak automat: ' +
+          '(1) Pierwsza linia to jedno krótkie zdanie z NAZWANYM podmiotem (kto/co) i najmocniejszym konkretem. Po niej pusta linia. ' +
+          '(2) Potem NAJWYŻEJ DWA zdania. Razem z hookiem i pustą linią post ma zmieścić się w limicie — pusta linia też się liczy. ' +
+          '(3) Zdania łącz KROPKĄ, nie myślnikiem ani średnikiem. Myślnik najwyżej raz w poście. ' +
+          '(4) Strona czynna: ktoś coś robi ("prokuratura zarzuca", "Sikorski napisał do Muska"), nie "zostało zrobione", nie "straty szacowane są", nie "sygnał ożywienia rozmów". ' +
+          '(5) Zdanie po hooku ma mówić, CO Z TEGO WYNIKA albo DLACZEGO, nie dokładać kolejnego faktu. Fakty bez łącznika brzmią jak protokół. ' +
+          '(6) Zero wypełniaczy: "łącznie", "w ramach", "w związku z", "odpowiadającego za", "ok." przed liczbą (jeśli już, to raz). ' +
+          '(7) Bez formułek "warto zauważyć", "co ciekawe", "to pokazuje", bez "kluczowy", "znaczący", "istotny", bez przymiotników-emocji i bez opisywania nastrojów. ' +
+          '(8) Gdy materiał NIE MA liczb, post jest po prostu KRÓTSZY — nie wypełniaj miejsca frazesem. Jeśli podano WPŁYW NA RYNEK, drugie zdanie może go przepisać wprost (co drożeje, co tanieje); jeśli nie podano, post kończy się po fakcie. ' +
+          'TWARDY LIMIT ZNAKÓW obowiązuje bez wyjątku — jeśli nie mieścisz się, wytnij zdanie, nie skracaj hooka. ' +
           'Nie dopisuj komentarza od siebie. Zwróć WYŁĄCZNIE treść posta.',
       },
       {
@@ -385,7 +402,15 @@ Deno.serve(async (req) => {
   if (post.length > budzetTresci) {
     // Przycinamy na granicy zdania, nie w połowie słowa.
     const doKropki = ostatniKoniecZdania(post.slice(0, budzetTresci));
-    const przyciety = doKropki > budzetTresci * 0.6
+    // ⚠️ 2026-09-03: próg 60% budżetu pochodził z czasów jednego bloku tekstu. Przy stylu „hook, pusta
+    // linia, 1–2 zdania" pierwsze pełne zdanie po hooku kończy się często koło 45–50% budżetu — i post
+    // o gazie wyszedł ucięty w pół słowa („wynoszą ok…"), choć pełne zdanie stało tuż przed.
+    // Pełne zdanie ZAWSZE wygrywa z wielokropkiem, jeśli sięga poza hook (pierwszą pustą linię)
+    // albo poza 40% budżetu. Wielokropek zostaje tylko wtedy, gdy w budżecie nie ma nawet hooka z kropką.
+    const koniecHooka = post.indexOf('\n\n');
+    const zdanieWystarcza = doKropki > 0 &&
+      (doKropki > budzetTresci * 0.4 || (koniecHooka > 0 && doKropki > koniecHooka));
+    const przyciety = zdanieWystarcza
       ? post.slice(0, doKropki + 1)
       : post.slice(0, budzetTresci - 1).trimEnd() + '…';
     const gotowy = zDoklejka(przyciety);
