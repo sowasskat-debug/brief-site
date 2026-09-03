@@ -39,6 +39,9 @@
  *     nie da się odtworzyć poza Windowsem — jeden zrzut z panelu kończy zgadywanie.
  *
  * Wpięte w CZTERY strony: index.html, watki.html, fala.html, knaga.html.
+ * ⚠️ 2026-09-03: font dopinany też do `.dt-app` i wprost do kontenerów flag — patrz `wlaczFont`.
+ *    WERYFIKUJ W SZEROKOŚCI DESKTOPOWEJ (≥1024 px), nie w 390 px — dwie poprzednie poprawki
+ *    przeszły test mobilny i nie działały tam, gdzie Windows je pokazuje.
  * ⚠️ Strony dzienne `d/*.html` generuje BOT (Runner.cs) i one tego skryptu NIE MAJĄ —
  * to osobna robota po stronie repo bota.
  * ⚠️ `fala.html` ma bliźniaka w repo `flusso` — przenosząc zmianę, przenieś oba pliki.
@@ -139,6 +142,25 @@
     var stos = '';
     try { stos = (window.getComputedStyle(document.body).fontFamily || '').trim(); } catch (e) {}
 
+    // 🔴 2026-09-03, trzecie zgłoszenie „na Windowsie wciąż nie widzę flag" — DWIE POPRZEDNIE POPRAWKI
+    // TESTOWANO W 390 px, CZYLI W UKŁADZIE MOBILNYM. Windows to zawsze układ DESKTOPOWY, a jego korzeń
+    // `.dt-app` ma WŁASNY `font-family: 'Inter', sans-serif` (styles.css) — nie dziedziczy po `body`,
+    // więc reguła wyżej nie sięgała ŻADNEJ flagi w widoku, który Windows realnie pokazuje.
+    // Ten sam mechanizm, który 15.08 zauważono przy `.node-text` w watki.html, tylko piętro wyżej.
+    // Lek: (1) stos `.dt-app` ODCZYTANY tak samo jak `body`, z fontem flag dopiętym na przód;
+    // (2) kontenery flag na czterech stronach dostają font WPROST — trzymają wyłącznie znacznik
+    // (emoji + ewentualne SVG), więc narzucenie im stosu `body` niczego w typografii nie zmienia
+    // i uniezależnia je od tego, jaki font ma rodzic. Lista: index (.news-flag .hero-flag .sub-item-flag
+    // .dt-item-flag .dt-index-flag .dt-index-rflag .mob-swp-cat-flag .mob-swp-cat-rflag .zn),
+    // knaga (.item-flag), fala (.flag), watki (.node-text niżej).
+    var stosDt = '';
+    try {
+      var dt = document.querySelector('.dt-app');
+      if (dt) stosDt = (window.getComputedStyle(dt).fontFamily || '').trim();
+    } catch (e) {}
+    var KONTENERY = '.news-flag,.hero-flag,.sub-item-flag,.dt-item-flag,.dt-index-flag,.dt-index-rflag,' +
+                    '.mob-swp-cat-flag,.mob-swp-cat-rflag,.zn,.item-flag,.flag';
+
     var st = document.createElement('style');
     st.id = 'brif-flagi';
     st.textContent =
@@ -146,6 +168,8 @@
       'src:url("' + PLIK + '") format("woff2");' +
       'unicode-range:U+1F1E6-1F1FF;font-display:swap}' +
       (stos ? 'body{font-family:"' + RODZINA + '",' + stos + '}' : '') +
+      (stosDt ? '.dt-app{font-family:"' + RODZINA + '",' + stosDt + '}' : '') +
+      KONTENERY + '{font-family:"' + RODZINA + '",' + (stos || 'sans-serif') + '}' +
       // ⚠️ `watki.html` trzyma flagę WEWNĄTRZ `.node-text`, a ten element ma WŁASNY
       // `font-family` (DM Serif) — czyli nie dziedziczy po `body` i regułą wyżej
       // nie da się go objąć. Na pozostałych stronach ten selektor po prostu w nic nie trafia.

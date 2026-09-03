@@ -1955,6 +1955,25 @@ na początku aktualnej dawki, nawet jak jesteśmy przy wątkach"* — decyzja: t
   zamknięty, `scrollTop` 0, hero na `y=130` (stan identyczny jak po świeżym wejściu); (b) mobilny feed
   przewinięty na 2958 → 0; (c) desktop — otwarty inny artykuł wraca do top story, `#dtFeedList` na 0.
 
+## Flagi na Windowsie — TRZECIA poprawka: układ desktopowy nie dziedziczył fontu (2026-09-03) 🔴
+Zgłoszenie właściciela: *„na Windowsie wciąż nie widzę flag"* — na trzech komputerach (dwa w pracy, jeden w domu).
+- 🔴 **Przyczyna: dwie poprzednie poprawki testowano w 390 px, czyli w układzie MOBILNYM.** Windows to zawsze
+  układ desktopowy, a jego korzeń `.dt-app` ma WŁASNY `font-family: 'Inter', sans-serif` (styles.css) — nie
+  dziedziczy po `body`, więc reguła `body{font-family:"Twemoji…",…}` nie sięgała ŻADNEJ flagi w widoku, który
+  Windows realnie pokazuje. Detekcja, font i `@font-face` działały od 19.08 — tylko nie miały gdzie zadziałać.
+  To ten sam mechanizm, który 15.08 zauważono przy `.node-text` w watki.html, tylko piętro wyżej.
+- **Lek w `wlaczFont`:** (1) stos `.dt-app` odczytany tak samo jak `body`, z fontem flag dopiętym na przód;
+  (2) kontenery flag na czterech stronach dostają font WPROST (`.news-flag .hero-flag .sub-item-flag .dt-item-flag
+  .dt-index-flag .dt-index-rflag .mob-swp-cat-flag .mob-swp-cat-rflag .zn .item-flag .flag`) — trzymają wyłącznie
+  znacznik, więc narzucenie im stosu `body` nic w typografii nie zmienia i uniezależnia je od fontu rodzica.
+- ✅ Zweryfikowane w Chromium w **1400 px** z `?flagi=on`: `.dt-app` = `"Twemoji Country Flags", Inter, sans-serif`,
+  `.dt-item-flag` / `.dt-index-rflag` / `.news-flag` z fontem flag na przodzie, font `loaded`, stosunek 🇵🇱/🇿🇿
+  wewnątrz `.dt-app` **0,50** (sklejone). Przed poprawką `.dt-app` = `Inter, sans-serif`.
+- 🔴 **REGUŁA NA PRZYSZŁOŚĆ: każdą poprawkę „na Windowsie" weryfikuj w szerokości DESKTOPOWEJ (≥1024 px).**
+  Trzy zgłoszenia tego samego objawu w trzy tygodnie — dwa razy test przeszedł tam, gdzie objawu nie ma.
+- Nowy kontener z flagą = dopisz do listy `KONTENERY` w `flagi.js`, jeśli jego rodzic ma własny `font-family`.
+- `CACHE_NAME` v157 → v158 (`flagi.js` jest w precache).
+
 ## Flagi krajów na Windowsie — font Twemoji ładowany WARUNKOWO (2026-08-15) 🔴
 Zgłoszenie właściciela: *„na Windowsie jak wchodzę to flag nie widać, tylko «PL»"*.
 **To nie był błąd w naszym kodzie.** Flaga w emoji to PARA wskaźników regionalnych
