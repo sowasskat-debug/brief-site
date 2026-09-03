@@ -1,12 +1,18 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-03 WIECZÓR (sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-03 WIECZÓR (sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; flagi na Windowsie 3. poprawka — SW v158; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
 ## 🟡 03.09: SESJA WIECZORNA — wpływ na rynek dopięty na siłę
 
+- ✅ **Bot #260 (do zweryfikowania): dzień tygodnia przekręcony względem źródła.** Zgłoszenie ze zrzutu: „W piątek
+  po południu ewakuowano…" (Berlin BER) przy źródle „w czwartek" i czwartkowej dacie. Prompt opisu dostał zakaz
+  przeliczania dni, bramka `PoprawDzienTygodnia` podmienia dzień na ten ze źródła (tylko gdy fakty podają dokładnie
+  jeden). Kafel poprawiony ręcznie na Hetznerze. Opis w `FinancialNewsBot/CLAUDE.md`.
+  ⬜ Oglądać liczniki `dzien_tygodnia_poprawiony` / `dzien_tygodnia_bez_pokrycia`; gdy drugi rośnie — dać modelowi
+  dzisiejszą datę z dniem tygodnia w prompcie.
 - ✅ **Flagi na Windowsie — TRZECIA poprawka (front, SW v158).** Zgłoszenie: „wciąż nie widzę flag", trzy komputery.
   Przyczyna: `.dt-app` (układ desktopowy) ma własny `font-family: Inter` i nie dziedziczył fontu Twemoji z `body`;
   dwie poprzednie poprawki testowano w 390 px (mobile). Teraz font dopięty do `.dt-app` i wprost do kontenerów flag.
