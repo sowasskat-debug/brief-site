@@ -1,9 +1,22 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-03 WIECZÓR (sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-04 (pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 💡 04.09: POMYSŁ — „ZAPYTAJ ARCHIWUM" (nieruszony, do wyceny)
+
+- Skąd: przegląd zakładki Financial Analysis na Hugging Face Spaces (04.09). Nic stamtąd nie nadaje się
+  do wciągnięcia (klony FinBERT po angielsku, skanery notowań, RAG nad 250 artykułami z Finnhub) — ale
+  wzorzec „zadaj pytanie, dostań odpowiedź z cytatami z artykułów" pasuje do tego, co już mamy.
+- Pomysł: pole na froncie w stylu „o co chodzi z Ormuz?", odpowiedź DeepSeeka budowana WYŁĄCZNIE z naszych
+  kafli (archiwum + `threads.json` z osią przyczyna/skutek), z linkami do kafli, z których wzięto fakty.
+  Endpoint na Hetznerze (Caddy), bez Hugging Face ani innego zewnętrznego hosta.
+- Przed kodem: wycenić koszt (jedno pytanie ≈ prompt z N kaflami; sprawdzić, czy cache-hit da się utrzymać
+  przy zmieniającym się archiwum) i ustalić, czy retrieval po rdzeniach (`PodobienstwoRdzeni`/tagi typ+mod)
+  wystarczy — ⛔ NIE dokładać embeddingów ani modeli sentymentu (zmierzone 22.08, LLM wygrał).
+- Ryzyko: publiczny endpoint = koszt na żądanie obcych; wymaga limitu per IP albo tylko dla zalogowanych.
 
 ## 🟡 03.09: SESJA WIECZORNA — wpływ na rynek dopięty na siłę
 
