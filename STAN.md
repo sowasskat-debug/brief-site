@@ -17,6 +17,11 @@ Zdjęcie stanu na **2026-09-04 (pomysł „zapytaj archiwum" zapisany; wcześnie
   przy zmieniającym się archiwum) i ustalić, czy retrieval po rdzeniach (`PodobienstwoRdzeni`/tagi typ+mod)
   wystarczy — ⛔ NIE dokładać embeddingów ani modeli sentymentu (zmierzone 22.08, LLM wygrał).
 - Ryzyko: publiczny endpoint = koszt na żądanie obcych; wymaga limitu per IP albo tylko dla zalogowanych.
+- Z głębszego skanu (1622 Space'y, 04.09) dwie notatki na wypadek POWROTU do embeddingów przy dublach:
+  (a) `dell-research-harvard/same-story` (NewsDejaVu) — embedding trenowany na „czy to TO SAMO wydarzenie",
+  nie na ogólne podobieństwo; tylko EN, ale to właściwy TYP modelu (ogólny MiniLM przegrał 22.08 pewnie dlatego);
+  (b) SemHash + Model2Vec (`minishlab/potion-multilingual`) — dedup semantyczny na CPU, tysiące tekstów/s,
+  próg jako parametr; kandydat na tanie sito PRZED DeepSeekiem, ale tylko po pomiarze na naszym archiwum.
 
 ## 🟡 03.09: SESJA WIECZORNA — wpływ na rynek dopięty na siłę
 
