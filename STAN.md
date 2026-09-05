@@ -1,9 +1,33 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-04 (pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-05 (dopiski [ZDJĘCIA]/[WYWIAD] z tytułu źródła — bot #262; czujka chmurowa WYŁĄCZONA, repo przepięte na brifup.com; Nvidia „1 bilion" poprawiona ręcznie; wcześniej 04.09: pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 🟡 05.09: SESJA — dopiski w nawiasach, czujka, Nvidia
+
+- ✅ **Bot #262 (do zweryfikowania na produkcji): dopiski redakcyjne w tytule ze źródła.** Zgłoszenie ze zrzutu:
+  „…Za nami Range Day Niewiadów 2026 [ZDJĘCIA]" (poz. 03, polityka lokalna) i „WOT pilnie potrzebuje… [WYWIAD]".
+  Przyczyna: `TytulZPolskiegoZrodla` bierze `og:title` z domeny `.pl` i nie miał kroku na nawiasy kwadratowe —
+  portale lokalne i Defence24 mają etykietę W SAMYM tytule; Bankier/PB tak nie piszą, stąd wypłynęło dopiero
+  z lokalnymi feedami. Nowa bramka `ZdejmijDopisekWNawiasie` (nawias kwadratowy do 25 znaków, okrągły
+  nietknięty, fail-safe bez trafienia), licznik `tytul_zrodla_dopisek_zdjety`. Oba kafle poprawione ręcznie
+  na Hetznerze (briefs, threads, archiwum 04.09, strony `s/`; kopie `/root/*.bak-20260905-202730`).
+  ⬜ Po tygodniu: licznik w logu; ⚠️ regex zdejmie też merytoryczny nawias typu „[S&P 500]" — w polskich
+  tytułach rzadkość, ale oglądać.
+- ✅ **Czujka chmurowa `brifup-kontrola` WYŁĄCZONA przez właściciela** — szczegóły i ścieżka wznowienia w punkcie 8
+  sekcji 02.09 niżej (`pobierz.py` z brifup.com zamiast klonu z GitHuba, zmierzone lokalnie).
+- ✅ **Kafel Nvidia „warta 1 bilion dolarów więcej niż jakakolwiek inna firma" (wieczorna 04.09) — poprawiony ręcznie.**
+  Nagłówek z posta Kalshi na X, artykuł z 36kr podawał 5,4 vs 4,7 bln (różnica 0,7), a ostatnie zdanie artykułu
+  powtarzało „ponad bilion" za nagłówkiem. Teraz: „Nvidia z wyceną 5,4 bln USD wyprzedza Apple, Google i Microsoft"
+  + „o około 0,7 bln USD" w artykule (archiwum 04.09, `threads.json` ×2, `s/1xz4ysx.html`; kopie
+  `/root/*.bak-20260905-204311`).
+  📊 **Zmierzone na 5410 pozycjach archiwum przed poprawką** (na życzenie właściciela: „zweryfikować na
+  przestrzeni wszystkich postów"): nagłówków „o X więcej/mniej niż" jest 9, przeczy artykułowi TYLKO Nvidia.
+  ⛔ **Odrzucone: bramka „arytmetyczna" (różnica z nagłówka = odjęcie dwóch liczb z artykułu).** Deterministycznie
+  nie do zrobienia (która para?), a model za 1 przypadek na 5410 kafli to koszt bez zwrotu. Bramka liczb tego nie
+  łapie STRUKTURALNIE: liczba z nagłówka JEST w artykule, bo model sam ją tam przepisał.
 
 ## 💡 04.09: POMYSŁ — „ZAPYTAJ ARCHIWUM" (nieruszony, do wyceny)
 
@@ -111,8 +135,15 @@ Zdjęcie stanu na **2026-09-04 (pomysł „zapytaj archiwum" zapisany; wcześnie
 7. **Cron live-poll wyników sportowych** (`LIVE_SCORES_ONLY`, co 1 min) dalej chodzi mimo FLUSSO_OFF —
    nie woła DeepSeeka, ale to `dotnet run` co minutę dla nieużywanego produktu. Do wyłączenia jedną
    linią w crontabie, gdy właściciel potwierdzi.
-8. **Chmurowa czujka `brifup-kontrola`** czyta repo anonimowo → 404 przez flagę konta GitHub. Do przepięcia
-   na Hetzner. (Czujka `czujnik.py` NA SERWERZE działa normalnie — to dwie różne rzeczy.)
+8. **Chmurowa czujka `brifup-kontrola` — WYŁĄCZONA przez właściciela 05.09** (stała od 02.09 z
+   `BŁĄD_INFRASTRUKTURY`: klon brief-site 404 przez flagę konta, proxy routine'u blokuje github.com).
+   Repo czujki jest już przepięte: `pobierz.py` ściąga briefs/quotes/threads/archiwum z **brifup.com**
+   (Hetzner), `kontrola.py --repo` bez zmian, `CLAUDE.md` czujki z sekcją 05.09. Zmierzone lokalnie: bieg
+   `--od 90` na danych z brifup.com działa (1 znalezisko). ⬜ Przy wznowieniu: w prompcie routine'u zamienić
+   „sklonuj brief-site" na `python3 pobierz.py --do /tmp/brief-site && python3 kontrola.py --repo
+   /tmp/brief-site --od 90 --stan stan_czujki.json`; ID routine'u nie widać przez API (lista ucina się na
+   20 najnowszych) — brać link z claude.ai/code/routines. (Czujka `czujnik.py` NA SERWERZE działa
+   normalnie — to dwie różne rzeczy.)
 9. **Dołek 26–30.08:** przepuszczalność selekcji spadła do 27–30% (opublikowane 45–74/dobę wobec
    112–148 w połowie sierpnia i 170–182 od 31.08). „Podwojony ruch do DeepSeeka od 31.08" z handoffu
    to POWRÓT do normy po dołku, nie nowe wywołania (wywołań/dobę: 18–25.08 1853–2444, dołek 1155–1947,
