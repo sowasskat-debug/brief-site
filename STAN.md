@@ -1,9 +1,27 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-05 (dopiski [ZDJĘCIA]/[WYWIAD] z tytułu źródła — bot #262; czujka chmurowa WYŁĄCZONA, repo przepięte na brifup.com; Nvidia „1 bilion" poprawiona ręcznie; wcześniej 04.09: pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-06 (nagłówek z feedu vs artykuł z zapasowego źródła — klasa do decyzji; 05.09: dopiski [ZDJĘCIA]/[WYWIAD] z tytułu źródła — bot #262; czujka chmurowa WYŁĄCZONA, repo przepięte na brifup.com; Nvidia „1 bilion" poprawiona ręcznie; wcześniej 04.09: pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 🟡 06.09: NAGŁÓWEK Z FEEDU A, ARTYKUŁ Z ZAPASOWEGO ŹRÓDŁA B — klasa do rozstrzygnięcia
+
+- Kafel „Liban ostrzega przed niebezpieczną eskalacją… uszkodzono budynek ministerstwa finansów i zniszczono pusty
+  szpital" (popołudniowa 06.09). Nagłówek z tytułu+opisu kandydata z feedu (`tytul_oryginalny` „Lebanon warns of
+  'dangerous escalation'…", `opis_zrodlowy` „Finance ministry building damaged and empty hospital destroyed…").
+  `EnrichItem` szukał faktów pod ten nagłówek: Google/Bing/PL puste, France24 znalezione ale **403 dla IP Hetznera**,
+  potem „URATOWANE przez angielski fallback" → artykuł i `source_url` z Al-Quds, które o ministerstwie NIE pisze.
+  **Fakt jest prawdziwy** (France24 06.09: „damaged offices belonging to state finance and agriculture authorities",
+  „destroyed part of the Ghandour hospital"; 4 zabitych, 20 rannych) — ale czytelnik widzi źródło, które go nie potwierdza.
+- ⚠️ To NIE jest fabrykacja i NIE łapie tego `liczby-naglowek` (brak liczb). Klasa: **konkret z nagłówka bez pokrycia
+  w WYŚWIETLANYM artykule po podmianie źródła na zapasowe.** Bramka „fakty niezwiązane z nagłówkiem" zadziałała
+  poprawnie (temat ten sam), sprawdza temat, nie pojedyncze twierdzenia.
+- ⬜ Do decyzji właściciela: (a) po fallbacku prosić model w TYM SAMYM wywołaniu opisu o listę twierdzeń nagłówka bez
+  pokrycia i zawężać nagłówek do pokrytych (wzorzec „Nagłówek przepisany" z #254) — koszt zero dodatkowych wywołań;
+  (b) zostawić, bo nagłówek pochodzi z tytułu wydawcy i jest prawdziwy. 📊 Przed decyzją policzyć w logu, ile kafli
+  na dobę idzie przez „URATOWANE przez angielski fallback".
+- ✅ Wątek na X z 9 etapów libańskich przygotowany dla właściciela (plik poza repo); źródła etapów odczytane 06.09.
 
 ## 🟡 05.09: SESJA — dopiski w nawiasach, czujka, Nvidia
 
