@@ -1,26 +1,25 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-06 (nagłówek z feedu vs artykuł z zapasowego źródła — klasa do decyzji; 05.09: dopiski [ZDJĘCIA]/[WYWIAD] z tytułu źródła — bot #262; czujka chmurowa WYŁĄCZONA, repo przepięte na brifup.com; Nvidia „1 bilion" poprawiona ręcznie; wcześniej 04.09: pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-06 (bramka pokrycia nagłówka po fallbacku — bot #263; 05.09: dopiski [ZDJĘCIA]/[WYWIAD] z tytułu źródła — bot #262; czujka chmurowa WYŁĄCZONA, repo przepięte na brifup.com; Nvidia „1 bilion" poprawiona ręcznie; wcześniej 04.09: pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
 
-## 🟡 06.09: NAGŁÓWEK Z FEEDU A, ARTYKUŁ Z ZAPASOWEGO ŹRÓDŁA B — klasa do rozstrzygnięcia
+## ✅ 06.09: NAGŁÓWEK Z FEEDU, ARTYKUŁ Z ZAPASOWEGO ŹRÓDŁA — bramka WDROŻONA (bot #263, do weryfikacji na produkcji)
 
-- Kafel „Liban ostrzega przed niebezpieczną eskalacją… uszkodzono budynek ministerstwa finansów i zniszczono pusty
-  szpital" (popołudniowa 06.09). Nagłówek z tytułu+opisu kandydata z feedu (`tytul_oryginalny` „Lebanon warns of
-  'dangerous escalation'…", `opis_zrodlowy` „Finance ministry building damaged and empty hospital destroyed…").
-  `EnrichItem` szukał faktów pod ten nagłówek: Google/Bing/PL puste, France24 znalezione ale **403 dla IP Hetznera**,
-  potem „URATOWANE przez angielski fallback" → artykuł i `source_url` z Al-Quds, które o ministerstwie NIE pisze.
-  **Fakt jest prawdziwy** (France24 06.09: „damaged offices belonging to state finance and agriculture authorities",
-  „destroyed part of the Ghandour hospital"; 4 zabitych, 20 rannych) — ale czytelnik widzi źródło, które go nie potwierdza.
-- ⚠️ To NIE jest fabrykacja i NIE łapie tego `liczby-naglowek` (brak liczb). Klasa: **konkret z nagłówka bez pokrycia
-  w WYŚWIETLANYM artykule po podmianie źródła na zapasowe.** Bramka „fakty niezwiązane z nagłówkiem" zadziałała
-  poprawnie (temat ten sam), sprawdza temat, nie pojedyncze twierdzenia.
-- ⬜ Do decyzji właściciela: (a) po fallbacku prosić model w TYM SAMYM wywołaniu opisu o listę twierdzeń nagłówka bez
-  pokrycia i zawężać nagłówek do pokrytych (wzorzec „Nagłówek przepisany" z #254) — koszt zero dodatkowych wywołań;
-  (b) zostawić, bo nagłówek pochodzi z tytułu wydawcy i jest prawdziwy. 📊 Przed decyzją policzyć w logu, ile kafli
-  na dobę idzie przez „URATOWANE przez angielski fallback".
+- Zgłoszenie: kafel „Liban ostrzega… uszkodzono budynek ministerstwa finansów" — nagłówek z feedu, artykuł i `source_url`
+  z Al-Quds (angielski fallback po 403 France24), które o ministerstwie nie pisze. **Fakt prawdziwy** (France24), ale
+  wskazane źródło go nie potwierdza. Właściciel: „to chyba poważny błąd" → „sprawdź dokładnie, jeżeli się zgadza, wprowadź".
+- 📊 Pomiar w logu: fallback ratuje **~35 kafli/dobę** (63 opublikowane 05.09) — normalna droga kandydatów z X.
+  Próbka 26 kafli z fallbacku, werdykt tym samym promptem: 20 POKRYTY, 5 PRZECZY, 1 SZERSZY — **6/6 prawdziwych**
+  (Nike „10 lat" vs „12 lat"; Isar „osiągnął orbitę" vs tryb warunkowy; Nabatieh „dwie ranne" vs „1 zabita, 3 ranne";
+  Kenia 40 tys. bez pokrycia; Grecja, Nepalka). Pominięcia w bezpieczną stronę (Trump i Musk; sam kafel libański).
+- Wdrożone: `ZrodloZapasowe` na itemie, `CzyArtykulPokrywaNaglowek` + przepisanie z artykułu w łańcuchu napraw,
+  przed bramką liczb, TYLKO dla fallbacku. Opis w `FinancialNewsBot/CLAUDE.md`.
+- ⬜ Co oglądać: liczniki `naglowek_zapasowe_*`, linie `[ZAPASOWE] Nagłówek zawężony` — czy przepisania nie gubią sedna
+  (świadomy koszt: prawdziwy fakt z tweeta, którego artykuł nie powtarza, znika z nagłówka).
+- ⚠️ Pułapka odkryta przy okazji: `LiczbyBezPokryciaWArtykule` nie widzi **słownych liczebników** („dwie osoby") ani
+  nie złapało „10 lat" vs „12 lat" (Nike). Nowa bramka to przykrywa tylko dla kafli z fallbacku.
 - ✅ Wątek na X z 9 etapów libańskich przygotowany dla właściciela (plik poza repo); źródła etapów odczytane 06.09.
 
 ## 🟡 05.09: SESJA — dopiski w nawiasach, czujka, Nvidia
