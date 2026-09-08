@@ -300,8 +300,26 @@ Deno.serve(async (req) => {
   }
 
   // ── DeepSeek ──────────────────────────────────────────────────────────────
+  // 🔴 MODEL `pro`, NIE `flash` (2026-09-08). Zgłoszenie właściciela: „chodzi mi też o jakość samą
+  // w sobie tych gotowców". 📊 Zmierzone na 16 realnych kaflach z produkcji, ten sam prompt, oba modele:
+  //   flash  6/16 postów bez wady   ·   pro 14/16
+  // Wady flasha nie były stylistyczne, tylko kompromitujące na profilu marki: LITERÓWKI („kancelii”
+  // zamiast kancelarii, „rakiedy” zamiast rakiety, „tnije” zamiast tnie), POTOCZNOŚĆ („NEC zarzuciła
+  // robotę”, „od startu konfliktu”), PYTANIA RETORYCZNE mimo zakazu w prompcie („Powód?” 2 razy),
+  // PIERWSZA OSOBA („naszego położenia geopolitycznego”) i potrójne powtórzenie tej samej wiadomości
+  // w jednym poście. `pro` nie popełnił żadnego z tych błędów i sam trafia w budżet znaków.
+  // 🔴 PROMPT ZOSTAJE BEZ ZMIAN — I TO JEST WYNIK POMIARU, nie zaniechanie. Napisana i zmierzona
+  // została też przebudowa promptu na wzorce („KSZTAŁT POSTA” + dwa przykłady + lista realnych błędów):
+  // na `flash` dała 7/16 (czyli nic), na `pro` 15/16 wobec 15/16 dla promptu obecnego. Skoro na właściwym
+  // modelu nie zmienia nic, nie wchodzi — ⛔ NIE ODGRZEWAĆ przebudowy promptu bez nowego pomiaru.
+  // 💰 Koszt: `pro` jest dokładnie 3× droższy od `flasha` (wejście bez cache 1,32 vs 0,44 $/M,
+  // wyjście 3,96 vs 1,32 $/M w szczycie). Zmierzone zużycie na wywołanie: 534 tokeny wejścia + 193 wyjścia
+  // = ~0,0015 USD. Nawet przy 20 kliknięciach dziennie to ~0,9 USD/mies. — funkcja chodzi NA ŻĄDANIE
+  // (właściciel wrzuca 3-4 posty dziennie), więc to jedyne miejsce w produkcie, gdzie mocniejszy model
+  // jest tani. ⚠️ To NIE jest zgoda na `pro` w bocie: tam idzie ~2500 wywołań dziennie i ta sama zmiana
+  // potroiłaby rachunek całego produktu.
   const zapytanie = {
-    model: 'deepseek-v4-flash',
+    model: 'deepseek-v4-pro',
     thinking: { type: 'disabled' },   // proste zadanie — reasoning tylko zjadłby max_tokens
     max_tokens: 200,
     messages: [
