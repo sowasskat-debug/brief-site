@@ -268,6 +268,17 @@ Deno.serve(async (req) => {
     ? Math.max(120, maxZnakow - CTA_BIO.length - 2)
     : maxZnakow;
 
+  // 🔴 CEL DŁUGOŚCI, NIE SAM SUFIT (2026-09-08). Zgłoszenie właściciela: „czasami muszę z 8 razy
+  // odświeżyć i wygenerować nowe, żeby to miało sens". 📊 Zmierzone na 36 generacjach (12 realnych kafli
+  // z produkcji × 3 próby): **47% przekraczało 270 znaków**, skrajnie 445. Model nie liczy znaków —
+  // instrukcja „TWARDY LIMIT" go nie pilnuje. Każde przekroczenie szło do `ostatniKoniecZdania`, a ono
+  // ucina OSTATNIE zdanie — czyli dokładnie to, które reguła (5) każe pisać: przyczynę. Zmierzone
+  // amputacje: mieszkania 280→155 zn. (zniknęło „eksperci ostrzegają, że inflacja i podwyżki stóp mogą
+  // zdusić popyt"), NEC 335→215 („Powód to wysokie koszty"), paliwa 342→243 („To efekt konfliktu z Iranem").
+  // Zostawała lista liczb bez puenty — dokładnie to, co właściciel nazwał „nie ma sensu".
+  // Model trafia w PRZEDZIAŁ lepiej niż w sufit, więc dostaje cel ~72% budżetu z widełkami.
+  const celZnakow = Math.max(120, Math.round(budzetTresci * 0.72));
+
   const pozycje = Array.isArray(body.pozycje)
     ? body.pozycje.map((p) => ({ text: String(p?.text ?? '').trim(), article: String(p?.article ?? '').trim() }))
                   .filter((p) => p.text.length > 0).slice(0, 6)
@@ -319,7 +330,9 @@ Deno.serve(async (req) => {
           'wynik spółki) — bez niej post jest listą liczb i czytelnik nie wie, dlaczego to się dzieje. ' +
           'Najwyżej CZTERY liczby w poście. Gdy materiał podaje kilka etapów tej samej rury ' +
           '(np. kwota autoryzowana, zatwierdzona i wypłacona), podaj SKRAJNE i pomiń środkowe. ' +
-          `TWARDY LIMIT: ${budzetTresci} znaków łącznie. ` +
+          `CEL DŁUGOŚCI: ${celZnakow}-${budzetTresci} znaków łącznie, TWARDY LIMIT ${budzetTresci}. ` +
+          'Post o hooku i dwóch zdaniach ma zwykle 200-250 znaków. Jeśli Twój wychodzi dłuższy, masz w nim ' +
+          'ZA DUŻO FAKTÓW, a nie za długie zdania — wtedy usuń cały fakt, nigdy zdanie z przyczyną. ' +
           'ZAKAZANE: zmyślanie jakichkolwiek liczb — każda liczba w poście MUSI dosłownie występować ' +
           'w materiale źródłowym. Jeśli materiał nie podaje liczb, napisz post bez liczb. ' +
           'Zero hashtagów, zero emoji, zero linków, zero clickbaitu, zero pytań retorycznych. ' +
@@ -336,10 +349,11 @@ Deno.serve(async (req) => {
           '(3) Zdania łącz KROPKĄ, nie myślnikiem ani średnikiem. Myślnik najwyżej raz w poście. ' +
           '(4) Strona czynna: ktoś coś robi ("prokuratura zarzuca", "Sikorski napisał do Muska"), nie "zostało zrobione", nie "straty szacowane są", nie "sygnał ożywienia rozmów". ' +
           '(5) Zdanie po hooku ma mówić, CO Z TEGO WYNIKA albo DLACZEGO, nie dokładać kolejnego faktu. Fakty bez łącznika brzmią jak protokół. ' +
+          '(5a) To zdanie z przyczyną jest NAJWAŻNIEJSZE w poście i ZAWSZE musi się zmieścić. Gdy brakuje miejsca, wyrzuć dodatkowy fakt albo liczbę, nigdy przyczynę. ' +
           '(6) Zero wypełniaczy: "łącznie", "w ramach", "w związku z", "odpowiadającego za", "ok." przed liczbą (jeśli już, to raz). ' +
           '(7) Bez formułek "warto zauważyć", "co ciekawe", "to pokazuje", bez "kluczowy", "znaczący", "istotny", bez przymiotników-emocji i bez opisywania nastrojów. ' +
           '(8) Gdy materiał NIE MA liczb, post jest po prostu KRÓTSZY — nie wypełniaj miejsca frazesem. Jeśli podano WPŁYW NA RYNEK, drugie zdanie może go przepisać wprost (co drożeje, co tanieje); jeśli nie podano, post kończy się po fakcie. ' +
-          'TWARDY LIMIT ZNAKÓW obowiązuje bez wyjątku — jeśli nie mieścisz się, wytnij zdanie, nie skracaj hooka. ' +
+          'TWARDY LIMIT ZNAKÓW obowiązuje bez wyjątku — jeśli nie mieścisz się, wytnij NADMIAROWY FAKT, nie hook i nie zdanie z przyczyną. ' +
           'Nie dopisuj komentarza od siebie. Zwróć WYŁĄCZNIE treść posta.',
       },
       {
@@ -355,28 +369,73 @@ Deno.serve(async (req) => {
     ],
   };
 
-  let surowy = '';
-  try {
-    const odp = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${DEEPSEEK_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(zapytanie),
-    });
-    if (!odp.ok) {
-      const tresc = await odp.text();
-      return json({ post: null, powod: `DeepSeek zwrócił ${odp.status}`, szczegoly: tresc.slice(0, 300) });
+  // Jedno miejsce wywołania modelu — używa go zarówno pierwsze podejście, jak i poprawka niżej.
+  type Wiadomosc = { role: string; content: string };
+  async function wywolajModel(messages: Wiadomosc[]): Promise<{ tresc?: string; blad?: Response }> {
+    try {
+      const odp = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${DEEPSEEK_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...zapytanie, messages }),
+      });
+      if (!odp.ok) {
+        const tresc = await odp.text();
+        return { blad: json({ post: null, powod: `DeepSeek zwrócił ${odp.status}`, szczegoly: tresc.slice(0, 300) }) };
+      }
+      const dane = await odp.json();
+      return { tresc: dane?.choices?.[0]?.message?.content ?? '' };
+    } catch (e) {
+      return { blad: json({ post: null, powod: `Błąd wywołania DeepSeek: ${(e as Error).message}` }) };
     }
-    const dane = await odp.json();
-    surowy = dane?.choices?.[0]?.message?.content ?? '';
-  } catch (e) {
-    return json({ post: null, powod: `Błąd wywołania DeepSeek: ${(e as Error).message}` });
   }
 
-  const post = posprzataj(surowy);
+  const pierwsze = await wywolajModel(zapytanie.messages);
+  if (pierwsze.blad) return pierwsze.blad;
+
+  let post = posprzataj(pierwsze.tresc ?? '');
   if (!post) return json({ post: null, powod: 'Model zwrócił pustą odpowiedź' });
+
+  // ── JEDNA POPRAWKA ZAMIAST AMPUTACJI (2026-09-08) ───────────────────────────
+  // Do 08.09 przekroczony limit szedł prosto pod nóż `ostatniKoniecZdania`, a zmyślona liczba
+  // kończyła się `post: null` i gołym nagłówkiem w panelu. Oba wyniki wyglądały tak samo z punktu
+  // widzenia właściciela: „nie ma sensu, generuję jeszcze raz". 📊 Zmierzone: 47% generacji za długich
+  // (nóż ucinał zdanie z przyczyną), 11% z liczbą spoza materiału.
+  // Zamiast tego mówimy modelowi WPROST, co jest nie tak, i dajemy jedną szansę na poprawkę —
+  // z jego własnym szkicem w kontekście, więc nie pisze od zera, tylko skraca albo usuwa liczbę.
+  // ⚠️ DOKŁADNIE JEDNA próba, nie pętla: druga porażka i tak trafia w te same bramki co dotąd
+  // (przycięcie / odrzucenie), a koszt ma zostać przewidywalny. Funkcja chodzi na żądanie
+  // (3-4 posty dziennie), więc dodatkowe wywołanie w ~połowie przypadków to grosze.
+  // ⚠️ Poprawka NIE ROZLUŹNIA żadnej bramki — wynik przechodzi przez te same sprawdzenia niżej.
+  //   Gdy poprawiona wersja jest gorsza (dalej za długa albo nadal z lewą liczbą), zostaje ta,
+  //   która jest bliżej ideału: krótsza dla przekroczenia, pokryta dla liczb.
+  const braki = pokrycieOk(post, material);
+  const zaDlugi = post.length > budzetTresci;
+  if (zaDlugi || !braki.ok) {
+    const uwaga = !braki.ok
+      ? `Twój post zawiera liczby, których NIE MA w materiale źródłowym: ${braki.brakuje.join(', ')}. ` +
+        'Napisz go jeszcze raz BEZ tych liczb — albo zastąp je liczbą, która w materiale występuje, albo opisz rzecz bez liczby. ' +
+        'Nie zmyślaj żadnych nowych liczb.'
+      : `Twój post ma ${post.length} znaków, a limit to ${budzetTresci}. Skróć go do ${celZnakow}-${budzetTresci} znaków. ` +
+        'USUŃ NADMIAROWY FAKT albo liczbę. Zostaw hook i zostaw zdanie mówiące DLACZEGO/CO Z TEGO WYNIKA — ' +
+        'to zdanie jest najważniejsze i nie wolno go wyciąć ani skrócić do ogólnika.';
+    const poprawka = await wywolajModel([
+      ...zapytanie.messages,
+      { role: 'assistant', content: post },
+      { role: 'user', content: uwaga },
+    ]);
+    // Błąd sieci przy poprawce nie może zabrać gotowca, który już mamy — lecimy dalej z pierwszą wersją.
+    const kandydat = poprawka.blad ? '' : posprzataj(poprawka.tresc ?? '');
+    if (kandydat) {
+      const brakiK = pokrycieOk(kandydat, material);
+      const lepszy = !braki.ok
+        ? brakiK.ok                                              // liczby: bierzemy tylko wersję z pełnym pokryciem
+        : (brakiK.ok && kandydat.length < post.length);          // długość: krótsza i nadal pokryta
+      if (lepszy) post = kandydat;
+    }
+  }
 
   // ── Bramki ────────────────────────────────────────────────────────────────
   const { ok, brakuje } = pokrycieOk(post, material);

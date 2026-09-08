@@ -417,6 +417,11 @@ input[type=password], input[type=text], input[type=email] {
     </label>
     <div class="x-modal-akcje">
       <button class="btn" id="xOtworz" onclick="wyslijNaX()">Otwórz X z tą treścią</button>
+      <!-- Przegenerowanie tego samego newsa (2026-09-08, życzenie właściciela: „fajnie by było, jakby
+           w końcu w panelu była funkcja wygeneruj nowego gotowca"). Do tej pory jedyną drogą było
+           zamknięcie i otwarcie okna albo przełączenie dopisku — czyli obejście, nie funkcja.
+           Model ma niezerową temperaturę, więc kolejne wywołanie daje INNE ujęcie tego samego newsa. -->
+      <button class="btn" id="xNowy" onclick="xPrzegeneruj()">Wygeneruj nowego</button>
       <button class="btn" id="xKarta" onclick="pobierzKarte('')">Pobierz kartę</button>
       <button class="btn" id="xKartaKlaster" onclick="pobierzKarte('k')" style="display:none">Pobierz kartę klastra</button>
       <button class="btn" id="xKartaWatek" onclick="pobierzKarte('w')" style="display:none">Pobierz kartę wątku</button>
@@ -871,6 +876,23 @@ async function xGenerujGotowiec(item, pod) {
   } finally {
     otworz.disabled = false;
     xPolicz();
+  }
+}
+
+// Nowe ujęcie TEGO SAMEGO newsa, na życzenie (2026-09-08). Bez zmiany wariantu i bez zamykania okna —
+// link, karty i stan wątku zostają, przegenerowuje się wyłącznie treść posta.
+// ⚠️ Ręczne kliknięcie = jedno wywołanie modelu. To jest cena za wybór z kilku ujęć i właściciel
+// płaci ją świadomie; automat nie ma prawa wołać tego w pętli.
+async function xPrzegeneruj() {
+  if (!xBiezacy || !xBiezacy.item) return;
+  const item = xBiezacy.item;
+  const pod = Array.isArray(item.subItems) ? item.subItems.filter((x) => x && x.text) : [];
+  const btn = document.getElementById('xNowy');
+  if (btn) btn.disabled = true;
+  try {
+    await xGenerujGotowiec(item, pod);
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
