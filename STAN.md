@@ -1,9 +1,102 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-06 (bramka pokrycia nagłówka po fallbacku — bot #263; 05.09: dopiski [ZDJĘCIA]/[WYWIAD] z tytułu źródła — bot #262; czujka chmurowa WYŁĄCZONA, repo przepięte na brifup.com; Nvidia „1 bilion" poprawiona ręcznie; wcześniej 04.09: pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-09 (limit dawki 40→60 i wypychanie po ważności — bot #265; National Geographic jako źródło ciekawostek z własnym promptem — bot #267; krótka historia dla takich źródeł — bot #268; wyjątek „incydent bez szkód a głowa państwa" — bot #269; bramka pytania dwie łatki — bot #264 i #266; gotowiec X na modelu pro + przycisk „Wygeneruj nowego" — front #227 i #228; wcześniej 06.09: bramka pokrycia nagłówka po fallbacku — bot #263; 05.09: dopiski [ZDJĘCIA]/[WYWIAD] z tytułu źródła — bot #262; czujka chmurowa WYŁĄCZONA, repo przepięte na brifup.com; Nvidia „1 bilion" poprawiona ręcznie; wcześniej 04.09: pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 🟡 09.09: SESJA — limit dawki, nowe źródło ciekawostek, wyjątek na głowę państwa
+
+### 🔴 NAJWAŻNIEJSZE: dawka KASOWAŁA newsy po cichu (bot #265)
+- Zgłoszenie: „czy był jakiś news o tym, że Trump odbył rozmowę telefoniczną?" — 08.09 Trump rozmawiał godzinę
+  z Putinem, kafel POWSTAŁ o 17:06 i **zniknął ze strony**. Przyczyna: `OgraniczRozmiarDawki`.
+- 🔴 **Skąd się wzięło 40: NIKT tego nie wybrał.** Domyślny parametr dopisany 3.07 w commicie f6cb7d8 o klastrach,
+  bez pomiaru i bez notatki. Dawki miały wtedy ~30 pozycji, więc 40 było ZAPASEM; dziś dobijają do 49.
+- 📊 Zmierzone na dawce wieczornej 08.09: przybita do 40 klastrów przez **18 kolejnych biegów** (9 godzin), z 13
+  zniknięć **6 realnych** (rozmowa Trump–Putin, przejęcie bezzałogowego okrętu USA w Ormuz, groźba Iranu o wojnie
+  gospodarczej, sankcje na osadników, odmowa wjazdu Corbynowi, stanowisko UE ws. Moskwy). Dawka potrzebowała 46 miejsc.
+- Wdrożone: limit **60**, wypychanie po WAŻNOŚCI (`WagaWaznosci` = reach + klaster×6 + wpływ×12, próg 20) zamiast
+  po samej świeżości, plus log `[DAWKA] Wypchnięto…` i liczniki `dawka_wypchnieto` / `dawka_wypchnieto_wazne`.
+- 🔴 **Wypychanie było CAŁKOWICIE CICHE** — ani linii w logu, ani licznika. Dlatego klasa przeżyła od lipca i wyszła
+  dopiero z pytania właściciela o konkretny news. To jest lekcja szersza niż ten limit.
+- ⬜ **Próg 20 jest PROWIZORYCZNY** (dobrany z rozkładu `reach` z 08.09). Po tygodniu danych z licznika zweryfikować.
+- ⚠️ Znany koszt: poniżej progu kolejność dalej jest po świeżości, więc news makro o wadze 6 może przegrać z nowszą
+  pozycją o wadze 0. Przy limicie 60 praktycznie nie zachodzi.
+- ⚠️ Strata była TRWAŁA: archiwum zapisuje dawkę taką, jaka jest przy rotacji. Kafel o rozmowie Trump–Putin dodany
+  ręcznie na Hetznerze (kopia `/root/briefs.json.bak-20260909-134422`).
+
+### ✅ Nowe źródło: National Geographic — ciekawostki (bot #267, #268)
+- Życzenie właściciela po przeglądzie listy konkurencji: „taka ciekawostka na rozluźnienie pomiędzy tymi naszymi
+  wiadomościami". 📊 Audyt pokrycia ich listy z 09.09: **mamy 24 z 32**.
+- 🔴 **Przyczyna braków była PODWÓJNA.** (1) Bot odpytywał tylko DWA polskie kanały: Bankier i Wykop — Onet, TVN24
+  i rp.pl pojawiały się w kaflach wyłącznie dlatego, że enrich trafiał na nie przez wyszukiwarkę. (2) Sam feed by
+  nie wystarczył: wspólny prompt selekcji na 25 pozycjach NatGeo przepuścił **ZERO**, dwa razy z rzędu (REGUŁA 3
+  wycina „tabloid" i „lifestyle/zdrowie/podróże/kulinaria", a NatGeo to prawie w całości te kategorie).
+- 📊 Test feedów **Z SERWERA** (rp.pl i TVN24 dają nam 403): działa 8 z 10 — Polsat News 50 pozycji, Interia 50,
+  RMF24 50, Gazeta.pl 30, NatGeo 25, Business Insider 20, WP 15, money.pl 15.
+- 📊 Dobór mechanizmu na korpusie **167 nagłówków**: `extraRules` doklejone do wspólnego promptu → 2 pozycje (1%),
+  wynik skacze 0/2/5; **prompt DEDYKOWANY → 10 pozycji (6%)** i trafienia w zamierzone klasy.
+- Wdrożone: parametr `wlasnyPrompt` (zastępuje REGUŁY 2 i 3) + `maxNaBieg` egzekwowany W KODZIE, bo model łamał
+  limit z promptu (przy „najwyżej 2" zwrócił 5). Reszta ścieżki bez zmian — źródło nie omija żadnej bramki.
+- 📊 Koszt: zmierzone 2528 tokenów wejścia na wywołanie, z czego ~2400 to sekcja historii. Nowa `SekcjaHistoriiKrotka`
+  (ostatnia doba, 25 tytułów, bez listy ocenionych) → **632 tokeny, czyli −74%**. Decyzja właściciela: „od teraz masz
+  łapać na bieżąco, te z przeszłości zostaw".
+- ⬜ Oglądać przez kilka dni: spodziewane 1-2 kafle/dobę; czy nie wchodzi coś spoza pięciu klas.
+
+### ✅ Selekcja: wyjątek „incydent bez szkód a głowa państwa" (bot #269)
+- Zgłoszenie: „Samolot Zełenskiego niemal trafiony przez drona" nie wszedł. **Lejek w Supabase dał odpowiedź wprost**:
+  feed Wykop, 09.09 20:03, powód `incydent bez skutku`. Nie zawiodły źródła ani bramki — odrzuciła sama selekcja.
+- 📊 4 sparowane przebiegi na 30 pozycjach z lejka: cel **4/4 wobec 1/4**, łączna przepuszczalność **nie rośnie**
+  (7,0 wobec 9,0). Granica trzyma stare odrzucenia (tankowiec na kotwicowisku, dron w Irlandii, wieża Eiffla).
+- ⚠️ **Selekcja jest MOCNO NIEDETERMINISTYCZNA**: stary prompt przepuszczał od 5 do 15 z tych samych 30 w kolejnych
+  przebiegach. Pojedynczy przebieg NIE JEST pomiarem — liczy się częstość z powtórzeń. Zapisane też w kodzie.
+
+### ✅ Bramka clickbaitowego pytania — dwie łatki (bot #264, #266)
+- Dwa zgłoszenia tej samej klasy w dwa dni: „Jasny sygnał z rządu: Społeczeństwo tego nie chce" (08.09) i
+  „Już 15% rynku, a firmy chcą więcej" (09.09). W obu bramka ucięła pytanie, które było JEDYNYM miejscem nazywającym
+  temat, a wydmuszka zastąpiła **własny, poprawny nagłówek bota**.
+- #264: zaimki wskazujące (`tego`, `tym`, `tyle`…) sprawdzane BEZ furtki na atrybucję i nazwę własną + granica zdania
+  pomijająca kropkę w skrócie. 📊 75 tytułów: cięć 59→57, trzy zmiany, zero fałszywek.
+- #266: resztka zaczynająca się od partykuły z liczbą („Już 15%", „Aż 40 proc."). 📊 72 tytuły: 54→53, jedna zmiana.
+- ⛔ ODRZUCONE pomiarem: reguła „resztka kończąca się skrótem" — 2 fałszywki na 3 trafienia („…spadła o 50 proc."
+  to poprawny nagłówek). Naprawione u źródła, w granicy zdania.
+- 💡 **Do rozważenia (3. raz ten sam schemat)**: zamiast łatać kolejne kształty resztek — przy ODMOWIE cięcia
+  zostawiać nasz własny nagłówek zamiast brać tytuł wydawcy. Oszczędza wywołanie modelu i nie osierociłoby znacznika
+  (08.09 zgubiło 🚗 przy chińskich autach). Wymaga pomiaru na wszystkich odmowach.
+
+### ✅ Gotowiec X — jakość (front #227, #228)
+- Zgłoszenie: „czasami muszę z 8 razy odświeżyć, żeby to miało sens" + „fajnie by było, jakby w panelu była funkcja
+  wygeneruj nowego gotowca".
+- 📊 36 generacji: **47% przekraczało 270 znaków**, a przycinanie ucinało OSTATNIE zdanie, czyli to z przyczyną
+  (mieszkania 280→155, NEC 335→215, paliwa 342→243). Wdrożone: cel długości zamiast sufitu + JEDNA poprawka od modelu
+  zamiast amputacji → **22/24 mieszczą się w całości**.
+- 📊 Jakość: `flash` 6/16 postów bez wady, **`pro` 14/16**. Wady flasha: literówki („kancelii", „rakiedy", „tnije"),
+  potoczność („NEC zarzuciła robotę"), pytania retoryczne mimo zakazu, pierwsza osoba („naszego położenia").
+  Model zmieniony na `deepseek-v4-pro` (3× droższy, ~0,9 USD/mies. przy 20 kliknięciach — funkcja chodzi NA ŻĄDANIE).
+- ⛔ ODRZUCONE pomiarem: przebudowa promptu gotowca na wzorce — na `pro` daje 15/16 wobec 15/16 dla obecnego, czyli
+  NIC. **Nie odgrzewać bez nowego pomiaru.** Decyduje model, nie prompt.
+- Przycisk „Wygeneruj nowego" w oknie Post na X (SW v159).
+
+### 🟡 09.09: CO ZOSTAŁO OTWARTE
+1. ⬜ **Weryfikacja na produkcji wszystkich dzisiejszych zmian** — liczniki `dawka_wypchnieto`, `dawka_wypchnieto_wazne`,
+   `selekcja_limit_zrodla_przyciety`, linie `[DAWKA] Wypchnięto…`, pierwsze kafle z National Geographic.
+2. ⬜ **Próg ochrony 20 do zweryfikowania** po tygodniu danych (patrz sekcja o limicie dawki).
+3. 🔴 **LUKA ŹRÓDEŁ: polskie spółki giełdowe.** W audycie konkurencji zabrakło JSW (~1 mld zł EBITDA) i listu
+   intencyjnego KGHM–BHP World. Obecne polskie feedy (Bankier, Wykop) tego nie niosą. Kandydat: ESPI/GPW albo dział
+   giełdowy Bankiera. To specjalność konta, z którym się porównujemy.
+4. 🔴 **JSW zginęło w lejku i to jest osobna klasa**: „JSW planuje pożyczkę 1 mld zł" nie dostało opisu i poszło do
+   poczekalni, a angielska wersja „JSW seeks PLN 1bn state loan" została zdjęta jako **powtórka pozycji, która sama
+   nigdy nie została opublikowana**. Do zbadania: jak często dedup zderza się z niepublikowaną pozycją z poczekalni.
+5. ⬜ **Renoir**: mieliśmy miesięczną odgrzewkę („Włoska policja odzyskała obrazy…", 14.08), która poległa na bramce
+   liczb (9 mln zbiorczo vs 6+3+0,02 w artykule), a świeżej kradzieży z Nicei (08.09) nie mieliśmy wcale.
+   Po dodaniu NatGeo ta klasa powinna wchodzić — sprawdzić.
+6. 💡 **Obserwacja kosztowa**: `WSPOLNE_ODRZUCENIA` waży ~68 tys. znaków, czyli **~21 tys. tokenów wejścia na KAŻDE
+   wywołanie selekcji**. To jest realny hog, nie nowe źródła. Trzyma to w ryzach zamrożenie historii (stabilny prefiks
+   = cache-hit). Przed jakąkolwiek zmianą tam — najpierw pomiar wpływu na cache.
+7. ⚠️ **Pułapka narzędziowa (moja)**: skrypt wyciągający prompt z `Runner.cs` ucinał stałą na średniku WEWNĄTRZ tekstu
+   reguły i wciągał komentarze z kodu — przez co do promptu trafiała flaga 🇹🇼 i DeepSeek zwracał 400 „Content Exists
+   Risk". Przy kolejnym takim pomiarze: koniec stałej to `";` na końcu linii, komentarze filtrować też w stałych.
+8. Punkty z 06.09 i wcześniejsze niżej — bez zmian.
 
 ## ✅ 06.09: NAGŁÓWEK Z FEEDU, ARTYKUŁ Z ZAPASOWEGO ŹRÓDŁA — bramka WDROŻONA (bot #263, do weryfikacji na produkcji)
 

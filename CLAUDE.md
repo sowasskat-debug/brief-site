@@ -9,6 +9,28 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 (repo `financialnewsbot`) i zapisuje jako `briefs.json`.
 
 
+## 🔴 Gotowiec X — jakość zależy od MODELU, nie od promptu (2026-09-08)
+Zgłoszenie: „czasami muszę z 8 razy odświeżyć i wygenerować nowe, żeby to miało sens" + „chodzi mi też o jakość samą
+w sobie tych gotowców".
+- 📊 **Mechanika**: na 36 generacjach **47% przekraczało 270 znaków**, a przycinanie (`ostatniKoniecZdania`) ucina
+  OSTATNIE zdanie — czyli dokładnie to, które reguła (5) każe pisać: przyczynę. Zmierzone amputacje: mieszkania
+  280→155 zn., NEC 335→215, paliwa 342→243. Post zostawał listą liczb bez puenty.
+  Naprawione: cel długości (widełki ~72–100% budżetu) zamiast samego sufitu + **jedna poprawka od modelu zamiast
+  amputacji** (dostaje swój szkic i konkretną uwagę; dokładnie JEDNA próba, bramki bez zmian) → **22/24 w limicie**.
+- 📊 **Jakość**: `deepseek-v4-flash` **6/16** postów bez wady, `deepseek-v4-pro` **14/16**. Wady flasha nie były
+  kwestią gustu: literówki („szef kancelii", „prosi USA o rakiedy", „firma tnije"), potoczność („NEC zarzuciła
+  robotę"), pytania retoryczne mimo zakazu w prompcie („Powód?" 2×/16), pierwsza osoba („naszego położenia
+  geopolitycznego"), potrójna powtórka tej samej wiadomości w jednym poście.
+- ⛔ **ODRZUCONE POMIAREM — nie odgrzewać**: przebudowa promptu na wzorce (KSZTAŁT POSTA + dwa przykłady + lista
+  realnych błędów). Na `flash` dała 7/16 (czyli nic), na `pro` **15/16 wobec 15/16** dla promptu obecnego.
+  Na właściwym modelu prompt nie zmienia nic — **decyduje model**.
+- 💰 `pro` jest dokładnie 3× droższy (wejście bez cache 1,32 vs 0,44 $/M, wyjście 3,96 vs 1,32 $/M w szczycie).
+  Zmierzone 534 tokeny wejścia + 193 wyjścia na wywołanie = ~0,0015 USD, czyli ~0,9 USD/mies. przy 20 kliknięciach
+  dziennie. To JEDYNE miejsce w produkcie, gdzie mocniejszy model jest tani — funkcja chodzi NA ŻĄDANIE.
+  ⚠️ To NIE jest zgoda na `pro` w bocie: tam idzie ~2500 wywołań dziennie.
+- Panel: przycisk **„Wygeneruj nowego"** (`xPrzegeneruj`) — nowe ujęcie tego samego newsa bez zamykania okna;
+  link, karty i stan wątku zostają. Wcześniej jedyną drogą było zamknięcie okna albo przełączanie dopisku.
+
 ## Hosting: Caddy na Hetznerze, GitHub tylko kopią zapasową (2026-08-28/30) 🔴
 Po shadow-fladze konta (26.08) produkcja zjechała z GitHub Pages NA STAŁE. To zmienia trzy
 rzeczy, które dotąd ten plik zakładał milcząco:
