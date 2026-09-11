@@ -31,6 +31,39 @@ w sobie tych gotowców".
 - Panel: przycisk **„Wygeneruj nowego"** (`xPrzegeneruj`) — nowe ujęcie tego samego newsa bez zamykania okna;
   link, karty i stan wątku zostają. Wcześniej jedyną drogą było zamknięcie okna albo przełączanie dopisku.
 
+## Mapy konfliktów — `mapa.html` + `mapy/<id>.json` (2026-09-11) 🗺
+Scrollytelling nad mapą: przewijasz karty, mapa dolatuje do miejsca, wcześniejsze punkty zostają z numerem.
+Silnik OGÓLNY, treść w JSON. Dziś: `huti` (17 etapów) i `iran` (28 etapów, 6 rozdziałów).
+- **Kształt JSON:** `places{id:{name,lat,lng,why}}`, `steps[{date, place, kind, title, text, also[], znane_od?,
+  rozdzial?, link?, link_tekst?}]`, `lines[{from,to,fromStep,label}]`, `rozdzialy[{id,tytul,opis}]`,
+  `podsumowanie`, `updated`. `kind` ∈ tło/atak/zdobycie/dyplomacja/rynek.
+- 🔴 **`date` = data ZDARZENIA, nie publikacji.** Gdy news wyszedł później — `znane_od` (karta: „10.09 · wiadomo od 11.09”).
+  Właściciel: „kluczowe, żeby daty się zgadzały”.
+- **Podkład:** Esri Gray light/dark po `data-theme` (CARTO wymaga klucza od 2026). Markery czerwone, w ciemnym
+  motywie białe z czerwonym pierścieniem. ⚠️ Nakładki nad mapą (`.intro`, `.hint`, `.chapters`) muszą mieć
+  `z-index` > 1000 — pany Leafleta (markery 600, tooltipy 650) prześwitują przez niższe.
+- **Aktywny krok = karta najbliżej środka pasa POD mapą** (scroll + rAF, nie IntersectionObserver — ten przy
+  szybkim scrollu przychodzi w kolejności DOM i mapa zostaje w tyle; na telefonie środek okna wypada w mapie).
+- **Rozdziały:** nagłówek = syntetyczny krok (kadr `flyToBounds` na miejsca rozdziału, jego markery jako obrys),
+  pasek rozdziałów nad mapą (on/done), klik przewija. Krok końcowy „cała mapa” + CTA na główną — syntetyczne,
+  każda mapa je dostaje.
+- **Wejście z artykułu `?od=YYYY-MM-DD`:** start na ostatnim etapie ≤ daty, bez nakładki, pastylka „Od początku”.
+  Przycisk pod postem (`mapaLinkHtml`, 3 szablony obok `watekHtml`) dokłada datę z `published_at||added_at`.
+  Mapowanie wątek→mapa: `mapy/index.json` (`watki`, `mapy{kroki,title}`); `/watki` dociąga je w `Promise.all`
+  z threads.json (osobny fetch = wyścig z renderem, link by znikał).
+- **Karta OG:** `mapy/huti-og.png` z `scratchpad/mapa-preview/og-mapa.html` + Chrome headless
+  (`--headless=new --window-size=1200,630 --screenshot`). ⚠️ tagi og statyczne w `mapa.html` → jedna karta dla
+  wszystkich map; osobna mapa pod reklamę wymaga własnego stuba.
+- **`historia.html`** — pomost pod reklamy na X (landing `mapa.html` odrzucony jako „Weapons and Accessories”
+  przez słownictwo relacji). Noindex, bez linków z nawigacji. Nie dodawać tam słów: wojna, atak, rakiety, drony.
+- ⛔ **Bez automatu w bocie** (decyzja właściciela): aktualizacja na hasło „sprawdź mapę” (Claude, procedura
+  w pamięci). Bot poradziłby sobie tylko z propozycjami do zatwierdzania; tło/rozdziały/słownik są redakcyjne.
+- **Licznik wejść na podstronach: `licznik.js`** (kopia 1:1 beacona z `index.html`, który zostaje inline — bez
+  podwójnego liczenia). Wpięty w mapa/watki/historia/fala, w precache SW. Zmieniając logikę — w OBU miejscach.
+- Podgląd: `~/.claude/launch.json` → `brief-site-mapa` (port 8766, katalog `scratchpad/mapa-preview`, bo proces
+  podglądu nie widzi `~/Documents`). Deploy: commit+push z Maca, potem `ssh root@hetzner 'cd /var/www/brifup &&
+  git pull --rebase'`; ⚠️ pliki wrzucone wcześniej przez scp są nieśledzone i blokują pull — usuń je przed.
+
 ## Hosting: Caddy na Hetznerze, GitHub tylko kopią zapasową (2026-08-28/30) 🔴
 Po shadow-fladze konta (26.08) produkcja zjechała z GitHub Pages NA STAŁE. To zmienia trzy
 rzeczy, które dotąd ten plik zakładał milcząco:

@@ -1,9 +1,71 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-09 (limit dawki 40→60 i wypychanie po ważności — bot #265; National Geographic jako źródło ciekawostek z własnym promptem — bot #267; krótka historia dla takich źródeł — bot #268; wyjątek „incydent bez szkód a głowa państwa" — bot #269; bramka pytania dwie łatki — bot #264 i #266; gotowiec X na modelu pro + przycisk „Wygeneruj nowego" — front #227 i #228; wcześniej 06.09: bramka pokrycia nagłówka po fallbacku — bot #263; 05.09: dopiski [ZDJĘCIA]/[WYWIAD] z tytułu źródła — bot #262; czujka chmurowa WYŁĄCZONA, repo przepięte na brifup.com; Nvidia „1 bilion" poprawiona ręcznie; wcześniej 04.09: pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-11 (MAPY KONFLIKTÓW: mapa.html + mapy/huti.json + mapy/iran.json, scrollytelling nad mapą, wejście z artykułu od daty newsa, karta OG, strona pomostowa historia.html pod reklamy; licznik wejść na podstronach — licznik.js; hasło „sprawdź mapę” = ręczna aktualizacja przez Claude'a; wcześniej 09.09: limit dawki 40→60 i wypychanie po ważności — bot #265; National Geographic jako źródło ciekawostek z własnym promptem — bot #267; krótka historia dla takich źródeł — bot #268; wyjątek „incydent bez szkód a głowa państwa" — bot #269; bramka pytania dwie łatki — bot #264 i #266; gotowiec X na modelu pro + przycisk „Wygeneruj nowego" — front #227 i #228; wcześniej 06.09: bramka pokrycia nagłówka po fallbacku — bot #263; 05.09: dopiski [ZDJĘCIA]/[WYWIAD] z tytułu źródła — bot #262; czujka chmurowa WYŁĄCZONA, repo przepięte na brifup.com; Nvidia „1 bilion" poprawiona ręcznie; wcześniej 04.09: pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 🟡 11.09: SESJA — MAPY KONFLIKTÓW (nowy produkt), licznik na podstronach, reklama na X
+
+### ✅ Mapa konfliktu — `mapa.html` + `mapy/<id>.json` (front #kilka commitów, SW v160→v167)
+- Życzenie właściciela: „interaktywna mapa rejonu, scroll w dół i pojawiają się punkty z wydarzeniami, chronologicznie”,
+  bo „99% ludzi nie wie, gdzie ta wyspa i jakie ma znaczenie”. Wybrany wygląd: **Gazeta** przy jasnym motywie,
+  **Noc** przy ciemnym (z 5 wariantów, potem 3 odmian Gazety — wszystkie wycięte, została jedna).
+- Silnik ogólny: dane z `mapy/<id>.json` (`?m=huti`, domyślnie huti). Leaflet + kafle **Esri Gray** (CARTO od 2026
+  wymaga klucza i stempluje kafle „API KEY REQUIRED” — odpadło po pierwszym zrzucie). Aktywny krok = karta najbliżej
+  środka PASA POD MAPĄ (IntersectionObserver zostawał w tyle przy szybkim scrollu; na telefonie środek okna wypada
+  wewnątrz przyklejonej mapy). Nakładka powitalna z animowaną ręką (PC: kółko myszy), pastylka „przewijaj”, pasek
+  postępu, krok końcowy „cała mapa” (syntetyczny, każda mapa go dostaje) + CTA „Więcej takich historii na Brif.up”
+  (bez „trzy wydania dziennie” — newsy dochodzą na bieżąco).
+- **Rozdziały** (mapa Iranu): `rozdzialy[]` + `rozdzial` w kroku → nagłówek rozdziału jako karta z kadrem na cały
+  front, pasek rozdziałów nad mapą, krok może mieć `link` (Iran → osobna mapa Huti).
+- 🔴 **Wejście z artykułu = start od etapu z daty newsa** (`?od=YYYY-MM-DD`, przycisk pod postem niesie datę, bez
+  nakładki, pastylka „Od początku”). Życzenie właściciela: „bez sensu, żeby ktoś scrollował specjalnie w dół tyle
+  historii”. Dopasowanie PO DACIE, nie po kaflu — kilka etapów jednego dnia → ostatni z tego dnia.
+- 🔴 **DATY: data ZDARZENIA, nie publikacji** (właściciel: „kluczowe, żeby daty się zgadzały”). Osobne pole `znane_od`
+  gdy news wyszedł później (rurociąg: trafiony czw. 10.09, kafel 11.09). Złapany własny błąd tego typu.
+- Wpięcie: `mapy/index.json` (wątek → mapa; 3 wątki → huti, 10 → iran), `mapaLinkHtml` w 3 szablonach `index.html`
+  (nad „Wątek tematu”), link przy sadze na `/watki` (mapowanie dociągane w `Promise.all`, inaczej wyścig z renderem).
+- Dane: **Huti** 17 etapów (11 z kafli/wątków Brif.up, 6 tła z Wikipedii/NBC — jednoźródłowe, oznaczone w rozmowie),
+  **Iran** 28 etapów w 6 rozdziałach (rozdział „Uderzenie i rozejmy” luty–lipiec w całości z Wikipedii `2026 Iran war`;
+  reszta z węzłów 10 wątków). 📊 Skala: 659 kafli o Iranie/BW w 71 dni, 14 wątków, trzy o Ormuzie naraz.
+- **Karta OG** `mapy/huti-og.png` (1200×630 z prawdziwej mapy: `scratchpad/mapa-preview/og-mapa.html` → Chrome
+  headless `--screenshot`); `og:image` w `mapa.html` wskazuje na nią. ⚠️ Tagi są STATYCZNE w jednym HTML — `?m=iran`
+  pokazuje kartę Huti. Osobny obrazek/stub dla Iranu do zrobienia przed reklamą Iranu.
+- ⛔ **Automat w bocie ODRZUCONY przez właściciela** — zamiast tego hasło **„sprawdź mapę”** (zapisane w pamięci
+  Claude'a): ręczny przegląd, poprawki i nowe etapy przez Claude'a. Powód: tło, rozdziały, słownik miejsc i ocena
+  „czy to kamień milowy” są redakcyjne; bot dałby tylko propozycje do zatwierdzania.
+
+### 🔴 Licznik wejść liczył TYLKO `index.html` (naprawione, `licznik.js`)
+- Zgłoszenie: „weszło więcej osób niż 2, wysyłałem znajomym link do mapy”. Beacon był wyłącznie inline w `index.html`;
+  wejścia na `mapa.html`/`watki.html`/`fala.html` NIGDY nie były liczone. Wydzielony `licznik.js` (1:1), wpięty w
+  4 podstrony, w precache SW. `index.html` zostaje z wersją inline (bez podwójnego liczenia). ⚠️ Dwie kopie logiki.
+- Wejścia sprzed poprawki nie do odzyskania (licznik z założenia nic nie zapisuje poza zgłoszeniem).
+
+### ⛔ Reklama na X ODRZUCONA: „Weapons and Accessories”
+- Landing `mapa.html` ma „rakiety balistyczne”, „drony”, „pociski” — klasyfikator nie odróżnia relacji od sklepu.
+- Zrobione: **`historia.html`** = strona pomostowa (noindex, bez linków z nawigacji, bez słownictwa militarnego,
+  obrazek + 3 punkty + „Otwórz mapę”) jako nowy landing, plus tekst odwołania po angielsku (w rozmowie).
+  ⬜ Wynik odwołania i nowej reklamy nieznany.
+- Teksty reklam (4 warianty bez „wojna/atak/Huti/konflikt”) w rozmowie z 11.09; polecane 1 i 4.
+
+### 🟡 11.09: CO ZOSTAŁO OTWARTE
+1. ⬜ **thebriefup.com** — domena zarejestrowana 05.09.2026 (Name.com, WHOIS zasłonięty), strona z Lovable ~08.09,
+   angielski ogólny agregator „BriefUp — Today's stories, briefly”. Właściciel chce **zastrzec znak**: pakiet do
+   EUIPO gotowy w rozmowie (znak słowny `BRIF.UP`, klasy 41+9, 900 EUR, Fast Track); ⬜ sprawdzić TMview
+   (`brifup`, `briefup`, `brief up`) — z sesji nie dało się (TMview/EUIPO blokują), ⬜ wykupić `brifup.pl`.
+2. ⬜ Karta OG dla mapy Iranu (dziś pokazuje Huti).
+3. ⬜ Dopasowanie `?od=` po kaflu zamiast po dacie — wymaga slugów w etapach.
+4. ⬜ Etapy jednoźródłowe (Wikipedia) na obu mapach — oznaczyć albo zweryfikować drugim źródłem.
+5. ⬜ Desktop: przycisk pod postem sprawdzony tylko przez tożsamość szablonu, nie kliknięciem w kafel o Huti.
+6. Punkty z 09.09 niżej — bez zmian (weryfikacja limitu dawki 60, NatGeo, JSW, próg 20).
+
+### ⚠️ Pułapki z tej sesji
+- **Podgląd z Maca**: proces serwera podglądu nie widzi `~/Documents` (404 na wszystko) — kopiuj do scratchpada;
+  wpis `brief-site-mapa` w `~/.claude/launch.json` serwuje `scratchpad/mapa-preview` na 8766.
+- **Deploy przez scp na Hetzner zostawia pliki NIEŚLEDZONE**, skrypt push ich nie dodaje; późniejszy `git pull`
+  na serwerze padnie na „untracked files would be overwritten” — przed pullem `rm` te pliki.
+- Asercja `'styl' in s` łapała słowo „stylesheet” — sprawdzaj wąskie tokeny (`?styl`).
 
 ## 🟡 09.09: SESJA — limit dawki, nowe źródło ciekawostek, wyjątek na głowę państwa
 
