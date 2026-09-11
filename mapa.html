@@ -58,7 +58,12 @@ h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; ma
 .when { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); display:flex; gap:8px; align-items:center; }
 .when .kind { font-weight:700; }
 .kind[data-k="tlo"] { color:var(--k-tlo); } .kind[data-k="atak"] { color:var(--k-atak); } .kind[data-k="zdobycie"] { color:var(--k-zdobycie); }
-.kind[data-k="dyplomacja"] { color:var(--k-dyplomacja); } .kind[data-k="rynek"] { color:var(--k-rynek); }
+.kind[data-k="dyplomacja"] { color:var(--k-dyplomacja); } .kind[data-k="rynek"] { color:var(--k-rynek); } .kind[data-k="mapa"] { color:var(--text); }
+.back { font-size:11px; color:var(--red); }
+/* Krok końcowy: markery z numerami czytelne, etykiety schowane (przy szerokim kadrze nachodzą na siebie) */
+body.calosc .lbl { opacity:0 !important; }
+body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px var(--red); }
+:root[data-theme="dark"] body.calosc .mk.past { background:#fff; color:#111; box-shadow:0 0 0 2px var(--red); }
 .place { font-size:10px; color:var(--sub); margin-top:4px; }
 .card h2 { font-family:'DM Serif Display',serif; font-size:21px; line-height:1.2; margin-top:4px; }
 .card p { font-size:12.5px; line-height:1.55; color:var(--sub); margin-top:8px; }
@@ -144,7 +149,7 @@ h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; ma
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 (async function(){
-  const KIND = { tlo:'tło', atak:'atak', zdobycie:'zdobycie', dyplomacja:'dyplomacja', rynek:'rynek' };
+  const KIND = { tlo:'tło', atak:'atak', zdobycie:'zdobycie', dyplomacja:'dyplomacja', rynek:'rynek', mapa:'cała mapa' };
   const id = new URLSearchParams(location.search).get('m') || 'huti';
   const d = await fetch('mapy/' + id + '.json', {cache:'no-cache'}).then(r => r.json());
   document.title = d.title + ' — Brif.up';
@@ -182,6 +187,12 @@ h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; ma
     m.bindTooltip(p.name, { permanent:true, direction:'auto', offset:[10,0], className:'lbl', opacity:0 });
     return m;
   }
+  // Krok końcowy (życzenie właściciela 11.09): ZAWSZE podgląd całej mapy ze wszystkimi punktami.
+  // Syntetyczny, nie z JSON — każda mapa go dostaje. Kadr = wszystkie miejsca kroków.
+  const pierwszy = d.steps[0], ostatni = d.steps[d.steps.length-1];
+  d.steps.push({ date: ostatni.date, place: ostatni.place, kind: 'mapa', calosc: true,
+    title: d.podsumowanie_tytul || 'Cała historia na jednej mapie',
+    text: d.podsumowanie || (d.steps.length + ' etapów, od ' + pierwszy.date.split('-').reverse().join('.') + ' do ' + ostatni.date.split('-').reverse().join('.') + '. Numery na mapie to kolejność wydarzeń. Wróć do dowolnego etapu przewijając w górę.') });
   d.steps.forEach((s, i) => {
     s.n = i+1;
     if (!markers[s.place]) markers[s.place] = { m: mk(s.place, s.n, 'past'), first: i };
@@ -196,8 +207,9 @@ h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; ma
     el.className = 'step'; el.dataset.i = i;
     el.innerHTML = '<div class="card"><div class="when"><span>'+ s.date.split('-').reverse().join('.') + (s.znane_od && s.znane_od!==s.date ? ' · wiadomo od '+ s.znane_od.split('-').reverse().join('.') : '') +'</span>'+
       '<span class="kind" data-k="'+s.kind+'">'+ (KIND[s.kind]||s.kind) +'</span></div>'+
-      '<div class="place">📍 '+ p.name +'</div><h2>'+ s.title +'</h2><p>'+ s.text +'</p>'+
-      (p.why ? '<div class="why"><b>Dlaczego to miejsce</b>'+ p.why +'</div>' : '') + '</div>';
+      (s.calosc ? '' : '<div class="place">📍 '+ p.name +'</div>') +'<h2>'+ s.title +'</h2><p>'+ s.text +'</p>'+
+      (p.why && !s.calosc ? '<div class="why"><b>Dlaczego to miejsce</b>'+ p.why +'</div>' : '') +
+      (s.calosc ? '<p><a class="back" href="index.html">← Wróć do wydania</a></p>' : '') + '</div>';
     box.appendChild(el);
   });
 
@@ -214,15 +226,21 @@ h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; ma
     document.querySelectorAll('.step').forEach(el => el.classList.toggle('active', +el.dataset.i === i));
     document.getElementById('hint').classList.toggle('off', i > 0);
     document.getElementById('progress').style.width = ((i+1) / d.steps.length * 100) + '%';
+    document.body.classList.toggle('calosc', !!s.calosc);
     // markery: pokazane te, których pierwszy krok <= i
     Object.entries(markers).forEach(([pid, o]) => {
-      const isNow = pid === s.place, isAlso = (s.also||[]).includes(pid);
+      const isNow = !s.calosc && pid === s.place, isAlso = !s.calosc && (s.also||[]).includes(pid);
       const shown = o.first <= i;
       const stepN = d.steps.findIndex(x => x.place === pid) + 1;
       setMarker(o.m, isNow ? 'now' : (isAlso ? 'also' : 'past'), isNow || isAlso ? '' : (stepN>0?stepN:''), shown);
     });
     lines.forEach(l => l.pl.setStyle({ opacity: l.from <= i ? .9 : 0 }));
     // Kadr: miejsce + „also” razem, inaczej dolot do miejsca.
+    if (s.calosc) {
+      const all = d.steps.filter(x => !x.calosc).map(x => [d.places[x.place].lat, d.places[x.place].lng]);
+      map.flyToBounds(L.latLngBounds(all).pad(0.15), { duration:1.4 });
+      return;
+    }
     const pts = [[p.lat,p.lng]].concat((s.also||[]).map(a => [d.places[a].lat, d.places[a].lng]));
     if (pts.length > 1) map.flyToBounds(L.latLngBounds(pts).pad(0.5), { duration:1.1, maxZoom:7 });
     else map.flyTo([p.lat, p.lng], s.zoom || (s.kind==='zdobycie' ? 8 : 6), { duration:1.1 });
@@ -248,7 +266,7 @@ h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; ma
 
   // Nakładka powitalna: gaśnie przy pierwszym przewinięciu, dotknięciu, kliknięciu albo po 6 s.
   const intro = document.getElementById('intro');
-  intro.querySelector('.small').textContent = d.steps.length + ' etapów · mapa idzie za Tobą';
+  intro.querySelector('.small').textContent = (d.steps.length-1) + ' etapów · mapa idzie za Tobą';
   const zgas = () => { intro.classList.add('off'); };
   ['scroll','touchstart','wheel','keydown'].forEach(ev => window.addEventListener(ev, zgas, { once:true, passive:true }));
   intro.addEventListener('click', () => { zgas(); window.scrollTo({ top: stepEls[1].offsetTop - window.innerHeight*0.35, behavior:'smooth' }); });
