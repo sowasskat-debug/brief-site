@@ -125,6 +125,19 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
 @media (hover:hover) and (pointer:fine) { .intro .hand { display:none; } .intro .mouse { display:block; } }
 /* Pierwsza karta wystaje spod mapy na telefonie — widać, że pod mapą coś jest. */
 .steps .step:first-child { min-height:auto; padding-top:14px; }
+
+/* Rozdziały (mapa Iranu): nagłówek rozdziału jako osobna karta + pasek rozdziałów nad mapą */
+.chapters { position:absolute; left:0; right:0; top:3px; z-index:1050; display:flex; gap:4px; padding:6px 8px; overflow-x:auto; scrollbar-width:none; pointer-events:auto; }
+.chapters::-webkit-scrollbar { display:none; }
+.chapters button { flex:0 0 auto; font-family:'Space Mono',monospace; font-size:8.5px; letter-spacing:1px; text-transform:uppercase; padding:5px 9px; border:1px solid var(--rule); background:var(--bg); color:var(--muted); cursor:pointer; border-radius:12px; }
+.chapters button.on { border-color:var(--red); color:var(--red); font-weight:700; }
+.chapters button.done { color:var(--text); }
+.card.chapter { border-left:0; padding-left:0; border-top:3px solid var(--text); padding-top:12px; }
+.step.active .card.chapter { border-color:var(--red); }
+.card.chapter .kicker { font-size:9px; letter-spacing:2px; color:var(--red); text-transform:uppercase; font-weight:700; }
+.card.chapter h2 { font-size:30px; font-style:italic; margin-top:4px; }
+.card.chapter p { font-size:13px; }
+.card .link { display:inline-block; margin-top:10px; font-size:10.5px; color:var(--red); font-weight:700; letter-spacing:.5px; text-decoration:none; border-bottom:1px solid var(--red); }
 </style>
 </head>
 <body>
@@ -135,7 +148,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
   <p class="lead" id="lead"></p>
 </div>
 <div class="story">
-  <div class="mapwrap"><div id="map"></div><div class="progress" id="progress"></div>
+  <div class="mapwrap"><div id="map"></div><div class="progress" id="progress"></div><div class="chapters" id="chapters" hidden></div>
     <div class="intro" id="intro">
       <svg class="hand" viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M26 34V14a4 4 0 0 1 8 0v16"/><path d="M34 30v-4a4 4 0 0 1 8 0v6"/><path d="M42 32v-2a4 4 0 0 1 8 0v14c0 8-6 14-14 14h-4c-5 0-9-2-12-6l-8-11a4 4 0 0 1 6-5l6 6"/><path d="M14 8l-4 4 4 4M10 12h10" opacity=".7"/></svg>
       <div class="mouse"></div>
@@ -156,7 +169,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 (async function(){
-  const KIND = { tlo:'tło', atak:'atak', zdobycie:'zdobycie', dyplomacja:'dyplomacja', rynek:'rynek', mapa:'cała mapa' };
+  const KIND = { tlo:'tło', atak:'atak', zdobycie:'zdobycie', dyplomacja:'dyplomacja', rynek:'rynek', mapa:'cała mapa', rozdzial:'rozdział' };
   const id = new URLSearchParams(location.search).get('m') || 'huti';
   const d = await fetch('mapy/' + id + '.json', {cache:'no-cache'}).then(r => r.json());
   document.title = d.title + ' — Brif.up';
@@ -194,14 +207,35 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
     m.bindTooltip(p.name, { permanent:true, direction:'auto', offset:[10,0], className:'lbl', opacity:0 });
     return m;
   }
+  // Rozdziały (mapa Iranu, 11.09): sekwencja = [nagłówek rozdziału, jego kroki, nagłówek, kroki…].
+  // Nagłówek to syntetyczny krok: kadr na wszystkie miejsca rozdziału, markery rozdziału jako obrys.
+  const ROZ = d.rozdzialy || [];
+  if (ROZ.length) {
+    const seq = [];
+    ROZ.forEach((r, ri) => {
+      const kroki = d.steps.filter(x => x.rozdzial === r.id);
+      if (!kroki.length) return;
+      seq.push({ naglowek:true, rozdzial:r.id, ri, date:kroki[0].date, place:kroki[0].place, kind:'rozdzial',
+                 title:r.tytul, text:r.opis || '', miejsca:[...new Set(kroki.flatMap(x => [x.place].concat(x.also||[])))] });
+      kroki.forEach(k => seq.push(k));
+    });
+    d.steps = seq;
+    const ch = document.getElementById('chapters'); ch.hidden = false;
+    ROZ.forEach((r, ri) => { const b = document.createElement('button'); b.textContent = (ri+1) + ' · ' + r.tytul; b.dataset.ri = ri;
+      b.onclick = () => { const el = document.querySelector('.step[data-ri="'+ri+'"]'); if (el) window.scrollTo({ top: el.offsetTop - window.innerHeight*0.3, behavior:'smooth' }); };
+      ch.appendChild(b); });
+  }
+
   // Krok końcowy (życzenie właściciela 11.09): ZAWSZE podgląd całej mapy ze wszystkimi punktami.
   // Syntetyczny, nie z JSON — każda mapa go dostaje. Kadr = wszystkie miejsca kroków.
   const pierwszy = d.steps[0], ostatni = d.steps[d.steps.length-1];
   d.steps.push({ date: ostatni.date, place: ostatni.place, kind: 'mapa', calosc: true,
     title: d.podsumowanie_tytul || 'Cała historia na jednej mapie',
-    text: d.podsumowanie || (d.steps.length + ' etapów, od ' + pierwszy.date.split('-').reverse().join('.') + ' do ' + ostatni.date.split('-').reverse().join('.') + '. Numery na mapie to kolejność wydarzeń. Wróć do dowolnego etapu przewijając w górę.') });
+    text: d.podsumowanie || (d.steps.filter(x => !x.naglowek).length + ' etapów, od ' + pierwszy.date.split('-').reverse().join('.') + ' do ' + ostatni.date.split('-').reverse().join('.') + '. Numery na mapie to kolejność wydarzeń. Wróć do dowolnego etapu przewijając w górę.') });
+  let nr = 0;
   d.steps.forEach((s, i) => {
-    s.n = i+1;
+    s.n = (s.naglowek || s.calosc) ? '' : ++nr;
+    if (s.naglowek) return;
     if (!markers[s.place]) markers[s.place] = { m: mk(s.place, s.n, 'past'), first: i };
     (s.also||[]).forEach(a => { if (!markers[a]) markers[a] = { m: mk(a, '', 'also'), first: i }; });
   });
@@ -212,10 +246,16 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
     const p = d.places[s.place];
     const el = document.createElement('section');
     el.className = 'step'; el.dataset.i = i;
+    if (s.naglowek) {
+      el.dataset.ri = s.ri;
+      el.innerHTML = '<div class="card chapter"><div class="kicker">Rozdział '+ (s.ri+1) +' z '+ ROZ.length +'</div><h2>'+ s.title +'</h2><p>'+ s.text +'</p></div>';
+      box.appendChild(el); return;
+    }
     el.innerHTML = '<div class="card"><div class="when"><span>'+ s.date.split('-').reverse().join('.') + (s.znane_od && s.znane_od!==s.date ? ' · wiadomo od '+ s.znane_od.split('-').reverse().join('.') : '') +'</span>'+
       '<span class="kind" data-k="'+s.kind+'">'+ (KIND[s.kind]||s.kind) +'</span></div>'+
       (s.calosc ? '' : '<div class="place">📍 '+ p.name +'</div>') +'<h2>'+ s.title +'</h2><p>'+ s.text +'</p>'+
       (p.why && !s.calosc ? '<div class="why"><b>Dlaczego to miejsce</b>'+ p.why +'</div>' : '') +
+      (s.link ? '<a class="link" href="'+ s.link +'">'+ (s.link_tekst || 'Zobacz więcej →') +'</a>' : '') +
       (s.calosc ? '<a class="cta" href="index.html"><b>Więcej takich historii na Brif.up</b><span>Na bieżąco: co się stało, dlaczego i co to znaczy dla Twojego portfela. Bez szumu, w dwie minuty.</span><em>Wejdź na stronę główną →</em></a>' : '') + '</div>';
     box.appendChild(el);
   });
@@ -236,15 +276,25 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
     document.body.classList.toggle('calosc', !!s.calosc);
     // markery: pokazane te, których pierwszy krok <= i
     Object.entries(markers).forEach(([pid, o]) => {
-      const isNow = !s.calosc && pid === s.place, isAlso = !s.calosc && (s.also||[]).includes(pid);
-      const shown = o.first <= i;
+      const isNow = !s.calosc && !s.naglowek && pid === s.place;
+      const isAlso = s.naglowek ? s.miejsca.includes(pid) && o.first > i : (!s.calosc && (s.also||[]).includes(pid));
+      const shown = o.first <= i || (s.naglowek && s.miejsca.includes(pid));
       const stepN = d.steps.findIndex(x => x.place === pid) + 1;
       setMarker(o.m, isNow ? 'now' : (isAlso ? 'also' : 'past'), isNow || isAlso ? '' : (stepN>0?stepN:''), shown);
     });
     lines.forEach(l => l.pl.setStyle({ opacity: l.from <= i ? .9 : 0 }));
     // Kadr: miejsce + „also” razem, inaczej dolot do miejsca.
+    if (ROZ.length) {
+      const cur = s.calosc ? ROZ.length : ROZ.findIndex(r => r.id === s.rozdzial);
+      document.querySelectorAll('#chapters button').forEach(b => { const k = +b.dataset.ri; b.classList.toggle('on', k === cur); b.classList.toggle('done', k < cur); });
+      const on = document.querySelector('#chapters button.on'); if (on) on.scrollIntoView({ inline:'center', block:'nearest', behavior:'smooth' });
+    }
+    if (s.naglowek) {
+      map.flyToBounds(L.latLngBounds(s.miejsca.map(a => [d.places[a].lat, d.places[a].lng])).pad(0.3), { duration:1.2, maxZoom:7 });
+      return;
+    }
     if (s.calosc) {
-      const all = d.steps.filter(x => !x.calosc).map(x => [d.places[x.place].lat, d.places[x.place].lng]);
+      const all = d.steps.filter(x => !x.calosc && !x.naglowek).map(x => [d.places[x.place].lat, d.places[x.place].lng]);
       map.flyToBounds(L.latLngBounds(all).pad(0.15), { duration:1.4 });
       return;
     }
@@ -273,7 +323,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
 
   // Nakładka powitalna: gaśnie przy pierwszym przewinięciu, dotknięciu, kliknięciu albo po 6 s.
   const intro = document.getElementById('intro');
-  intro.querySelector('.small').textContent = (d.steps.length-1) + ' etapów · mapa idzie za Tobą';
+  intro.querySelector('.small').textContent = d.steps.filter(x => !x.naglowek && !x.calosc).length + ' etapów · mapa idzie za Tobą';
   const zgas = () => { intro.classList.add('off'); };
   ['scroll','touchstart','wheel','keydown'].forEach(ev => window.addEventListener(ev, zgas, { once:true, passive:true }));
   intro.addEventListener('click', () => { zgas(); window.scrollTo({ top: stepEls[1].offsetTop - window.innerHeight*0.35, behavior:'smooth' }); });

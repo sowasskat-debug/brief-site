@@ -1,4 +1,26 @@
 {
-  "watki": { "w1837": "huti", "w1978": "huti", "w2000": "huti" },
-  "mapy": { "huti": { "title": "Huti biorą Bab al-Mandab", "kroki": 17 } }
+  "watki": {
+    "w1837": "huti",
+    "w1978": "huti",
+    "w2000": "iran",
+    "w864": "iran",
+    "w1217": "iran",
+    "w1790": "iran",
+    "w1849": "iran",
+    "w1733": "iran",
+    "w1933": "iran",
+    "w586": "iran",
+    "w1648": "iran",
+    "w1965": "iran"
+  },
+  "mapy": {
+    "huti": {
+      "title": "Huti biorą Bab al-Mandab",
+      "kroki": 17
+    },
+    "iran": {
+      "title": "Wojna z Iranem: od uderzenia do Ormuzu",
+      "kroki": 28
+    }
+  }
 }

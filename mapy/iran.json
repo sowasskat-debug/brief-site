@@ -1,0 +1,412 @@
+{
+  "id": "iran",
+  "kicker": "Mapa konfliktu",
+  "title": "Wojna z Iranem: od uderzenia do Ormuzu",
+  "lead": "Pół roku w sześciu rozdziałach. Przewijaj: mapa pokazuje, gdzie to się dzieje i dlaczego to miejsce ma znaczenie. Każdy rozdział zaczyna się od widoku całego frontu.",
+  "updated": "2026-09-11",
+  "view": {
+    "lat": 27,
+    "lng": 48,
+    "zoom": 4
+  },
+  "podsumowanie_tytul": "Cała wojna na jednej mapie",
+  "podsumowanie": "Sześć frontów, jeden konflikt. Bilans wg dostępnych źródeł: po stronie Iranu ok. 3,5 tys. zabitych, po stronie USA 20 zabitych i ponad 800 rannych, Izrael 71 zabitych. Koszt wojny dla USA do czerwca: 113 mld USD. Numery na mapie to kolejność wydarzeń.",
+  "rozdzialy": [
+    {
+      "id": "uderzenie",
+      "tytul": "Uderzenie i rozejmy",
+      "opis": "Luty–lipiec: jak zaczęła się wojna i dlaczego zawieszenie broni nie przetrwało."
+    },
+    {
+      "id": "sankcje",
+      "tytul": "Ofensywa finansowa",
+      "opis": "Sierpień–wrzesień: „Economic Outcast”, czyli odcinanie Iranu od dolara."
+    },
+    {
+      "id": "ormuz",
+      "tytul": "Ormuz",
+      "opis": "Wrzesień: tankowce, niszczyciele, dron podwodny. Cieśnina, przez którą szła jedna piąta ropy świata."
+    },
+    {
+      "id": "fronty",
+      "tytul": "Fronty pełnomocników",
+      "opis": "Jordania, Liban, Jemen: wojna toczy się też tam, gdzie Iran nie musi strzelać sam."
+    },
+    {
+      "id": "dyplomacja",
+      "tytul": "Dyplomacja",
+      "opis": "Kto z kim rozmawia, kiedy nikt nie rozmawia z Waszyngtonem."
+    },
+    {
+      "id": "rynek",
+      "tytul": "Rachunek",
+      "opis": "Ropa, gaz, diesel: co wojna kosztuje kierowcę w Kalifornii i mieszkanie w Niemczech."
+    }
+  ],
+  "places": {
+    "teheran": {
+      "name": "Teheran",
+      "lat": 35.69,
+      "lng": 51.39,
+      "why": "Stolica i cel pierwszego uderzenia. Tu 28.02 zginął najwyższy przywódca Ali Chamenei."
+    },
+    "ormuz": {
+      "name": "Cieśnina Ormuz",
+      "lat": 26.57,
+      "lng": 56.25,
+      "why": "Wyjście z Zatoki Perskiej, 33 km w najwęższym miejscu. Przed wojną ~20% światowej ropy i LNG, 125 statków dziennie."
+    },
+    "islamabad": {
+      "name": "Islamabad",
+      "lat": 33.69,
+      "lng": 73.04,
+      "why": "Pakistan graniczy z Iranem i ma pakt obronny z Arabią Saudyjską. Stąd wychodzą próby mediacji."
+    },
+    "waszyngton": {
+      "name": "Waszyngton",
+      "lat": 38.9,
+      "lng": -77.04
+    },
+    "konarak": {
+      "name": "Konarak / Czabahar",
+      "lat": 25.36,
+      "lng": 60.4,
+      "why": "Porty na wybrzeżu Morza Arabskiego, jedyne irańskie wyjście POZA Ormuz. Dlatego USA biją właśnie tu."
+    },
+    "qeshm": {
+      "name": "Wyspa Qeshm",
+      "lat": 26.8,
+      "lng": 55.9,
+      "why": "Największa wyspa Zatoki, tuż przy cieśninie. Bazy IRGC i wyrzutnie rakiet przeciwokrętowych."
+    },
+    "bahrajn": {
+      "name": "Manama (5. Flota USA)",
+      "lat": 26.2,
+      "lng": 50.6,
+      "why": "Kwatera 5. Floty. Stąd wychodzą eskorty statków i uderzenia na tankowce."
+    },
+    "khasab": {
+      "name": "Khasab (Oman)",
+      "lat": 26.18,
+      "lng": 56.25,
+      "why": "Omański cypel Musandam po drugiej stronie cieśniny. Statki trafiane 4 mile stąd płynęły torem omańskim, nie irańskim."
+    },
+    "sirik": {
+      "name": "Sirik",
+      "lat": 26.5,
+      "lng": 57.1,
+      "why": "Irańskie wybrzeże na wschód od cieśniny; stanowiska rakiet nadbrzeżnych."
+    },
+    "muwaffaq": {
+      "name": "Baza Muwaffaq Salti (Jordania)",
+      "lat": 32.17,
+      "lng": 36.78,
+      "why": "Największa baza lotnicza USA w Jordanii, 90 km od Ammanu. Cel irańskich rakiet, bo stąd startują myśliwce."
+    },
+    "nabatieh": {
+      "name": "Nabatieh (Liban)",
+      "lat": 33.38,
+      "lng": 35.48,
+      "why": "Południowy Liban, zaplecze Hezbollahu. Front, który Izrael otwiera, gdy Iran szuka oddechu."
+    },
+    "mocha": {
+      "name": "Mocha (Jemen)",
+      "lat": 13.32,
+      "lng": 43.25,
+      "why": "Port nad Morzem Czerwonym zdobyty przez Huti 10.09. Ta historia ma własną mapę."
+    },
+    "doha": {
+      "name": "Doha",
+      "lat": 25.29,
+      "lng": 51.53,
+      "why": "Katar: mediator z linią do Teheranu i Waszyngtonu, a zarazem największy eksporter LNG uwięziony za Ormuzem."
+    },
+    "delhi": {
+      "name": "Nowe Delhi",
+      "lat": 28.61,
+      "lng": 77.21,
+      "why": "Szczyt BRICS: pierwsza zagraniczna podróż prezydenta Iranu od wybuchu wojny."
+    },
+    "salalah": {
+      "name": "Salalah (Oman)",
+      "lat": 17.02,
+      "lng": 54.09,
+      "why": "Oman od dekad pośredniczy między Zatoką a Iranem. Tu 14.09 pierwsze rozmowy regionu z Teheranem od lutego."
+    },
+    "bruksela": {
+      "name": "Bruksela",
+      "lat": 50.85,
+      "lng": 4.35
+    },
+    "kair": {
+      "name": "Kair",
+      "lat": 30.04,
+      "lng": 31.24
+    },
+    "raslaffan": {
+      "name": "Ras Laffan (Katar)",
+      "lat": 25.9,
+      "lng": 51.55,
+      "why": "Największy zakład skraplania gazu na świecie. Uszkodzony w wojnie, naprawa 3–5 lat. Stąd zimowe ceny gazu w Europie."
+    },
+    "ttf": {
+      "name": "Rotterdam (giełda gazu TTF)",
+      "lat": 51.92,
+      "lng": 4.48,
+      "why": "Europejska cena gazu ustala się tu. Gdy Ras Laffan stoi, Europa licytuje o każdy ładunek LNG."
+    },
+    "kalifornia": {
+      "name": "Kalifornia",
+      "lat": 36.78,
+      "lng": -119.42,
+      "why": "Najdroższe paliwo w USA. Gdy diesel przebija limit wyświetlacza dystrybutora, to tutaj."
+    },
+    "pickaxe": {
+      "name": "Góra Pickaxe",
+      "lat": 33.75,
+      "lng": 51.7,
+      "why": "Podziemny kompleks koło Natanz. Trump grozi uderzeniem, wywiad mówi o wznowionej produkcji rakiet."
+    }
+  },
+  "lines": [],
+  "steps": [
+    {
+      "rozdzial": "uderzenie",
+      "date": "2026-02-28",
+      "place": "teheran",
+      "kind": "atak",
+      "title": "Uderzenie na Iran",
+      "text": "USA i Izrael rozpoczynają operację przeciw Iranowi. W pierwszych godzinach ginie najwyższy przywódca Ali Chamenei i część kierownictwa. Iran odpowiada rakietami na Izrael i bazy w Zatoce."
+    },
+    {
+      "rozdzial": "uderzenie",
+      "date": "2026-03-24",
+      "place": "ormuz",
+      "kind": "zdobycie",
+      "title": "Iran ogłasza suwerenność nad Ormuzem",
+      "text": "W czwartym tygodniu wojny Teheran deklaruje kontrolę nad cieśniną i zaczyna zatrzymywać statki. Rodzi się „podwójna blokada”: Iran blokuje żeglugę, USA blokują Iran.",
+      "also": [
+        "qeshm"
+      ]
+    },
+    {
+      "rozdzial": "uderzenie",
+      "date": "2026-04-08",
+      "place": "teheran",
+      "kind": "dyplomacja",
+      "title": "Dwutygodniowe zawieszenie broni",
+      "text": "Pierwszy rozejm. Tego samego dnia Izrael wznawia naloty na Liban, co od początku obciąża porozumienie."
+    },
+    {
+      "rozdzial": "uderzenie",
+      "date": "2026-04-13",
+      "place": "islamabad",
+      "kind": "dyplomacja",
+      "title": "Rozmowy w Islamabadzie padają",
+      "text": "Dwa dni negocjacji bez wyniku. USA odpowiadają blokadą morską Iranu."
+    },
+    {
+      "rozdzial": "uderzenie",
+      "date": "2026-06-17",
+      "place": "waszyngton",
+      "kind": "dyplomacja",
+      "title": "Memorandum znosi obie blokady",
+      "text": "USA i Iran podpisują porozumienie: Ormuz otwarty, blokada zdjęta. Koszt wojny dla USA do tego dnia: 113 mld USD."
+    },
+    {
+      "rozdzial": "uderzenie",
+      "date": "2026-07-08",
+      "place": "ormuz",
+      "kind": "atak",
+      "title": "Rozejm się załamuje",
+      "text": "Iran atakuje statki handlowe, znów powołując się na kontrolę nad cieśniną. Do końca lipca kolejne uderzenia, w sierpniu względna cisza. To tło wszystkiego, co niżej."
+    },
+    {
+      "rozdzial": "sankcje",
+      "date": "2026-08-24",
+      "place": "waszyngton",
+      "kind": "dyplomacja",
+      "title": "„Economic Outcast”",
+      "text": "Sekretarz skarbu Bessent ogłasza największą ofensywę finansową przeciw Iranowi: kto pomaga Teheranowi, wylatuje z systemu dolara. Nagrody za dowódców IRGC. Wall Street w dół. Iran: „mamy plan na dwa lata”."
+    },
+    {
+      "rozdzial": "sankcje",
+      "date": "2026-08-28",
+      "place": "kair",
+      "kind": "dyplomacja",
+      "title": "Pierwszy bank na celowniku",
+      "text": "USA nakładają ograniczenia na egipski Banque Misr za interesy z Iranem. Sygnał dla banków Zatoki: kampania zbliża się do Dubaju."
+    },
+    {
+      "rozdzial": "sankcje",
+      "date": "2026-09-04",
+      "place": "bruksela",
+      "kind": "dyplomacja",
+      "title": "UE dołącza",
+      "text": "Unia formalnie przystępuje do operacji odcięcia Iranu od globalnego systemu finansowego. Tego samego dnia Trump grozi uderzeniem w górę Pickaxe.",
+      "also": [
+        "pickaxe"
+      ]
+    },
+    {
+      "rozdzial": "sankcje",
+      "date": "2026-09-08",
+      "place": "teheran",
+      "kind": "dyplomacja",
+      "title": "Sankcje na lotnictwo, Iran grozi wojną gospodarczą",
+      "text": "USA odcinają irańskie linie lotnicze od rynku. Teheran odpowiada groźbą „wojny gospodarczej”. 10.09 kolejna transza: podmioty wspierające pełnomocników, w tym Kata’ib Hezbollah."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-01",
+      "place": "konarak",
+      "kind": "atak",
+      "title": "USA uderzają w porty Iranu",
+      "text": "Eksplozje w Konaraku i na Qeshm. Iran mówi o ofiarach cywilnych, w tym dziecku, i zapowiada ostrą odpowiedź. Wojna wraca po sierpniowej ciszy.",
+      "also": [
+        "qeshm"
+      ]
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-02",
+      "place": "waszyngton",
+      "kind": "dyplomacja",
+      "title": "„Cieśnina Trumpa”",
+      "text": "Trump pyta publicznie o zmianę nazwy Ormuz. Vance: żadnych rozmów, dopóki Iran strzela do statków. Oman po cichu odrzuca irańską propozycję opłat za przepływ."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-05",
+      "place": "bahrajn",
+      "kind": "atak",
+      "title": "Trzy tankowce zniszczone",
+      "text": "CENTCOM: w odwecie za atak rakietowy IRGC na okręty US Navy zniszczono trzy irańskie tankowce, trzeci dzień z rzędu. 1600 statków handlowych przeprowadzonych pod eskortą. 06.09 jeden statek zatopiony."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-08",
+      "place": "ormuz",
+      "kind": "atak",
+      "title": "IRGC przejmuje amerykański dron podwodny",
+      "text": "Gwardia Rewolucyjna przejmuje bezzałogowy okręt podwodny USA i grozi „zmasowanym atakiem”. Następnego dnia twierdzi, że trafiła rakietami dwa niszczyciele. CENTCOM: wszystkie próby chybione, nikt nie ranny."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-09",
+      "place": "ormuz",
+      "kind": "atak",
+      "title": "Iran każe tankowcom wyjść",
+      "text": "Po groźbach ataków Iran nakazuje tankowcom opuścić rejon cieśniny. Zawiesza też własną 10-procentową opłatę frachtową, bo nie ma od kogo jej brać."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-10",
+      "place": "khasab",
+      "kind": "atak",
+      "title": "Największa fala ataków na tankowce",
+      "text": "UKMTO: cztery pociski trafiają dwa statki 4 mile od Khasab, jeden płonie. Irańskie media: pociski spadły na Sirik. IRGC ogłasza zamknięcie cieśniny. Są ofiary.",
+      "also": [
+        "sirik"
+      ]
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-11",
+      "place": "ormuz",
+      "kind": "rynek",
+      "title": "Siedem statków dziennie",
+      "text": "Przez Ormuz przepływa 7 jednostek wobec 125 przed wojną. Część idzie pod ochroną USA z wyłączonymi transponderami. Cieśnina jest de facto zamknięta."
+    },
+    {
+      "rozdzial": "fronty",
+      "date": "2026-08-16",
+      "place": "nabatieh",
+      "kind": "atak",
+      "title": "Liban: najkrwawsze naloty od czerwca",
+      "text": "Izrael uderza w południowy Liban najmocniej od zawieszenia broni i grozi powrotem wojny. 06.09 uszkodzony budynek ministerstwa finansów. 11.09 tunele Hezbollahu zniszczone tak, że USGS notuje wstrząs 4,1."
+    },
+    {
+      "rozdzial": "fronty",
+      "date": "2026-09-04",
+      "place": "muwaffaq",
+      "kind": "atak",
+      "title": "Rakiety na bazy w Jordanii",
+      "text": "Eksplozje w Jordanii, irańskie ataki na bazy USA w regionie. 10.09 nocny atak na Muwaffaq Salti uszkadza kilka amerykańskich samolotów."
+    },
+    {
+      "rozdzial": "fronty",
+      "date": "2026-09-10",
+      "place": "mocha",
+      "kind": "zdobycie",
+      "title": "Huti biorą Morze Czerwone",
+      "text": "Sojusznik Iranu zdobywa Mochę, potem Perim i całe jemeńskie wybrzeże. Druga cieśnina naftowa świata w rękach osi Teheranu. Trump odmawia Saudom uderzeń.",
+      "link": "mapa.html?m=huti",
+      "link_tekst": "Osobna mapa: Huti biorą Bab al-Mandab, 17 etapów →"
+    },
+    {
+      "rozdzial": "dyplomacja",
+      "date": "2026-09-08",
+      "place": "doha",
+      "kind": "dyplomacja",
+      "title": "Katar i Chiny próbują wznowić rozmowy",
+      "text": "Szef MSZ Chin premierowi Kataru: presja militarna nie jest rozwiązaniem. Katar pracuje z Chinami i regionem nad powrotem USA i Iranu do stołu."
+    },
+    {
+      "rozdzial": "dyplomacja",
+      "date": "2026-09-09",
+      "place": "waszyngton",
+      "kind": "dyplomacja",
+      "title": "Trump: koniec po wyborach",
+      "text": "Prezydent mówi, że wojna skończy się „natychmiast” po wyborach do Kongresu. Doradcy Białego Domu prywatnie: może potrwać do stycznia 2029."
+    },
+    {
+      "rozdzial": "dyplomacja",
+      "date": "2026-09-10",
+      "place": "delhi",
+      "kind": "dyplomacja",
+      "title": "Pezeszkian na szczycie BRICS",
+      "text": "Pierwsza zagraniczna podróż prezydenta Iranu od wybuchu wojny. Putin też przyjeżdża, pierwszy raz od początku wojny w Ukrainie. Temat: handel bez dolara przez Nowy Bank Rozwoju."
+    },
+    {
+      "rozdzial": "dyplomacja",
+      "date": "2026-09-14",
+      "place": "salalah",
+      "kind": "dyplomacja",
+      "title": "Zatoka siada z Iranem",
+      "text": "Ministrowie państw Zatoki spotykają się z szefem MSZ Iranu w Omanie. Pierwszy taki kontakt od lutego. Na stole: zasady żeglugi przez Ormuz i ataki Huti na Arabię."
+    },
+    {
+      "rozdzial": "rynek",
+      "date": "2026-09-01",
+      "place": "ttf",
+      "kind": "rynek",
+      "title": "Gaz w Europie najdroższy od 3,5 roku",
+      "text": "Ceny rosną trzeci dzień z rzędu, LNG w Azji najdroższe od 5 miesięcy. 03.09: UE wchodzi w zimę z najniższymi zapasami w historii. Niemieckie media: gazu może zabraknąć w styczniu."
+    },
+    {
+      "rozdzial": "rynek",
+      "date": "2026-09-10",
+      "place": "ormuz",
+      "kind": "rynek",
+      "title": "Brent przebija 100 dolarów",
+      "text": "Pierwszy raz od lipca, czwarty dzień wzrostów. Do 11.09 Brent sięga 110 USD, największy tygodniowy skok od lipca. Stawki supertankowców biją rekordy."
+    },
+    {
+      "rozdzial": "rynek",
+      "date": "2026-09-10",
+      "place": "kalifornia",
+      "kind": "rynek",
+      "title": "Diesel: 9,999 na wyświetlaczu",
+      "text": "Średnia cena diesla w USA 5,97 USD za galon, powyżej szczytu z 2022. Na pięciu stacjach w Kalifornii dystrybutory dobijają do limitu wyświetlacza. Kontrakty powyżej 5 USD pierwszy raz od 2022."
+    },
+    {
+      "rozdzial": "rynek",
+      "date": "2026-09-11",
+      "place": "raslaffan",
+      "kind": "rynek",
+      "title": "Ras Laffan: naprawa 3–5 lat",
+      "text": "QatarEnergy szuka wieloletnich umów na LNG z USA, bo własny zakład długo nie wróci do pełnej mocy. To oznacza, że wysokie ceny gazu w Europie nie są epizodem, tylko horyzontem kilku zim."
+    }
+  ]
+}
