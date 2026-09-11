@@ -1903,7 +1903,9 @@ function mapaLinkHtml(item){
   const id = t && MAPY_WATKOW.watki[t.id];
   if (!id) return '';
   const m = MAPY_WATKOW.mapy[id] || {};
-  return `<a class="mapa-link" href="mapa.html?m=${escAttr(id)}"><span class="mapa-link-l"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg> Mapa konfliktu${m.kroki?` · ${m.kroki} etapów`:''}</span><span class="mapa-link-r">Przewiń historię →</span></a>`;
+  // ?od=<data newsa>: mapa startuje na etapie z tego momentu, nie od początku historii (życzenie właściciela 11.09).
+  const od = String(item.published_at || item.added_at || '').slice(0, 10);
+  return `<a class="mapa-link" href="mapa.html?m=${escAttr(id)}${/^\d{4}-\d{2}-\d{2}$/.test(od) ? '&od=' + od : ''}"><span class="mapa-link-l"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg> Mapa konfliktu${m.kroki?` · ${m.kroki} etapów`:''}</span><span class="mapa-link-r">Przewiń historię →</span></a>`;
 }
 function watekHtml(item){
   const t = threadForItem(item);
