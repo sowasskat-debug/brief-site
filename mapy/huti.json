@@ -1,0 +1,287 @@
+{
+  "id": "huti",
+  "kicker": "Mapa konfliktu",
+  "title": "Huti biorą Bab al-Mandab",
+  "lead": "Jak w dziesięć dni rebelianci z Jemenu przejęli wybrzeże Morza Czerwonego i drugą cieśninę naftową świata. Przewijaj — punkty zapalają się chronologicznie.",
+  "updated": "2026-09-11",
+  "view": {
+    "lat": 15.6,
+    "lng": 44.5,
+    "zoom": 5
+  },
+  "places": {
+    "teheran": {
+      "name": "Teheran",
+      "lat": 35.69,
+      "lng": 51.39
+    },
+    "ormuz": {
+      "name": "Cieśnina Ormuz",
+      "lat": 26.57,
+      "lng": 56.25,
+      "why": "Wyjście z Zatoki Perskiej. Przed wojną ~20% światowej ropy, 125 statków dziennie."
+    },
+    "janbu": {
+      "name": "Janbu",
+      "lat": 24.09,
+      "lng": 38.06,
+      "why": "Saudyjski port naftowy na Morzu Czerwonym. Po zamknięciu Ormuz jedyna droga eksportu Aramco."
+    },
+    "hudajda": {
+      "name": "Hudajda",
+      "lat": 14.8,
+      "lng": 42.95,
+      "why": "Główny port Huti, przez który idzie import żywności dla północnego Jemenu."
+    },
+    "dzizan": {
+      "name": "Dżizan",
+      "lat": 16.89,
+      "lng": 42.55,
+      "why": "Rafineria Aramco 60 km od granicy z Jemenem. Najczęstszy cel dronów Huti."
+    },
+    "abha": {
+      "name": "Abha / Chamis Muszajt",
+      "lat": 18.25,
+      "lng": 42.6,
+      "why": "Baza lotnicza Króla Chalida, skąd startują saudyjskie naloty na Jemen."
+    },
+    "nadzran": {
+      "name": "Nadżran",
+      "lat": 17.49,
+      "lng": 44.13
+    },
+    "taiz": {
+      "name": "Taiz",
+      "lat": 13.58,
+      "lng": 44.02,
+      "why": "Trzecie miasto Jemenu, od 2015 podzielone frontem. Stąd biegnie droga na wybrzeże."
+    },
+    "alhazm": {
+      "name": "Al-Hazm (Al-Dżauf)",
+      "lat": 16.16,
+      "lng": 44.78
+    },
+    "hays": {
+      "name": "Hays / Al-Chaucha",
+      "lat": 13.9,
+      "lng": 43.35,
+      "why": "Nadmorskie dystrykty między Hudajdą a Mochą. Ich utrata odcięła Mochę od północy."
+    },
+    "mocha": {
+      "name": "Mocha",
+      "lat": 13.32,
+      "lng": 43.25,
+      "why": "Ostatni port sił rządowych na Morzu Czerwonym, ok. 70 km od cieśniny. Ta Mocha od kawy."
+    },
+    "hanisz": {
+      "name": "Wyspy Hanisz",
+      "lat": 13.75,
+      "lng": 42.75,
+      "why": "Archipelag w połowie drogi do Erytrei. Tu oblężono garnizon rządowy."
+    },
+    "dhubab": {
+      "name": "Dhubab",
+      "lat": 12.94,
+      "lng": 43.42,
+      "why": "Ostatnia miejscowość przed cieśniną, tuż nad obozem al-Omari."
+    },
+    "perim": {
+      "name": "Perim (Majun)",
+      "lat": 12.66,
+      "lng": 43.42,
+      "why": "Wyspa 13 km² dokładnie w gardle cieśniny. Dzieli ją na kanał wschodni (3 km, płytki) i zachodni (26 km), którym płyną tankowce."
+    },
+    "babmandab": {
+      "name": "Bab al-Mandab",
+      "lat": 12.58,
+      "lng": 43.33,
+      "why": "„Brama Łez”. 26 km szerokości, 6,2 mln baryłek ropy dziennie i ~80% LNG płynącego do Europy."
+    },
+    "rijad": {
+      "name": "Rijad",
+      "lat": 24.71,
+      "lng": 46.68
+    },
+    "islamabad": {
+      "name": "Islamabad",
+      "lat": 33.69,
+      "lng": 73.04
+    },
+    "salalah": {
+      "name": "Salalah",
+      "lat": 17.02,
+      "lng": 54.09,
+      "why": "Omański port. Oman od lat pośredniczy między Zatoką a Iranem."
+    },
+    "abqaiq": {
+      "name": "Abqaiq (złoża wschodnie)",
+      "lat": 25.94,
+      "lng": 49.68
+    },
+    "pompy": {
+      "name": "Stacje pomp rurociągu Wschód-Zachód",
+      "lat": 24.55,
+      "lng": 43.6,
+      "why": "1200 km rury z pól na wschodzie do Janbu, do 7 mln baryłek dziennie. Po zamknięciu Ormuz to jedyna droga saudyjskiej ropy na rynek, a stacje pomp są jej najsłabszym punktem."
+    }
+  },
+  "lines": [
+    {
+      "id": "szlak",
+      "label": "Saudyjski szlak ropy po zamknięciu Ormuz",
+      "from": "janbu",
+      "to": "babmandab",
+      "fromStep": 2
+    },
+    {
+      "id": "rurociag",
+      "label": "Rurociąg Wschód-Zachód (Petroline)",
+      "from": "abqaiq",
+      "to": "janbu",
+      "fromStep": 2
+    }
+  ],
+  "steps": [
+    {
+      "date": "2026-02-28",
+      "place": "teheran",
+      "kind": "tlo",
+      "title": "USA i Izrael uderzają w Iran",
+      "text": "Zaczyna się wojna z Iranem. Huti, sojusznik Teheranu w Jemenie, na razie stoją z boku. Dołączą miesiąc później rakietami na Izrael."
+    },
+    {
+      "date": "2026-07-14",
+      "place": "ormuz",
+      "kind": "tlo",
+      "title": "Ormuz zamiera",
+      "text": "USA przywracają blokadę morską Iranu. Ruch przez Ormuz się załamuje. Iran grozi odcięciem „wszystkich innych korytarzy eksportowych” i prosi Huti, żeby byli gotowi zamknąć Bab al-Mandab.",
+      "also": [
+        "babmandab"
+      ]
+    },
+    {
+      "date": "2026-07-20",
+      "place": "janbu",
+      "kind": "tlo",
+      "title": "Saudyjska ropa idzie przez Morze Czerwone",
+      "text": "Skoro Ormuz stoi, Aramco pompuje ropę rurociągiem na zachód, do Janbu, i wysyła ją na południe przez Bab al-Mandab. Huti ogłaszają blokadę morską Arabii Saudyjskiej. Od tej chwili cieśnina jest jedynym wyjściem dla saudyjskiego eksportu."
+    },
+    {
+      "date": "2026-07-24",
+      "place": "hudajda",
+      "kind": "atak",
+      "title": "Saudowie bombardują Hudajdę",
+      "text": "Pierwsza wymiana ciosów. Arabia uderza w port Huti, Huti odpowiadają dronami na rafinerię w Dżizanie i port Janbu. Od 6 sierpnia ostrzeliwują też jemeńskie siły rządowe.",
+      "also": [
+        "dzizan",
+        "janbu"
+      ]
+    },
+    {
+      "date": "2026-09-03",
+      "place": "taiz",
+      "kind": "atak",
+      "title": "Ofensywa lądowa rusza",
+      "text": "Huti uderzają w prowincji Taiz, żeby przeciąć drogę na Mochę. W pierwszych starciach ginie 129 osób. Na miejscu są setki oficerów irańskiej Gwardii Rewolucyjnej; operacją na nizinie ma kierować Abdolreza Shahlaei z Al-Kuds."
+    },
+    {
+      "date": "2026-09-07",
+      "place": "alhazm",
+      "kind": "atak",
+      "title": "Nalot na więzienie w Al-Hazm",
+      "text": "Siły rządowe kontratakują na wschodzie, w Al-Dżauf i Al-Bajdzie. Huti twierdzą, że saudyjski nalot na więzienie zabił 23 osoby, w tym dziecko. To ich uzasadnienie dla tego, co stanie się następnego dnia."
+    },
+    {
+      "date": "2026-09-08",
+      "place": "dzizan",
+      "kind": "atak",
+      "title": "Rakiety na Aramco",
+      "text": "Huti ogłaszają „szeroką ofensywę” na Arabię: rakiety balistyczne i drony na Dżizan, Abhę, Nadżran i bazę w Chamis Muszajt. 73 rannych, część instalacji naftowych staje. Saudowie odpowiadają 32 nalotami w ciągu doby.",
+      "also": [
+        "abha",
+        "nadzran"
+      ]
+    },
+    {
+      "date": "2026-09-09",
+      "place": "islamabad",
+      "kind": "dyplomacja",
+      "title": "Pakistan ostrzega Iran",
+      "text": "Rijad prosi Pakistan o pomoc; Islamabad przekazuje Teheranowi ostrzeżenie „utemperujcie Huti”. Trzy stolice uzgadniają: żadne obce wojska nie wejdą do Jemenu, odpowiedź tylko z terytorium saudyjskiego. Minister obrony Pakistanu wspomina o pakcie z Mekki, potem dementuje.",
+      "also": [
+        "rijad",
+        "teheran"
+      ]
+    },
+    {
+      "date": "2026-09-10",
+      "place": "hays",
+      "kind": "zdobycie",
+      "title": "Pęka wybrzeże",
+      "text": "Huti zajmują dystrykty Hays i Al-Chaucha między Hudajdą a Mochą. Siły wspierane przez Saudów tracą drogę odwrotu na północ."
+    },
+    {
+      "date": "2026-09-10",
+      "place": "mocha",
+      "kind": "zdobycie",
+      "title": "Upadek Mochy",
+      "text": "Siły rządowe wycofują się bez walki o miasto. Huti przejmują ostatni port przeciwnika na Morzu Czerwonym. Tego samego dnia ogłaszają: „żegluga bezpieczna dla wszystkich firm poza saudyjskimi”. Brent przebija 100 dolarów pierwszy raz od maja."
+    },
+    {
+      "date": "2026-09-10",
+      "place": "hanisz",
+      "kind": "zdobycie",
+      "title": "Oblężenie wysp Hanisz",
+      "text": "Garnizon rządowy na archipelagu zostaje odcięty od lądu. Doniesienia o zajęciu wysp Hanisz i Zukar. Odtąd całe południowe Morze Czerwone po stronie jemeńskiej jest w rękach Huti."
+    },
+    {
+      "date": "2026-09-10",
+      "place": "pompy",
+      "kind": "atak",
+      "title": "Pociski w rurociąg Wschód-Zachód",
+      "text": "Według dwóch amerykańskich urzędników w czwartek 10.09 trafione zostały stacje pomp przy rurociągu. Satelity wykryły dziewięć dużych pożarów, na zdjęciu z piątku jedna ze stacji jest rozlegle spalona. Kto uderzył, nie wiadomo; jeden z urzędników mówi o dronach z Iraku. To pierwszy cios w samą rurę, którą Saudowie omijają Ormuz.",
+      "also": [
+        "janbu"
+      ],
+      "znane_od": "2026-09-11"
+    },
+    {
+      "date": "2026-09-11",
+      "place": "perim",
+      "kind": "zdobycie",
+      "title": "Perim: wyspa w gardle cieśniny",
+      "text": "Rano Huti wchodzą na Perim (po arabsku Majun), siły rządowe schodzą z wyspy. Kto ma Perim, ma na wyciągnięcie ręki oba kanały cieśniny, w tym zachodni, którym płyną tankowce. To ta „kolejna wyspa” z nagłówków."
+    },
+    {
+      "date": "2026-09-11",
+      "place": "dhubab",
+      "kind": "zdobycie",
+      "title": "Całe wybrzeże",
+      "text": "Dhubab i obóz al-Omari zajęte. Huti kontrolują jemeński brzeg Morza Czerwonego od granicy saudyjskiej po Bab al-Mandab. Saudowie bombardują lotnisko w Mosze."
+    },
+    {
+      "date": "2026-09-11",
+      "place": "rijad",
+      "kind": "dyplomacja",
+      "title": "Trump mówi „nie”",
+      "text": "Książę Muhammad ibn Salman prosi o amerykańskie uderzenia na Huti. Trump odmawia: priorytetem jest Iran. USA dają Saudom ~100 doradców i wywiad celowniczy, ale nie własne naloty."
+    },
+    {
+      "date": "2026-09-11",
+      "place": "babmandab",
+      "kind": "rynek",
+      "title": "Dwie cieśniny w jednych rękach",
+      "text": "Iran trzyma Ormuz, jego sojusznik Bab al-Mandab. Przez cieśninę idzie 6,2 mln baryłek dziennie. Brent kończy tydzień powyżej 100 dolarów, stawki supertankowców biją rekordy, saudyjski eksport jest najniższy od 13 lat. Bilans walk: ok. 500 zabitych, 46 tys. uciekinierów.",
+      "also": [
+        "ormuz"
+      ]
+    },
+    {
+      "date": "2026-09-14",
+      "place": "salalah",
+      "kind": "dyplomacja",
+      "title": "Co dalej: rozmowy w Salalah",
+      "text": "W poniedziałek ministrowie państw Zatoki mają spotkać się z szefem MSZ Iranu w Omanie. Pytania otwarte: czy Huti naprawdę przepuszczają nie-saudyjskie statki, czy Arabia ruszy sama, i czy Iran ma ochotę użyć nowej karty przetargowej."
+    }
+  ]
+}

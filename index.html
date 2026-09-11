@@ -1894,6 +1894,17 @@ function zamknijWatkiPanel(){
 // bezpiecznie „przyciąć" po fakcie. A przejęcie gestu odbiera systemowy feel — dlatego właściciel
 // wybrał zwykły scroll.
 
+// Mapa konfliktu (2026-09-11): wątek → mapa scrollytelling (mapa.html?m=<id>). Mapowanie w mapy/index.json,
+// ładowane raz przy starcie; brak pliku = brak przycisku (fail-safe). 0 tokenów, 0 fetchy przy renderze.
+let MAPY_WATKOW = { watki:{}, mapy:{} };
+fetch('mapy/index.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).then(j => { if (j) MAPY_WATKOW = j; }).catch(() => {});
+function mapaLinkHtml(item){
+  const t = threadForItem(item);
+  const id = t && MAPY_WATKOW.watki[t.id];
+  if (!id) return '';
+  const m = MAPY_WATKOW.mapy[id] || {};
+  return `<a class="mapa-link" href="mapa.html?m=${escAttr(id)}"><span class="mapa-link-l"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg> Mapa konfliktu${m.kroki?` · ${m.kroki} etapów`:''}</span><span class="mapa-link-r">Przewiń historię →</span></a>`;
+}
 function watekHtml(item){
   const t = threadForItem(item);
   if (!t) return '';
@@ -2496,7 +2507,7 @@ function expandBlock(item) {
       ${impactHtml(item)}
       ${quotesHtml(item)}
       ${sagaRynekHtml(item)}
-      ${watekHtml(item)}
+      ${mapaLinkHtml(item)}${watekHtml(item)}
       ${npMniejHtml(item)}
       <div class="expand-divider"></div>
       <div class="expand-source-row">
@@ -2704,7 +2715,7 @@ function expandBlockArchive(item, dateStr, dose) {
       ${impactHtml(item)}
       ${quotesHtml(item)}
       ${sagaRynekHtml(item)}
-      ${watekHtml(item)}
+      ${mapaLinkHtml(item)}${watekHtml(item)}
       ${npMniejHtml(item)}
       <div class="expand-divider"></div>
       <div class="expand-source-row">
@@ -4205,7 +4216,7 @@ function dtShowDetail(item) {
       ${impactHtml(item)}
       ${quotesHtml(item)}
       ${sagaRynekHtml(item)}
-      ${watekHtml(item)}
+      ${mapaLinkHtml(item)}${watekHtml(item)}
       ${npZapadkaHtml(item)}
       <div class="dt-source-row">
         <div>

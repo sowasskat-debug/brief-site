@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<title>Mapa konfliktu — Brif.up</title>
+<meta name="description" content="Interaktywna mapa: przewijasz, a punkty na mapie zapalają się chronologicznie z wyjaśnieniem, gdzie to jest i dlaczego ma znaczenie.">
+<!-- Scrollytelling nad mapą (2026-09-11). Silnik jest OGÓLNY: dane bierze z mapy/<id>.json (?m=<id>, domyślnie huti).
+     Nowy konflikt = nowy plik JSON, bez ruszania tej strony. Mapa: Leaflet + kafle Esri Gray (bez klucza, jasne/ciemne
+     dobierane do motywu). Krok = <section class="step">; scroll+rAF wybiera krok najbliżej środka ekranu, mapa dolatuje do
+     miejsca, markery wcześniejszych kroków zostają z numerem, przyszłe są ukryte. -->
+<link rel="canonical" href="https://brifup.com/mapa.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BrifUp">
+<meta property="og:title" content="Mapa konfliktu — Brif.up">
+<meta property="og:description" content="Przewijasz, a wydarzenia zapalają się na mapie chronologicznie — gdzie to jest i dlaczego ma znaczenie.">
+<meta property="og:image" content="https://brifup.com/og-image.png?v=2">
+<meta property="og:url" content="https://brifup.com/mapa.html">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script>
+(function(){
+  var t=localStorage.getItem('brifup_theme')||'light';
+  document.documentElement.setAttribute('data-theme',t);
+  var m=document.querySelector('meta[name="theme-color"]');
+  if(m) m.setAttribute('content', t==='dark'?'#0f0f0f':'#ffffff');
+})();
+</script>
+<style>
+:root { --bg:#fff; --text:#111; --sub:#333; --muted:#8a8a8a; --rule:#e2e2e2; --red:#e01f0f; --soft:#faf9f7; --node:#c9c9c9;
+        --k-tlo:#8a8a8a; --k-atak:#e01f0f; --k-zdobycie:#b91c1c; --k-dyplomacja:#2563eb; --k-rynek:#d97706; }
+:root[data-theme="dark"] { --bg:#0f0f0f; --text:#f2f2f2; --sub:#cfcfcf; --muted:#8a8a8a; --rule:#2e2e2e; --soft:#1a1a1a; --node:#4a4a4a;
+        --k-dyplomacja:#60a5fa; --k-rynek:#fbbf24; --k-zdobycie:#f87171; }
+* { box-sizing:border-box; margin:0; }
+html,body { background:var(--bg); color:var(--text); }
+body { font-family:'Space Mono',monospace; }
+a { color:inherit; }
+.top { display:flex; align-items:baseline; justify-content:space-between; padding:14px 16px 10px; border-bottom:3px solid var(--text); max-width:1100px; margin:0 auto; }
+.logo { font-family:'DM Serif Display',serif; font-size:22px; text-decoration:none; color:var(--text); }
+.logo b { color:var(--red); font-weight:400; }
+.top-date { font-size:9px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; }
+.page-head { padding:18px 16px 10px; max-width:1100px; margin:0 auto; }
+.kicker { font-size:9px; letter-spacing:2px; color:var(--red); text-transform:uppercase; font-weight:700; }
+h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; margin-top:2px; line-height:1.1; }
+.lead { font-size:11px; color:var(--muted); line-height:1.6; margin-top:8px; max-width:560px; }
+
+/* Układ: mobile = mapa przyklejona u góry, kroki pod nią; desktop = kroki po lewej, mapa po prawej na całą wysokość. */
+.story { max-width:1100px; margin:0 auto; position:relative; }
+.mapwrap { position:sticky; top:0; height:46vh; z-index:2; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); background:var(--soft); }
+#map { width:100%; height:100%; }
+.steps { padding:0 16px 40vh; }
+.step { min-height:44vh; display:flex; align-items:center; }
+.card { border-left:3px solid var(--node); padding:10px 0 10px 14px; opacity:.35; transition:opacity .35s, border-color .35s; max-width:520px; }
+.step.active .card { opacity:1; border-color:var(--red); }
+.when { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); display:flex; gap:8px; align-items:center; }
+.when .kind { font-weight:700; }
+.kind[data-k="tlo"] { color:var(--k-tlo); } .kind[data-k="atak"] { color:var(--k-atak); } .kind[data-k="zdobycie"] { color:var(--k-zdobycie); }
+.kind[data-k="dyplomacja"] { color:var(--k-dyplomacja); } .kind[data-k="rynek"] { color:var(--k-rynek); }
+.place { font-size:10px; color:var(--sub); margin-top:4px; }
+.card h2 { font-family:'DM Serif Display',serif; font-size:21px; line-height:1.2; margin-top:4px; }
+.card p { font-size:12.5px; line-height:1.55; color:var(--sub); margin-top:8px; }
+.why { margin-top:10px; padding:8px 10px; background:var(--soft); border:1px solid var(--rule); font-size:11px; line-height:1.5; color:var(--sub); }
+.why b { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--red); display:block; margin-bottom:3px; }
+.legend { padding:14px 16px 30px; max-width:1100px; margin:0 auto; font-size:10px; color:var(--muted); line-height:1.7; border-top:1px solid var(--rule); }
+.legend a { color:var(--sub); }
+
+@media (min-width:900px) {
+  .story { display:grid; grid-template-columns:440px 1fr; }
+  .mapwrap { order:2; height:100vh; border:0; border-left:1px solid var(--rule); }
+  .steps { order:1; padding:10vh 24px 40vh 16px; }
+  .step { min-height:60vh; }
+}
+
+/* Markery */
+.mk { width:14px; height:14px; border-radius:50%; background:var(--red); border:2px solid var(--bg); box-shadow:0 0 0 1px var(--red);
+      display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#fff; transition:transform .3s, opacity .3s; }
+.mk.past { background:var(--node); box-shadow:0 0 0 1px var(--node); color:var(--text); }
+.mk.now { transform:scale(1.7); z-index:1000; animation:pulse 1.6s infinite; }
+.mk.also { background:transparent; border:2px solid var(--red); box-shadow:none; }
+@keyframes pulse { 0%{box-shadow:0 0 0 1px var(--red);} 70%{box-shadow:0 0 0 10px rgba(224,31,15,0);} 100%{box-shadow:0 0 0 1px var(--red);} }
+.lbl { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.5px; color:var(--text); background:var(--bg); padding:1px 5px; border:1px solid var(--rule); white-space:nowrap; opacity:.9; }
+.leaflet-container { background:var(--soft); font-family:'Space Mono',monospace; }
+.leaflet-control-attribution { font-size:8px !important; }
+
+/* Motyw ciemny (wybór właściciela 11.09: „Gazeta” przy dziennym, „Noc” przy nocnym): białe markery
+   z czerwonym pierścieniem, etykiety na ciemnym tle. Podkład dobierany w JS po data-theme. */
+:root[data-theme="dark"] .mk { background:#fff; color:#111; box-shadow:0 0 0 2px var(--red); border-color:#fff; }
+:root[data-theme="dark"] .mk.past { background:#9a9a9a; box-shadow:0 0 0 1px #9a9a9a; color:#111; }
+:root[data-theme="dark"] .lbl { background:rgba(20,20,20,.85); color:#fff; border-color:#444; }
+:root[data-theme="dark"] .leaflet-control-attribution { background:rgba(0,0,0,.5); color:#aaa; }
+
+/* Podpowiedź „przewijaj” — bez niej czytelnik widzi mapę i jeden post i myśli, że to wszystko. Znika po pierwszym przewinięciu. */
+.hint { position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:5; background:var(--text); color:var(--bg); font-size:9px; letter-spacing:2px; text-transform:uppercase; padding:7px 12px; border-radius:20px; display:flex; align-items:center; gap:8px; pointer-events:none; transition:opacity .4s; box-shadow:0 4px 14px rgba(0,0,0,.25); }
+.hint svg { width:12px; height:12px; animation:bob 1.2s infinite; }
+.hint.off { opacity:0; }
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(4px)} }
+.progress { position:absolute; left:0; top:0; height:3px; background:var(--red); z-index:6; width:0; transition:width .3s; }
+
+/* Odmiany „Gazety” (?g=1..3) — do wyboru, potem zostaje jedna */
+body.g-2 .mapwrap { height:56vh; }
+body.g-2 .card { border-left:0; padding-left:0; border-top:3px solid var(--text); padding-top:10px; }
+body.g-2 .step.active .card { border-color:var(--red); }
+body.g-2 .when { font-size:10px; color:var(--text); }
+body.g-2 .when span:first-child { font-family:'DM Serif Display',serif; font-size:18px; letter-spacing:0; text-transform:none; color:var(--red); }
+body.g-2 .card h2 { font-size:23px; }
+body.g-2 .why { border:0; border-left:2px solid var(--rule); background:transparent; }
+body.g-3 .steps { position:relative; }
+body.g-3 .step { position:relative; padding-left:22px; }
+body.g-3 .step::before { content:''; position:absolute; left:6px; top:0; bottom:0; width:2px; background:var(--rule); }
+body.g-3 .step::after { content:''; position:absolute; left:2px; top:50%; width:10px; height:10px; border-radius:50%; background:var(--node); border:2px solid var(--bg); box-shadow:0 0 0 1px var(--rule); transform:translateY(-50%); transition:background .3s, transform .3s; }
+body.g-3 .step.active::after { background:var(--red); transform:translateY(-50%) scale(1.4); box-shadow:0 0 0 1px var(--red); }
+body.g-3 .card { border-left:0; padding-left:0; }
+body.g-3 .card h2 { font-size:22px; }
+body.g-3 .when .kind { border:1px solid currentColor; padding:1px 6px; border-radius:10px; }
+body.g-3 .why { background:transparent; border:0; padding:0; color:var(--muted); }
+body.g-3 .why b { display:inline; margin-right:6px; }
+</style>
+</head>
+<body>
+<div class="top"><a class="logo" href="index.html">Brif<b>.</b>up</a><span class="top-date" id="topdate"></span></div>
+<div class="page-head">
+  <div class="kicker" id="kicker">Mapa konfliktu</div>
+  <h1 id="title">…</h1>
+  <p class="lead" id="lead"></p>
+</div>
+<div class="story">
+  <div class="mapwrap"><div id="map"></div><div class="progress" id="progress"></div>
+    <div class="hint" id="hint">Przewijaj w dół <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg></div></div>
+  <div class="steps" id="steps"></div>
+</div>
+<div class="legend">
+  <span style="color:var(--k-tlo)">● tło</span> &nbsp; <span style="color:var(--k-atak)">● atak</span> &nbsp;
+  <span style="color:var(--k-zdobycie)">● zdobycie</span> &nbsp; <span style="color:var(--k-dyplomacja)">● dyplomacja</span> &nbsp;
+  <span style="color:var(--k-rynek)">● rynek</span><br>
+  Źródła: Al Jazeera, CNN, NBC, Reuters, The National, Wikipedia (2026 Yemen offensives). Stan na <span id="updated"></span>.
+  &nbsp;<a href="watki.html">Wątki →</a>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(async function(){
+  const KIND = { tlo:'tło', atak:'atak', zdobycie:'zdobycie', dyplomacja:'dyplomacja', rynek:'rynek' };
+  const id = new URLSearchParams(location.search).get('m') || 'huti';
+  const d = await fetch('mapy/' + id + '.json', {cache:'no-cache'}).then(r => r.json());
+  document.title = d.title + ' — Brif.up';
+  document.getElementById('kicker').textContent = d.kicker || 'Mapa konfliktu';
+  document.getElementById('title').textContent = d.title;
+  document.getElementById('lead').textContent = d.lead || '';
+  document.getElementById('updated').textContent = d.updated || '';
+  document.getElementById('topdate').textContent = (d.updated||'').split('-').reverse().join('.');
+
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const g = new URLSearchParams(location.search).get('g'); if (g) document.body.classList.add('g-' + g);
+  const E = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
+  const PR = { base: E + (dark?'Canvas/World_Dark_Gray_Base':'Canvas/World_Light_Gray_Base') + '/MapServer/tile/{z}/{y}/{x}',
+               ref:  E + (dark?'Canvas/World_Dark_Gray_Reference':'Canvas/World_Light_Gray_Reference') + '/MapServer/tile/{z}/{y}/{x}',
+               refOp: dark ? .8 : .7, line: dark ? '#fbbf24' : '#d97706' };
+  const map = L.map('map', { zoomControl:false, scrollWheelZoom:false, dragging:!L.Browser.mobile, attributionControl:true })
+               .setView([d.view.lat, d.view.lng], d.view.zoom);
+  // Podkład Esri (bez klucza; CARTO od 2026 wymaga API key i stempluje kafle). Jasny/ciemny wg motywu strony.
+  L.tileLayer(PR.base, { attribution:'© Esri, HERE, Garmin, © OpenStreetMap', maxZoom:12 }).addTo(map);
+  if (PR.ref) L.tileLayer(PR.ref, { maxZoom:12, opacity:PR.refOp, pane:'shadowPane' }).addTo(map);
+
+  // Linie (np. szlak ropy) — pojawiają się od kroku fromStep.
+  const lines = (d.lines||[]).map(l => {
+    const a = d.places[l.from], b = d.places[l.to];
+    const pl = L.polyline([[a.lat,a.lng],[b.lat,b.lng]], { color:PR.line, weight:2, dashArray:'6 6', opacity:0 }).addTo(map);
+    if (l.label) pl.bindTooltip(l.label, { permanent:false, direction:'center', className:'lbl' });
+    return { pl, from: l.fromStep||0 };
+  });
+
+  // Jeden marker na miejsce; stan (przyszły/teraz/dawny) zmienia klasa.
+  const markers = {};
+  function mk(pid, n, cls) {
+    const p = d.places[pid];
+    const icon = L.divIcon({ className:'', html:'<div class="mk '+cls+'">'+(n||'')+'</div>', iconSize:[14,14], iconAnchor:[7,7] });
+    const m = L.marker([p.lat,p.lng], { icon, interactive:false, opacity:0 }).addTo(map);
+    m.bindTooltip(p.name, { permanent:true, direction:'auto', offset:[10,0], className:'lbl', opacity:0 });
+    return m;
+  }
+  d.steps.forEach((s, i) => {
+    s.n = i+1;
+    if (!markers[s.place]) markers[s.place] = { m: mk(s.place, s.n, 'past'), first: i };
+    (s.also||[]).forEach(a => { if (!markers[a]) markers[a] = { m: mk(a, '', 'also'), first: i }; });
+  });
+
+  // Kroki w DOM.
+  const box = document.getElementById('steps');
+  d.steps.forEach((s, i) => {
+    const p = d.places[s.place];
+    const el = document.createElement('section');
+    el.className = 'step'; el.dataset.i = i;
+    el.innerHTML = '<div class="card"><div class="when"><span>'+ s.date.split('-').reverse().join('.') + (s.znane_od && s.znane_od!==s.date ? ' · wiadomo od '+ s.znane_od.split('-').reverse().join('.') : '') +'</span>'+
+      '<span class="kind" data-k="'+s.kind+'">'+ (KIND[s.kind]||s.kind) +'</span></div>'+
+      '<div class="place">📍 '+ p.name +'</div><h2>'+ s.title +'</h2><p>'+ s.text +'</p>'+
+      (p.why ? '<div class="why"><b>Dlaczego to miejsce</b>'+ p.why +'</div>' : '') + '</div>';
+    box.appendChild(el);
+  });
+
+  let current = -1;
+  function setMarker(m, cls, n, show) {
+    const el = m.getElement(); if (!el) return;
+    const dot = el.querySelector('.mk'); dot.className = 'mk ' + cls; if (n !== undefined) dot.textContent = n;
+    m.setOpacity(show ? 1 : 0);
+    const tt = m.getTooltip(); if (tt && tt.getElement()) tt.getElement().style.opacity = show ? (cls==='now'?1:.75) : 0;
+  }
+  function activate(i) {
+    if (i === current) return; current = i;
+    const s = d.steps[i], p = d.places[s.place];
+    document.querySelectorAll('.step').forEach(el => el.classList.toggle('active', +el.dataset.i === i));
+    document.getElementById('hint').classList.toggle('off', i > 0);
+    document.getElementById('progress').style.width = ((i+1) / d.steps.length * 100) + '%';
+    // markery: pokazane te, których pierwszy krok <= i
+    Object.entries(markers).forEach(([pid, o]) => {
+      const isNow = pid === s.place, isAlso = (s.also||[]).includes(pid);
+      const shown = o.first <= i;
+      const stepN = d.steps.findIndex(x => x.place === pid) + 1;
+      setMarker(o.m, isNow ? 'now' : (isAlso ? 'also' : 'past'), isNow || isAlso ? '' : (stepN>0?stepN:''), shown);
+    });
+    lines.forEach(l => l.pl.setStyle({ opacity: l.from <= i ? .9 : 0 }));
+    // Kadr: miejsce + „also” razem, inaczej dolot do miejsca.
+    const pts = [[p.lat,p.lng]].concat((s.also||[]).map(a => [d.places[a].lat, d.places[a].lng]));
+    if (pts.length > 1) map.flyToBounds(L.latLngBounds(pts).pad(0.5), { duration:1.1, maxZoom:7 });
+    else map.flyTo([p.lat, p.lng], s.zoom || (s.kind==='zdobycie' ? 8 : 6), { duration:1.1 });
+  }
+  // Aktywny = krok, którego karta jest najbliżej środka ekranu. IntersectionObserver sam nie wystarcza:
+  // przy szybkim przewijaniu wpisy przychodzą w kolejności DOM, nie scrolla, i mapa zostawała w tyle za kartą.
+  const stepEls = Array.from(document.querySelectorAll('.step'));
+  let raf = 0;
+  function pick() {
+    raf = 0;
+    // Na telefonie mapa jest przyklejona U GÓRY, więc „środek ekranu” liczymy dla pasa POD mapą —
+    // inaczej wygrywała karta o krok wcześniejsza (jej środek był bliżej połowy okna niż karta w kadrze).
+    const stacked = getComputedStyle(document.querySelector('.story')).display !== 'grid';
+    const mapBottom = stacked ? Math.max(0, Math.min(window.innerHeight, document.querySelector('.mapwrap').getBoundingClientRect().bottom)) : 0;
+    const mid = mapBottom + (window.innerHeight - mapBottom) / 2;
+    let best = 0, bd = Infinity;
+    stepEls.forEach((el, i) => { const r = el.getBoundingClientRect(); const d_ = Math.abs((r.top + r.bottom)/2 - mid); if (d_ < bd) { bd = d_; best = i; } });
+    activate(best);
+  }
+  window.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(pick); }, { passive:true });
+  window.addEventListener('resize', pick);
+  activate(0);
+})();
+</script>
+</body>
+</html>

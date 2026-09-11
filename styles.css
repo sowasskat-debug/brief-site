@@ -1546,3 +1546,10 @@ html, body {
 [data-theme="dark"] .np-chip:hover { border-color:rgba(255,255,255,.5); }
 [data-theme="dark"] .ukr-panel { border-top-color:rgba(255,255,255,.10); }
 [data-theme="dark"] .ukr-chip:hover { background:rgba(255,255,255,.06); }
+
+/* Mapa konfliktu — link pod postem (2026-09-11), obok przycisku wątku */
+.mapa-link { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; margin:10px 0 6px; padding:9px 10px; border:1px solid var(--red); color:var(--red); text-decoration:none; font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1px; text-transform:uppercase; font-weight:700; background:transparent; }
+.mapa-link-l { display:flex; align-items:center; gap:6px; }
+.mapa-link-r { font-weight:400; letter-spacing:.5px; text-transform:none; color:var(--muted); }
+.mapa-link:hover { background:var(--red); color:#fff; }
+.mapa-link:hover .mapa-link-r { color:#fff; }

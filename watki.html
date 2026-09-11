@@ -28,6 +28,8 @@
 <link rel="icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
+.mapa-link { display:inline-block; margin-top:10px; padding:7px 10px; border:1px solid var(--red); color:var(--red); text-decoration:none; font-size:10px; letter-spacing:1px; text-transform:uppercase; font-weight:700; }
+
 :root { --bg:#fff; --text:#111; --sub:#333; --muted:#8a8a8a; --rule:#e2e2e2; --red:#e01f0f; --soft:#faf9f7; --node:#c9c9c9; }
 :root[data-theme="dark"] { --bg:#0f0f0f; --text:#f2f2f2; --sub:#cfcfcf; --muted:#8a8a8a; --rule:#2e2e2e; --soft:#1a1a1a; --node:#4a4a4a; }
 * { box-sizing:border-box; margin:0; }
@@ -88,6 +90,8 @@ h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; ma
 </div>
 <div id="list"><div class="pusto">Wczytywanie wątków…</div></div>
 <script>
+let MAPY = { watki:{}, mapy:{} }; // wątek → mapa konfliktu (mapy/index.json), ładowane razem z threads.json
+
 (function(){
   var t = localStorage.getItem('brifup_theme') || 'light';
   document.documentElement.setAttribute('data-theme', t);
@@ -121,8 +125,10 @@ function ensureDay(date){
 let THREADS = [];
 Promise.all([
   fetch('threads.json?_=' + Date.now()).then(r=>r.json()),
-  fetch('briefs.json?_=' + Date.now()).then(r=>r.json()).catch(()=>({}))
-]).then(([t, b]) => {
+  fetch('briefs.json?_=' + Date.now()).then(r=>r.json()).catch(()=>({})),
+  fetch('mapy/index.json?_=' + Date.now()).then(r=>r.ok?r.json():null).catch(()=>null)
+]).then(([t, b, m]) => {
+  if (m) MAPY = m;
   indexItems(b);
   THREADS = (t.threads||[]).filter(x => x.nodes && x.nodes.length >= 2)
     .sort((a,b2) => (b2.nodes[b2.nodes.length-1].added_at||'').localeCompare(a.nodes[a.nodes.length-1].added_at||''));
@@ -168,6 +174,7 @@ function render(){
         <div class="saga-title">${esc(th.title)}</div>
         ${th.memo?`<div class="saga-memo">${esc(th.memo)}</div>`:''}
       </div>
+      ${MAPY.watki[th.id]?`<a class="mapa-link" href="mapa.html?m=${MAPY.watki[th.id]}">📍 Mapa konfliktu · przewiń historię →</a>`:''}
       <div class="tl">${os}</div>
       ${ukryte?`<div class="toggle" onclick="document.getElementById('s${ti}').classList.toggle('open')"><span class="t-more">Rozsuń pełną oś · ${th.nodes.length} etapów ▾</span><span class="t-less">Zwiń ▴</span></div>`:''}
     </article>`;
