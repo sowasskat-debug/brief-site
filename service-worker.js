@@ -8,7 +8,7 @@
 try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js'); }
 catch (e) { /* push niedostępny, reszta SW działa */ }
 
-const CACHE_NAME = 'brifup-cache-v166';
+const CACHE_NAME = 'brifup-cache-v167';
 const STATIC_ASSETS = [
   './manifest.json',
   './icon-192.png',
@@ -16,6 +16,7 @@ const STATIC_ASSETS = [
   './og-image.png',
   './styles.css',
   './flagi.js',
+  './licznik.js',
 ];
 
 // ⚠️ `fonts/TwemojiCountryFlags.woff2` CELOWO NIE JEST precache'owany. Font naprawia flagi
