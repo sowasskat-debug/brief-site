@@ -59,7 +59,11 @@ h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; ma
 .when .kind { font-weight:700; }
 .kind[data-k="tlo"] { color:var(--k-tlo); } .kind[data-k="atak"] { color:var(--k-atak); } .kind[data-k="zdobycie"] { color:var(--k-zdobycie); }
 .kind[data-k="dyplomacja"] { color:var(--k-dyplomacja); } .kind[data-k="rynek"] { color:var(--k-rynek); } .kind[data-k="mapa"] { color:var(--text); }
-.back { font-size:11px; color:var(--red); }
+.cta { display:block; margin-top:18px; padding:16px 16px 14px; background:var(--red); color:#fff; text-decoration:none; border-radius:2px; }
+.cta b { display:block; font-family:'DM Serif Display',serif; font-weight:400; font-size:22px; line-height:1.15; }
+.cta span { display:block; font-size:11px; line-height:1.5; margin-top:6px; opacity:.92; }
+.cta em { display:block; font-style:normal; font-size:10px; letter-spacing:2px; text-transform:uppercase; font-weight:700; margin-top:12px; }
+.cta:hover { filter:brightness(1.08); }
 /* Krok końcowy: markery z numerami czytelne, etykiety schowane (przy szerokim kadrze nachodzą na siebie) */
 body.calosc .lbl { opacity:0 !important; }
 body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px var(--red); }
@@ -209,7 +213,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
       '<span class="kind" data-k="'+s.kind+'">'+ (KIND[s.kind]||s.kind) +'</span></div>'+
       (s.calosc ? '' : '<div class="place">📍 '+ p.name +'</div>') +'<h2>'+ s.title +'</h2><p>'+ s.text +'</p>'+
       (p.why && !s.calosc ? '<div class="why"><b>Dlaczego to miejsce</b>'+ p.why +'</div>' : '') +
-      (s.calosc ? '<p><a class="back" href="index.html">← Wróć do wydania</a></p>' : '') + '</div>';
+      (s.calosc ? '<a class="cta" href="index.html"><b>Więcej takich historii na Brif.up</b><span>Trzy wydania dziennie: co się stało, dlaczego i co to znaczy dla Twojego portfela. Bez szumu, w dwie minuty.</span><em>Wejdź na stronę główną →</em></a>' : '') + '</div>';
     box.appendChild(el);
   });
 
