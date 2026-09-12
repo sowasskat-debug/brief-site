@@ -1553,3 +1553,13 @@ html, body {
 .mapa-link-r { font-weight:400; letter-spacing:.5px; text-transform:none; color:var(--muted); }
 .mapa-link:hover { background:var(--red); color:#fff; }
 .mapa-link:hover .mapa-link-r { color:#fff; }
+/* Minimapa pod postem (2026-09-12): kafle Esri jako <img>, kropka = miejsce etapu tego newsa, kółka = wcześniejsze etapy. */
+.mapa-box { margin:10px 0 6px; }
+.mapa-box .mapa-link { margin:0; }
+.mapa-mini { position:relative; height:150px; overflow:hidden; border:1px solid var(--rule); border-bottom:0; background:var(--soft, #f2f2f2); }
+.mapa-mini img { position:absolute; width:256px; height:256px; max-width:none; pointer-events:none; }
+.mapa-mini .mm-dot { position:absolute; left:50%; top:50%; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; background:var(--red); border:2px solid #fff; box-shadow:0 0 0 6px rgba(224,31,15,.18); }
+.mapa-mini .mm-lbl { position:absolute; left:calc(50% + 14px); top:calc(50% - 10px); font-family:'Space Mono',monospace; font-size:10px; font-weight:700; background:var(--bg); color:var(--text); padding:2px 6px; border:1px solid var(--text); white-space:nowrap; }
+.mapa-mini .mm-past { position:absolute; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; background:var(--bg); border:2px solid var(--text); color:var(--text); font-family:'Space Mono',monospace; font-size:6px; font-weight:700; line-height:8px; text-align:center; }
+.mapa-mini .mm-attr { position:absolute; right:4px; bottom:2px; font-size:8px; color:var(--muted); font-family:'Space Mono',monospace; }
+

@@ -1898,14 +1898,93 @@ function zamknijWatkiPanel(){
 // ładowane raz przy starcie; brak pliku = brak przycisku (fail-safe). 0 tokenów, 0 fetchy przy renderze.
 let MAPY_WATKOW = { watki:{}, mapy:{} };
 fetch('mapy/index.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).then(j => { if (j) MAPY_WATKOW = j; }).catch(() => {});
-function mapaLinkHtml(item){
+// Która mapa dla newsa (12.09, życzenie właściciela: „wszystkie artykuły związane z konfliktem — mapa musi być pokazana”):
+// 1) wątek → mapa (index.json `watki`), 2) słowa w nagłówku (`slowa`, regex per mapa, kolejność = priorytet),
+// 3) kategoria (`kategorie`). Bez trafienia = brak przycisku, jak dotąd. Zero tokenów, dane w JSON, nie w kodzie.
+function mapaDlaNewsa(item){
   const t = threadForItem(item);
-  const id = t && MAPY_WATKOW.watki[t.id];
+  const zWatku = t && MAPY_WATKOW.watki[t.id];
+  if (zWatku) return zWatku;
+  const txt = String(item.text || '').toLowerCase();
+  for (const [id, re] of Object.entries(MAPY_WATKOW.slowa || {})) {
+    try { if (new RegExp(re, 'i').test(txt)) return id; } catch (_) {}
+  }
+  const kat = MAPY_WATKOW.kategorie && MAPY_WATKOW.kategorie[dtGetCategory(item)];
+  return kat || '';
+}
+function mapaLinkHtml(item){
+  const id = mapaDlaNewsa(item);
   if (!id) return '';
   const m = MAPY_WATKOW.mapy[id] || {};
   // ?od=<data newsa>: mapa startuje na etapie z tego momentu, nie od początku historii (życzenie właściciela 11.09).
   const od = String(item.published_at || item.added_at || '').slice(0, 10);
-  return `<a class="mapa-link" href="mapa.html?m=${escAttr(id)}${/^\d{4}-\d{2}-\d{2}$/.test(od) ? '&od=' + od : ''}"><span class="mapa-link-l"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg> Mapa konfliktu${m.kroki?` · ${m.kroki} etapów`:''}</span><span class="mapa-link-r">Przewiń historię →</span></a>`;
+  const odOk = /^\d{4}-\d{2}-\d{2}$/.test(od);
+  // Minimapa (2026-09-12, życzenie właściciela: „podgląd pod postem, gdzie się to znajduje"). Tu tylko PUSTY pojemnik
+  // z danymi — wypełnia go `mapaMiniWypelnij` przy REALNYM otwarciu karty (setCardOpen / dtShowDetail), bo ta funkcja
+  // leci dla każdego kafla przy każdym renderze (zasada: nic sieciowego w funkcjach budujących HTML).
+  return `<div class="mapa-box" data-mapa="${escAttr(id)}"${odOk ? ` data-od="${od}"` : ''} data-txt="${escAttr(item.text || '')}"><div class="mapa-mini" hidden></div><a class="mapa-link" href="mapa.html?m=${escAttr(id)}${odOk ? '&od=' + od : ''}"><span class="mapa-link-l"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg> Mapa konfliktu${m.kroki?` · ${m.kroki} etapów`:''}</span><span class="mapa-link-r">Przewiń historię →</span></a></div>`;
+}
+// Dane map ładowane leniwie, raz na mapę (obietnica w cache — równoległe otwarcia nie dublują pobrania).
+const MAPY_DANE = {};
+function mapaDane(id){
+  if (!MAPY_DANE[id]) MAPY_DANE[id] = fetch('mapy/' + encodeURIComponent(id) + '.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null);
+  return MAPY_DANE[id];
+}
+// Który etap mapy odpowiada newsowi: ten sam mechanizm co ?od= w mapa.html (ostatni etap nie późniejszy niż data
+// newsa), z jedną poprawką — gdy nagłówek wymienia MIEJSCE któregoś etapu z okolicznych dni (Perim, Mocha,
+// Szalamcze), wygrywa ten etap. Bez tego news o dieslu w Kalifornii z 10.09 pokazałby Ormuz.
+function mapaEtapDlaNewsa(d, od, txt){
+  // Stabilne sortowanie po dacie — JSON Iranu jest ułożony rozdziałami, nie chronologicznie (jak widok „chrono” w mapa.html).
+  const steps = d.steps.filter(x => !x.naglowek && !x.calosc).map((x, i) => [x, i]).sort((a, b) => a[0].date < b[0].date ? -1 : a[0].date > b[0].date ? 1 : a[1] - b[1]).map(a => a[0]);
+  let cel = -1;
+  steps.forEach((x, i) => { if (!od || x.date <= od) cel = i; });
+  if (cel < 0) return null;
+  if (od) {
+    const t = ' ' + String(txt || '').toLowerCase() + ' ';
+    // Okno: do 2 dni WSTECZ od daty newsa, nigdy w przód (etap z 14.09 nie może ilustrować newsa z 12.09).
+    const okno = steps.map((x, i) => [x, i]).filter(([x]) => { const dd = (new Date(od) - new Date(x.date)) / 864e5; return dd >= 0 && dd <= 2; });
+    for (const [x, i] of okno) {
+      const p = d.places[x.place]; if (!p) continue;
+      // Rdzenie z nazwy miejsca BEZ nawiasu — „Salalah (Oman)” ma dopasować „Salalah”, nie każdy news z Omanem.
+      const rdzenie = String(p.name).split('(')[0].split(/[\s\/,]+/).filter(w => w.length >= 4).map(w => w.toLowerCase().slice(0, 5));
+      if (rdzenie.some(r => t.includes(' ' + r) || t.includes(r))) { cel = i; }
+    }
+  }
+  return { s: steps[cel], n: cel + 1, total: steps.length, steps: steps.slice(0, cel) };
+}
+function mapaMiniWypelnij(box){
+  if (!box || box.dataset.gotowe) return; box.dataset.gotowe = '1';
+  const id = box.dataset.mapa, od = box.dataset.od || '', txt = box.dataset.txt || '';
+  mapaDane(id).then(d => {
+    if (!d || !d.steps || !d.places) return;
+    const e = mapaEtapDlaNewsa(d, od, txt); if (!e) return;
+    const link = box.querySelector('.mapa-link-r');
+    if (link) link.textContent = `etap ${e.n} z ${e.total} · Przewiń →`;
+    const p = d.places[e.s.place]; if (!p) return;   // każdy etap ma miejsce ze słownika mapy — pokazujemy zawsze (życzenie właściciela: „mapa musi być pokazana”)
+    const mini = box.querySelector('.mapa-mini'); if (!mini) return;
+    const Z = 6, T = 256, W = box.clientWidth || 400, H = 150;   // mini jest jeszcze ukryta (szerokość 0) — mierzymy pojemnik
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const E = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+    const base = E + (dark ? 'World_Dark_Gray_Base' : 'World_Light_Gray_Base') + '/MapServer/tile/';
+    const ref  = E + (dark ? 'World_Dark_Gray_Reference' : 'World_Light_Gray_Reference') + '/MapServer/tile/';
+    const px = (lat, lng) => { const n = 2 ** Z; const x = (lng + 180) / 360 * n * T; const r = lat * Math.PI / 180;
+      const y = (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n * T; return [x, y]; };
+    const [cx, cy] = px(p.lat, p.lng);
+    const x0 = cx - W / 2, y0 = cy - H / 2;
+    let h = '';
+    for (let ty = Math.floor(y0 / T); ty <= Math.floor((y0 + H) / T); ty++)
+      for (let tx = Math.floor(x0 / T); tx <= Math.floor((x0 + W) / T); tx++)
+        h += `<img src="${base}${Z}/${ty}/${tx}" alt="" style="left:${Math.round(tx * T - x0)}px;top:${Math.round(ty * T - y0)}px">` +
+             `<img src="${ref}${Z}/${ty}/${tx}" alt="" style="left:${Math.round(tx * T - x0)}px;top:${Math.round(ty * T - y0)}px">`;   // warstwa nazw (jak na dużej mapie)
+    // wcześniejsze etapy w kadrze — puste kółka z numerem, jak na dużej mapie
+    const seen = new Set([e.s.place]);
+    e.steps.forEach((x, i) => { const q = d.places[x.place]; if (!q || seen.has(x.place)) return; seen.add(x.place);
+      const [qx, qy] = px(q.lat, q.lng); const lx = qx - x0, ly = qy - y0;
+      if (lx < 6 || ly < 6 || lx > W - 6 || ly > H - 6) return;
+      h += `<span class="mm-past" style="left:${Math.round(lx)}px;top:${Math.round(ly)}px">${i + 1}</span>`; });
+    h += `<span class="mm-dot"></span><span class="mm-lbl">${escHtml(p.name)}</span><span class="mm-attr">© Esri</span>`;
+    mini.innerHTML = h; mini.hidden = false;
+  });
 }
 function watekHtml(item){
   const t = threadForItem(item);
@@ -2992,6 +3071,7 @@ function setCardOpen(el, isOpen) {
         im.src = im.dataset.src;
         im.removeAttribute('data-src');   // drugie otwarcie nie ustawia src ponownie
       });
+      if (exp) exp.querySelectorAll('.mapa-box[data-mapa]').forEach(mapaMiniWypelnij);   // minimapa pod postem (12.09)
     } catch (_) {}
   }
 }
@@ -4232,6 +4312,7 @@ function dtShowDetail(item) {
       <div class="dt-related-title">Inne wpisy</div>
       ${related.map(r=>`<div class="dt-related-item" onclick="dtPickItem('${r.id}')"><span>${znacznikHtml(r)}</span><span>${escHtml(r.text.length>80?r.text.slice(0,80)+'…':r.text)}</span></div>`).join('')}
     </div>` : ''}`;
+  det.querySelectorAll('.mapa-box[data-mapa]').forEach(mapaMiniWypelnij);   // minimapa pod postem (12.09): panel = jeden otwarty artykuł
 }
 
 // init desktop header
