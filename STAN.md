@@ -1,6 +1,6 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-12 (MINIMAPA POD POSTEM: kafle Esri z miejscem etapu mapy konfliktu albo z pola `geo` od bota — bot #4b757c3 podaje `miejsce` z opisu tylko przy pewności, Nominatim geokoduje; mapa konfliktu domyślnie CHRONOLOGICZNIE, rozdziały pod `?widok=rozdzialy`; mapa pod każdym newsem o Iranie/Huti po słowach i kategorii; „sprawdź mapę” 12.09 — Huti 18 etapów, Iran 30; SW v171; wcześniej 11.09: MAPY KONFLIKTÓW mapa.html + mapy/huti.json + mapy/iran.json, licznik.js, historia.html pod reklamy; hasło „sprawdź mapę”; 09.09: limit dawki 40→60 — bot #265; NatGeo — bot #267/#268; wyjątek głowa państwa — bot #269; gotowiec X na modelu pro — front #227/#228)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-13 noc (MINIMAPA POD POSTEM + miejsce.html z zoomem; geo od bota ZWERYFIKOWANE — „Nowe Delhi” z biegu 19:00; bot na deepseek-flash (V4.1); kafle Esri z miejscem etapu mapy konfliktu albo z pola `geo` od bota — bot #4b757c3 podaje `miejsce` z opisu tylko przy pewności, Nominatim geokoduje; mapa konfliktu domyślnie CHRONOLOGICZNIE, rozdziały pod `?widok=rozdzialy`; mapa pod każdym newsem o Iranie/Huti po słowach i kategorii; „sprawdź mapę” 12.09 — Huti 18 etapów, Iran 30; SW v171; wcześniej 11.09: MAPY KONFLIKTÓW mapa.html + mapy/huti.json + mapy/iran.json, licznik.js, historia.html pod reklamy; hasło „sprawdź mapę”; 09.09: limit dawki 40→60 — bot #265; NatGeo — bot #267/#268; wyjątek głowa państwa — bot #269; gotowiec X na modelu pro — front #227/#228)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
@@ -37,8 +37,31 @@ Zdjęcie stanu na **2026-09-12 (MINIMAPA POD POSTEM: kafle Esri z miejscem etapu
 - ⬜ Po pierwszych biegach: ile pozycji ma `geo`, czy model nie wpisuje siedzib firm (wtedy zaostrzyć prompt albo dodać bramkę
   na nazwy spółek), czy Nominatim nie zwraca 429 (jest limit 1/s — bot robi do kilkunastu zapytań na bieg, plus cache).
 
-### 🟡 12.09: CO ZOSTAŁO OTWARTE
-1. ⬜ Weryfikacja `geo` na produkcji (wyżej). Dodatkowo: archiwum nie ma `geo` — backfill tylko przez `ReenrichItemArticles`.
+### ✅ `miejsce.html` — pełna mapa po kliknięciu w minimapę (front `4e236aa`, SW v172)
+- Życzenie: „po kliknięciu w mapę (jeśli nie ma mapy konfliktu) nowe okno, oddalić, przybliżyć”. Leaflet + te same kafle Esri,
+  marker z nazwą, współrzędne, link do OpenStreetMap, motyw jak główna, `noindex`, licznik wpięty. Minimapa i pasek „Gdzie to
+  jest · nazwa · Powiększ →” są linkami `target=_blank`. Newsy z mapą konfliktu dalej prowadzą na `mapa.html?od=`.
+
+### ✅ `geo` od bota ZWERYFIKOWANE na produkcji (13.09 noc)
+- Bieg 18:30: pierwsze miejsce „Carewa Liwada, Bułgaria” → Nominatim PUDŁO (polska transliteracja). Bot `43775d3`: model
+  podaje też `miejsce_en` (pisownia mapowa), geokoder pyta nią, wyświetla polską. Bieg 19:00: „Nowe Delhi, Indie” ✅ z `geo`.
+- Ręcznie dopisane `geo` na serwerze (bot nie wraca do napisanych opisów): Carewa Liwada (42.9365, 25.4567) i dworzec
+  Elbeuf-Saint-Aubin (49.3027, 1.0102) — commity `[skip ci]` w brief-site. ⚠️ Ręczna edycja `briefs.json` na serwerze
+  blokuje `git pull` do czasu commita — commituj od razu.
+- ⬜ Newsy sprzed 12.09 18:30 NIE mają `geo` i nie dostaną; ewentualny backfill dnia = jednorazowa ręczna robota.
+
+### 💡 13.09: DeepSeek V4.1 Flash i Grok — ustalenia
+- `deepseek-v4-flash` był od 10.09 aliasem na V4.1; bot przepięty na `deepseek-flash` (bot `700539d`), ceny niżej
+  (0,30/1,20 $/M w szczycie). ⬜ Jeśli jakość od 10.09 dryfuje — to podmiana modelu, nie nasz kod.
+- ⛔ **Grok Bot (agent xAI) NIE do potoku** — bez API, klika po przeglądarce na loginach właściciela, omija wszystkie bramki.
+  Ewentualnie jako pomocnik do klikania (panel X Ads, TMview). ⛔ Grok API do SELEKCJI odrzucony (droższy, pomiary do
+  powtórzenia, selekcja nie jest problemem). 💡 Jedyny sensowny eksperyment: Grok API jako dodatkowy FINDER z X w czasie
+  rzeczywistym, mierzony w lejku tydzień równolegle — nie wdrażać bez pomiaru.
+- Haiku (wpływ na rynek): prompt caching NIE zadziała — Haiku 4.5 wymaga prefiksu ≥ 4096 tokenów, nasz stały prefiks ~500;
+  koszt tej ścieżki to ~1 cent/dobę. Lewar cache jest w DeepSeeku, nie tu.
+
+### 🟡 12–13.09: CO ZOSTAŁO OTWARTE
+1. ⬜ `geo` po kilku dniach: udział pozycji, czy model nie wpisuje siedzib spółek (wtedy bramka na kody `typ`), czy Nominatim nie daje 429.
 2. ⬜ Reklama na X: nowa kampania na `historia.html` z tekstem nr 2 (wariant 2b z tej sesji), odwołanie po angielsku
    wysłane? — właściciel nie potwierdził. Wynik nieznany.
 3. ⬜ Karta OG dla mapy Iranu (dziś pokazuje Huti). Źródło `og-mapa.html` PRZEPADŁO ze scratchpadem — karta Huti

@@ -39,7 +39,8 @@ i etykietą miejsca. Dwa źródła miejsca, w tej kolejności:
    rozdziałami), z poprawką: nazwa miejsca etapu z 2 dni wstecz w nagłówku wygrywa (rdzenie bez nawiasu). Wcześniejsze
    etapy w kadrze jako kółka z numerem, pasek = link `mapa.html?m=&od=` z „etap N z M”.
 2. **`item.geo` od bota** (`{lat,lng,nazwa}`; bot podaje tylko gdy źródło wprost nazywa miejsce) → pasek „Gdzie to jest”,
-   bez linku, zoom 7.
+   zoom 7; minimapa i pasek linkują (`target=_blank`) do **`miejsce.html?lat=&lng=&n=`** — Leaflet z zoomem, te same kafle,
+   link do OSM, `noindex`, licznik wpięty.
 - 🔴 Render buduje PUSTY pojemnik; sieć dopiero w `mapaMiniWypelnij` przy otwarciu karty (`setCardOpen`, `dtShowDetail`)
   — ta sama zasada co `data-src` zdjęć i `sprawdzStub`. Dane mapy cache'owane jako obietnica (`MAPY_DANE`).
 - ⚠️ Szerokość mierz z `.mapa-box`, nie z ukrytej `.mapa-mini` (0 px). Bez warstwy reference kafle wyglądają jak
