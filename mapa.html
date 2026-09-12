@@ -132,6 +132,8 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
 .chapters button { flex:0 0 auto; font-family:'Space Mono',monospace; font-size:8.5px; letter-spacing:1px; text-transform:uppercase; padding:5px 9px; border:1px solid var(--rule); background:var(--bg); color:var(--muted); cursor:pointer; border-radius:12px; }
 .chapters button.on { border-color:var(--red); color:var(--red); font-weight:700; }
 .chapters button.done { color:var(--text); }
+.chapters .tog { flex:0 0 auto; font-family:'Space Mono',monospace; font-size:8.5px; letter-spacing:1px; text-transform:uppercase; padding:5px 9px; border:1px solid var(--text); background:var(--text); color:var(--bg); border-radius:12px; text-decoration:none; margin-left:auto; white-space:nowrap; }
+.when .roz { margin-left:auto; color:var(--muted); font-weight:400; letter-spacing:1px; text-align:right; }
 .card.chapter { border-left:0; padding-left:0; border-top:3px solid var(--text); padding-top:12px; }
 .step.active .card.chapter { border-color:var(--red); }
 .card.chapter .kicker { font-size:9px; letter-spacing:2px; color:var(--red); text-transform:uppercase; font-weight:700; }
@@ -175,6 +177,9 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
 (async function(){
   const KIND = { tlo:'tło', atak:'atak', zdobycie:'zdobycie', dyplomacja:'dyplomacja', rynek:'rynek', mapa:'cała mapa', rozdzial:'rozdział' };
   const id = new URLSearchParams(location.search).get('m') || 'huti';
+  // Widok (12.09, życzenie właściciela): DOMYŚLNIE chronologia — wszystkie etapy po kolei, jedna oś.
+  // Rozdziały (mapa Iranu) to drugi widok, pod ?widok=rozdzialy; przełącznik w pasku nad mapą.
+  const WIDOK = new URLSearchParams(location.search).get('widok') === 'rozdzialy' ? 'rozdzialy' : 'chrono';
   const d = await fetch('mapy/' + id + '.json', {cache:'no-cache'}).then(r => r.json());
   document.title = d.title + ' — Brif.up';
   document.getElementById('kicker').textContent = d.kicker || 'Mapa konfliktu';
@@ -214,7 +219,15 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
   // Rozdziały (mapa Iranu, 11.09): sekwencja = [nagłówek rozdziału, jego kroki, nagłówek, kroki…].
   // Nagłówek to syntetyczny krok: kadr na wszystkie miejsca rozdziału, markery rozdziału jako obrys.
   const ROZ = d.rozdzialy || [];
-  if (ROZ.length) {
+  const ROZ_BY = Object.fromEntries(ROZ.map(r => [r.id, r]));
+  function urlWidok(w) { const u = new URL(location.href); if (w === 'rozdzialy') u.searchParams.set('widok', 'rozdzialy'); else u.searchParams.delete('widok'); return u.pathname + u.search; }
+  if (ROZ.length && WIDOK === 'chrono') {
+    // Chronologia: stabilne sortowanie po dacie (etapy tego samego dnia zostają w kolejności z JSON).
+    d.steps = d.steps.map((x, i) => [x, i]).sort((a, b) => a[0].date < b[0].date ? -1 : a[0].date > b[0].date ? 1 : a[1] - b[1]).map(a => a[0]);
+    const ch = document.getElementById('chapters'); ch.hidden = false;
+    const b = document.createElement('a'); b.className = 'tog'; b.href = urlWidok('rozdzialy'); b.textContent = 'Widok: chronologia · przełącz na rozdziały'; ch.appendChild(b);
+  }
+  if (ROZ.length && WIDOK === 'rozdzialy') {
     const seq = [];
     ROZ.forEach((r, ri) => {
       const kroki = d.steps.filter(x => x.rozdzial === r.id);
@@ -228,6 +241,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
     ROZ.forEach((r, ri) => { const b = document.createElement('button'); b.textContent = (ri+1) + ' · ' + r.tytul; b.dataset.ri = ri;
       b.onclick = () => { const el = document.querySelector('.step[data-ri="'+ri+'"]'); if (el) window.scrollTo({ top: el.offsetTop - window.innerHeight*0.3, behavior:'smooth' }); };
       ch.appendChild(b); });
+    const t = document.createElement('a'); t.className = 'tog'; t.href = urlWidok('chrono'); t.textContent = 'Chronologia'; ch.appendChild(t);
   }
 
   // Krok końcowy (życzenie właściciela 11.09): ZAWSZE podgląd całej mapy ze wszystkimi punktami.
@@ -256,7 +270,8 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
       box.appendChild(el); return;
     }
     el.innerHTML = '<div class="card"><div class="when"><span>'+ s.date.split('-').reverse().join('.') + (s.znane_od && s.znane_od!==s.date ? ' · wiadomo od '+ s.znane_od.split('-').reverse().join('.') : '') +'</span>'+
-      '<span class="kind" data-k="'+s.kind+'">'+ (KIND[s.kind]||s.kind) +'</span></div>'+
+      '<span class="kind" data-k="'+s.kind+'">'+ (KIND[s.kind]||s.kind) +'</span>'+
+      (WIDOK === 'chrono' && s.rozdzial && ROZ_BY[s.rozdzial] ? '<span class="roz">'+ ROZ_BY[s.rozdzial].tytul +'</span>' : '') +'</div>'+
       (s.calosc ? '' : '<div class="place">📍 '+ p.name +'</div>') +'<h2>'+ s.title +'</h2><p>'+ s.text +'</p>'+
       (p.why && !s.calosc ? '<div class="why"><b>Dlaczego to miejsce</b>'+ p.why +'</div>' : '') +
       (s.link ? '<a class="link" href="'+ s.link +'">'+ (s.link_tekst || 'Zobacz więcej →') +'</a>' : '') +
@@ -288,7 +303,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
     });
     lines.forEach(l => l.pl.setStyle({ opacity: l.from <= i ? .9 : 0 }));
     // Kadr: miejsce + „also” razem, inaczej dolot do miejsca.
-    if (ROZ.length) {
+    if (ROZ.length && WIDOK === 'rozdzialy') {
       const cur = s.calosc ? ROZ.length : ROZ.findIndex(r => r.id === s.rozdzial);
       document.querySelectorAll('#chapters button').forEach(b => { const k = +b.dataset.ri; b.classList.toggle('on', k === cur); b.classList.toggle('done', k < cur); });
       const on = document.querySelector('#chapters button.on'); if (on) on.scrollIntoView({ inline:'center', block:'nearest', behavior:'smooth' });
