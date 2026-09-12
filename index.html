@@ -1914,7 +1914,13 @@ function mapaDlaNewsa(item){
 }
 function mapaLinkHtml(item){
   const id = mapaDlaNewsa(item);
-  if (!id) return '';
+  // Bez mapy konfliktu, ale z miejscem od bota (pole `geo`, 12.09: DeepSeek podaje je TYLKO gdy źródło je wprost nazywa,
+  // Nominatim daje współrzędne) → sama minimapa z pastylką „Gdzie to jest”. Brak `geo` = nic, jak dotąd.
+  if (!id) {
+    const g = item.geo;
+    if (!g || typeof g.lat !== 'number' || typeof g.lng !== 'number') return '';
+    return `<div class="mapa-box" data-lat="${g.lat}" data-lng="${g.lng}" data-nazwa="${escAttr(g.nazwa || '')}"><div class="mapa-mini" hidden></div><div class="mapa-link mapa-geo"><span class="mapa-link-l"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg> Gdzie to jest</span><span class="mapa-link-r">${escHtml(g.nazwa || '')}</span></div></div>`;
+  }
   const m = MAPY_WATKOW.mapy[id] || {};
   // ?od=<data newsa>: mapa startuje na etapie z tego momentu, nie od początku historii (życzenie właściciela 11.09).
   const od = String(item.published_at || item.added_at || '').slice(0, 10);
@@ -1954,6 +1960,10 @@ function mapaEtapDlaNewsa(d, od, txt){
 }
 function mapaMiniWypelnij(box){
   if (!box || box.dataset.gotowe) return; box.dataset.gotowe = '1';
+  if (box.dataset.lat) {   // punkt od bota (item.geo): bliższy kadr, bez wcześniejszych etapów
+    mapaMiniRysuj(box, { lat: +box.dataset.lat, lng: +box.dataset.lng, name: box.dataset.nazwa || '' }, [], 7);
+    return;
+  }
   const id = box.dataset.mapa, od = box.dataset.od || '', txt = box.dataset.txt || '';
   mapaDane(id).then(d => {
     if (!d || !d.steps || !d.places) return;
@@ -1961,8 +1971,13 @@ function mapaMiniWypelnij(box){
     const link = box.querySelector('.mapa-link-r');
     if (link) link.textContent = `etap ${e.n} z ${e.total} · Przewiń →`;
     const p = d.places[e.s.place]; if (!p) return;   // każdy etap ma miejsce ze słownika mapy — pokazujemy zawsze (życzenie właściciela: „mapa musi być pokazana”)
+    const past = e.steps.map((x, i) => { const q = d.places[x.place]; return q ? { place: x.place, lat: q.lat, lng: q.lng, n: i + 1 } : null; }).filter(Boolean);
+    mapaMiniRysuj(box, { lat: p.lat, lng: p.lng, name: p.name, place: e.s.place }, past, 6);
+  });
+}
+function mapaMiniRysuj(box, p, past, Z){
     const mini = box.querySelector('.mapa-mini'); if (!mini) return;
-    const Z = 6, T = 256, W = box.clientWidth || 400, H = 150;   // mini jest jeszcze ukryta (szerokość 0) — mierzymy pojemnik
+    const T = 256, W = box.clientWidth || 400, H = 150;   // mini jest jeszcze ukryta (szerokość 0) — mierzymy pojemnik
     const dark = document.documentElement.getAttribute('data-theme') === 'dark';
     const E = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
     const base = E + (dark ? 'World_Dark_Gray_Base' : 'World_Light_Gray_Base') + '/MapServer/tile/';
@@ -1977,14 +1992,13 @@ function mapaMiniWypelnij(box){
         h += `<img src="${base}${Z}/${ty}/${tx}" alt="" style="left:${Math.round(tx * T - x0)}px;top:${Math.round(ty * T - y0)}px">` +
              `<img src="${ref}${Z}/${ty}/${tx}" alt="" style="left:${Math.round(tx * T - x0)}px;top:${Math.round(ty * T - y0)}px">`;   // warstwa nazw (jak na dużej mapie)
     // wcześniejsze etapy w kadrze — puste kółka z numerem, jak na dużej mapie
-    const seen = new Set([e.s.place]);
-    e.steps.forEach((x, i) => { const q = d.places[x.place]; if (!q || seen.has(x.place)) return; seen.add(x.place);
+    const seen = new Set([p.place]);
+    past.forEach(q => { if (seen.has(q.place)) return; seen.add(q.place);
       const [qx, qy] = px(q.lat, q.lng); const lx = qx - x0, ly = qy - y0;
       if (lx < 6 || ly < 6 || lx > W - 6 || ly > H - 6) return;
-      h += `<span class="mm-past" style="left:${Math.round(lx)}px;top:${Math.round(ly)}px">${i + 1}</span>`; });
+      h += `<span class="mm-past" style="left:${Math.round(lx)}px;top:${Math.round(ly)}px">${q.n}</span>`; });
     h += `<span class="mm-dot"></span><span class="mm-lbl">${escHtml(p.name)}</span><span class="mm-attr">© Esri</span>`;
     mini.innerHTML = h; mini.hidden = false;
-  });
 }
 function watekHtml(item){
   const t = threadForItem(item);
@@ -3071,7 +3085,7 @@ function setCardOpen(el, isOpen) {
         im.src = im.dataset.src;
         im.removeAttribute('data-src');   // drugie otwarcie nie ustawia src ponownie
       });
-      if (exp) exp.querySelectorAll('.mapa-box[data-mapa]').forEach(mapaMiniWypelnij);   // minimapa pod postem (12.09)
+      if (exp) exp.querySelectorAll('.mapa-box').forEach(mapaMiniWypelnij);   // minimapa pod postem (12.09)
     } catch (_) {}
   }
 }
@@ -4312,7 +4326,7 @@ function dtShowDetail(item) {
       <div class="dt-related-title">Inne wpisy</div>
       ${related.map(r=>`<div class="dt-related-item" onclick="dtPickItem('${r.id}')"><span>${znacznikHtml(r)}</span><span>${escHtml(r.text.length>80?r.text.slice(0,80)+'…':r.text)}</span></div>`).join('')}
     </div>` : ''}`;
-  det.querySelectorAll('.mapa-box[data-mapa]').forEach(mapaMiniWypelnij);   // minimapa pod postem (12.09): panel = jeden otwarty artykuł
+  det.querySelectorAll('.mapa-box').forEach(mapaMiniWypelnij);   // minimapa pod postem (12.09): panel = jeden otwarty artykuł
 }
 
 // init desktop header
