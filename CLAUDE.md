@@ -31,6 +31,20 @@ w sobie tych gotowców".
 - Panel: przycisk **„Wygeneruj nowego"** (`xPrzegeneruj`) — nowe ujęcie tego samego newsa bez zamykania okna;
   link, karty i stan wątku zostają. Wcześniej jedyną drogą było zamknięcie okna albo przełączanie dopisku.
 
+## Minimapa pod postem — `.mapa-box` + `mapaMiniWypelnij` (2026-09-12) 📍
+Pod artykułem, nad „Wątek tematu”: 150 px kafli Esri (base + reference jako `<img>`, bez Leafleta) z czerwoną kropką
+i etykietą miejsca. Dwa źródła miejsca, w tej kolejności:
+1. **Mapa konfliktu** (`mapaDlaNewsa`: wątek → `mapy/index.json.watki`, potem `slowa` regex per mapa — huti PRZED
+   iran, potem `kategorie`). Etap = ostatni ≤ data newsa po STABILNYM sortowaniu po dacie (JSON Iranu jest
+   rozdziałami), z poprawką: nazwa miejsca etapu z 2 dni wstecz w nagłówku wygrywa (rdzenie bez nawiasu). Wcześniejsze
+   etapy w kadrze jako kółka z numerem, pasek = link `mapa.html?m=&od=` z „etap N z M”.
+2. **`item.geo` od bota** (`{lat,lng,nazwa}`; bot podaje tylko gdy źródło wprost nazywa miejsce) → pasek „Gdzie to jest”,
+   bez linku, zoom 7.
+- 🔴 Render buduje PUSTY pojemnik; sieć dopiero w `mapaMiniWypelnij` przy otwarciu karty (`setCardOpen`, `dtShowDetail`)
+  — ta sama zasada co `data-src` zdjęć i `sprawdzStub`. Dane mapy cache'owane jako obietnica (`MAPY_DANE`).
+- ⚠️ Szerokość mierz z `.mapa-box`, nie z ukrytej `.mapa-mini` (0 px). Bez warstwy reference kafle wyglądają jak
+  jednolita szarość. Selektor hooka to `.mapa-box` (geo-box nie ma `data-mapa`).
+
 ## Mapy konfliktów — `mapa.html` + `mapy/<id>.json` (2026-09-11) 🗺
 Scrollytelling nad mapą: przewijasz karty, mapa dolatuje do miejsca, wcześniejsze punkty zostają z numerem.
 Silnik OGÓLNY, treść w JSON. Dziś: `huti` (17 etapów) i `iran` (28 etapów, 6 rozdziałów).
@@ -44,6 +58,8 @@ Silnik OGÓLNY, treść w JSON. Dziś: `huti` (17 etapów) i `iran` (28 etapów,
   `z-index` > 1000 — pany Leafleta (markery 600, tooltipy 650) prześwitują przez niższe.
 - **Aktywny krok = karta najbliżej środka pasa POD mapą** (scroll + rAF, nie IntersectionObserver — ten przy
   szybkim scrollu przychodzi w kolejności DOM i mapa zostaje w tyle; na telefonie środek okna wypada w mapie).
+- **Widok (12.09): domyślnie CHRONOLOGIA** (`WIDOK`, stabilne sortowanie po dacie, etykieta rozdziału przy dacie),
+  rozdziały pod `?widok=rozdzialy`; pastylka `.chapters .tog` przełącza. Lead JSON nie może zakładać rozdziałów.
 - **Rozdziały:** nagłówek = syntetyczny krok (kadr `flyToBounds` na miejsca rozdziału, jego markery jako obrys),
   pasek rozdziałów nad mapą (on/done), klik przewija. Krok końcowy „cała mapa” + CTA na główną — syntetyczne,
   każda mapa je dostaje.

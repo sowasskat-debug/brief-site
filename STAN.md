@@ -1,9 +1,58 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-11 (MAPY KONFLIKTÓW: mapa.html + mapy/huti.json + mapy/iran.json, scrollytelling nad mapą, wejście z artykułu od daty newsa, karta OG, strona pomostowa historia.html pod reklamy; licznik wejść na podstronach — licznik.js; hasło „sprawdź mapę” = ręczna aktualizacja przez Claude'a; wcześniej 09.09: limit dawki 40→60 i wypychanie po ważności — bot #265; National Geographic jako źródło ciekawostek z własnym promptem — bot #267; krótka historia dla takich źródeł — bot #268; wyjątek „incydent bez szkód a głowa państwa" — bot #269; bramka pytania dwie łatki — bot #264 i #266; gotowiec X na modelu pro + przycisk „Wygeneruj nowego" — front #227 i #228; wcześniej 06.09: bramka pokrycia nagłówka po fallbacku — bot #263; 05.09: dopiski [ZDJĘCIA]/[WYWIAD] z tytułu źródła — bot #262; czujka chmurowa WYŁĄCZONA, repo przepięte na brifup.com; Nvidia „1 bilion" poprawiona ręcznie; wcześniej 04.09: pomysł „zapytaj archiwum" zapisany; wcześniej 03.09 WIECZÓR sesja: WIG20/PLN dopięte na siłę — bot #258; fajne ciekawostki w polskich feedach — bot #259; dzień tygodnia ze źródła — bot #260; meta-komentarz w opisie — bot #261; flagi na Windowsie 3. poprawka — SW v158; gotowiec X styl v17; wcześniej 02.09: awaria selekcji 🇹🇼, Wykopalisko przez API, kolejka ręczna z linkiem i formularzem, FLUSSO_OFF, GDELT wycięty, nagłówek etapu z bramki; potem sanityzacja 🇹🇼 na kliencie + bramka po podmianie tytułu, bot #256)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-12 (MINIMAPA POD POSTEM: kafle Esri z miejscem etapu mapy konfliktu albo z pola `geo` od bota — bot #4b757c3 podaje `miejsce` z opisu tylko przy pewności, Nominatim geokoduje; mapa konfliktu domyślnie CHRONOLOGICZNIE, rozdziały pod `?widok=rozdzialy`; mapa pod każdym newsem o Iranie/Huti po słowach i kategorii; „sprawdź mapę” 12.09 — Huti 18 etapów, Iran 30; SW v171; wcześniej 11.09: MAPY KONFLIKTÓW mapa.html + mapy/huti.json + mapy/iran.json, licznik.js, historia.html pod reklamy; hasło „sprawdź mapę”; 09.09: limit dawki 40→60 — bot #265; NatGeo — bot #267/#268; wyjątek głowa państwa — bot #269; gotowiec X na modelu pro — front #227/#228)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 🟡 12.09: SESJA — minimapa pod postem, chronologia na mapie, `geo` od bota
+
+### ✅ Mapa konfliktu: domyślnie CHRONOLOGIA, rozdziały jako przełącznik (front `adf83a7`, SW v169)
+- Życzenie właściciela: „pierwsza, ta która się otwiera na początku, ma być chronologicznie, wszystkie po kolei”.
+  `WIDOK` w `mapa.html`: `chrono` (domyślny, stabilne sortowanie po dacie, etykieta rozdziału przy dacie na karcie)
+  / `?widok=rozdzialy` (dotychczasowy). Czarna pastylka nad mapą przełącza. Lead Iranu przepisany (stary mówił
+  o „sześciu rozdziałach”). Huti bez zmian (brak rozdziałów = brak przełącznika).
+
+### ✅ Minimapa pod postem (front `468a0d2` + `432dbe8`, SW v170→v171)
+- Życzenie: „podgląd pod postem, gdzie się to znajduje, bo teraz jest tylko «mapa konfliktów»”. Makieta pokazana, zaakceptowana.
+- `mapaLinkHtml` → pojemnik `.mapa-box` (pusty przy renderze) + pasek; **wypełnia `mapaMiniWypelnij` przy otwarciu karty**
+  (`setCardOpen` / `dtShowDetail`), zasada „nic sieciowego w funkcjach budujących HTML”. Kafle Esri Gray base + reference
+  jako `<img>` (bez Leafleta), zoom 6 (etap mapy) / 7 (`geo`), 150 px, kropka + etykieta + wcześniejsze etapy jako kółka z numerem.
+- Etap dla newsa = ostatni etap ≤ data newsa (jak `?od=`), z poprawką słowną: nazwa miejsca etapu z 2 dni WSTECZ w nagłówku
+  wygrywa (rdzenie bez nawiasu — „Salalah (Oman)” nie łapie każdego newsa z Omanem; pierwsza wersja łapała i pokazywała
+  etap z 14.09 pod newsem z 12.09). Etapy Iranu w JSON są rozdziałami → sortowanie po dacie przed wyborem.
+- **Mapa pod KAŻDYM newsem o konflikcie** (życzenie): `mapy/index.json` → `slowa` (regex per mapa, huti PRZED iran) i
+  `kategorie` („Wojna w Iranie” → iran). Zmierzone na bieżących dawkach 12.09: 4 → 11 newsów z mapą.
+- **Pole `geo` od bota** (życzenie: „nie musi być konflikt, żeby mapa była pokazana”, z zastrzeżeniem „tylko jak ma pewność
+  i wyciągnie z artykułu”): bez mapy konfliktu, ale z `item.geo` → minimapa + pasek „Gdzie to jest · nazwa”, bez linku.
+- ⚠️ Podgląd z Maca: SW serwował STARY `index.html` mimo `?x=` (wyrejestruj SW + `caches.delete`); tile Esri bez warstwy
+  reference wyglądają jak jednolita szarość — dlatego dwie warstwy jak na dużej mapie.
+
+### ✅ Bot `4b757c3`: `miejsce` w opisie + geokoder (DO WERYFIKACJI NA PRODUKCJI)
+- `DeepSeekWriteArticle` zwraca 4. element `Miejsce` (KROK 5 promptu: TYLKO gdy źródło wprost nazywa; siedziba firmy/stolica
+  jako rząd/makro/wyniki/wypowiedzi = ""). Bramka deterministyczna (3–80 zn., litera, nie „brak”). `GeokodujMiejsce`: Nominatim
+  jsonv2, `accept-language=pl`, UA `BrifupBot/1.0`, 1,1 s odstępu, cache trafień I pudeł w `geo_cache.json` (w `.gitignore`).
+  Liczniki lejka: `geo_trafienie/geo_pudlo/geo_cache_*`. `BriefItem.Geo {lat,lng,nazwa}` (WhenWritingNull), kopiowane do kotwicy
+  klastra. Sprawdzone z Hetznera: Tarnawa-Kolonia i Cieśnina Ormuz geokodują się poprawnie. `dotnet build` OK.
+- ⬜ Po pierwszych biegach: ile pozycji ma `geo`, czy model nie wpisuje siedzib firm (wtedy zaostrzyć prompt albo dodać bramkę
+  na nazwy spółek), czy Nominatim nie zwraca 429 (jest limit 1/s — bot robi do kilkunastu zapytań na bieg, plus cache).
+
+### 🟡 12.09: CO ZOSTAŁO OTWARTE
+1. ⬜ Weryfikacja `geo` na produkcji (wyżej). Dodatkowo: archiwum nie ma `geo` — backfill tylko przez `ReenrichItemArticles`.
+2. ⬜ Reklama na X: nowa kampania na `historia.html` z tekstem nr 2 (wariant 2b z tej sesji), odwołanie po angielsku
+   wysłane? — właściciel nie potwierdził. Wynik nieznany.
+3. ⬜ Karta OG dla mapy Iranu (dziś pokazuje Huti). Źródło `og-mapa.html` PRZEPADŁO ze scratchpadem — karta Huti
+   poprawiona pikselowo (Pillow, Space Mono Bold z `fonts/`), przy większej zmianie trzeba złożyć od nowa.
+4. ⬜ Etapy z Wikipedii na obu mapach do weryfikacji drugim źródłem. `?od=` po kaflu zamiast po dacie (slugi w etapach).
+5. ⬜ thebriefup.com / znak towarowy — bez zmian (patrz 11.09).
+6. ⬜ Karty wątku pod X robione ręcznie w tej sesji (szablon `scratchpad/watek-ai/karta.html`, Chrome headless 1200×1200) —
+   jeśli ma wracać, wnieść do funkcji `og` jako wariant kwadratowy z leadem.
+
+### ⚠️ Pułapki z tej sesji
+- `mapy/iran.json` ułożony ROZDZIAŁAMI, nie datą — każde „ostatni etap ≤ data” bez sortowania trafia w rozdział Rachunek.
+- Nowy pojemnik pod postem = dopisz do selektora w `setCardOpen` ORAZ `dtShowDetail` (geo-box bez `data-mapa` nie łapał się
+  na `.mapa-box[data-mapa]`).
+- Transkrypty poprzednich sesji: teksty z artefaktów NIE są w `.jsonl`; teksty z odpowiedzi tak (grep po `~/.claude/projects`).
 
 ## 🟡 11.09: SESJA — MAPY KONFLIKTÓW (nowy produkt), licznik na podstronach, reklama na X
 
