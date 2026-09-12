@@ -3,7 +3,7 @@
   "kicker": "Mapa konfliktu",
   "title": "Wojna z Iranem: od uderzenia do Ormuzu",
   "lead": "Pół roku w sześciu rozdziałach. Przewijaj: mapa pokazuje, gdzie to się dzieje i dlaczego to miejsce ma znaczenie. Każdy rozdział zaczyna się od widoku całego frontu.",
-  "updated": "2026-09-11",
+  "updated": "2026-09-12",
   "view": {
     "lat": 27,
     "lng": 48,
@@ -166,6 +166,12 @@
       "lat": 33.75,
       "lng": 51.7,
       "why": "Podziemny kompleks koło Natanz. Trump grozi uderzeniem, wywiad mówi o wznowionej produkcji rakiet."
+    },
+    "szalamcze": {
+      "name": "Szalamcze (granica Irak–Iran)",
+      "lat": 30.46,
+      "lng": 48.06,
+      "why": "Jedno z głównych lądowych przejść między Irakiem a Iranem, pod Basrą. Zamknięte 12.09 po atakach dronów na saudyjski rurociąg."
     }
   },
   "lines": [],
@@ -345,6 +351,14 @@
       "link_tekst": "Osobna mapa: Huti biorą Bab al-Mandab, 17 etapów →"
     },
     {
+      "rozdzial": "fronty",
+      "date": "2026-09-12",
+      "place": "szalamcze",
+      "kind": "dyplomacja",
+      "title": "Irak zamyka granicę z Iranem",
+      "text": "Po ataku dronów na saudyjski rurociąg Wschód-Zachód Bagdad zamyka przejście Szalamcze i ogłasza wspólne z Teheranem śledztwo w sprawie dronów z pogranicza. Dzień wcześniej irackie śledztwo potwierdziło, że wystartowały z Iraku, a Rijad wstrzymał odwet na prośbę irackiego premiera. Trump po raz pierwszy wskazuje Iran jako prawdopodobnego sprawcę."
+    },
+    {
       "rozdzial": "dyplomacja",
       "date": "2026-09-08",
       "place": "doha",
@@ -366,7 +380,7 @@
       "place": "delhi",
       "kind": "dyplomacja",
       "title": "Pezeszkian na szczycie BRICS",
-      "text": "Pierwsza zagraniczna podróż prezydenta Iranu od wybuchu wojny. Putin też przyjeżdża, pierwszy raz od początku wojny w Ukrainie. Temat: handel bez dolara przez Nowy Bank Rozwoju."
+      "text": "Pierwsza zagraniczna podróż prezydenta Iranu od wybuchu wojny. Putin też przyjeżdża, pierwszy raz od początku wojny w Ukrainie. Temat: handel bez dolara przez Nowy Bank Rozwoju. 12.09: BRICS uzgadnia wspólną deklarację, Xi wzywa członków do działań na rzecz pokoju w Zatoce."
     },
     {
       "rozdzial": "dyplomacja",
@@ -398,7 +412,7 @@
       "place": "kalifornia",
       "kind": "rynek",
       "title": "Diesel: 9,999 na wyświetlaczu",
-      "text": "Średnia cena diesla w USA 5,97 USD za galon, powyżej szczytu z 2022. Na pięciu stacjach w Kalifornii dystrybutory dobijają do limitu wyświetlacza. Kontrakty powyżej 5 USD pierwszy raz od 2022."
+      "text": "Średnia cena diesla w USA 5,97 USD za galon, powyżej szczytu z 2022. Na pięciu stacjach w Kalifornii dystrybutory dobijają do limitu wyświetlacza. Kontrakty powyżej 5 USD pierwszy raz od 2022. W piątek 11.09 krajowa średnia dochodzi do 6,07 USD, a Kalifornia jako pierwszy stan przekracza 8 USD za galon."
     },
     {
       "rozdzial": "rynek",
@@ -407,6 +421,14 @@
       "kind": "rynek",
       "title": "Ras Laffan: naprawa 3–5 lat",
       "text": "QatarEnergy szuka wieloletnich umów na LNG z USA, bo własny zakład długo nie wróci do pełnej mocy. To oznacza, że wysokie ceny gazu w Europie nie są epizodem, tylko horyzontem kilku zim."
+    },
+    {
+      "rozdzial": "rynek",
+      "date": "2026-09-11",
+      "place": "waszyngton",
+      "kind": "rynek",
+      "title": "Pentagon: 1,5 bln dolarów na amunicję",
+      "text": "Podsekretarz obrony Michael Duffey wzywa Kongres do zatwierdzenia 1,5 bln USD na odtworzenie zapasów zużytych w wojnie z Iranem: Patriot, Tomahawk, THAAD, Standard Missile. Siedmioletnie umowy z producentami są już przygotowane. Dla porównania: do czerwcowego memorandum wojna kosztowała USA 113 mld USD."
     }
   ]
 }

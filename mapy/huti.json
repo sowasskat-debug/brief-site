@@ -3,7 +3,7 @@
   "kicker": "Mapa konfliktu",
   "title": "Huti biorą Bab al-Mandab",
   "lead": "Jak w dziesięć dni rebelianci z Jemenu przejęli wybrzeże Morza Czerwonego i drugą cieśninę naftową świata. Przewijaj — punkty zapalają się chronologicznie.",
-  "updated": "2026-09-11",
+  "updated": "2026-09-12",
   "view": {
     "lat": 15.6,
     "lng": 44.5,
@@ -123,6 +123,12 @@
       "lat": 24.55,
       "lng": 43.6,
       "why": "1200 km rury z pól na wschodzie do Janbu, do 7 mln baryłek dziennie. Po zamknięciu Ormuz to jedyna droga saudyjskiej ropy na rynek, a stacje pomp są jej najsłabszym punktem."
+    },
+    "majsan": {
+      "name": "Prowincja Majsan (Irak)",
+      "lat": 31.84,
+      "lng": 47.14,
+      "why": "Iracko-irańskie pogranicze. Stąd, według irackiego śledztwa, wystartowały drony, które trafiły saudyjski rurociąg Wschód-Zachód."
     }
   },
   "lines": [
@@ -265,6 +271,13 @@
       "kind": "dyplomacja",
       "title": "Trump mówi „nie”",
       "text": "Książę Muhammad ibn Salman prosi o amerykańskie uderzenia na Huti. Trump odmawia: priorytetem jest Iran. USA dają Saudom ~100 doradców i wywiad celowniczy, ale nie własne naloty."
+    },
+    {
+      "date": "2026-09-11",
+      "place": "majsan",
+      "kind": "dyplomacja",
+      "title": "Ślad prowadzi do Iraku",
+      "text": "Rijad potwierdza wstrzymanie rurociągu Wschód-Zachód i ogłasza, że na razie nie odpowie odwetem: prosił o to premier Iraku. Irackie śledztwo potwierdza, że drony wystartowały z terytorium Iraku, odwołany zostaje urzędnik odpowiedzialny za prowincję Majsan. Trump po raz pierwszy wskazuje Iran jako prawdopodobnego sprawcę. 12.09 Bagdad zamyka przejście Szalamcze z Iranem i ogłasza wspólne z Teheranem śledztwo."
     },
     {
       "date": "2026-09-11",
