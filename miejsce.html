@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="robots" content="noindex, nofollow">
+<title>Gdzie to jest — Brif.up</title>
+<link rel="icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script>
+  // Motyw jak na stronie głównej (ten sam klucz w localStorage), zanim cokolwiek się narysuje.
+  var t=localStorage.getItem('brifup_theme')||'light';
+  document.documentElement.setAttribute('data-theme',t);
+</script>
+<style>
+:root { --bg:#fff; --text:#111; --muted:#8a8a8a; --rule:#e2e2e2; --red:#e01f0f; --soft:#faf9f7; }
+:root[data-theme="dark"] { --bg:#0f0f0f; --text:#f2f2f2; --muted:#8a8a8a; --rule:#2e2e2e; --soft:#1a1a1a; }
+* { box-sizing:border-box; margin:0; }
+html,body { height:100%; background:var(--bg); color:var(--text); }
+body { font-family:'Space Mono',monospace; display:flex; flex-direction:column; }
+.top { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; border-bottom:3px solid var(--text); }
+.logo { font-family:'DM Serif Display',serif; font-size:22px; text-decoration:none; color:var(--text); }
+.logo b { color:var(--red); font-weight:400; }
+.kicker { font-size:9px; letter-spacing:2px; color:var(--red); text-transform:uppercase; font-weight:700; }
+h1 { font-family:'DM Serif Display',serif; font-weight:400; font-size:20px; line-height:1.15; margin-top:2px; }
+.head { padding:12px 14px; border-bottom:1px solid var(--rule); }
+.head .sub { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:6px; }
+.head .sub a { color:var(--muted); }
+#map { flex:1; min-height:320px; }
+.mk { width:16px; height:16px; border-radius:50%; background:var(--red); border:2px solid var(--bg); box-shadow:0 0 0 1px var(--red); animation:pulse 1.6s infinite; }
+@keyframes pulse { 0%,100% { box-shadow:0 0 0 1px var(--red); } 50% { box-shadow:0 0 0 7px rgba(224,31,15,.18); } }
+.lbl { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; background:var(--bg); color:var(--text); border:1px solid var(--text); border-radius:0; padding:2px 6px; box-shadow:none; }
+.lbl::before { display:none; }
+.leaflet-control-zoom a { font-family:'Space Mono',monospace; }
+:root[data-theme="dark"] .leaflet-control-zoom a { background:#1a1a1a; color:#f2f2f2; border-color:#2e2e2e; }
+.err { padding:40px 16px; text-align:center; color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<div class="top"><a class="logo" href="index.html">Brif<b>.</b>up</a><span class="kicker">Gdzie to jest</span></div>
+<div class="head"><div class="kicker" id="k">Miejsce zdarzenia</div><h1 id="n">…</h1><div class="sub" id="sub"></div></div>
+<div id="map"></div>
+<script src="licznik.js" defer></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function(){
+  // Strona „gdzie to jest” (2026-09-12): cel linku z minimapy pod postem, gdy news ma pole `geo` od bota,
+  // a nie ma mapy konfliktu. Parametry: ?lat=&lng=&n=<nazwa>. Nic nie pobiera poza kaflami.
+  const q = new URLSearchParams(location.search);
+  const lat = parseFloat(q.get('lat')), lng = parseFloat(q.get('lng'));
+  const nazwa = (q.get('n') || '').slice(0, 120);
+  const nEl = document.getElementById('n'), sub = document.getElementById('sub');
+  if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    nEl.textContent = 'Brak współrzędnych'; document.getElementById('map').innerHTML = '<div class="err">Ten link nie niesie miejsca. Wróć na <a href="index.html">stronę główną</a>.</div>'; return;
+  }
+  nEl.textContent = nazwa || (lat.toFixed(4) + ', ' + lng.toFixed(4));
+  document.title = (nazwa || 'Miejsce') + ' — Brif.up';
+  const osm = 'https://www.openstreetmap.org/?mlat=' + lat + '&mlon=' + lng + '#map=13/' + lat + '/' + lng;
+  sub.innerHTML = lat.toFixed(4) + ', ' + lng.toFixed(4) + ' · <a href="' + osm + '" target="_blank" rel="noopener">otwórz w OpenStreetMap →</a>';
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const E = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+  const base = E + (dark ? 'World_Dark_Gray_Base' : 'World_Light_Gray_Base') + '/MapServer/tile/{z}/{y}/{x}';
+  const ref  = E + (dark ? 'World_Dark_Gray_Reference' : 'World_Light_Gray_Reference') + '/MapServer/tile/{z}/{y}/{x}';
+  const map = L.map('map', { zoomControl:true, scrollWheelZoom:true }).setView([lat, lng], 9);
+  L.tileLayer(base, { attribution:'© Esri, HERE, Garmin, © OpenStreetMap', maxZoom:16 }).addTo(map);
+  L.tileLayer(ref, { maxZoom:16, pane:'shadowPane' }).addTo(map);
+  const icon = L.divIcon({ className:'', html:'<div class="mk"></div>', iconSize:[16,16], iconAnchor:[8,8] });
+  const m = L.marker([lat, lng], { icon, interactive:false }).addTo(map);
+  if (nazwa) m.bindTooltip(nazwa, { permanent:true, direction:'right', offset:[12,0], className:'lbl' }).openTooltip();
+})();
+</script>
+</body>
+</html>
