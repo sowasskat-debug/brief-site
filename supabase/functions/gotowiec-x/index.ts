@@ -372,6 +372,15 @@ Deno.serve(async (req) => {
           '(7) Bez formułek "warto zauważyć", "co ciekawe", "to pokazuje", bez "kluczowy", "znaczący", "istotny", bez przymiotników-emocji i bez opisywania nastrojów. ' +
           '(8) Gdy materiał NIE MA liczb, post jest po prostu KRÓTSZY — nie wypełniaj miejsca frazesem. Jeśli podano WPŁYW NA RYNEK, drugie zdanie może go przepisać wprost (co drożeje, co tanieje); jeśli nie podano, post kończy się po fakcie. ' +
           'TWARDY LIMIT ZNAKÓW obowiązuje bez wyjątku — jeśli nie mieścisz się, wytnij NADMIAROWY FAKT, nie hook i nie zdanie z przyczyną. ' +
+          // ── KONKRET ZAMIAST OGÓLNIKA (13.09, właściciel: gotowiec vs post pisany ręcznie „to niebo a ziemia") ──
+          // Zmierzone na 4 newsach z 13.09 tym samym modelem: stary prompt dał „służby badały naruszenie" (Wilno),
+          // wymyśloną „jedną piątą światowej ropy" (Ormuz) i „bo" sklejające dwa niezależne fakty; po (9)–(12)
+          // wyszło „Z Szawli poderwano włoski myśliwiec z misji Baltic Air Policing" i zero dopisków spoza artykułu.
+          '(9) DRUGIE ZDANIE = NAJBARDZIEJ KONKRETNY fakt z artykułu, którego NIE MA w hooku: nazwane miejsce, jednostka, kto dokładnie, skąd, ile. ' +
+          '"Z Szawli poderwano włoskie myśliwce z misji NATO Baltic Air Policing" bije "służby badały naruszenie". Nigdy nie powtarzaj hooka innymi słowami. ' +
+          '(10) Związek przyczynowy ("bo", "dlatego", "po") TYLKO gdy artykuł go wprost podaje — nie łącz dwóch faktów spójnikiem przyczyny na własną rękę. ' +
+          '(11) Nie dodawaj tła z własnej wiedzy (np. "jedna piąta światowej ropy"), jeśli nie ma go w artykule. ' +
+          '(12) Jeśli artykuł podaje, że to kolejne zdarzenie w serii (ta sama noc, ten sam atak, kolejny dzień), powiedz to w drugim zdaniu — czytelnik na X nie widział poprzednich postów. ' +
           'Nie dopisuj komentarza od siebie. Zwróć WYŁĄCZNIE treść posta.',
       },
       {
