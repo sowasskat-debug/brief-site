@@ -9,6 +9,35 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 (repo `financialnewsbot`) i zapisuje jako `briefs.json`.
 
 
+## Minimapa: pozycja `geo` ZAWSZE, mapa konfliktu pod spodem jako pasek (2026-09-13) 📍
+`mapaLinkHtml` = `mapaGeoHtml(item) + mapaKonfliktHtml(item, bezMini)`. Gdy jest `geo`: minimapa „Gdzie to jest”,
+a mapa konfliktu pod nią to SAM pasek z „etap N z M” (`data-bez-mini`; `mapaMiniWypelnij` ustawia etykietę, nie rysuje
+kafli). Bez `geo` — minimapa konfliktu jak dotąd. Decyzja właściciela: „mapa konfliktu bez mapy, tylko zwykły panel”.
+- ⚠️ **`geo` klastra bierz z `subItems`** — bot zapisuje je na pod-pozycjach, kotwica go nie ma (top story o Ormuzie
+  była bez mapy). Preferowana pod-pozycja o tym samym nagłówku, potem pierwsza z `geo`. Ta sama klasa co `typ`/`mod`
+  na kotwicy; naprawa właściwa po stronie bota.
+
+## Gotowiec X: drugie zdanie z NAJKONKRETNIEJSZEGO faktu, bez sklejania przyczyn (2026-09-13) 🔴
+Właściciel: posty pisane ręcznie vs gotowiec — „niebo a ziemia”. 📊 Zmierzone na 4 newsach z 13.09 tym samym modelem
+(`deepseek-v4-pro`, prompt produkcyjny wyciągnięty z `index.ts`, wywołanie z serwera): stary prompt brał do drugiego
+zdania najsłabszy ogólnik („służby badały naruszenie”), sklejał fakty spójnikiem przyczyny bez pokrycia („maraton odbył
+się bez zakłóceń, bo służby badały…”), dopisywał tło z własnej wiedzy („jedna piąta światowej ropy”). Punkty (9)–(12)
+w bloku STYL: najkonkretniejszy fakt spoza hooka (miejsce, jednostka, kto, skąd), „bo” tylko gdy artykuł je podaje,
+zero tła spoza artykułu, seria („ta sama noc”) nazwana wprost. Po zmianie Wilno: „Z Szawli poderwano włoski myśliwiec
+z natowskiej misji Baltic Air Policing”.
+- ⚠️ To NIE cofa werdyktu z 08.09 („decyduje model, nie prompt”): tamten pomiar był o literówkach i formie, ten o WYBORZE
+  FAKTÓW — inna oś. ⚠️ Gotowiec widzi wyłącznie artykuł bota; kontekst serii z innych źródeł musiałby dostać z węzłów
+  wątku (nie wdrożone).
+- Deploy jak zawsze: `supabase functions deploy gotowiec-x --project-ref utmvokfjvrthvcmxzowc`.
+
+## Karta OG na X: zimny render = szary placeholder, X zapamiętuje porażkę (2026-09-13) ⚠️
+Post ze świeżym stubem dostał placeholder, choć `og` oddaje poprawny PNG w ~1 s na ciepło. Pierwsze wywołanie dla nowego
+newsa (satori + resvg + wasm) trwa dłużej niż czeka crawler X, a X nie odświeża karty w istniejącym poście — jedyna droga
+to usunąć post i wkleić link ponownie. Bot rozgrzewa karty nowych stubów po commicie (FinancialNewsBot `a5a249c`).
+⚠️ `cf-cache-status: DYNAMIC` — CDN NIE trzyma karty mimo `s-maxage`; rozgrzanie pomaga, nie gwarantuje. Trwałe
+rozwiązanie: statyczny PNG zapisywany przy stubie. ⚠️ Karta OG map konfliktów: numer na `mapy/huti-og.png` edytuj
+pikselowo (procedura w `STAN.md` 13.09), zawsze z bumpem `?v=N` w `og:image` i `twitter:image`.
+
 ## 🔴 Gotowiec X — jakość zależy od MODELU, nie od promptu (2026-09-08)
 Zgłoszenie: „czasami muszę z 8 razy odświeżyć i wygenerować nowe, żeby to miało sens" + „chodzi mi też o jakość samą
 w sobie tych gotowców".

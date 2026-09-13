@@ -1,9 +1,68 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-13 noc (MINIMAPA POD POSTEM + miejsce.html z zoomem; geo od bota ZWERYFIKOWANE — „Nowe Delhi” z biegu 19:00; bot na deepseek-flash (V4.1); kafle Esri z miejscem etapu mapy konfliktu albo z pola `geo` od bota — bot #4b757c3 podaje `miejsce` z opisu tylko przy pewności, Nominatim geokoduje; mapa konfliktu domyślnie CHRONOLOGICZNIE, rozdziały pod `?widok=rozdzialy`; mapa pod każdym newsem o Iranie/Huti po słowach i kategorii; „sprawdź mapę” 12.09 — Huti 18 etapów, Iran 30; SW v171; wcześniej 11.09: MAPY KONFLIKTÓW mapa.html + mapy/huti.json + mapy/iran.json, licznik.js, historia.html pod reklamy; hasło „sprawdź mapę”; 09.09: limit dawki 40→60 — bot #265; NatGeo — bot #267/#268; wyjątek głowa państwa — bot #269; gotowiec X na modelu pro — front #227/#228)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-13 wieczór (sesja poprawek z telefonu: minimapa = pozycja `geo` ZAWSZE + pasek mapy konfliktu pod spodem; `geo` z pod-pozycji klastra; bot: nagłówek kontynuacji nie kasuje nowości przy źródle zapasowym, `miejsce` na poziomie regionu i z krajem położenia, ogon impactu ucięty, tytuł-anegdota z polskiego źródła odrzucany, rozgrzewanie kart OG po stubach; gotowiec X: konkret zamiast ogólnika (9)–(12); „sprawdź mapę” 13.09 — Huti 21, Iran 34; SW v175; wcześniej 12–13.09: minimapa pod postem, miejsce.html, geo zweryfikowane, bot na deepseek-flash; 11.09: MAPY KONFLIKTÓW; 09.09: limit dawki, NatGeo, głowa państwa)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 🟡 13.09: SESJA WIECZORNA — poprawki ze zrzutów z telefonu (front + bot + gotowiec + mapy)
+### ✅ Minimapa: pozycja ZAWSZE, mapa konfliktu pod spodem jako pasek (front `b838e67`, `ea4abef`, SW v173→v174)
+- Życzenie: „tam też musi pokazywać aktualną pozycję, a pod spodem mapa konfliktów z przekierowaniem”, potem „mapa
+  konfliktu bez mapy, tylko zwykły panel”. `mapaLinkHtml` = `mapaGeoHtml + mapaKonfliktHtml(item, bezMini)`: przy `geo`
+  minimapa „Gdzie to jest”, pod nią sam pasek „Mapa konfliktu · etap N z M” (`data-bez-mini`, wypełniacz ustawia etykietę,
+  nie rysuje kafli). Bez `geo` — minimapa konfliktu jak dotąd.
+- 🔴 Top story o Ormuzie była bez mapy: bot zapisuje `geo` na `subItems`, nadrzędna klastra go nie ma. Front bierze
+  z pod-pozycji o tym samym nagłówku, a gdy brak — z pierwszej z `geo`. Naprawa właściwa (parasol dziedziczy `geo`)
+  jest po stronie bota — ta sama klasa co `typ`/`mod` na kotwicy (01.09).
+### ✅ Bot: cztery poprawki ze zrzutów (`4c55460`, `0876af0`, `a970611`, `a5a249c`; wszystkie na serwerze)
+- **„To pierwsze już było wczoraj”** (Altman i Musk razem z szefem Anthropic): kandydat był NOWY („Altman po raz pierwszy
+  przewiduje…”), angielski fallback dobrał artykuł o WCZORAJSZYM apelu, a `DeepSeekDopiszEskalacjeDoTytulu` przepisał
+  nagłówek pod ten artykuł. Teraz przy `ZrodloZapasowe` krok eskalacji POMIJANY (licznik
+  `naglowek_eskalacja_pominieta_zrodlo_zapasowe`) + prompt zakazuje usuwać z roboczego nagłówka to, co nowe.
+- **Brak mapy przy rafinerii w Kraju Krasnodarskim / Taneko / pociągu Kijów–Warszawa**: model zwracał puste `miejsce`,
+  gdy źródło nazywało tylko region. Prompt dopuszcza region zdarzenia i cieśniny/odcinki tras. Do tego KRAJ = kraj
+  położenia, nie kraj z nagłówka („Yahodyn, Poland” → pudło Nominatim, wpis usunięty z `geo_cache.json`).
+- **„Za gaz płaci już 6 tys. zł”**: `UtnijOgonWplywu` tnie komentarz po liście strzałek w `impact` (deterministycznie,
+  licznik `wplyw_ogon_uciety`); `WygladaNaAnegdote` odrzuca og:title z poradnikową oprawą („boi się / nie wie / ktoś
+  płaci już”) — zostaje nasz nagłówek (licznik `tytul_zrodla_odrzucony_anegdota`). Ten wpis poprawiony RĘCZNIE na
+  serwerze (briefs.json + `s/1kvyeq6.html`), bot nie wraca do napisanych wpisów.
+- **Szary placeholder na X** (Cardiff, `s/19r7wax.html`): karta OG renderuje się dobrze, ale pierwsze wywołanie funkcji
+  `og` dla nowego newsa to zimny render dłuższy niż cierpliwość crawlera X, który zapamiętuje porażkę. Bot po commicie
+  stubów odpytuje raz URL karty każdego NOWEGO stuba. ⚠️ `cf-cache-status: DYNAMIC` — CDN nie trzyma karty mimo
+  `s-maxage`, rozgrzanie pomaga (ciepły isolate), nie gwarantuje. Trwałe rozwiązanie = statyczny PNG (Storage/Hetzner).
+### ✅ Gotowiec X: konkret zamiast ogólnika (front `827b49f`, funkcja wdrożona)
+- „To, jak ty robisz mi posty, a gotowiec — niebo a ziemia”. 📊 Zmierzone na 4 newsach z 13.09 tym samym modelem
+  (`deepseek-v4-pro`): stary prompt → „służby badały naruszenie” (Wilno), wymyślona „jedna piąta światowej ropy” (Ormuz),
+  „bo” sklejające niezależne fakty. Po punktach (9)–(12) → „Z Szawli poderwano włoski myśliwiec z misji Baltic Air
+  Policing”, zero tła spoza artykułu. ⚠️ Nie sprzeczne z „decyduje model, nie prompt” (08.09): tamten pomiar był o
+  literówkach i formie, ten o WYBORZE FAKTÓW.
+- ⬜ Gotowiec widzi tylko artykuł bota — kontekst serii („ta sama fala Geran-5”) miałem z własnego researchu. Pomysł:
+  podawać funkcji ostatnie węzły wątku. Nie wdrożone bez decyzji (tokeny przy każdym kliknięciu).
+### ✅ „Sprawdź mapę” 13.09 (front `f4e3f1b`, SW v175): Huti 18→21, Iran 30→34
+- Dodane: Ta'izz naloty (12.09), Majsan wyrzutnie (12.09), Rijad obwinia Huti (13.09); WSJ chińskie zdjęcia (12.09),
+  Ormuz mimo umowy z Omanem (12.09), Pezeszkian–Abu Zabi (12.09, znane od 13.09), statek przy Qeshm (13.09); oba
+  kroki Salalah (14.09) z Bahrajnem poza stołem. Pominięte: meczet w Arabii (brak miasta), Xi na BRICS, Izrael–Liban.
+- Karta OG: „18”→„21” pikselowo (klastry czerwieni w pasie y 279–289, „1” x 319–326, „8” x 332–339; SpaceMono-Bold 16,
+  anchor `ls` y=290, czerwień (224,31,15)), `?v=3`.
+### 🟡 13.09 wieczór: CO ZOSTAŁO OTWARTE
+1. ⬜ Po kilku biegach: czy region w `geo` nie wpuszcza siedzib spółek; czy licznik `naglowek_eskalacja_pominieta_zrodlo_zapasowe`
+   nie rośnie za bardzo; czy `wplyw_ogon_uciety` i `tytul_zrodla_odrzucony_anegdota` nie tną dobrych przypadków.
+2. ⬜ Karta OG jako statyczny PNG zapisywany przy stubie (Storage albo Hetzner) — X nie odświeży placeholdera
+   w istniejącym poście; jedyna droga to usunąć i wkleić link ponownie.
+3. ⬜ `mapa.html` z `?od=` rzuca `Invalid LatLng (NaN, NaN)` w `activate(0)` (linia ~341) — także na STARYCH danych,
+   więc nie z tej aktualizacji. Sprawdzić, czy na produkcji (może tylko panel podglądu, który zamraża layout).
+4. ⬜ Bio na X: „Każdy post trafia na X dopiero po publikacji ze źródłem na brifup.com” — właściciel chciał dodać;
+   ewentualnie to samo zdanie w stopce strony (gdzie — nie zdecydowane).
+5. ⬜ Obrazki AI z Devdiscourse (kreskówka pod newsem o NATO) — wyłączyć `image_url` z tej domeny w bocie?
+6. ⬜ Parasol klastra powinien dziedziczyć `geo` (i `typ`/`mod`) w bocie — front ma obejście.
+### ⚠️ Pułapki z tej sesji
+- Podgląd z aplikacji: serwer podglądu NIE MA dostępu TCC do `~/Documents` (404 na wszystko) — serwuj kopię ze
+  scratchpada; wpis `brifup-preview` (port 8129) w `~/.claude/launch.json`. SW rejestruje się ponownie po każdym
+  `location.href` — wyrejestruj i ładuj `index.html?nosw=…` przez `location.replace`.
+- Komunikat commita z „…” w cudzysłowach rozbija `git commit -m` w zsh — komunikat z pliku (`-F`).
+- Gotowiec da się zmierzyć z serwera: prompt systemowy wyciągnięty z `index.ts`, klucz w `/root/bot_secrets.env`,
+  skrypt `/root/gen.py` (zostawiony) bije prosto w API DeepSeek.
+- Wpisy poprawione ręcznie na serwerze commituj od razu (`[skip ci]`), inaczej blokują `git pull` na produkcji.
 
 ## 🟡 12.09: SESJA — minimapa pod postem, chronologia na mapie, `geo` od bota
 
