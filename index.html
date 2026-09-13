@@ -1921,8 +1921,13 @@ function mapaLinkHtml(item){
 }
 function mapaGeoHtml(item){
   // Miejsce od bota (pole `geo`, 12.09: DeepSeek podaje je TYLKO gdy źródło je wprost nazywa, Nominatim daje współrzędne).
-  const g = item.geo;
-  if (!g || typeof g.lat !== 'number' || typeof g.lng !== 'number') return '';
+  // Klaster (subItems): bot zapisuje `geo` na pod-pozycjach, nadrzędna bywa bez — bierzemy z pod-pozycji o tym samym
+  // nagłówku, a gdy brak, z pierwszej, która ma `geo` (13.09: top story o Ormuzie była bez mapy z tego powodu).
+  const jest = x => x && x.geo && typeof x.geo.lat === 'number' && typeof x.geo.lng === 'number';
+  const subs = Array.isArray(item.subItems) ? item.subItems : [];
+  const zrodlo = jest(item) ? item : (subs.find(x => jest(x) && x.text === item.text) || subs.find(jest));
+  if (!zrodlo) return '';
+  const g = zrodlo.geo;
   // Klik (minimapa albo pasek) → miejsce.html w nowej karcie: pełna mapa z zoomem (życzenie właściciela 12.09).
   const href = `miejsce.html?lat=${encodeURIComponent(g.lat)}&lng=${encodeURIComponent(g.lng)}&n=${encodeURIComponent(g.nazwa || '')}`;
   return `<div class="mapa-box" data-lat="${g.lat}" data-lng="${g.lng}" data-nazwa="${escAttr(g.nazwa || '')}"><a class="mapa-mini" href="${href}" target="_blank" rel="noopener" hidden></a><a class="mapa-link mapa-geo" href="${href}" target="_blank" rel="noopener"><span class="mapa-link-l"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg> Gdzie to jest</span><span class="mapa-link-r">${escHtml(g.nazwa || '')} · Powiększ →</span></a></div>`;
