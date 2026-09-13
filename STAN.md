@@ -44,6 +44,18 @@ Zdjęcie stanu na **2026-09-13 wieczór (sesja poprawek z telefonu: minimapa = p
   kroki Salalah (14.09) z Bahrajnem poza stołem. Pominięte: meczet w Arabii (brak miasta), Xi na BRICS, Izrael–Liban.
 - Karta OG: „18”→„21” pikselowo (klastry czerwieni w pasie y 279–289, „1” x 319–326, „8” x 332–339; SpaceMono-Bold 16,
   anchor `ls` y=290, czerwień (224,31,15)), `?v=3`.
+### ✅ Kontynuacje przestają wyglądać jak powtórki (bot `e4903aa`, front `95d6064`, SW v176)
+- Zgłoszenie: trzeci wpis o Jagodzinie („Atak drona przy granicy. Trafiony pociąg i stacja benzynowa”) — „użytkownik MUSI
+  wiedzieć, że to kontynuacja”. Log: kandydat MIAŁ nowość („…po przejeździe Borisa Johnsona”), zabrała ją podmiana na
+  og:title polskiego źródła. Ta sama klasa co Altman rano.
+- Bot: (1) dedup rejestruje teksty kontynuacji, podmiana tytułu wydawcy przy nich pomijana (`tytul_zrodla_pominiety_kontynuacja`);
+  (2) `DeepSeekPrzepiszOpisJakoKontynuacje` (pro): opis zaczyna od nowości, tło jednym zdaniem, `BRAK_NOWOSCI` = stary opis,
+  bramka liczb wobec obu opisów i nagłówków. 📊 Test 13.09 na 3 kontynuacjach: pociąg i Musk dobre, Altman → BRAK_NOWOSCI
+  (słusznie, fallbackowy artykuł nie miał nowości); flash z literówką „eseście”, pro czysto → pro.
+- Front: `kontynuacjaHtml` nad artykułem („CIĄG DALSZY · ETAP N Z M”, „poprzednio ☀ HH:MM <nagłówek>” z deep linkiem),
+  od 2. etapu, tylko przy artykule. Odrzucony na razie wariant „aktualizacja zamiast nowego kafla” (za głęboki: stuby, wątki).
+- ⬜ Obserwować pierwsze kontynuacje: liczniki `opis_kontynuacja_*` i czy opisy nie zaczynają się od „Wcześniej informowano”.
+
 ### 🟡 13.09 wieczór: CO ZOSTAŁO OTWARTE
 1. ⬜ Po kilku biegach: czy region w `geo` nie wpuszcza siedzib spółek; czy licznik `naglowek_eskalacja_pominieta_zrodlo_zapasowe`
    nie rośnie za bardzo; czy `wplyw_ogon_uciety` i `tytul_zrodla_odrzucony_anegdota` nie tną dobrych przypadków.
