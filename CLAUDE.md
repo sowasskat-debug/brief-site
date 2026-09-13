@@ -9,6 +9,15 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 (repo `financialnewsbot`) i zapisuje jako `briefs.json`.
 
 
+## Blok „Ciąg dalszy” nad artykułem — `kontynuacjaHtml` (2026-09-13 wieczór)
+Właściciel: „użytkownik MUSI wiedzieć, że to kontynuacja, bo wygląda, jakbyśmy się powtarzali”. Pasek `watekPasekHtml`
+na kaflu mówi tylko „ciąg dalszy: <wątek>”; w otwartym artykule nic nie mówiło, który to etap i co było poprzednio.
+`kontynuacjaHtml(item)` (nad zdjęciem, w `expandBlock`, `expandBlockArchive`, `dtShowDetail`): kicker „CIĄG DALSZY ·
+ETAP N Z M” + „poprzednio ☀ HH:MM <nagłówek poprzedniego etapu>” jako link `watekNodeLink(prev)`. Dane z wczytanego
+`threads.json` — 0 fetchy. Tylko od 2. etapu i tylko przy `item.article` (parasol klastra go nie dostaje). CSS `.kontynuacja`.
+⚠️ Godzina to `added_at` węzła od bota — bywa „00:00” (tak bot zapisał węzeł), to nie błąd bloku.
+Po stronie bota w tym samym dniu: nagłówek kontynuacji nie traci nowości, opis pisany jako ciąg dalszy (CLAUDE.md bota).
+
 ## Minimapa: pozycja `geo` ZAWSZE, mapa konfliktu pod spodem jako pasek (2026-09-13) 📍
 `mapaLinkHtml` = `mapaGeoHtml(item) + mapaKonfliktHtml(item, bezMini)`. Gdy jest `geo`: minimapa „Gdzie to jest”,
 a mapa konfliktu pod nią to SAM pasek z „etap N z M” (`data-bez-mini`; `mapaMiniWypelnij` ustawia etykietę, nie rysuje
