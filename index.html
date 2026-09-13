@@ -1913,16 +1913,23 @@ function mapaDlaNewsa(item){
   return kat || '';
 }
 function mapaLinkHtml(item){
+  // 13.09 (życzenie właściciela): NIE „albo-albo". Jeśli bot podał `geo`, zawsze najpierw minimapa z AKTUALNĄ pozycją
+  // newsa; pod nią — gdy news pasuje do mapy konfliktu — druga minimapa konfliktu z przekierowaniem do mapa.html.
+  // Gdy jest `geo`, mapa konfliktu pod spodem to SAM pasek (bez drugiej minimapy) — życzenie właściciela 13.09.
+  const geo = mapaGeoHtml(item);
+  return geo + mapaKonfliktHtml(item, !!geo);
+}
+function mapaGeoHtml(item){
+  // Miejsce od bota (pole `geo`, 12.09: DeepSeek podaje je TYLKO gdy źródło je wprost nazywa, Nominatim daje współrzędne).
+  const g = item.geo;
+  if (!g || typeof g.lat !== 'number' || typeof g.lng !== 'number') return '';
+  // Klik (minimapa albo pasek) → miejsce.html w nowej karcie: pełna mapa z zoomem (życzenie właściciela 12.09).
+  const href = `miejsce.html?lat=${encodeURIComponent(g.lat)}&lng=${encodeURIComponent(g.lng)}&n=${encodeURIComponent(g.nazwa || '')}`;
+  return `<div class="mapa-box" data-lat="${g.lat}" data-lng="${g.lng}" data-nazwa="${escAttr(g.nazwa || '')}"><a class="mapa-mini" href="${href}" target="_blank" rel="noopener" hidden></a><a class="mapa-link mapa-geo" href="${href}" target="_blank" rel="noopener"><span class="mapa-link-l"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg> Gdzie to jest</span><span class="mapa-link-r">${escHtml(g.nazwa || '')} · Powiększ →</span></a></div>`;
+}
+function mapaKonfliktHtml(item, bezMini){
   const id = mapaDlaNewsa(item);
-  // Bez mapy konfliktu, ale z miejscem od bota (pole `geo`, 12.09: DeepSeek podaje je TYLKO gdy źródło je wprost nazywa,
-  // Nominatim daje współrzędne) → sama minimapa z pastylką „Gdzie to jest”. Brak `geo` = nic, jak dotąd.
-  if (!id) {
-    const g = item.geo;
-    if (!g || typeof g.lat !== 'number' || typeof g.lng !== 'number') return '';
-    // Klik (minimapa albo pasek) → miejsce.html w nowej karcie: pełna mapa z zoomem (życzenie właściciela 12.09).
-    const href = `miejsce.html?lat=${encodeURIComponent(g.lat)}&lng=${encodeURIComponent(g.lng)}&n=${encodeURIComponent(g.nazwa || '')}`;
-    return `<div class="mapa-box" data-lat="${g.lat}" data-lng="${g.lng}" data-nazwa="${escAttr(g.nazwa || '')}"><a class="mapa-mini" href="${href}" target="_blank" rel="noopener" hidden></a><a class="mapa-link mapa-geo" href="${href}" target="_blank" rel="noopener"><span class="mapa-link-l"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg> Gdzie to jest</span><span class="mapa-link-r">${escHtml(g.nazwa || '')} · Powiększ →</span></a></div>`;
-  }
+  if (!id) return '';
   const m = MAPY_WATKOW.mapy[id] || {};
   // ?od=<data newsa>: mapa startuje na etapie z tego momentu, nie od początku historii (życzenie właściciela 11.09).
   const od = String(item.published_at || item.added_at || '').slice(0, 10);
@@ -1930,7 +1937,7 @@ function mapaLinkHtml(item){
   // Minimapa (2026-09-12, życzenie właściciela: „podgląd pod postem, gdzie się to znajduje"). Tu tylko PUSTY pojemnik
   // z danymi — wypełnia go `mapaMiniWypelnij` przy REALNYM otwarciu karty (setCardOpen / dtShowDetail), bo ta funkcja
   // leci dla każdego kafla przy każdym renderze (zasada: nic sieciowego w funkcjach budujących HTML).
-  return `<div class="mapa-box" data-mapa="${escAttr(id)}"${odOk ? ` data-od="${od}"` : ''} data-txt="${escAttr(item.text || '')}"><div class="mapa-mini" hidden></div><a class="mapa-link" href="mapa.html?m=${escAttr(id)}${odOk ? '&od=' + od : ''}"><span class="mapa-link-l"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg> Mapa konfliktu${m.kroki?` · ${m.kroki} etapów`:''}</span><span class="mapa-link-r">Przewiń historię →</span></a></div>`;
+  return `<div class="mapa-box" data-mapa="${escAttr(id)}"${odOk ? ` data-od="${od}"` : ''}${bezMini ? ' data-bez-mini="1"' : ''} data-txt="${escAttr(item.text || '')}"><div class="mapa-mini" hidden></div><a class="mapa-link" href="mapa.html?m=${escAttr(id)}${odOk ? '&od=' + od : ''}"><span class="mapa-link-l"><svg class="icn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg> Mapa konfliktu${m.kroki?` · ${m.kroki} etapów`:''}</span><span class="mapa-link-r">Przewiń historię →</span></a></div>`;
 }
 // Dane map ładowane leniwie, raz na mapę (obietnica w cache — równoległe otwarcia nie dublują pobrania).
 const MAPY_DANE = {};
@@ -1972,6 +1979,7 @@ function mapaMiniWypelnij(box){
     const e = mapaEtapDlaNewsa(d, od, txt); if (!e) return;
     const link = box.querySelector('.mapa-link-r');
     if (link) link.textContent = `etap ${e.n} z ${e.total} · Przewiń →`;
+    if (box.dataset.bezMini) return;   // pod minimapą `geo` zostaje sam pasek z numerem etapu (13.09)
     const p = d.places[e.s.place]; if (!p) return;   // każdy etap ma miejsce ze słownika mapy — pokazujemy zawsze (życzenie właściciela: „mapa musi być pokazana”)
     const past = e.steps.map((x, i) => { const q = d.places[x.place]; return q ? { place: x.place, lat: q.lat, lng: q.lng, n: i + 1 } : null; }).filter(Boolean);
     mapaMiniRysuj(box, { lat: p.lat, lng: p.lng, name: p.name, place: e.s.place }, past, 6);
