@@ -1677,6 +1677,20 @@ function watekEtapInfo(item){
   if (idx < 1) return null;    // nie znaleziono albo to pierwszy etap = nie kontynuacja
   return { tytul: t.title || '', etap: idx + 1, ile: t.nodes.length };
 }
+// ↩ CIĄG DALSZY nad artykułem (13.09, zgłoszenie właściciela: „użytkownik MUSI wiedzieć, że to kontynuacja, bo wygląda,
+// jakbyśmy się powtarzali"). Pasek na kaflu mówi tylko „ciąg dalszy: <wątek>"; w otwartym artykule nic nie mówiło,
+// który to etap i co było poprzednio. Blok pokazuje poprzedni etap sagi z godziną i linkiem (deep link jak na osi).
+// Dane z już wczytanego threads.json — 0 fetchy, 0 tokenów. Pierwszy etap sagi = nic (nie jest kontynuacją).
+function kontynuacjaHtml(item){
+  const t = threadForItem(item);
+  if (!t || !Array.isArray(t.nodes) || t.nodes.length < 2) return '';
+  const key = normThreadKey(item.text);
+  let idx = -1;
+  for (let i = 0; i < t.nodes.length; i++){ if (normThreadKey(t.nodes[i].text) === key) { idx = i; break; } }
+  if (idx < 1) return '';
+  const prev = t.nodes[idx - 1];
+  return `<a class="kontynuacja" href="${escAttr(watekNodeLink(prev))}"><span class="kont-l">${WATEK_ICN} Ciąg dalszy · etap ${idx + 1} z ${t.nodes.length}</span><span class="kont-r"><span class="kont-kiedy">poprzednio ${watekWhen(prev)}</span> ${escHtml(prev.text)}</span></a>`;
+}
 function watekPasekHtml(item){
   const w = watekEtapInfo(item);
   if (!w) return '';
@@ -2612,7 +2626,7 @@ function expandBlock(item) {
       ? `<img class="expand-image" data-src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
       : '';
     return `
-      ${imgHtml}
+      ${kontynuacjaHtml(item)}${imgHtml}
       <div class="expand-article">${escHtml(item.article)}</div>
       ${impactHtml(item)}
       ${quotesHtml(item)}
@@ -2820,7 +2834,7 @@ function expandBlockArchive(item, dateStr, dose) {
       ? `<img class="expand-image" data-src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
       : '';
     return `
-      ${imgHtml}
+      ${kontynuacjaHtml(item)}${imgHtml}
       <div class="expand-article">${escHtml(item.article)}</div>
       ${impactHtml(item)}
       ${quotesHtml(item)}
@@ -4318,6 +4332,7 @@ function dtShowDetail(item) {
       <div class="dt-detail-badges"><span class="dt-detail-badge">${cat.toUpperCase()}</span>${srcBadge(item)}</div>
       <div class="dt-detail-headline">${escHtml(item.text)}</div>
       <div class="dt-detail-time">${time||'—'}</div>
+      ${item.article ? kontynuacjaHtml(item) : ''}
       ${item.article && item.image_url
         ? `<img class="dt-detail-image" src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
         : ''}
