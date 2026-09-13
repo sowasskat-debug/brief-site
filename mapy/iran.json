@@ -3,7 +3,7 @@
   "kicker": "Mapa konfliktu",
   "title": "Wojna z Iranem: od uderzenia do Ormuzu",
   "lead": "Pół roku wojny krok po kroku, od pierwszego uderzenia do dziś. Przewijaj: mapa pokazuje, gdzie to się dzieje i dlaczego to miejsce ma znaczenie. Wolisz po tematach? Nad mapą przełączysz na sześć rozdziałów.",
-  "updated": "2026-09-12",
+  "updated": "2026-09-13",
   "view": {
     "lat": 27,
     "lng": 48,
@@ -383,14 +383,6 @@
       "text": "Pierwsza zagraniczna podróż prezydenta Iranu od wybuchu wojny. Putin też przyjeżdża, pierwszy raz od początku wojny w Ukrainie. Temat: handel bez dolara przez Nowy Bank Rozwoju. 12.09: BRICS uzgadnia wspólną deklarację, Xi wzywa członków do działań na rzecz pokoju w Zatoce."
     },
     {
-      "rozdzial": "dyplomacja",
-      "date": "2026-09-14",
-      "place": "salalah",
-      "kind": "dyplomacja",
-      "title": "Zatoka siada z Iranem",
-      "text": "Ministrowie państw Zatoki spotykają się z szefem MSZ Iranu w Omanie. Pierwszy taki kontakt od lutego. Na stole: zasady żeglugi przez Ormuz i ataki Huti na Arabię."
-    },
-    {
       "rozdzial": "rynek",
       "date": "2026-09-01",
       "place": "ttf",
@@ -429,6 +421,47 @@
       "kind": "rynek",
       "title": "Pentagon: 1,5 bln dolarów na amunicję",
       "text": "Podsekretarz obrony Michael Duffey wzywa Kongres do zatwierdzenia 1,5 bln USD na odtworzenie zapasów zużytych w wojnie z Iranem: Patriot, Tomahawk, THAAD, Standard Missile. Siedmioletnie umowy z producentami są już przygotowane. Dla porównania: do czerwcowego memorandum wojna kosztowała USA 113 mld USD."
+    },
+    {
+      "rozdzial": "fronty",
+      "date": "2026-09-12",
+      "place": "waszyngton",
+      "kind": "dyplomacja",
+      "title": "WSJ: chińskie zdjęcia przy ataku w Jordanii",
+      "text": "Według „Wall Street Journal” amerykańscy urzędnicy wiążą chińskie zdjęcia satelitarne z irańskim atakiem z 17 lipca na bazę w Jordanii, w którym zginęło trzech żołnierzy USA, a czterech zostało rannych. Zarzut: Pekin mógł dostarczać Teheranowi dane do namierzania celów. Wojna przestaje być regionalna."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-12",
+      "place": "ormuz",
+      "kind": "dyplomacja",
+      "title": "Ormuz zostaje zamknięty mimo umowy z Omanem",
+      "text": "Irańskie źródło agencji Tasnim: ewentualne porozumienie Iran–Oman nie otworzy cieśniny od razu, tylko stworzy „podstawy” do otwarcia, zależne od spełnienia przez USA warunków Teheranu. Iran dalej żąda prawa do opłat od statków, na co Oman się nie zgadza."
+    },
+    {
+      "rozdzial": "dyplomacja",
+      "date": "2026-09-12",
+      "znane_od": "2026-09-13",
+      "place": "delhi",
+      "kind": "dyplomacja",
+      "title": "Pezeszkian z następcą tronu Abu Zabi",
+      "text": "Na szczycie BRICS prezydent Iranu spotyka się z Khaledem bin Mohamedem Al Nahyanem. Obie strony są po przeciwnych stronach wojny: 28 lutego Teheran ostrzelał Dubaj, w sierpniu ZEA zawiesiły handel z Iranem. Ustaleń nie ujawniono, ale oba kraje podpisują wspólną deklarację BRICS o „maksymalnej powściągliwości” i ochronie szlaków handlowych. Reuters: sygnał możliwej odwilży."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-13",
+      "place": "qeshm",
+      "kind": "atak",
+      "title": "Statek trafiony przy Qeshm",
+      "text": "Około 5 rano statek handlowy dostaje nieznanym pociskiem przy wyspach Hengam i Qeshm; UKMTO potwierdza trafienie w czasie przejścia przez cieśninę, jedna osoba nie żyje, trzy są ranne. Iran twierdzi, że to USA trafiły tankowiec — telewizja państwowa po raz pierwszy pokazuje nagranie — a wcześniej Gwardia Rewolucyjna zaatakowała amerykańskiego drona."
+    },
+    {
+      "rozdzial": "dyplomacja",
+      "date": "2026-09-14",
+      "place": "salalah",
+      "kind": "dyplomacja",
+      "title": "Zatoka siada z Iranem",
+      "text": "Ministrowie państw Zatoki spotykają się z szefem MSZ Iranu w Omanie — pierwszy taki kontakt od lutego. Na stole: zasady żeglugi przez Ormuz i ataki Huti na Arabię. Bahrajn nie przyjedzie bez przywrócenia stosunków z Teheranem, a według irańskiego urzędnika poniedziałek nie przyniesie porozumienia w sprawie cieśniny."
     }
   ]
 }

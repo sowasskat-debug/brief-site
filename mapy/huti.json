@@ -3,7 +3,7 @@
   "kicker": "Mapa konfliktu",
   "title": "Huti biorą Bab al-Mandab",
   "lead": "Jak w dziesięć dni rebelianci z Jemenu przejęli wybrzeże Morza Czerwonego i drugą cieśninę naftową świata. Przewijaj — punkty zapalają się chronologicznie.",
-  "updated": "2026-09-12",
+  "updated": "2026-09-13",
   "view": {
     "lat": 15.6,
     "lng": 44.5,
@@ -290,11 +290,32 @@
       ]
     },
     {
+      "date": "2026-09-12",
+      "place": "taiz",
+      "kind": "atak",
+      "title": "Naloty na Ta'izz, 45 tys. w drodze",
+      "text": "Saudyjsko-jemeńskie lotnictwo uderza w pozycje Huti w muhafazie Ta'izz. Z terenów zajętych przez rebeliantów uciekło już ponad 45 tys. osób: chaotyczne ewakuacje, skok cen żywności i wody, tłok na ciężarówkach. Agencje ONZ ostrzegają, że nie mają pieniędzy na pomoc dla przesiedleńców."
+    },
+    {
+      "date": "2026-09-12",
+      "place": "majsan",
+      "kind": "dyplomacja",
+      "title": "Irak przejmuje wyrzutnie",
+      "text": "Irackie władze znajdują i przejmują platformy startowe dronów przy granicy z Iranem — to z prowincji Majsan miały wystartować bezzałogowce, które w czwartek trafiły rurociąg Wschód-Zachód, Rijad i Medynę. Dowódca odpowiedzialny za tamtejszą przestrzeń powietrzną odwołany, premier Al-Zaidi zgadza się włączyć Iran do wspólnego śledztwa, Bagdad zamyka przejście Szalamcze."
+    },
+    {
+      "date": "2026-09-13",
+      "place": "taiz",
+      "kind": "dyplomacja",
+      "title": "Rijad po raz pierwszy obwinia Huti",
+      "text": "Po wielodniowych walkach w Ta'izz strona saudyjska po raz pierwszy publicznie wskazuje Huti jako winnych eskalacji. Według źródeł saudyjskich ciężkie starcia trwają w dwóch punktach oporu sił rządowych; rebelianci utrzymują wyspę Perim, co dalej zwiększa presję na żeglugę przez Bab al-Mandab."
+    },
+    {
       "date": "2026-09-14",
       "place": "salalah",
       "kind": "dyplomacja",
       "title": "Co dalej: rozmowy w Salalah",
-      "text": "W poniedziałek ministrowie państw Zatoki mają spotkać się z szefem MSZ Iranu w Omanie. Pytania otwarte: czy Huti naprawdę przepuszczają nie-saudyjskie statki, czy Arabia ruszy sama, i czy Iran ma ochotę użyć nowej karty przetargowej."
+      "text": "W poniedziałek ministrowie państw Zatoki spotykają się z szefem MSZ Iranu w Omanie. Bahrajn nie przyjedzie, dopóki nie wrócą stosunki dyplomatyczne z Teheranem, a irański urzędnik zapowiada, że porozumienia o cieśninie nie będzie. Pytania otwarte: czy Huti naprawdę przepuszczają nie-saudyjskie statki i czy Arabia ruszy sama."
     }
   ]
 }
