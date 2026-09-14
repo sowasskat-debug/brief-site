@@ -754,9 +754,14 @@ async function fetchFromBriefsJson(dose) {
     // Znak zapytania z timestampem: CDN przed GitHub Pages (Cloudflare itp.) cache'uje
     // po pełnym URL, a nagłówek cache:'no-store' dotyczy tylko cache przeglądarki —
     // bez unikalnego query stringa CDN mógł serwować nieaktualną wersję pliku.
-    const r = await fetch(`./briefs.json?_=${Date.now()}`, { cache: 'no-store' });
+    // Limit 30 s (14.09): wiszący fetch w przeglądarce aplikacji (X na Androidzie) trzymał szkielet bez końca.
+    // Po przerwaniu `catch` niżej zwraca null i `loadDose` pokazuje stan awaryjny zamiast szarych pasków.
+    const przerwij = typeof AbortController === 'function' ? new AbortController() : null;
+    const limit = przerwij ? setTimeout(() => przerwij.abort(), 30000) : null;
+    const r = await fetch(`./briefs.json?_=${Date.now()}`, { cache: 'no-store', signal: przerwij?.signal });
     if (!r.ok) return null;
     const d = await r.json();
+    if (limit) clearTimeout(limit);
     // Indeksujemy WSZYSTKIE dzisiejsze dawki, nie tylko ładowaną — plik i tak jest już sparsowany,
     // więc to zero dodatkowej sieci. Bez tego skrót etapu z dawki, której czytelnik nie otworzył,
     // pokazywał „Pełna treść w wydaniu z tego dnia" (zmierzone: 3 z 6 etapów w sadze o Ormuzie),
@@ -807,8 +812,25 @@ async function loadDose(dose, force=false) {
     cache[dose] = oznaczKotwice(SAMPLE[dose].map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) })));
     cache[dose].forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
     cache[dose] = sortNewestFirst(cache[dose]);
-    if (dose === currentDose) renderDose(dose, cache[dose]);
+    // 🔴 14.09: gdy render pada także na danych zastępczych, wyjątek uciekał z `loadDose` i na ekranie
+    // zostawał szkielet NA ZAWSZE (zgłoszenie: wejście z X na Androidzie, same szare paski). Pokazujemy
+    // treść błędu — jeden zrzut z telefonu mówi wtedy, co pada w przeglądarce, której nie mamy lokalnie.
+    try { if (dose === currentDose) renderDose(dose, cache[dose]); }
+    catch (e2) { pokazBladLadowania(e2, e); }
   }
+}
+
+function pokazBladLadowania(blad, pierwotny) {
+  const opis = b => b ? `${b.name || 'Błąd'}: ${b.message || b}` : '';
+  const tekst = [opis(blad), pierwotny && pierwotny !== blad ? opis(pierwotny) : ''].filter(Boolean).join(' · ');
+  const el = document.getElementById('content');
+  if (!el) return;
+  el.innerHTML = `<div style="padding:40px 20px;text-align:center">
+    <p style="margin:0 0 10px;font-weight:600">Nie udało się wyświetlić wydania.</p>
+    <p style="margin:0 0 18px;font:12px/1.5 ui-monospace,monospace;color:var(--muted,#6b7280);word-break:break-word"></p>
+    <button type="button" onclick="location.reload()" style="font:600 14px system-ui;padding:10px 20px;border:1px solid #e01f0f;background:#e01f0f;color:#fff;border-radius:8px">Spróbuj ponownie</button>
+  </div>`;
+  el.querySelector('p:nth-of-type(2)').textContent = tekst.slice(0, 300);
 }
 
 function renderSkeleton() {
