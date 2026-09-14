@@ -77,7 +77,7 @@
       "name": "Wyspy Hanisz",
       "lat": 13.75,
       "lng": 42.75,
-      "why": "Archipelag w połowie drogi do Erytrei. Tu oblężono garnizon rządowy."
+      "why": "Archipelag w połowie drogi do Erytrei, 160 km na północ od Bab al-Mandab. Oblężony 10.09, zajęcie przez Huti potwierdzone 14.09."
     },
     "dhubab": {
       "name": "Dhubab",
@@ -326,10 +326,17 @@
     },
     {
       "date": "2026-09-14",
+      "place": "hanisz",
+      "kind": "zdobycie",
+      "title": "Hanisz potwierdzone",
+      "text": "Przedstawiciele rządu Jemenu i Huti potwierdzają, że rebelianci zajęli wyspy Wielki i Mały Hanisz, 160 km na północ od Bab al-Mandab. Cztery dni wcześniej były tylko doniesienia o odciętym garnizonie. Obok Perim to drugi archipelag w rękach Huti przy trasie, którą saudyjska ropa z Janbu płynie przez Bab al-Mandab na rynki Azji."
+    },
+    {
+      "date": "2026-09-14",
       "place": "janbu",
       "kind": "rynek",
       "title": "Janbu: zapas na 5–7 dni",
-      "text": "Pierwsza sesja po zamknięciu rurociągu Wschód-Zachód. Brent rośnie o 4,5% do 109,29 USD, zmierzając do najwyższego zamknięcia od 19 maja. Bez rurociągu port Janbu eksportuje z magazynów, a według trzech źródeł branżowych zapasu starczy na 5–7 dni. Rijad nie podaje, kiedy rura wróci do pracy; dłuższy przestój może odciąć do 4% światowych dostaw ropy."
+      "text": "Pierwsza sesja po zamknięciu rurociągu Wschód-Zachód. Brent rośnie o 4,5% do 109,29 USD, zmierzając do najwyższego zamknięcia od 19 maja. Bez rurociągu port Janbu eksportuje z magazynów, a według trzech źródeł branżowych zapasu starczy na 5–7 dni. Rijad sam terminu nie podaje, ale dwaj urzędnicy z regionu mówią AP o 3–5 tygodniach naprawy, w tym dużej stacji pomp; rura może w tym czasie pracować częściowo. Zapas w Janbu jest więc wielokrotnie krótszy niż przestój."
     }
   ]
 }
