@@ -754,9 +754,14 @@ async function fetchFromBriefsJson(dose) {
     // Znak zapytania z timestampem: CDN przed GitHub Pages (Cloudflare itp.) cache'uje
     // po pełnym URL, a nagłówek cache:'no-store' dotyczy tylko cache przeglądarki —
     // bez unikalnego query stringa CDN mógł serwować nieaktualną wersję pliku.
-    const r = await fetch(`./briefs.json?_=${Date.now()}`, { cache: 'no-store' });
-    if (!r.ok) return null;
+    // Limit 30 s (14.09): wiszący fetch w przeglądarce aplikacji (X na Androidzie) trzymał szkielet bez końca.
+    // Po przerwaniu `catch` niżej zwraca null i `loadDose` pokazuje stan awaryjny zamiast szarych pasków.
+    const przerwij = typeof AbortController === 'function' ? new AbortController() : null;
+    const limit = przerwij ? setTimeout(() => przerwij.abort(), 30000) : null;
+    const r = await fetch(`./briefs.json?_=${Date.now()}`, { cache: 'no-store', signal: przerwij?.signal });
+    if (!r.ok) { bladPobrania[dose] = `HTTP ${r.status}`; return null; }
     const d = await r.json();
+    if (limit) clearTimeout(limit);
     // Indeksujemy WSZYSTKIE dzisiejsze dawki, nie tylko ładowaną — plik i tak jest już sparsowany,
     // więc to zero dodatkowej sieci. Bez tego skrót etapu z dawki, której czytelnik nie otworzył,
     // pokazywał „Pełna treść w wydaniu z tego dnia" (zmierzone: 3 z 6 etapów w sadze o Ormuzie),
@@ -769,7 +774,19 @@ async function fetchFromBriefsJson(dose) {
     // od realnej awarii pobierania; loadDose pokazuje wtedy PUSTA_DAWKA zamiast SAMPLE).
     if (!doseData.items?.length) return 'PUSTA';
     return doseData.items;
-  } catch(e) { return null; }
+  } catch(e) {
+    bladPobrania[dose] = e?.name === 'AbortError' ? 'briefs.json: brak odpowiedzi w 30 s' : `${e?.name || 'Błąd'}: ${e?.message || e}`;
+    return null;
+  }
+}
+
+// 14.09: przyczyna awarii pobrania, dopisywana pod kafel „Nie udało się pobrać dawki” — bez niej zrzut
+// z przeglądarki aplikacji X nie odróżnia wiszącego fetcha od błędu HTTP czy zepsutego JSON-a.
+// Wpięte w szablon `renderDose`, nie doklejane po nim — późniejsze przerysowanie `#content` kasowało dopisek.
+const bladPobrania = {};
+function przyczynaAwariiHtml(dose) {
+  if (!bladPobrania[dose]) return '';
+  return `<p class="diag-awaria" style="margin:12px 20px;font:12px/1.5 ui-monospace,monospace;color:var(--muted,#6b7280);word-break:break-word;text-align:center">${escHtml(bladPobrania[dose].slice(0, 300))}</p>`;
 }
 
 
@@ -782,6 +799,7 @@ async function loadDose(dose, force=false) {
   if (cache[dose] && !force) { renderDose(dose, cache[dose]); return; }
   renderSkeleton();
   doseDates[dose] = null;   // reset — ustawi się przy udanym pobraniu z briefs.json/supabase
+  delete bladPobrania[dose];
   try {
     let items = await fetchFromBriefsJson(dose);
 
@@ -804,11 +822,32 @@ async function loadDose(dose, force=false) {
     if (dose === currentDose) renderDose(dose, cache[dose]);
   } catch(e) {
     daneZastepcze[dose] = true;   // ta sama zasada co wyżej — awaria nie może trafić do tytułu/JSON-LD
-    cache[dose] = oznaczKotwice(SAMPLE[dose].map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) })));
-    cache[dose].forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
-    cache[dose] = sortNewestFirst(cache[dose]);
-    if (dose === currentDose) renderDose(dose, cache[dose]);
+    // 🔴 14.09: gdy render pada także na danych zastępczych, wyjątek uciekał z `loadDose` i na ekranie
+    // zostawał szkielet NA ZAWSZE (zgłoszenie: wejście z X na Androidzie, same szare paski). Pokazujemy
+    // treść błędu — jeden zrzut z telefonu mówi wtedy, co pada w przeglądarce, której nie mamy lokalnie.
+    try {
+      cache[dose] = oznaczKotwice(SAMPLE[dose].map(i => ({ ...i, id: uid(), subItems: (i.subItems || []).map(sub => ({ ...sub, id: uid() })) })));
+      cache[dose].forEach(it => { it.subItems = sortNewestFirst(it.subItems); });
+      cache[dose] = sortNewestFirst(cache[dose]);
+      if (dose === currentDose) {
+        bladPobrania[dose] = `render: ${e?.name || 'Błąd'}: ${e?.message || e}`;   // realne dane pobrane, padł ich render
+        renderDose(dose, cache[dose]);
+      }
+    } catch (e2) { delete cache[dose]; pokazBladLadowania(e2, e); }
   }
+}
+
+function pokazBladLadowania(blad, pierwotny) {
+  const opis = b => b ? `${b.name || 'Błąd'}: ${b.message || b}` : '';
+  const tekst = [...new Set([opis(blad), opis(pierwotny)])].filter(Boolean).join(' · ');
+  const el = document.getElementById('content');
+  if (!el) return;
+  el.innerHTML = `<div style="padding:40px 20px;text-align:center">
+    <p style="margin:0 0 10px;font-weight:600">Nie udało się wyświetlić wydania.</p>
+    <p style="margin:0 0 18px;font:12px/1.5 ui-monospace,monospace;color:var(--muted,#6b7280);word-break:break-word"></p>
+    <button type="button" onclick="location.reload()" style="font:600 14px system-ui;padding:10px 20px;border:1px solid #e01f0f;background:#e01f0f;color:#fff;border-radius:8px">Spróbuj ponownie</button>
+  </div>`;
+  el.querySelector('p:nth-of-type(2)').textContent = tekst.slice(0, 300);
 }
 
 function renderSkeleton() {
@@ -2979,6 +3018,7 @@ function renderDose(dose, items) {
       <div class="section-rule-label">Więcej tematów</div>
       <div class="section-rule-line"></div>
     </div>
+    ${przyczynaAwariiHtml(dose)}
     ${restBlocks}`;
 
   // Tagowanie kart kategorią — potrzebne dla mobilnego panelu filtrów
