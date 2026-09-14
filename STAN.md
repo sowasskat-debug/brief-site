@@ -1,9 +1,71 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-13 wieczór (sesja poprawek z telefonu: minimapa = pozycja `geo` ZAWSZE + pasek mapy konfliktu pod spodem; `geo` z pod-pozycji klastra; bot: nagłówek kontynuacji nie kasuje nowości przy źródle zapasowym, `miejsce` na poziomie regionu i z krajem położenia, ogon impactu ucięty, tytuł-anegdota z polskiego źródła odrzucany, rozgrzewanie kart OG po stubach; gotowiec X: konkret zamiast ogólnika (9)–(12); „sprawdź mapę” 13.09 — Huti 21, Iran 34; SW v175; wcześniej 12–13.09: minimapa pod postem, miejsce.html, geo zweryfikowane, bot na deepseek-flash; 11.09: MAPY KONFLIKTÓW; 09.09: limit dawki, NatGeo, głowa państwa)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-14 wieczór (Bankier martwy od 10.09 bez błędu w logu → podmienione działy RSS; mapy: Salalah sprostowane, Chamis Muszajt, Janbu, Hanisz, czarna lista 77 statków, słowa kluczowe Iranu bez „Bessent”; blok „Ciąg dalszy” = linia pod zdjęciem (SW v180); pierwsza wizyta bez przeładowania przez SW — zgłoszenie „z X strona się nie ładuje” (SW v178); SW v181; wcześniej 13.09: minimapa, kontynuacje, gotowiec X)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 🟡 14.09: SESJA — martwy Bankier, mapy, „Ciąg dalszy”, wejście z X
+### ⬜ OTWARTE — czytaj najpierw
+1. **Wejście z aplikacji X na Androidzie: strona wisi na szkielecie** (zrzut właściciela 18:04, przeglądarka wbudowana X).
+   Wdrożona poprawka SW (niżej) usuwa przeładowanie w połowie ładowania, ale **szkielet NA ZAWSZE tym nie jest
+   wyjaśniony** — to znaczy, że `fetchFromBriefsJson` wisiał albo `renderDose` rzucał także na SAMPLE. Właściciel
+   miał przetestować po 18:56 — **wyniku brak**. Gotowa diagnostyka na gałęzi **`diag-webview-x`** (niewdrożona):
+   limit 30 s na `briefs.json` + komunikat z treścią błędu zamiast szkieletu (`pokazBladLadowania`). Przed mergem
+   podbić `CACHE_NAME` ponad aktualny na main (gałąź ma v179). Jeden zrzut komunikatu z telefonu = przyczyna.
+   ⚠️ Sprawdzone i WYKLUCZONE: `localStorage === null` (strona pada wtedy PRZED szkieletem, a na zrzucie szkielet jest).
+2. **Feedy bota do naprawy** (pomiar 14.09 na logu z 3136 biegów):
+   - **National Geographic** (dodany 09.09): 406 w KAŻDYM biegu, nie zadziałał ani razu. `/rss` → 301 → `/feed`;
+     curl z serwera z UA bota daje 200 → wpisać `https://www.national-geographic.pl/feed`.
+   - **Business Insider PL** (od 10.09 12:04): 301 na zepsuty `https://businessinsider.com.pl.feed/` (błąd wydawcy),
+     `/rss` i `/feed` 404 — szukać nowego adresu. Siedzi w `WiarygodneZrodlaRss`, 260 błędów/2 dni.
+   - **ForexLive i Rest of World**: 403 w każdym biegu od początku logu (21.08), ale **curl z serwera z tym samym UA
+     dostaje 200** (RoW → `/feed/latest/`) — to NIE blokada IP, tylko coś w tym, jak pyta .NET-owy HttpClient
+     (odcisk TLS / nagłówki). **PAP** zwraca HTML Incapsuli zamiast RSS (od początku logu).
+3. **„↓ Lotos” we „Wpływie na rynek”** — Lotos nie istnieje od 2022 (fuzja z Orlenem). Poprawione ręcznie w jednym
+   wpisie (`briefs.json` na serwerze, commit `48f8dc8e3`); reguła w prompcie `impact` NIE dopisana.
+4. Pozostałe z 13.09 bez zmian (gotowiec: kontekst serii z węzłów wątku, statyczny PNG karty OG).
+
+### ✅ Bankier: `wiadomosci.xml` martwy od 10.09 ~16:00 — podmieniony (bot #270, na serwerze)
+- 📊 Od 10.09 14:11 UTC Bankier dawał **0 kandydatów w każdym biegu, bez żadnego błędu** (wcześniej 70–100/dobę
+  roboczą, ~25–30% źródeł zbiorczych). Feed odpowiada 200 z bieżącym `lastBuildDate`, ale w środku **7 pozycji
+  z 2020 r.** (zamrożony cache Bankiera; z Maca to samo). Okno selekcji je odsiewa → cisza. `gospodarka.xml` = 0 B.
+- Selekcja: `firma` + `gielda` + `finanse` pod jedną nazwą „Bankier” (jak FT); finder `firma`, skaner trendów `gielda`.
+  Pierwszy bieg po wdrożeniu: Bankier:3.
+- ⚠️ Pułapka na przyszłość: martwy feed potrafi wyglądać ZDROWO (200, świeży nagłówek kanału). Liczyć kandydatów per
+  źródło z linii `Źródła zbiorcze -> Znaleziono … (źródło:N)`, nie błędy pobierania.
+- ⚠️ `pubDate` Bankiera ma `+0100` przy czasie warszawskim letnim — pozycje wyglądają na godzinę świeższe. Nie nowe.
+
+### ✅ Pierwsza wizyta bez przeładowania przez service workera (front `fa235dd`, SW v178)
+- Zgłoszenie: „jak wchodzę przez X, nie ładuje się strona do końca”. `clients.claim()` przy pierwszej instalacji
+  odpalał `controllerchange` → `reloadOnce` przeładowywał stronę w trakcie ładowania. Przeglądarka X startuje bez SW
+  przy każdym wejściu, więc dotyczyło KAŻDEGO wejścia z X. Teraz reload tylko gdy SW kontrolował stronę na starcie.
+- 📊 Zweryfikowane na produkcji w czystym profilu: przed `navType: reload` + „Odświeżam raz z powodu: nowy Service
+  Worker”, po `navType: navigate`, brak przeładowania. ⚠️ Test w panelu podglądu schowanym w tle: płynny scroll
+  (`behavior:'smooth'`) w ogóle nie rusza przy `visibilityState: hidden` — nie diagnozować tego jako błędu deep-linka.
+
+### ✅ Blok „Ciąg dalszy” = jedna linia pod zdjęciem (front `0299aee`, `4f86190`, SW v180)
+- „Ten etap u góry nie wygląda ładnie”. Pięć makiet (artefakt „Warianty bloku Ciąg dalszy”), wybór **D** (kropki etapów
+  + nazwa wątku w jednej linii), potem cztery poprawki kreski — wybór **3**: bez kresek, POD zdjęciem, nad treścią.
+- ⚠️ Znane i zaakceptowane przez właściciela: linia powtarza informację z paska `watek-strip` nad tytułem
+  (te same kropki i nazwa wątku). Wariant „Poprzednio ◑ 16:07 · nagłówek poprzedniego etapu” został odrzucony.
+
+### ✅ „Sprawdź mapę” 14.09 ×2 (front `dd835bd`, `95cf6c9`, `5e44beb`): Huti 21→24, Iran 34→35
+- **Sprostowanie**: 14.09 „Zatoka siada z Iranem”/„Co dalej: rozmowy w Salalah” → spotkanie **przełożone** (szef MSZ
+  Omanu późnym wieczorem 13.09, „w imię konsensusu”; Teheran: na prośbę Rijadu). Data etapu 13.09.
+- Huti: salwa na bazę Króla Chalida w Chamis Muszajt (14.09, place `abha`), Janbu z zapasem na 5–7 dni + naprawa
+  rurociągu 3–5 tygodni (AP), zajęcie wysp Hanisz potwierdzone (14.09). Iran: czarna lista 77 statków (14.09),
+  diesel 6,23 USD dopisany do etapu 10.09.
+- Karta OG: „23/24 WYDARZENIA” (odmiana! „23 wydarzeń” było błędem) — `WYDARZEŃ`→`WYDARZENIA` złożone z liter już
+  obecnych na obrazku (N, I, A kopiowane z „INTERAKTYWNA”), cyfry rysowane SpaceMono-Bold 16 w x=319, `?v=5`.
+- `mapa.html`: licznik „N etapów” liczony JS-em dostał polską odmianę (`etapy(n)`).
+- 🔴 **Słowa kluczowe Iranu**: „Bessent” podpinał pod mapę wojny KAŻDY news o sekretarzu skarbu (zgłoszenie: artykuł
+  o ustawie CLARITY z paskiem mapy). 📊 20 dni archiwum: 19 pozycji tylko przez „bessent”/„liban”(Taliban), żadna o
+  Iranie; w drugą stronę `\biran` nie łapał „irański” — **30 newsów o Iranie bez mapy**. Teraz `\bira[nń]`, `\bliban`,
+  bez `bessent`. ⚠️ Nazwisko w `slowa` = każdy news o tej osobie; dokładając słowo, zrób ten sam diff na archiwum.
+- Posty na X z newsów tego dnia napisane ręcznie (ropa +4,5% / Janbu / Chamis Muszajt / Salalah; podatek od
+  nadzwyczajnych zysków — to DRUGA wersja ustawy po skierowaniu pierwszej do TK, zweryfikowane w PAP/wnp.pl).
+
 
 ## 🟡 13.09: SESJA WIECZORNA — poprawki ze zrzutów z telefonu (front + bot + gotowiec + mapy)
 ### ✅ Minimapa: pozycja ZAWSZE, mapa konfliktu pod spodem jako pasek (front `b838e67`, `ea4abef`, SW v173→v174)

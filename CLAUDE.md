@@ -9,14 +9,32 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 (repo `financialnewsbot`) i zapisuje jako `briefs.json`.
 
 
-## Blok „Ciąg dalszy” nad artykułem — `kontynuacjaHtml` (2026-09-13 wieczór)
-Właściciel: „użytkownik MUSI wiedzieć, że to kontynuacja, bo wygląda, jakbyśmy się powtarzali”. Pasek `watekPasekHtml`
-na kaflu mówi tylko „ciąg dalszy: <wątek>”; w otwartym artykule nic nie mówiło, który to etap i co było poprzednio.
-`kontynuacjaHtml(item)` (nad zdjęciem, w `expandBlock`, `expandBlockArchive`, `dtShowDetail`): kicker „CIĄG DALSZY ·
-ETAP N Z M” + „poprzednio ☀ HH:MM <nagłówek poprzedniego etapu>” jako link `watekNodeLink(prev)`. Dane z wczytanego
-`threads.json` — 0 fetchy. Tylko od 2. etapu i tylko przy `item.article` (parasol klastra go nie dostaje). CSS `.kontynuacja`.
-⚠️ Godzina to `added_at` węzła od bota — bywa „00:00” (tak bot zapisał węzeł), to nie błąd bloku.
-Po stronie bota w tym samym dniu: nagłówek kontynuacji nie traci nowości, opis pisany jako ciąg dalszy (CLAUDE.md bota).
+## Service worker: reload na `controllerchange` TYLKO gdy SW kontrolował stronę na starcie (2026-09-14) 🔴
+`clients.claim()` przy PIERWSZEJ instalacji też odpala `controllerchange`, a `reloadOnce` przeładowywał wtedy stronę
+w trakcie ładowania — mimo że przyszła świeżo z sieci. Przeglądarka wbudowana w aplikację X startuje bez SW przy
+każdym wejściu, więc dotyczyło to KAŻDEGO wejścia z X (zgłoszenie „z X strona nie ładuje się do końca”).
+`swKontrolerNaStarcie = !!navigator.serviceWorker.controller` — reload tylko przy realnej podmianie SW.
+- ⚠️ Testując w panelu podglądu: `unregister()` nie zdejmuje kontrolera z już otwartej karty — przed testem „pierwszej
+  wizyty” przejdź przez `about:blank`, inaczej test pokazuje reload, którego u czytelnika nie ma.
+- ⚠️ Schowany panel podglądu (`visibilityState: hidden`) nie wykonuje `scrollIntoView({behavior:'smooth'})` — deep-link
+  wygląda wtedy na zepsuty. Diagnostyka szkieletu „na zawsze” w przeglądarce X: gałąź `diag-webview-x` (STAN.md).
+
+## Blok „Ciąg dalszy” — jedna linia POD zdjęciem, `kontynuacjaHtml` (2026-09-13, przebudowa 2026-09-14)
+Właściciel: „użytkownik MUSI wiedzieć, że to kontynuacja”. Od 2. etapu wątku, tylko przy `item.article`.
+Po 14.09 (wybór z makiet: wariant D, poprawka 3): **zdjęcie → linia → treść** we wszystkich trzech szablonach
+(`expandBlock`, `expandBlockArchive`, `dtShowDetail`). Linia: kropki etapów (cap `WATEK_MAX_KROPEK`, mapowanie jak
+w `watekPasekHtml`) + czerwone „CIĄG DALSZY” + nazwa wątku + `›`, bez kresek i bez tła. Link = poprzedni etap
+(`watekNodeLink(prev)`), jego nagłówek i „etap N z M” w `title`/`aria-label`. CSS `.kontynuacja`, `.kont-dots/-txt/-go`.
+- ⛔ Odrzucone: szare pudełko z drugą czerwoną krawędzią (nagłówek ciął się w pół zdania nad zdjęciem), kreski nad/pod
+  (górna „wkurwia”, dolna ginęła pod `margin-top:-16px` zdjęcia), wariant z poprzednim nagłówkiem zamiast nazwy wątku.
+- ⚠️ Świadomie powtarza pasek `watek-strip` nad tytułem — decyzja właściciela po zobaczeniu obu obok siebie.
+
+## Mapy: słowa kluczowe `mapy/index.json` → `slowa` (2026-09-14) ⚠️
+`mapaDlaNewsa` przypina news do mapy po wątku, potem po REGEXIE z nagłówka. Nazwisko w `slowa` = każdy news o tej
+osobie: „bessent” dawał mapę wojny z Iranem pod newsami o jenie, G20, obligacjach i ustawie CLARITY (19 pozycji w 20 dniach,
+0 o Iranie). `liban` bez `\b` łapał „Talibanu”, a `\biran` nie łapał „irański/irańskie” (30 newsów o Iranie bez mapy —
+ta sama polska pułapka co `\b` przed ń w znacznikach). Dokładając słowo: diff dopasowań stara/nowa lista na archiwum.
+Licznik „N etapów” w `mapa.html` ma odmianę (`etapy(n)`); karta OG „N WYDARZENIA/WYDARZEŃ” też musi się odmieniać.
 
 ## Minimapa: pozycja `geo` ZAWSZE, mapa konfliktu pod spodem jako pasek (2026-09-13) 📍
 `mapaLinkHtml` = `mapaGeoHtml(item) + mapaKonfliktHtml(item, bezMini)`. Gdy jest `geo`: minimapa „Gdzie to jest”,
