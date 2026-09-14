@@ -3686,7 +3686,15 @@ if ('serviceWorker' in navigator) {
       .catch((err) => console.warn('SW registration failed:', err));
   });
   // Auto-reload gdy nowy SW przejmie kontrolę (nowa wersja apki)
-  navigator.serviceWorker.addEventListener('controllerchange', () => reloadOnce('nowy Service Worker'));
+  // 🔴 14.09: TYLKO gdy stronę kontrolował już jakiś SW. Przy PIERWSZEJ wizycie `clients.claim()`
+  // też odpala `controllerchange`, a strona i tak przyszła świeżo z sieci — reload był zbędny.
+  // Przeglądarka w aplikacji X startuje bez SW przy każdym wejściu, więc KAŻDE wejście z X
+  // przeładowywało stronę w połowie ładowania („nie ładuje się do końca”).
+  const swKontrolerNaStarcie = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!swKontrolerNaStarcie) return;
+    reloadOnce('nowy Service Worker');
+  });
 }
 
 // ══ Licznik wejść (2026-08-01) ════════
