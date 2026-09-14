@@ -1689,7 +1689,7 @@ function kontynuacjaHtml(item){
   for (let i = 0; i < t.nodes.length; i++){ if (normThreadKey(t.nodes[i].text) === key) { idx = i; break; } }
   if (idx < 1) return '';
   const prev = t.nodes[idx - 1];
-  // Wariant D (14.09, wybór właściciela z pięciu makiet): jedna linia między cienkimi kreskami — kropki
+  // Wariant D3 (14.09, wybór właściciela z makiet): jedna linia BEZ kresek, POD zdjęciem — kropki
   // etapów + nazwa wątku, jak `watekPasekHtml` na kaflu. Poprzedni nagłówek nie jest już widoczny
   // (w szarym pudełku tnął się w pół zdania nad zdjęciem) — dostaje go `title` i link prowadzi do niego.
   const ile = t.nodes.length, n = Math.min(ile, WATEK_MAX_KROPEK);
@@ -2637,7 +2637,7 @@ function expandBlock(item) {
       ? `<img class="expand-image" data-src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
       : '';
     return `
-      ${kontynuacjaHtml(item)}${imgHtml}
+      ${imgHtml}${kontynuacjaHtml(item)}
       <div class="expand-article">${escHtml(item.article)}</div>
       ${impactHtml(item)}
       ${quotesHtml(item)}
@@ -2845,7 +2845,7 @@ function expandBlockArchive(item, dateStr, dose) {
       ? `<img class="expand-image" data-src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
       : '';
     return `
-      ${kontynuacjaHtml(item)}${imgHtml}
+      ${imgHtml}${kontynuacjaHtml(item)}
       <div class="expand-article">${escHtml(item.article)}</div>
       ${impactHtml(item)}
       ${quotesHtml(item)}
@@ -4351,10 +4351,10 @@ function dtShowDetail(item) {
       <div class="dt-detail-badges"><span class="dt-detail-badge">${cat.toUpperCase()}</span>${srcBadge(item)}</div>
       <div class="dt-detail-headline">${escHtml(item.text)}</div>
       <div class="dt-detail-time">${time||'—'}</div>
-      ${item.article ? kontynuacjaHtml(item) : ''}
       ${item.article && item.image_url
         ? `<img class="dt-detail-image" src="${escAttr(item.image_url)}" alt="${escAttr(item.text)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
         : ''}
+      ${item.article ? kontynuacjaHtml(item) : ''}
       ${item.article
         ? `<div class="dt-detail-body">${escHtml(item.article)}</div>`
         : `<div class="dt-detail-no-article">Brak rozszerzonego artykułu dla tego wpisu.</div>`}
