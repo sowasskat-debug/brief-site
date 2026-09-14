@@ -1689,7 +1689,18 @@ function kontynuacjaHtml(item){
   for (let i = 0; i < t.nodes.length; i++){ if (normThreadKey(t.nodes[i].text) === key) { idx = i; break; } }
   if (idx < 1) return '';
   const prev = t.nodes[idx - 1];
-  return `<a class="kontynuacja" href="${escAttr(watekNodeLink(prev))}"><span class="kont-l">${WATEK_ICN} Ciąg dalszy · etap ${idx + 1} z ${t.nodes.length}</span><span class="kont-r"><span class="kont-kiedy">poprzednio ${watekWhen(prev)}</span> ${escHtml(prev.text)}</span></a>`;
+  // Wariant D (14.09, wybór właściciela z pięciu makiet): jedna linia między cienkimi kreskami — kropki
+  // etapów + nazwa wątku, jak `watekPasekHtml` na kaflu. Poprzedni nagłówek nie jest już widoczny
+  // (w szarym pudełku tnął się w pół zdania nad zdjęciem) — dostaje go `title` i link prowadzi do niego.
+  const ile = t.nodes.length, n = Math.min(ile, WATEK_MAX_KROPEK);
+  const aktywna = ile <= WATEK_MAX_KROPEK ? idx : Math.round(idx / (ile - 1) * (n - 1));
+  let kropki = '';
+  for (let i = 0; i < n; i++) kropki += `<i class="${i === aktywna ? 'on' : (i < aktywna ? 'past' : '')}"></i>`;
+  const opis = `Ciąg dalszy, etap ${idx + 1} z ${ile}. Poprzednio ${watekWhen(prev).replace(/<[^>]+>/g, '')}: ${prev.text}`;
+  return `<a class="kontynuacja" href="${escAttr(watekNodeLink(prev))}" title="${escAttr(opis)}" aria-label="${escAttr(opis)}">`
+       + `<span class="kont-dots" aria-hidden="true">${kropki}</span>`
+       + `<span class="kont-txt"><b>Ciąg dalszy</b> · ${escHtml(t.title || '')}</span>`
+       + `<span class="kont-go" aria-hidden="true">›</span></a>`;
 }
 function watekPasekHtml(item){
   const w = watekEtapInfo(item);
