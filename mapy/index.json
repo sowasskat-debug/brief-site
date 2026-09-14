@@ -25,7 +25,7 @@
   },
   "slowa": {
     "huti": "hut(?:i|ich|ów|om|ami)?\\b|jemen|bab al[- ]mandab|mandab|perim|majun|moch[aęy]|hudajd|hanisz|dhubab|rurociąg wschód|wschód[- ]zachód|dżizan|jizan|abha\\b|nadżran|salalah|morz[ea] czerwon",
-    "iran": "\\biran|teheran|ormuz|hormuz|irgc|gwardi[ai] rewolucyjn|pezeszkian|chamenei|szalamcze|shalamcheh|hezbollah|liban|zatok[ai] persk|tankowc|tankowiec|centcom|bliski[m]? wschod|ras laffan|bessent|economic outcast"
+    "iran": "\\bira[nń]|teheran|ormuz|hormuz|irgc|gwardi[ai] rewolucyjn|pezeszkian|chamenei|szalamcze|shalamcheh|hezbollah|\\bliban|zatok[ai] persk|tankowc|tankowiec|centcom|bliski[m]? wschod|ras laffan|economic outcast"
   },
   "kategorie": {
     "Wojna w Iranie": "iran"
