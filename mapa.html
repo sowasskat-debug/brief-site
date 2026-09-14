@@ -14,13 +14,13 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="BrifUp">
 <meta property="og:title" content="Huti biorą Bab al-Mandab — interaktywna mapa">
-<meta property="og:description" content="21 wydarzeń krok po kroku, od lutego do dziś. Gdzie to jest i dlaczego ma znaczenie. Przewijasz, mapa idzie za Tobą.">
-<meta property="og:image" content="https://brifup.com/mapy/huti-og.png?v=3">
+<meta property="og:description" content="23 wydarzenia krok po kroku, od lutego do dziś. Gdzie to jest i dlaczego ma znaczenie. Przewijasz, mapa idzie za Tobą.">
+<meta property="og:image" content="https://brifup.com/mapy/huti-og.png?v=4">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:url" content="https://brifup.com/mapa.html">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://brifup.com/mapy/huti-og.png?v=3">
+<meta name="twitter:image" content="https://brifup.com/mapy/huti-og.png?v=4">
 <link rel="icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
@@ -158,7 +158,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
       <svg class="hand" viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M26 34V14a4 4 0 0 1 8 0v16"/><path d="M34 30v-4a4 4 0 0 1 8 0v6"/><path d="M42 32v-2a4 4 0 0 1 8 0v14c0 8-6 14-14 14h-4c-5 0-9-2-12-6l-8-11a4 4 0 0 1 6-5l6 6"/><path d="M14 8l-4 4 4 4M10 12h10" opacity=".7"/></svg>
       <div class="mouse"></div>
       <div class="big">Przewiń w dół, żeby zobaczyć historię krok po kroku</div>
-      <div class="small">21 etapów · mapa idzie za Tobą</div>
+      <div class="small">23 etapy · mapa idzie za Tobą</div>
     </div>
     <button class="odpoczatku" id="odpoczatku" hidden>↑ Od początku</button>
     <div class="hint" id="hint">Przewijaj w dół <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg></div></div>
@@ -176,6 +176,8 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
 <script>
 (async function(){
   const KIND = { tlo:'tło', atak:'atak', zdobycie:'zdobycie', dyplomacja:'dyplomacja', rynek:'rynek', mapa:'cała mapa', rozdzial:'rozdział' };
+  // Odmiana (14.09): „23 etapów” / „34 etapów” to błąd — 2–4 poza 12–14 biorą „etapy”.
+  const etapy = n => n + ' ' + (n === 1 ? 'etap' : ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) ? 'etapy' : 'etapów');
   const id = new URLSearchParams(location.search).get('m') || 'huti';
   // Widok (12.09, życzenie właściciela): DOMYŚLNIE chronologia — wszystkie etapy po kolei, jedna oś.
   // Rozdziały (mapa Iranu) to drugi widok, pod ?widok=rozdzialy; przełącznik w pasku nad mapą.
@@ -249,7 +251,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
   const pierwszy = d.steps[0], ostatni = d.steps[d.steps.length-1];
   d.steps.push({ date: ostatni.date, place: ostatni.place, kind: 'mapa', calosc: true,
     title: d.podsumowanie_tytul || 'Cała historia na jednej mapie',
-    text: d.podsumowanie || (d.steps.filter(x => !x.naglowek).length + ' etapów, od ' + pierwszy.date.split('-').reverse().join('.') + ' do ' + ostatni.date.split('-').reverse().join('.') + '. Numery na mapie to kolejność wydarzeń. Wróć do dowolnego etapu przewijając w górę.') });
+    text: d.podsumowanie || (etapy(d.steps.filter(x => !x.naglowek).length) + ', od ' + pierwszy.date.split('-').reverse().join('.') + ' do ' + ostatni.date.split('-').reverse().join('.') + '. Numery na mapie to kolejność wydarzeń. Wróć do dowolnego etapu przewijając w górę.') });
   let nr = 0;
   d.steps.forEach((s, i) => {
     s.n = (s.naglowek || s.calosc) ? '' : ++nr;
@@ -357,7 +359,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
   }
 
   // Nakładka powitalna: gaśnie przy pierwszym przewinięciu, dotknięciu, kliknięciu albo po 6 s.
-  intro.querySelector('.small').textContent = d.steps.filter(x => !x.naglowek && !x.calosc).length + ' etapów · mapa idzie za Tobą';
+  intro.querySelector('.small').textContent = etapy(d.steps.filter(x => !x.naglowek && !x.calosc).length) + ' · mapa idzie za Tobą';
   const zgas = () => { intro.classList.add('off'); };
   ['scroll','touchstart','wheel','keydown'].forEach(ev => window.addEventListener(ev, zgas, { once:true, passive:true }));
   intro.addEventListener('click', () => { zgas(); window.scrollTo({ top: stepEls[1].offsetTop - window.innerHeight*0.35, behavior:'smooth' }); });

@@ -3,7 +3,7 @@
   "kicker": "Mapa konfliktu",
   "title": "Wojna z Iranem: od uderzenia do Ormuzu",
   "lead": "Pół roku wojny krok po kroku, od pierwszego uderzenia do dziś. Przewijaj: mapa pokazuje, gdzie to się dzieje i dlaczego to miejsce ma znaczenie. Wolisz po tematach? Nad mapą przełączysz na sześć rozdziałów.",
-  "updated": "2026-09-13",
+  "updated": "2026-09-14",
   "view": {
     "lat": 27,
     "lng": 48,
@@ -131,7 +131,7 @@
       "name": "Salalah (Oman)",
       "lat": 17.02,
       "lng": 54.09,
-      "why": "Oman od dekad pośredniczy między Zatoką a Iranem. Tu 14.09 pierwsze rozmowy regionu z Teheranem od lutego."
+      "why": "Oman od dekad pośredniczy między Zatoką a Iranem. Tu 14.09 miały się odbyć pierwsze rozmowy regionu z Teheranem od lutego — przełożone na prośbę Rijadu."
     },
     "bruksela": {
       "name": "Bruksela",
@@ -404,7 +404,7 @@
       "place": "kalifornia",
       "kind": "rynek",
       "title": "Diesel: 9,999 na wyświetlaczu",
-      "text": "Średnia cena diesla w USA 5,97 USD za galon, powyżej szczytu z 2022. Na pięciu stacjach w Kalifornii dystrybutory dobijają do limitu wyświetlacza. Kontrakty powyżej 5 USD pierwszy raz od 2022. W piątek 11.09 krajowa średnia dochodzi do 6,07 USD, a Kalifornia jako pierwszy stan przekracza 8 USD za galon."
+      "text": "Średnia cena diesla w USA 5,97 USD za galon, powyżej szczytu z 2022. Na pięciu stacjach w Kalifornii dystrybutory dobijają do limitu wyświetlacza. Kontrakty powyżej 5 USD pierwszy raz od 2022. W piątek 11.09 krajowa średnia dochodzi do 6,07 USD, a Kalifornia jako pierwszy stan przekracza 8 USD za galon. W poniedziałek 14.09 krajowa średnia przekracza 6,23 USD, kolejny rekord, a kontrakty zmierzają po szczyt z kwietnia 2022 (5,14 USD)."
     },
     {
       "rozdzial": "rynek",
@@ -457,11 +457,19 @@
     },
     {
       "rozdzial": "dyplomacja",
-      "date": "2026-09-14",
+      "date": "2026-09-13",
       "place": "salalah",
       "kind": "dyplomacja",
-      "title": "Zatoka siada z Iranem",
-      "text": "Ministrowie państw Zatoki spotykają się z szefem MSZ Iranu w Omanie — pierwszy taki kontakt od lutego. Na stole: zasady żeglugi przez Ormuz i ataki Huti na Arabię. Bahrajn nie przyjedzie bez przywrócenia stosunków z Teheranem, a według irańskiego urzędnika poniedziałek nie przyniesie porozumienia w sprawie cieśniny."
+      "title": "Spotkanie w Omanie odłożone",
+      "text": "Iran i Oman miały w poniedziałek przedstawić ministrom państw Zatoki swoje zasady żeglugi przez Ormuz. Późnym wieczorem w niedzielę szef MSZ Omanu ogłasza przełożenie spotkania „w imię konsensusu”. Irańskie MSZ: na prośbę części państw regionu, według Teheranu przede wszystkim Arabii Saudyjskiej, której rurociąg omijający Ormuz od piątku stoi. Nowego terminu nie podano."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-14",
+      "place": "ormuz",
+      "kind": "dyplomacja",
+      "title": "Czarna lista 77 statków",
+      "text": "Iran publikuje listę 77 statków, które według Teheranu złamały jego zasady przejścia przez Ormuz. Każdemu grożą ograniczenia przy kolejnych przejściach: kary, zatrzymanie albo konfiskata, a na listę trafią też jednostki, które przejmą od nich ładunek. W weekend przez cieśninę przechodziło mniej niż 10 statków dziennie, wobec średniej 14 z ostatnich dziesięciu dni."
     }
   ]
 }

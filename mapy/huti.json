@@ -3,7 +3,7 @@
   "kicker": "Mapa konfliktu",
   "title": "Huti biorą Bab al-Mandab",
   "lead": "Jak w dziesięć dni rebelianci z Jemenu przejęli wybrzeże Morza Czerwonego i drugą cieśninę naftową świata. Przewijaj — punkty zapalają się chronologicznie.",
-  "updated": "2026-09-13",
+  "updated": "2026-09-14",
   "view": {
     "lat": 15.6,
     "lng": 44.5,
@@ -111,7 +111,7 @@
       "name": "Salalah",
       "lat": 17.02,
       "lng": 54.09,
-      "why": "Omański port. Oman od lat pośredniczy między Zatoką a Iranem."
+      "why": "Omański port. Oman od lat pośredniczy między Zatoką a Iranem; rozmowy zaplanowane tu na 14.09 przełożono."
     },
     "abqaiq": {
       "name": "Abqaiq (złoża wschodnie)",
@@ -311,11 +311,25 @@
       "text": "Po wielodniowych walkach w Ta'izz strona saudyjska po raz pierwszy publicznie wskazuje Huti jako winnych eskalacji. Według źródeł saudyjskich ciężkie starcia trwają w dwóch punktach oporu sił rządowych; rebelianci utrzymują wyspę Perim, co dalej zwiększa presję na żeglugę przez Bab al-Mandab."
     },
     {
-      "date": "2026-09-14",
+      "date": "2026-09-13",
       "place": "salalah",
       "kind": "dyplomacja",
-      "title": "Co dalej: rozmowy w Salalah",
-      "text": "W poniedziałek ministrowie państw Zatoki spotykają się z szefem MSZ Iranu w Omanie. Bahrajn nie przyjedzie, dopóki nie wrócą stosunki dyplomatyczne z Teheranem, a irański urzędnik zapowiada, że porozumienia o cieśninie nie będzie. Pytania otwarte: czy Huti naprawdę przepuszczają nie-saudyjskie statki i czy Arabia ruszy sama."
+      "title": "Rozmowy w Omanie odłożone",
+      "text": "Spotkanie państw Zatoki z szefem MSZ Iranu, zaplanowane na poniedziałek, nie odbędzie się. Szef MSZ Omanu Badr al-Busaidi ogłasza późnym wieczorem w niedzielę przełożenie „w imię konsensusu”, a Teheran mówi, że poprosiła o to Arabia Saudyjska. Jedyna zapowiedziana droga do deeskalacji wokół obu cieśnin znika z kalendarza."
+    },
+    {
+      "date": "2026-09-14",
+      "place": "abha",
+      "kind": "atak",
+      "title": "Salwa na bazę w Chamis Muszajt",
+      "text": "Huti odpalają dziesiątki rakiet i dronów na saudyjską bazę lotniczą Króla Chalida, skąd startują naloty na Jemen. Twierdzą, że trafili hangary, radary, pasy startowe i składy amunicji; niezależnego potwierdzenia nie ma. Arabia ogłasza krótkie alarmy w Chamis Muszajt i trzech innych miastach na południu. Rebelianci nazywają atak odwetem za setki saudyjskich nalotów z ostatnich dni."
+    },
+    {
+      "date": "2026-09-14",
+      "place": "janbu",
+      "kind": "rynek",
+      "title": "Janbu: zapas na 5–7 dni",
+      "text": "Pierwsza sesja po zamknięciu rurociągu Wschód-Zachód. Brent rośnie o 4,5% do 109,29 USD, zmierzając do najwyższego zamknięcia od 19 maja. Bez rurociągu port Janbu eksportuje z magazynów, a według trzech źródeł branżowych zapasu starczy na 5–7 dni. Rijad nie podaje, kiedy rura wróci do pracy; dłuższy przestój może odciąć do 4% światowych dostaw ropy."
     }
   ]
 }
