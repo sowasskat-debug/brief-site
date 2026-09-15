@@ -1,9 +1,48 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-14 wieczór (Bankier martwy od 10.09 bez błędu w logu → podmienione działy RSS; mapy: Salalah sprostowane, Chamis Muszajt, Janbu, Hanisz, czarna lista 77 statków, słowa kluczowe Iranu bez „Bessent”; blok „Ciąg dalszy” = linia pod zdjęciem (SW v180); pierwsza wizyta bez przeładowania przez SW — zgłoszenie „z X strona się nie ładuje” (SW v178); SW v181; wcześniej 13.09: minimapa, kontynuacje, gotowiec X)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-15 rano (awaria DeepSeeka 14.09 wieczorem = ich przeciążenie, nie nasz kod; dubel Revoluta → pomiar bramki eskalacji: drugi głos do decyzji, zmiany promptu i reguła daty ODRZUCONE); wcześniej 14.09 wieczór (Bankier martwy od 10.09 bez błędu w logu → podmienione działy RSS; mapy: Salalah sprostowane, Chamis Muszajt, Janbu, Hanisz, czarna lista 77 statków, słowa kluczowe Iranu bez „Bessent”; blok „Ciąg dalszy” = linia pod zdjęciem (SW v180); pierwsza wizyta bez przeładowania przez SW — zgłoszenie „z X strona się nie ładuje” (SW v178); SW v181; wcześniej 13.09: minimapa, kontynuacje, gotowiec X)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 🟡 15.09: SESJA — cisza w dodawaniu (DeepSeek), dubel Revoluta, pomiar bramki eskalacji
+### ⬜ OTWARTE — czytaj najpierw
+1. **Decyzja właściciela: drugi głos w bramce eskalacji** (`OcenEtapKontynuacji`, bot). Pomiar niżej — wygląda
+   na opłacalne, NIC nie wdrożone. Projekt: po pierwszym `NOWE` drugie wywołanie; `POWTORKA`/`COFNIECIE` →
+   pomiń; nagłówek etapu z pierwszej odpowiedzi; błąd drugiego wywołania → publikuj (jak dziś); licznik lejka
+   + **logowanie listy etapów** przy każdym „nowy rozwój" (dziś nielogowana — nie da się odtworzyć, co model dostał).
+2. **Dubel Revoluta nadal na stronie**: `morning/items[27]` z 15.09 00:05 („Revolut potwierdza wyciek danych
+   klientów po fałszywych wnioskach…", Fakt). Czwarta publikacja tej samej historii (12.09, 13.09, 14.09 15:39).
+   Zdjęcie z `briefs.json` na serwerze czekało na zgodę właściciela — **nie zrobione**.
+3. Punkty z 14.09 niżej bez zmian.
+
+### ✅ „Od 2 godzin nic się nie dodaje" (14.09 ~21:00–23:30 Warszawa) — przeciążenie DeepSeeka
+Timeouty `HttpClient.Timeout of 300 seconds`, `Error while copying content to a stream`, raz jawnie
+`503 Service is too busy`. Bieg trwał >1 h, więc lock pominął starty 21:00, 21:30, 22:30, 23:00 (lock działa
+poprawnie). Dowód, że nie my: gołe wywołanie curl z serwera (5 tokenów, bez kodu bota) dostało `200` i przez
+150 s ani bajtu treści; zużycie biegu normalne (16 wywołań, 87% cache); jedyna zmiana bota tego dnia to feed
+Bankiera. status.deepseek.com pokazywał „all operational" — **ich strona statusu nie zgłasza przeciążeń**.
+Odblokowało się samo ok. 23:30.
+
+### 📊 Bramka eskalacji — pomiar na historii (839 przepuszczeń „nowy rozwój" w logu)
+- **Twarda reguła daty** („artykuł starszy niż opublikowany etap ≠ nowy rozwój") → ODRZUCONA (patrz Odrzucone).
+- **Dopisek do promptu „kolejne doniesienie/deklaracja ≠ zdarzenie"** → ODRZUCONY: prompt JUŻ to mówi
+  („kolejna odsłona", „potwierdza" ≠ etap), a dopisek **pogorszył** wynik: duble złapane 55% → 25% (26
+  przypadków ręcznie oznaczonych, 3–8 prób każdy). Węższy wariant (liczenie „który to raz" tylko dla zdarzeń) — 50%, bez zysku.
+- **Bramka jest losowa**: ten sam przypadek na tych samych danych raz przechodzi, raz nie. Revolut w powtórce
+  dostał POWTORKA 7/8 — na produkcji wypadło NOWE.
+- **Drugi głos** — 80 losowych przepuszczeń z produkcji (od 20.08), 61 z odtworzoną listą etapów, 3 próby:
+  drugi głos blokuje ~17% przepuszczeń; z 15 blokowanych przypadków **13 to prawdziwe duble**, 2 realne newsy
+  (zestrzelenie MQ-1C nad Ormuzem; Trump o 400% cłach Kanady). Po wagach: ~9 dubli i ~1,3 realnego newsa
+  na 61 przepuszczeń (trafność ~88%). ⚠️ Listy etapów odtworzone przybliżeniem miary słów, bez memo sagi.
+- **Stałe pudła każdego wariantu** (0/8): nowy nagłówek dokłada szczegół (Anthropic–Lambda, „bank" zamiast
+  „firma", Isar) — model bierze to za rozwój mimo reguły w prompcie. Dwa z nich 1–2 min po poprzedniku.
+
+### ⚠️ Pułapki z tej sesji
+- **zsh na Macu: `$h:threads.json` to modyfikator `:t`**, nie ścieżka gita — `git show "${h}:plik"`. Pętla
+  po cichu wypisała puste pliki.
+- **Klucz DeepSeek jest w `/root/bot_secrets.env`**, nie w `run_bot.sh`/`.env`; testy z kluczem puszczać NA
+  serwerze (`set -a; source …`), nie kopiować klucza na Maca.
 
 ## 🟡 14.09: SESJA — martwy Bankier, mapy, „Ciąg dalszy”, wejście z X
 ### ⬜ OTWARTE — czytaj najpierw
@@ -3977,6 +4016,13 @@ biegami). Angielski oryginał karmi `DeepSeekWyszukiwarkaQueryEN` zamiast być o
 - 8 wpisów w `rejected.json` (pozycje 91–98) nie ma pól `date`/`dose` — panel pokazuje dla nich „—".
 
 ## Odrzucone pomysły (nie wracaj bez nowego powodu)
+
+- ⛔ **Twarda reguła daty w bramce eskalacji (15.09)**: „artykuł kandydata starszy niż najnowszy opublikowany
+  etap → nie może być nowym rozwojem". 📊 Wobec całego wątku: 36 trafień, ~11 dubli (wątki są szerokie). Wobec
+  podobnych nagłówków: 13 trafień, 8 dubli, 5 realnych newsów (cła na auta vs stal, Trump wskazuje Iran,
+  Altman odpowiada Amodeiowi). Do tego `published_at` bywa błędne (reakcja z datą sprzed wypowiedzi). ~60% bez modelu to za mało.
+- ⛔ **Dopisek do promptu `OcenEtapKontynuacji` „kolejne doniesienie/powtórzona deklaracja = POWTORKA" (15.09)**:
+  prompt już to zawiera; dopisek obniżył złapane duble 55% → 25%. Nie dokładać zdań do tego promptu bez pomiaru.
 
 - ⛔ **Poszerzenie pokrycia bramki eskalacji o tytuł kandydata sprzed podmiany (19.08).** Pomysł
   wyglądał dobrze: `EskalacjaMaPokrycieWArtykule` przyjmuje liczby z `org`, ale `org` to już
