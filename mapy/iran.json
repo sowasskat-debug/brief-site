@@ -3,7 +3,7 @@
   "kicker": "Mapa konfliktu",
   "title": "Wojna z Iranem: od uderzenia do Ormuzu",
   "lead": "Pół roku wojny krok po kroku, od pierwszego uderzenia do dziś. Przewijaj: mapa pokazuje, gdzie to się dzieje i dlaczego to miejsce ma znaczenie. Wolisz po tematach? Nad mapą przełączysz na sześć rozdziałów.",
-  "updated": "2026-09-14",
+  "updated": "2026-09-15",
   "view": {
     "lat": 27,
     "lng": 48,
@@ -172,6 +172,18 @@
       "lat": 30.46,
       "lng": 48.06,
       "why": "Jedno z głównych lądowych przejść między Irakiem a Iranem, pod Basrą. Zamknięte 12.09 po atakach dronów na saudyjski rurociąg."
+    },
+    "musandam": {
+      "name": "Półwysep Musandam",
+      "lat": 26.35,
+      "lng": 56.4,
+      "why": "Omańska eksklawa na południowym brzegu Ormuzu. Tory żeglugowe cieśniny przechodzą tuż przy jego cyplu."
+    },
+    "larak": {
+      "name": "Wyspa Larak",
+      "lat": 26.85,
+      "lng": 56.36,
+      "why": "Irańska wyspa w najwęższym miejscu Ormuzu. Stanowiska IRGC i łodzie szybkie przy głównym torze żeglugowym."
     }
   },
   "lines": [],
@@ -404,7 +416,7 @@
       "place": "kalifornia",
       "kind": "rynek",
       "title": "Diesel: 9,999 na wyświetlaczu",
-      "text": "Średnia cena diesla w USA 5,97 USD za galon, powyżej szczytu z 2022. Na pięciu stacjach w Kalifornii dystrybutory dobijają do limitu wyświetlacza. Kontrakty powyżej 5 USD pierwszy raz od 2022. W piątek 11.09 krajowa średnia dochodzi do 6,07 USD, a Kalifornia jako pierwszy stan przekracza 8 USD za galon. W poniedziałek 14.09 krajowa średnia przekracza 6,23 USD, kolejny rekord, a kontrakty zmierzają po szczyt z kwietnia 2022 (5,14 USD)."
+      "text": "Średnia cena diesla w USA 5,97 USD za galon, powyżej szczytu z 2022. Na pięciu stacjach w Kalifornii dystrybutory dobijają do limitu wyświetlacza. Kontrakty powyżej 5 USD pierwszy raz od 2022. W piątek 11.09 krajowa średnia dochodzi do 6,07 USD, a Kalifornia jako pierwszy stan przekracza 8 USD za galon. Tygodniowy odczyt z poniedziałku 14.09: rekordowe 6,285 USD za galon wobec 5,967 tydzień wcześniej. Lider większości w Senacie John Thune mówi, że jest gotów rozważyć zakaz eksportu diesla."
     },
     {
       "rozdzial": "rynek",
@@ -453,7 +465,7 @@
       "place": "qeshm",
       "kind": "atak",
       "title": "Statek trafiony przy Qeshm",
-      "text": "Około 5 rano statek handlowy dostaje nieznanym pociskiem przy wyspach Hengam i Qeshm; UKMTO potwierdza trafienie w czasie przejścia przez cieśninę, jedna osoba nie żyje, trzy są ranne. Iran twierdzi, że to USA trafiły tankowiec — telewizja państwowa po raz pierwszy pokazuje nagranie — a wcześniej Gwardia Rewolucyjna zaatakowała amerykańskiego drona."
+      "text": "Około 5 rano statek handlowy dostaje nieznanym pociskiem przy wyspach Hengam i Qeshm; UKMTO potwierdza trafienie w czasie przejścia przez cieśninę, jedna osoba nie żyje, trzy są ranne. Trafiony był irański statek handlowy; Iran twierdzi, że zaatakowały go USA — telewizja państwowa po raz pierwszy pokazuje nagranie — a wcześniej Gwardia Rewolucyjna zaatakowała amerykańskiego drona."
     },
     {
       "rozdzial": "dyplomacja",
@@ -469,7 +481,31 @@
       "place": "ormuz",
       "kind": "dyplomacja",
       "title": "Czarna lista 77 statków",
-      "text": "Iran publikuje listę 77 statków, które według Teheranu złamały jego zasady przejścia przez Ormuz. Każdemu grożą ograniczenia przy kolejnych przejściach: kary, zatrzymanie albo konfiskata, a na listę trafią też jednostki, które przejmą od nich ładunek. W weekend przez cieśninę przechodziło mniej niż 10 statków dziennie, wobec średniej 14 z ostatnich dziesięciu dni."
+      "text": "Iran publikuje listę 77 statków, które według Teheranu złamały jego zasady przejścia przez Ormuz. Każdemu grożą ograniczenia przy kolejnych przejściach: kary, zatrzymanie albo konfiskata, a na listę trafią też jednostki, które przejmą od nich ładunek. W weekend przez cieśninę przechodziło mniej niż 10 statków dziennie, wobec średniej 14 z ostatnich dziesięciu dni. Tego samego dnia czarter tankowca na trasie Zatoka Perska–Chiny po raz pierwszy przekracza milion dolarów dziennie (Baltic Exchange: 1,035 mln USD); ta sama trasa z Zatoki Omańskiej, bez przejścia przez Ormuz, kosztuje około 644 tys."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-13",
+      "place": "musandam",
+      "kind": "atak",
+      "title": "El Gaia w ogniu, dwóch zaginionych",
+      "text": "Tego samego ranka co atak przy Qeshm płonie tankowiec El Gaia pod banderą Panamy, z indyjską załogą, trafiony przy cyplu Musandam. Pożar w maszynowni; omańska marynarka ewakuuje 23 osoby, dwóch marynarzy zaginionych, statek odholowany do omańskiego portu. IRGC: tankowiec wszedł bez zgody na irańskie miny. CENTCOM: to irański pocisk i dron. Od końca lutego w regionie zginęło co najmniej 22 marynarzy w 79 potwierdzonych incydentach (BBC)."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-14",
+      "place": "larak",
+      "kind": "atak",
+      "title": "USA topią dwie łodzie przy Larak",
+      "text": "CENTCOM: łodzie Gwardii Rewolucyjnej próbowały przejąć bezzałogowy okręt nawodny US Navy, który odpowiedział dwiema rakietami i obie łodzie zniszczył; dron zostaje pod kontrolą USA. Irańskie media mówią o dwóch łodziach rybackich trafionych przy Larak i Bandar Kargan i o zaginionych rybakach. Sześć dni po tym, jak IRGC przejęła amerykański dron podwodny."
+    },
+    {
+      "rozdzial": "sankcje",
+      "date": "2026-09-14",
+      "place": "waszyngton",
+      "kind": "dyplomacja",
+      "title": "Sankcje na rosyjski VTB za pomoc Iranowi",
+      "text": "Departament Skarbu uderza w drugi co do wielkości bank Rosji: VTB otwierał biura w Iranie, łączył się z objętymi sankcjami irańskimi bankami i pomagał przenosić miliardy dolarów zamrożonych aktywów. To trzecia instytucja w operacji „Economic Outcast”, po egipskim Banque Misr i banku tureckim. Sekretarz skarbu Scott Bessent wzywa Europę i Zatokę do odcinania Teheranu od dochodów."
     }
   ]
 }

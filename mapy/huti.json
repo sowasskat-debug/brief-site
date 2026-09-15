@@ -3,7 +3,7 @@
   "kicker": "Mapa konfliktu",
   "title": "Huti biorą Bab al-Mandab",
   "lead": "Jak w dziesięć dni rebelianci z Jemenu przejęli wybrzeże Morza Czerwonego i drugą cieśninę naftową świata. Przewijaj — punkty zapalają się chronologicznie.",
-  "updated": "2026-09-14",
+  "updated": "2026-09-15",
   "view": {
     "lat": 15.6,
     "lng": 44.5,
@@ -322,7 +322,7 @@
       "place": "abha",
       "kind": "atak",
       "title": "Salwa na bazę w Chamis Muszajt",
-      "text": "Huti odpalają dziesiątki rakiet i dronów na saudyjską bazę lotniczą Króla Chalida, skąd startują naloty na Jemen. Twierdzą, że trafili hangary, radary, pasy startowe i składy amunicji; niezależnego potwierdzenia nie ma. Arabia ogłasza krótkie alarmy w Chamis Muszajt i trzech innych miastach na południu. Rebelianci nazywają atak odwetem za setki saudyjskich nalotów z ostatnich dni."
+      "text": "Huti odpalają dziesiątki rakiet i dronów na saudyjską bazę lotniczą Króla Chalida, skąd startują naloty na Jemen. Twierdzą, że trafili hangary, radary, pasy startowe i składy amunicji; niezależnego potwierdzenia nie ma. Koalicja pod wodzą Rijadu podaje, że rakiety i drony spadły też na dzielnice mieszkalne Chamis Muszajt, Abhy i leżącego 400 km dalej na północ Taifu: 13 cywilów rannych, siedem domów uszkodzonych. Alarmy obrony cywilnej ogłoszono aż po Dżuddę, Mekkę i Janbu. Rebelianci nazywają atak odwetem za ponad 300 saudyjskich nalotów w pięć dni."
     },
     {
       "date": "2026-09-14",
@@ -337,6 +337,13 @@
       "kind": "rynek",
       "title": "Janbu: zapas na 5–7 dni",
       "text": "Pierwsza sesja po zamknięciu rurociągu Wschód-Zachód. Brent rośnie o 4,5% do 109,29 USD, zmierzając do najwyższego zamknięcia od 19 maja. Bez rurociągu port Janbu eksportuje z magazynów, a według trzech źródeł branżowych zapasu starczy na 5–7 dni. Rijad sam terminu nie podaje, ale dwaj urzędnicy z regionu mówią AP o 3–5 tygodniach naprawy, w tym dużej stacji pomp; rura może w tym czasie pracować częściowo. Zapas w Janbu jest więc wielokrotnie krótszy niż przestój."
+    },
+    {
+      "date": "2026-09-15",
+      "place": "janbu",
+      "kind": "rynek",
+      "title": "Aramco odwołuje ropę dla Europy",
+      "text": "Co najmniej trzy europejskie rafinerie tracą saudyjskie ładunki z końca września albo dostają je przesunięte nawet na listopad (Argus). Rurociąg Wschód-Zachód stoi od ataku 10.09, a według danych Vortexa od 11.09 z Janbu nie wypłynął żaden saudyjski tankowiec z ropą. Aramco nie podaje odbiorcom terminu wznowienia. W Polsce to sprawa Orlenu, który bierze od Aramco około 40% ropy."
     }
   ]
 }
