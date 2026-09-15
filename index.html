@@ -10,6 +10,31 @@
 <!-- Flagi krajów na Windowsie (Chrome/Edge rysują „PL" zamiast 🇵🇱). Font pobiera się
      WYŁĄCZNIE tam, gdzie system flag nie rysuje — mechanizm i przełączniki w `flagi.js`. -->
 <script defer src="flagi.js"></script>
+<script>
+// 🔴 DIAGNOSTYKA TYMCZASOWA 15.09 — wejście z X na Androidzie wisi na szkielecie, choć briefs.json dochodzi
+// cały (log Caddy). Tylko WebView Androida (`; wv)` w UA): każdy etap = jedno POST na /_diag?…, które Caddy
+// odrzuca 404, ale zapisuje w logu dostępu (/var/log/caddy/brifup-access.log). ZDJĄĆ po diagnozie razem z logiem.
+window.diagX = (function () {
+  if (!/; wv\)/.test(navigator.userAgent)) return function () {};
+  var id = Math.random().toString(36).slice(2, 7), t0 = Date.now();
+  return function (etap) {
+    var u = '/_diag?id=' + id + '&t=' + (Date.now() - t0) + '&v=' + (document.visibilityState || '?') + '&e=' + encodeURIComponent(String(etap).slice(0, 180));
+    try { if (!(navigator.sendBeacon && navigator.sendBeacon(u))) fetch(u, { method: 'POST', keepalive: true }); } catch (_) {}
+  };
+})();
+diagX('start sw=' + !!(navigator.serviceWorker && navigator.serviceWorker.controller));
+addEventListener('error', function (e) { diagX('err ' + (e.message || (e.target && (e.target.src || e.target.href)) || '?') + ' @' + (e.lineno || '')); }, true);
+addEventListener('unhandledrejection', function (e) { var b = e.reason; diagX('rej ' + (b && (b.name + ': ' + b.message) || b)); });
+document.addEventListener('visibilitychange', function () { diagX('vis'); });
+addEventListener('DOMContentLoaded', function () { diagX('dcl'); });
+addEventListener('load', function () { diagX('load'); });
+[3000, 10000, 40000].forEach(function (ms) {
+  setTimeout(function () {
+    var c = document.getElementById('content'), f = c && c.firstElementChild;
+    diagX('dom' + ms / 1000 + 's ' + (f ? f.className : 'pusto') + ' n=' + (c ? c.children.length : -1) + ' h=' + (c ? c.offsetHeight : -1) + ' kafle=' + document.querySelectorAll('[id^=item-],[id^=group-]').length + ' dose=' + (typeof currentDose !== 'undefined' ? currentDose : '?'));
+  }, ms);
+});
+</script>
 <title>BrifUp</title>
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -798,10 +823,12 @@ const daneZastepcze = {};
 async function loadDose(dose, force=false) {
   if (cache[dose] && !force) { renderDose(dose, cache[dose]); return; }
   renderSkeleton();
+  diagX('ld ' + dose + ' force=' + force + ' cur=' + currentDose);
   doseDates[dose] = null;   // reset — ustawi się przy udanym pobraniu z briefs.json/supabase
   delete bladPobrania[dose];
   try {
     let items = await fetchFromBriefsJson(dose);
+    diagX('fetch ' + dose + ' ' + (Array.isArray(items) ? 'n=' + items.length : items) + ' blad=' + (bladPobrania[dose] || '-') + ' cur=' + currentDose);
 
     // Znacznik „to nie są realne newsy" — czyta go `updatePageMeta`, żeby komunikat awarii albo
     // kafel „dawka w przygotowaniu" nie trafił do tytułu strony i do danych strukturalnych.
@@ -820,7 +847,9 @@ async function loadDose(dose, force=false) {
     // #evening tuż po starcie na 'morning', albo szybkie klikanie zakładek) wrzucał treść jednej dawki pod
     // zakładkę drugiej. Cache wypełniamy zawsze (deep-link tryOpen go czyta), gate dotyczy tylko renderu.
     if (dose === currentDose) renderDose(dose, cache[dose]);
+    diagX('render ' + dose + ' ' + (dose === currentDose ? 'ok' : 'POMINIETY cur=' + currentDose));
   } catch(e) {
+    diagX('catch ' + dose + ' ' + (e && e.name) + ': ' + (e && e.message));
     daneZastepcze[dose] = true;   // ta sama zasada co wyżej — awaria nie może trafić do tytułu/JSON-LD
     // 🔴 14.09: gdy render pada także na danych zastępczych, wyjątek uciekał z `loadDose` i na ekranie
     // zostawał szkielet NA ZAWSZE (zgłoszenie: wejście z X na Androidzie, same szare paski). Pokazujemy
@@ -851,6 +880,7 @@ function pokazBladLadowania(blad, pierwotny) {
 }
 
 function renderSkeleton() {
+  diagX('skel');
   document.getElementById('content').innerHTML = `
     <div class="edition-bar">
       <div class="skel" style="width:110px;height:8px"></div>
