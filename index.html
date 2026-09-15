@@ -646,6 +646,14 @@ function refreshCatLevelBars(cat) {
 let doseDates = {};   // data (YYYY-MM-DD) treści każdej dawki z briefs.json — do wykrycia „wczorajszego wydania"
 let lastScrollY = 0, tabsHidden = false;
 let suppressScrollHide = false;
+// 🔴 15.09: stan gestu MUSI stać tu, a nie przy funkcjach gestu niżej. `switchDose` woła `gestZamknijOkno`, a deep link
+// do innej dawki (`#morning/slug` wieczorem — każde wejście z posta na X przez stub `s/`) woła `switchDose` jeszcze
+// W TRAKCIE wykonywania skryptu. `let` niżej był wtedy w martwej strefie → ReferenceError przerywał skrypt, render
+// dawki był pominięty (currentDose już przestawiony) i strona wisiała na szkielecie. Od 01.09 do 15.09.
+// Strażnik `typeof gestZamknijOkno === 'function'` NIE chroni: deklaracja funkcji jest wynoszona, `let` nie.
+const GEST_OKNO_S = 6;
+let gestEtap = 0;               // 0 = następne pociągnięcie odświeża, 1 = otwiera wątki
+let gestOknoTimer = null;
 let mobActiveCat = null;
 
 const scrollArea = document.getElementById('scrollArea');
@@ -3476,7 +3484,8 @@ function routeHashDeepLink() {
   if (routeArchiveHash()) return;
   routeDoseHash();
 }
-routeHashDeepLink();
+// try: wyjątek z routingu wołanego w trakcie startu przerywał CAŁY dalszy skrypt (gesty, nasłuchy) — patrz 15.09 wyżej.
+try { routeHashDeepLink(); } catch (e) { console.error('routeHashDeepLink', e); diagX('route ' + (e && e.message)); }
 window.addEventListener('hashchange', routeHashDeepLink);
 
 // ══ Swipe między dawkami ══════════════════════════════
@@ -3544,9 +3553,7 @@ function toggleTheme() {
 // z odliczaniem, a nie ciche zapamiętanie stanu. Bez niego funkcja byłaby niewykrywalna.
 // ⚠️ Po wygaśnięciu okna gest wraca do ODŚWIEŻANIA (etap 0), a nie zostaje na wątkach — inaczej
 // stan byłby trwały i niewidoczny, czyli dokładnie to, przed czym broni pasek.
-const GEST_OKNO_S = 6;
-let gestEtap = 0;               // 0 = następne pociągnięcie odświeża, 1 = otwiera wątki
-let gestOknoTimer = null;
+// Stan gestu (`GEST_OKNO_S`, `gestEtap`, `gestOknoTimer`) jest zadeklarowany na górze skryptu, przy `lastScrollY`.
 function gestZamknijOkno() {
   clearInterval(gestOknoTimer); gestOknoTimer = null;
   gestEtap = 0;
