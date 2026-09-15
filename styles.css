@@ -1571,12 +1571,10 @@ a.mapa-mini { display:block; cursor:pointer; }
 /* ↩ Ciąg dalszy nad artykułem (2026-09-13): poprzedni etap sagi z godziną, klik = deep link do tamtego newsa. */
 /* Wariant D3 (14.09): jedna linia bez kresek i bez pudełka, POD zdjęciem — kropki etapów + nazwa wątku.
    Kolejność zdjęcie → linia → treść ustawiają szablony (expandBlock, expandBlockArchive, dtShowDetail). */
-.kontynuacja{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:0;text-decoration:none;color:var(--muted);font-family:'Space Mono',monospace;font-size:10.5px;line-height:1.3}
-.kontynuacja .kont-dots{display:inline-flex;gap:3px;align-items:center;flex:0 0 auto}
-.kontynuacja .kont-dots i{width:6px;height:6px;border-radius:50%;background:var(--rule);display:block}
-.kontynuacja .kont-dots i.past{background:rgba(204,0,0,.42)}
-.kontynuacja .kont-dots i.on{background:var(--red)}
-.kontynuacja .kont-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.kontynuacja .kont-txt b{color:var(--red);text-transform:uppercase;letter-spacing:1px}
+.kontynuacja{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:0 0 12px;border-bottom:1px dashed var(--rule);text-decoration:none;color:var(--muted)}
+.kontynuacja .kont-txt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px}
+.kontynuacja .kont-lbl{font-family:'Space Mono',monospace;font-size:10.5px;line-height:1.3;color:var(--muted)}
+.kontynuacja .kont-lbl b{color:var(--red);text-transform:uppercase;letter-spacing:1px}
+.kontynuacja .kont-prev{font-family:'DM Serif Display',serif;font-size:16px;line-height:1.3;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .kontynuacja .kont-go{flex:0 0 auto;color:var(--text);font-size:13px}
-.kontynuacja:hover .kont-txt{color:var(--text)}
+.kontynuacja:hover .kont-prev{text-decoration:underline}

@@ -1736,17 +1736,14 @@ function kontynuacjaHtml(item){
   for (let i = 0; i < t.nodes.length; i++){ if (normThreadKey(t.nodes[i].text) === key) { idx = i; break; } }
   if (idx < 1) return '';
   const prev = t.nodes[idx - 1];
-  // Wariant D3 (14.09, wybór właściciela z makiet): jedna linia BEZ kresek, POD zdjęciem — kropki
-  // etapów + nazwa wątku, jak `watekPasekHtml` na kaflu. Poprzedni nagłówek nie jest już widoczny
-  // (w szarym pudełku tnął się w pół zdania nad zdjęciem) — dostaje go `title` i link prowadzi do niego.
-  const ile = t.nodes.length, n = Math.min(ile, WATEK_MAX_KROPEK);
-  const aktywna = ile <= WATEK_MAX_KROPEK ? idx : Math.round(idx / (ile - 1) * (n - 1));
-  let kropki = '';
-  for (let i = 0; i < n; i++) kropki += `<i class="${i === aktywna ? 'on' : (i < aktywna ? 'past' : '')}"></i>`;
-  const opis = `Ciąg dalszy, etap ${idx + 1} z ${ile}. Poprzednio ${watekWhen(prev).replace(/<[^>]+>/g, '')}: ${prev.text}`;
+  // 15.09 (zrzut właściciela, import węgla): wariant D3 z 14.09 POWTARZAŁ pasek `watek-strip` nad tytułem
+  // (te same kropki i nazwa wątku dwa razy na jednym ekranie). Pasek u góry mówi „to ciąg dalszy CZEGO",
+  // linia pod zdjęciem mówi „CO BYŁO POPRZEDNIO" — nagłówek poprzedniego etapu z porą, do 2 linii, link do niego.
+  const kiedy = watekWhen(prev).replace(/<[^>]+>/g, '');
+  const opis = `Ciąg dalszy, etap ${idx + 1} z ${t.nodes.length}. Poprzednio ${kiedy}: ${prev.text}`;
   return `<a class="kontynuacja" href="${escAttr(watekNodeLink(prev))}" title="${escAttr(opis)}" aria-label="${escAttr(opis)}">`
-       + `<span class="kont-dots" aria-hidden="true">${kropki}</span>`
-       + `<span class="kont-txt"><b>Ciąg dalszy</b> · ${escHtml(t.title || '')}</span>`
+       + `<span class="kont-txt"><span class="kont-lbl"><b>Poprzednio</b> · ${escHtml(kiedy)}</span>`
+       + `<span class="kont-prev">${escHtml(prev.text)}</span></span>`
        + `<span class="kont-go" aria-hidden="true">›</span></a>`;
 }
 function watekPasekHtml(item){
