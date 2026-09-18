@@ -3,7 +3,7 @@
   "kicker": "Mapa konfliktu",
   "title": "Wojna z Iranem: od uderzenia do Ormuzu",
   "lead": "Pół roku wojny krok po kroku, od pierwszego uderzenia do dziś. Przewijaj: mapa pokazuje, gdzie to się dzieje i dlaczego to miejsce ma znaczenie. Wolisz po tematach? Nad mapą przełączysz na sześć rozdziałów.",
-  "updated": "2026-09-15",
+  "updated": "2026-09-18",
   "view": {
     "lat": 27,
     "lng": 48,
@@ -184,6 +184,17 @@
       "lat": 26.85,
       "lng": 56.36,
       "why": "Irańska wyspa w najwęższym miejscu Ormuzu. Stanowiska IRGC i łodzie szybkie przy głównym torze żeglugowym."
+    },
+    "minab": {
+      "name": "Minab",
+      "lat": 27.15,
+      "lng": 57.08,
+      "why": "Miasto nad Zatoką Omańską. 28 lutego pociski trafiły tu szkołę podstawową; ONZ bada to jako możliwą zbrodnię wojenną."
+    },
+    "nowyjork": {
+      "name": "Nowy Jork (ONZ)",
+      "lat": 40.75,
+      "lng": -73.97
     }
   },
   "lines": [],
@@ -506,6 +517,64 @@
       "kind": "dyplomacja",
       "title": "Sankcje na rosyjski VTB za pomoc Iranowi",
       "text": "Departament Skarbu uderza w drugi co do wielkości bank Rosji: VTB otwierał biura w Iranie, łączył się z objętymi sankcjami irańskimi bankami i pomagał przenosić miliardy dolarów zamrożonych aktywów. To trzecia instytucja w operacji „Economic Outcast”, po egipskim Banque Misr i banku tureckim. Sekretarz skarbu Scott Bessent wzywa Europę i Zatokę do odcinania Teheranu od dochodów."
+    },
+    {
+      "rozdzial": "dyplomacja",
+      "date": "2026-09-15",
+      "znane_od": "2026-09-16",
+      "place": "waszyngton",
+      "kind": "dyplomacja",
+      "title": "Izba po raz trzeci przeciw wojnie",
+      "text": "Izba Reprezentantów przyjmuje 220 do 204 rezolucję nakazującą prezydentowi wycofanie sił z działań wojennych przeciw Iranowi. Za głosuje siedmiu Republikanów, więcej niż przy dwóch poprzednich próbach. Dzień później Biuro Budżetowe Kongresu podaje pierwszy pełny rachunek: wojna kosztowała do 1 sierpnia około 38 mld USD, w tym 22,3 mld na uzupełnienie pocisków i amunicji."
+    },
+    {
+      "rozdzial": "sankcje",
+      "date": "2026-09-17",
+      "place": "waszyngton",
+      "kind": "dyplomacja",
+      "title": "Sankcje na giełdę krypto BitBank",
+      "text": "Departament Skarbu nakłada sankcje na irańską giełdę kryptowalut BitBank, która według Waszyngtonu przekazała setki milionów dolarów Gwardii Rewolucyjnej. Dwa dni wcześniej Departament Sprawiedliwości podał, że przez Binance przeszło około 1,5 mld USD płatności za irańską ropę z czarnego rynku. Irańskie linie Mahan Air zawieszają loty do Turcji."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-17",
+      "place": "ormuz",
+      "kind": "dyplomacja",
+      "title": "Ormuz zamknięty „do odejścia Trumpa”",
+      "text": "Mohammad Bagher Zolghadr, doradca polityczny najwyższego przywódcy, ogłasza, że Iran nie otworzy cieśniny, dopóki Donald Trump i Benjamin Netanjahu nie stracą władzy. Jeszcze 12.09 Teheran mówił o otwarciu pod warunkami uzgadnianymi z Omanem."
+    },
+    {
+      "rozdzial": "ormuz",
+      "date": "2026-09-17",
+      "znane_od": "2026-09-18",
+      "place": "ormuz",
+      "kind": "atak",
+      "title": "IRGC trafia tankowiec pod banderą Togo",
+      "text": "Marynarka Gwardii Rewolucyjnej ogłasza w nocy, że w czwartek trafiła tankowiec pod banderą Togo, który według Teheranu próbował „nielegalnie” przejść przez cieśninę. Na statku wybucha pożar, jednostka staje. Nazwy statku ani stanu załogi nie podano."
+    },
+    {
+      "rozdzial": "dyplomacja",
+      "date": "2026-09-17",
+      "place": "minab",
+      "kind": "dyplomacja",
+      "title": "ONZ: możliwe zbrodnie wojenne USA",
+      "text": "Misja faktograficzna ONZ ds. Iranu stwierdza, że USA prawdopodobnie popełniły zbrodnie wojenne w dwóch nalotach, w których zginęło co najmniej 178 cywilów. Chodzi przede wszystkim o uderzenie Tomahawkami w szkołę podstawową w Minab 28 lutego, pierwszego dnia wojny: ponad 150 zabitych, w tym około 120 dzieci."
+    },
+    {
+      "rozdzial": "dyplomacja",
+      "date": "2026-09-18",
+      "place": "nowyjork",
+      "kind": "dyplomacja",
+      "title": "Pezeszkian dostaje wizę do Nowego Jorku",
+      "text": "Administracja Trumpa wyda wizy irańskiej delegacji na Zgromadzenie Ogólne ONZ, także prezydentowi Masudowi Pezeszkianowi i szefowi MSZ Abbasowi Arakczemu. Delegacja będzie miała ograniczenia w poruszaniu się po USA. Decyzja zapada po wpłacie przez USA 725 mln dolarów zaległych składek do ONZ."
+    },
+    {
+      "rozdzial": "rynek",
+      "date": "2026-09-18",
+      "place": "kalifornia",
+      "kind": "rynek",
+      "title": "Diesel po 6,45 dolara",
+      "text": "Kolejny rekord: średnia cena diesla w USA to 6,45 USD za galon, o 84% więcej niż w styczniu; w Kalifornii 8,40 USD. Tydzień wcześniej było 5,97. American, United i Southwest tną siatki połączeń przez drogie paliwo lotnicze."
     }
   ]
 }

@@ -3,7 +3,7 @@
   "kicker": "Mapa konfliktu",
   "title": "Huti biorą Bab al-Mandab",
   "lead": "Jak w dziesięć dni rebelianci z Jemenu przejęli wybrzeże Morza Czerwonego i drugą cieśninę naftową świata. Przewijaj — punkty zapalają się chronologicznie.",
-  "updated": "2026-09-15",
+  "updated": "2026-09-18",
   "view": {
     "lat": 15.6,
     "lng": 44.5,
@@ -129,6 +129,24 @@
       "lat": 31.84,
       "lng": 47.14,
       "why": "Iracko-irańskie pogranicze. Stąd, według irackiego śledztwa, wystartowały drony, które trafiły saudyjski rurociąg Wschód-Zachód."
+    },
+    "mekka": {
+      "name": "Mekka / Taif",
+      "lat": 21.42,
+      "lng": 39.83,
+      "why": "Najświętsze miasto islamu. Rijad nazywa jego bezpieczeństwo „czerwoną linią”; Taif leży 70 km na wschód."
+    },
+    "marib": {
+      "name": "Marib",
+      "lat": 15.46,
+      "lng": 45.32,
+      "why": "Ostatni duży bastion rządu w północnym Jemenie, przy polach naftowych. Front lądowy daleko od morza."
+    },
+    "maskat": {
+      "name": "Maskat",
+      "lat": 23.59,
+      "lng": 58.41,
+      "why": "Stolica Omanu. W ambasadzie USA odbyły się pierwsze rozmowy Amerykanów z Huti w tej wojnie."
     }
   },
   "lines": [
@@ -318,6 +336,14 @@
       "text": "Spotkanie państw Zatoki z szefem MSZ Iranu, zaplanowane na poniedziałek, nie odbędzie się. Szef MSZ Omanu Badr al-Busaidi ogłasza późnym wieczorem w niedzielę przełożenie „w imię konsensusu”, a Teheran mówi, że poprosiła o to Arabia Saudyjska. Jedyna zapowiedziana droga do deeskalacji wokół obu cieśnin znika z kalendarza."
     },
     {
+      "date": "2026-09-13",
+      "znane_od": "2026-09-16",
+      "place": "maskat",
+      "kind": "dyplomacja",
+      "title": "USA rozmawiają z Huti w Maskacie",
+      "text": "W niedzielę w ambasadzie USA w Maskacie amerykańscy dyplomaci spotykają się z delegacją Huti, na której czele stoi objęty sankcjami Mohammad Abdulsalam; pośredniczy Oman (Reuters, pięć źródeł). Huti zapewniają, że nie zaatakują statków USA ani innej żeglugi handlowej poza saudyjską i trzymają się rozejmu z Waszyngtonem z maja 2025. Departament Stanu odmawia komentarza, 18.09 Trump potwierdza rozmowy: „Huti chcą porozumienia”."
+    },
+    {
       "date": "2026-09-14",
       "place": "abha",
       "kind": "atak",
@@ -344,6 +370,42 @@
       "kind": "rynek",
       "title": "Aramco odwołuje ropę dla Europy",
       "text": "Co najmniej trzy europejskie rafinerie tracą saudyjskie ładunki z końca września albo dostają je przesunięte nawet na listopad (Argus). Rurociąg Wschód-Zachód stoi od ataku 10.09, a według danych Vortexa od 11.09 z Janbu nie wypłynął żaden saudyjski tankowiec z ropą. Aramco nie podaje odbiorcom terminu wznowienia. W Polsce to sprawa Orlenu, który bierze od Aramco około 40% ropy."
+    },
+    {
+      "date": "2026-09-15",
+      "znane_od": "2026-09-16",
+      "place": "mekka",
+      "kind": "atak",
+      "title": "Dron nad Mekką",
+      "text": "We wtorek Rijad ostrzega mieszkańców Dżuddy, Mekki i Taifu, żeby schronili się w budynkach. Wieczorem obrona powietrzna zestrzeliwuje drona lecącego w stronę Taifu, zanim wleci w strefę zamkniętą nad Mekką. Rzecznik koalicji Turki al-Malki nazywa bezpieczeństwo świętych meczetów „czerwoną linią” i zapowiada odpowiedź. Huti zaprzeczają: „zużyte kłamstwo”. Organizacja Współpracy Islamskiej potępia atak. Poprzednio Rijad oskarżał Huti o celowanie w Mekkę w 2017 roku."
+    },
+    {
+      "date": "2026-09-16",
+      "place": "marib",
+      "kind": "atak",
+      "title": "Front w Marib, 100 tys. w drodze",
+      "text": "Huti próbują natarcia w prowincji Marib; siły rządowe odpowiadają nalotami, dronami i artylerią. Według Huti saudyjskie lotnictwo wykonało w ciągu doby około 40 nalotów w Marib, Ta'izz i Hadżdży, Rijad tego nie komentuje. Od początku nowej fali walk przesiedlonych jest ponad 100 tys. osób, część ucieka łodziami przez Morze Czerwone do Afryki."
+    },
+    {
+      "date": "2026-09-16",
+      "place": "maskat",
+      "kind": "dyplomacja",
+      "title": "Rijad prosi o rozejm",
+      "text": "Według źródła libańskiej telewizji Al-Majadin Arabia Saudyjska prosi Oman, żeby wynegocjował dwutygodniowy rozejm z Huti na rozmowy o sytuacji humanitarnej. Tego samego dnia media podają, że na prośbę Rijadu Chiny poprosiły Iran, żeby powstrzymał Huti. Pekinowi chodzi o ropę z Zatoki i trasę eksportu do Europy przez Morze Czerwone."
+    },
+    {
+      "date": "2026-09-16",
+      "place": "pompy",
+      "kind": "rynek",
+      "title": "Rurociąg wraca w połowie",
+      "text": "Bloomberg: Aramco może w ciągu kilku dni przywrócić około połowy przepustowości rurociągu Wschód-Zachód, omijając zniszczony odcinek; pełna moc za około sześć tygodni. Uszkodzone są tłocznie nr 8 i 9, a saudyjskie władze obwiniają irackie bojówki sprzymierzone z Iranem. Brent spada o 2,6% do 105,93 USD."
+    },
+    {
+      "date": "2026-09-17",
+      "place": "janbu",
+      "kind": "rynek",
+      "title": "Październik bez ropy dla Europy",
+      "text": "Aramco uprzedza europejskie rafinerie, że w październiku nie zrealizuje ich zamówień. Euronews pisze o pierwszej takiej odmowie dostaw dla Europy. Orlen, który bierze od Aramco około 40% ropy, zapewnia, że zaopatrzenie jest pełne: ma 16 dodatkowych dostaw, m.in. z Norwegii, Wielkiej Brytanii, Algierii i obu Ameryk, a także kontrakt z Equinorem na ropę ze złoża Johan Sverdrup."
     }
   ]
 }

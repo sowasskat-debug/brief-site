@@ -11,16 +11,18 @@
     "w1933": "iran",
     "w586": "iran",
     "w1648": "iran",
-    "w1965": "iran"
+    "w1965": "iran",
+    "w1569": "iran",
+    "w2444": "iran"
   },
   "mapy": {
     "huti": {
       "title": "Huti biorą Bab al-Mandab",
-      "kroki": 25
+      "kroki": 31
     },
     "iran": {
       "title": "Wojna z Iranem: od uderzenia do Ormuzu",
-      "kroki": 38
+      "kroki": 45
     }
   },
   "slowa": {
