@@ -733,5 +733,7 @@
         "kto": "prokuratura wojskowa i MON"
       }
     }
-  ]
+  ],
+  "najnowsze_pierwsze": true,
+  "start_od_calosci": true
 }
