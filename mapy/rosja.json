@@ -1,0 +1,737 @@
+{
+  "id": "rosja",
+  "kicker": "Mapa wojny hybrydowej",
+  "title": "Cicha wojna Rosji z Europą",
+  "lead": "Podpalenia fabryk, drony nad lotniskami, zlecone zabójstwa, kable na dnie Bałtyku. Każdy punkt to zdarzenie, które rząd, służby albo prokuratura wiążą z Rosją. Pełna kropka: Rosja potwierdzona. Czerwony pierścień: podejrzenie. Szary: sprawca wciąż nieustalony. Sabotaż bez oficjalnego rosyjskiego tropu pomijamy.",
+  "updated": "2026-09-18",
+  "view": {
+    "lat": 52.5,
+    "lng": 20.0,
+    "zoom": 4
+  },
+  "zrodla": "komunikaty rządów, służb i prokuratur państw UE i NATO; Reuters, AP, BBC, Euronews, ERR, LSM, Yle, Digi24, Romania Insider, Denník N, Der Spiegel, Die Zeit, CERT Polska; raport Kongresu USA R49134",
+  "podsumowanie_tytul": "Cała cicha wojna na jednej mapie",
+  "places": {
+    "polska_en": {
+      "name": "Polska: energetyka",
+      "lat": 52.2,
+      "lng": 19.1,
+      "why": "Elektrociepłownia grzejąca prawie pół miliona odbiorców oraz ponad 30 farm wiatrowych i słonecznych."
+    },
+    "zatfin": {
+      "name": "Zatoka Fińska",
+      "lat": 59.75,
+      "lng": 24.9,
+      "why": "Tu biegną kable łączące Finlandię z Estonią; na tym samym dnie leżą gazociąg Balticconnector i Estlink."
+    },
+    "malmo": {
+      "name": "Cieśnina Sund, Malmö",
+      "lat": 55.6,
+      "lng": 12.9,
+      "why": "Wąska cieśnina między Szwecją a Danią, jedyne wyjście z Bałtyku dla rosyjskiej floty z Kaliningradu i Petersburga."
+    },
+    "pardubice": {
+      "name": "Pardubice",
+      "lat": 50.04,
+      "lng": 15.78,
+      "why": "Siedziba LPP Holding, producenta dronów i uzbrojenia dla Ukrainy."
+    },
+    "baltyk_wsch": {
+      "name": "Wschodnia granica Bałtów",
+      "lat": 57.0,
+      "lng": 27.0,
+      "why": "Pas przy granicy z Rosją, nad którym przelatują ukraińskie drony lecące na rosyjskie porty Ust-Ługa i Primorsk."
+    },
+    "polnocny_atl": {
+      "name": "Wody wokół Wielkiej Brytanii",
+      "lat": 60.0,
+      "lng": -3.0,
+      "why": "Przez Morze Północne i północny Atlantyk biegną kable i rurociągi zasilające Wielką Brytanię i Norwegię."
+    },
+    "galati": {
+      "name": "Gałacz (Galați)",
+      "lat": 45.44,
+      "lng": 28.05,
+      "why": "Rumuńskie miasto nad Dunajem, naprzeciw ukraińskich portów, które Rosja bombarduje."
+    },
+    "wilno": {
+      "name": "Wilno",
+      "lat": 54.69,
+      "lng": 25.28,
+      "why": "Stolica Litwy, schronienie dla wielu rosyjskich i białoruskich opozycjonistów."
+    },
+    "bialystok": {
+      "name": "Podlasie",
+      "lat": 53.13,
+      "lng": 23.16,
+      "why": "Województwo przy granicy z Białorusią; tu prowadzone jest śledztwo w sprawie siatki FSB."
+    },
+    "baltyk": {
+      "name": "Nad Bałtykiem",
+      "lat": 57.2,
+      "lng": 20.5,
+      "why": "Region najsilniejszego zakłócania GPS w Europie; eksperci wskazują obwód kaliningradzki."
+    },
+    "porkkala": {
+      "name": "Porkkala",
+      "lat": 59.98,
+      "lng": 24.43,
+      "why": "Półwysep u wejścia do Zatoki Fińskiej, 30 km od Helsinek."
+    },
+    "strasskirchen": {
+      "name": "Bawaria (Donaustahl)",
+      "lat": 48.83,
+      "lng": 12.72,
+      "why": "Tu mieszka szef Donaustahl, firmy dostarczającej Ukrainie drony rozpoznawcze i FPV."
+    },
+    "warszawa": {
+      "name": "Warszawa",
+      "lat": 52.23,
+      "lng": 21.01
+    },
+    "monachium": {
+      "name": "Monachium",
+      "lat": 48.14,
+      "lng": 11.58,
+      "why": "Siedziby Helsinga (drony bojowe z AI), Rohde & Schwarz i zakład KNDS."
+    },
+    "ryga": {
+      "name": "Ryga",
+      "lat": 56.95,
+      "lng": 24.11
+    },
+    "buzau": {
+      "name": "Okręg Buzău",
+      "lat": 44.83,
+      "lng": 27.03,
+      "why": "Zaledwie 80 km od Bukaresztu. Tak głęboko rosyjski dron nie wleciał nad Rumunię nigdy wcześniej."
+    },
+    "delta": {
+      "name": "Delta Dunaju",
+      "lat": 45.1,
+      "lng": 29.3,
+      "why": "Rumuński brzeg naprzeciw ukraińskiego Izmaiłu, nad który lecą rosyjskie drony."
+    },
+    "tarnawa": {
+      "name": "Tarnawa-Kolonia",
+      "lat": 50.78,
+      "lng": 22.93,
+      "why": "Wieś na Lubelszczyźnie, 60 km od granicy z Ukrainą."
+    },
+    "lipsk": {
+      "name": "Lotnisko Lipsk/Halle",
+      "lat": 51.42,
+      "lng": 12.24,
+      "why": "Hub cargo NATO i przesyłek dla Ukrainy; stacjonują tu ukraińskie Antonowy."
+    },
+    "neptun": {
+      "name": "Neptun Deep",
+      "lat": 44.3,
+      "lng": 30.9,
+      "why": "Największy projekt gazowy Rumunii na Morzu Czarnym: 10 mld m³ gazu rocznie, na platformie pracuje kilkaset osób."
+    },
+    "colleferro": {
+      "name": "Colleferro",
+      "lat": 41.73,
+      "lng": 13.0,
+      "why": "Zakład KNDS Ammo Italy pod Rzymem: amunicja dużego kalibru i paliwo rakietowe."
+    },
+    "tallinn": {
+      "name": "Tallinn",
+      "lat": 59.43,
+      "lng": 24.8,
+      "why": "Milrem Robotics produkuje roboty bojowe THeMIS używane w Ukrainie."
+    },
+    "zatfin_pn": {
+      "name": "Południowa Finlandia",
+      "lat": 60.3,
+      "lng": 25.8
+    },
+    "oslo": {
+      "name": "Norwegia",
+      "lat": 59.91,
+      "lng": 10.75
+    },
+    "mold_rum": {
+      "name": "Pogranicze Rumunii i Mołdawii",
+      "lat": 45.7,
+      "lng": 27.9
+    },
+    "moldawia": {
+      "name": "Mołdawia",
+      "lat": 46.3,
+      "lng": 28.9
+    },
+    "haniska": {
+      "name": "Haniska koło Preszowa",
+      "lat": 48.97,
+      "lng": 21.23,
+      "why": "Słowacka fabryka Skyeton, ukraińskiego producenta dronów."
+    },
+    "skarzysko": {
+      "name": "Skarżysko-Kamienna",
+      "lat": 51.12,
+      "lng": 20.87,
+      "why": "Zakład Grupy WB, największego w Europie producenta dronów wojskowych."
+    },
+    "swindon": {
+      "name": "Swindon",
+      "lat": 51.56,
+      "lng": -1.78,
+      "why": "W mieście działają cztery fabryki dronów, których adresy miały trafić do GRU."
+    },
+    "budapeszt": {
+      "name": "Budapeszt",
+      "lat": 47.5,
+      "lng": 19.04
+    },
+    "bukareszt": {
+      "name": "Bukareszt",
+      "lat": 44.43,
+      "lng": 26.1
+    },
+    "granica_ua": {
+      "name": "Granica Polski z Ukrainą",
+      "lat": 50.9,
+      "lng": 24.0,
+      "why": "Władze nie ujawniły, którego z 18 przejść granicznych dotyczyło zagrożenie."
+    },
+    "jagodzin": {
+      "name": "Jagodzin–Dorohusk",
+      "lat": 51.18,
+      "lng": 23.84,
+      "why": "Najważniejsze kolejowe i drogowe przejście na trasie Kijów–Warszawa; tędy idzie pomoc dla Ukrainy."
+    },
+    "gedser": {
+      "name": "Gedser",
+      "lat": 54.57,
+      "lng": 11.93,
+      "why": "Południowy cypel Danii, na trasie rosyjskich okrętów z Bałtyku."
+    },
+    "rusinowo": {
+      "name": "Rusinowo",
+      "lat": 54.56,
+      "lng": 16.44,
+      "why": "Plaża koło Jarosławca w zachodniopomorskim."
+    },
+    "kowno": {
+      "name": "Pratkūnai koło Kowna",
+      "lat": 54.93,
+      "lng": 24.1
+    },
+    "emco": {
+      "name": "Carewa Liwada, Bułgaria",
+      "lat": 42.95,
+      "lng": 25.35,
+      "why": "Magazyny EMCO, bułgarskiej firmy dostarczającej broń i amunicję Ukrainie; jej właściciel przeżył w 2015 roku próbę zamachu."
+    },
+    "ciuslea": {
+      "name": "Ciușlea, okręg Vrancea",
+      "lat": 45.8,
+      "lng": 27.15
+    },
+    "labege": {
+      "name": "Labège koło Tuluzy",
+      "lat": 43.53,
+      "lng": 1.53,
+      "why": "Zakład Delair, francuskiego producenta dronów dostarczanych ukraińskiej armii."
+    }
+  },
+  "lines": [],
+  "steps": [
+    {
+      "date": "2025-12-29",
+      "place": "polska_en",
+      "kind": "cyber",
+      "title": "Cyberatak na polską energetykę",
+      "text": "Tuż przed Nowym Rokiem, w mrozy, hakerzy uderzają naraz w ponad 30 farm wiatrowych i słonecznych, zakład przemysłowy i dużą elektrociepłownię grzejącą prawie pół miliona odbiorców. Według CERT Polska cel był wyłącznie niszczący, a atak dotknął także fizycznych urządzeń sterujących. Rząd uznał go za największy od lat.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "CERT Polska i rząd RP: grupa powiązana z FSB"
+      }
+    },
+    {
+      "date": "2025-12-31",
+      "place": "zatfin",
+      "kind": "morze",
+      "title": "Kotwica przez kable Finlandia–Estonia",
+      "text": "W sylwestra zostają uszkodzone dwa kable telekomunikacyjne pod Zatoką Fińską. Fińska policja zatrzymuje frachtowiec Fitburg płynący z Petersburga, który według śledczych wlókł kotwicę po dnie. W załodze są m.in. Rosjanie. Państwa jako zleceniodawcy śledczy nie wskazali.",
+      "przypisanie": {
+        "poziom": "nieustalony",
+        "kto": "fińska policja (śledztwo w sprawie sabotażu)"
+      }
+    },
+    {
+      "date": "2026-02-26",
+      "place": "malmo",
+      "kind": "dron",
+      "title": "Dron z rosyjskiego okrętu nad Sundem",
+      "text": "Szwedzki patrolowiec wykrywa drona wypuszczonego z rosyjskiego okrętu rozpoznawczego Żygulowsk. Maszyna leci w stronę Malmö, gdzie stoi francuski lotniskowiec Charles de Gaulle. Szwedzi zagłuszają ją środkami walki elektronicznej.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "szwedzkie siły zbrojne i minister obrony"
+      }
+    },
+    {
+      "date": "2026-03-20",
+      "place": "pardubice",
+      "kind": "podpalenie",
+      "title": "Spłonęła fabryka dronów dla Ukrainy",
+      "text": "W nocy z 19 na 20 marca ogień niszczy dwie hale LPP Holding, producenta dronów i uzbrojenia dla Ukrainy. Do podpalenia przyznaje się nieznana wcześniej grupa „propalestyńska”, ale czescy śledczy badają, czy to przykrywka rosyjskiej operacji. Zatrzymano pięć osób, śledztwo objęło też Słowację, Polskę i Bułgarię.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "czeska policja (rosyjski trop w śledztwie)"
+      }
+    },
+    {
+      "date": "2026-03-25",
+      "place": "baltyk_wsch",
+      "kind": "tlo",
+      "title": "Nie każdy dron to Rosja",
+      "text": "Od marca nad Bałtami i Finlandią spadają drony: w Varėnie (23.03), w kominie elektrowni Auvere i w Krāslavie (25.03), pod Kouvolą (29.03), w składzie paliw w Rēzekne (7.05); kolejne zestrzeliwane są nad Estonią (19.05) i Łotwą (8.06, 14.08). Według tych państw to drony ukraińskie, które rosyjskie zakłócanie GPS znosiło z kursu w drodze na porty Ust-Ługa i Primorsk. Ukraina przepraszała. Dlatego na tej mapie nie ma ich jako ataków Rosji."
+    },
+    {
+      "date": "2026-04-09",
+      "place": "polnocny_atl",
+      "kind": "morze",
+      "title": "Rosyjskie okręty podwodne przy kablach",
+      "text": "Minister obrony Wielkiej Brytanii John Healey ujawnia, że przez ponad miesiąc wokół brytyjskich wód działały trzy rosyjskie okręty podwodne, w tym dwa z GUGI, jednostki od badań głębinowych, która w pokoju mapuje kable i rurociągi, a w wojnie ma je niszczyć. Brytyjczycy i Norwegowie śledzili je fregatami i samolotami patrolowymi. Uszkodzeń nie stwierdzono.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "rząd Wielkiej Brytanii"
+      }
+    },
+    {
+      "date": "2026-04-25",
+      "place": "galati",
+      "kind": "dron",
+      "title": "Pierwsze szkody od drona w Rumunii",
+      "text": "W nocy, podczas rosyjskiego ataku na ukraińskie porty przy granicy, dron spada w dzielnicy mieszkalnej Gałacza i uszkadza mienie. To pierwszy udokumentowany przypadek zniszczeń od drona na terytorium Rumunii.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "ministerstwa obrony i spraw zagranicznych Rumunii"
+      }
+    },
+    {
+      "date": "2026-04-27",
+      "place": "wilno",
+      "kind": "agenci",
+      "title": "Zabójcy na zlecenie GRU zatrzymani",
+      "text": "Litwa ogłasza rozbicie siatki, która na zlecenie rosyjskiego wywiadu wojskowego przygotowywała zabójstwa dwóch działaczy antyrosyjskich w Wilnie, Rusłana Gabbasowa i Valdasa Bartkevičiusa, oraz sabotaż w Europie. Zatrzymano dziewięć osób z siedmiu krajów. Na samochodzie Gabbasowa wcześniej znaleziono nadajnik śledzący.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "prokuratura generalna i policja Litwy"
+      }
+    },
+    {
+      "date": "2026-05-12",
+      "place": "bialystok",
+      "kind": "agenci",
+      "title": "ABW zatrzymuje trzech Polaków od FSB",
+      "text": "Trzej obywatele Polski w wieku 48–62 lat mieli na zlecenie Rosjanina powiązanego z FSB rozpoznawać rozmieszczenie wojsk NATO w Polsce, szerzyć propagandę, zbierać pieniądze na sprzęt dla armii rosyjskiej i szkolić się do dywersji.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "ABW i Prokuratura Krajowa"
+      }
+    },
+    {
+      "date": "2026-05-21",
+      "place": "baltyk",
+      "kind": "gps",
+      "title": "Samolot ministra bez GPS",
+      "text": "Samolot RAF wiozący brytyjskiego ministra obrony Johna Healeya z Estonii traci sygnał satelitarny na cały trzygodzinny lot. Piloci nawigują systemami zapasowymi.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "źródło w brytyjskim ministerstwie obrony"
+      }
+    },
+    {
+      "date": "2026-05-27",
+      "place": "porkkala",
+      "kind": "niebo",
+      "title": "Rosyjski samolot nad Finlandią",
+      "text": "Rosyjski samolot wojskowy, omijając burze nad Zatoką Fińską, prawdopodobnie wlatuje w fińską przestrzeń powietrzną przy Porkkali. Fińska straż graniczna wszczyna śledztwo.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "ministerstwo obrony Finlandii"
+      }
+    },
+    {
+      "date": "2026-05-29",
+      "place": "galati",
+      "kind": "dron",
+      "title": "Rosyjski dron w bloku mieszkalnym",
+      "text": "W nocy z 28 na 29 maja rosyjski Geran-2 wbija się w dach dziesięciopiętrowego bloku w Gałaczu i wybucha. Dwie osoby ranne, około 70 mieszkańców ewakuowanych. Pierwszy raz od początku wojny rosyjski dron rani kogoś w Rumunii. Analiza techniczna potwierdza pochodzenie maszyny.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "prezydent Rumunii Nicușor Dan"
+      }
+    },
+    {
+      "date": "2026-06-01",
+      "place": "labege",
+      "kind": "podpalenie",
+      "title": "Koktajle Mołotowa na fabrykę dronów",
+      "text": "Nieznani sprawcy rzucają koktajle Mołotowa w zakład Delair, który dostarcza drony armii ukraińskiej; mieszanka się nie zapala. Trzy dni później przy fabryce zostaje zatrzymany Białorusin, który filmował prototyp drona i według śledczych wysyłał nagrania rosyjskiemu kontaktowi. 5 czerwca słyszy zarzut przekazywania informacji obcemu państwu.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "prokuratura w Paryżu (podejrzenie obcej, możliwie rosyjskiej ingerencji)"
+      }
+    },
+    {
+      "date": "2026-06-11",
+      "place": "strasskirchen",
+      "kind": "agenci",
+      "title": "Plan zamachu na szefa Donaustahl",
+      "text": "Niemieckie służby ujawniają, że rosyjski wywiad od grudnia 2025 obserwował Stefana Thumanna, szefa bawarskiego producenta dronów dla Ukrainy. 11 czerwca na granicy serbsko-węgierskiej zatrzymano ciężarówkę ze skrytkami na materiały wybuchowe, której celem była Bawaria. Thumann żyje w ukryciu pod ochroną.",
+      "znane_od": "2026-08-05",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "niemieckie służby bezpieczeństwa"
+      }
+    },
+    {
+      "date": "2026-06-29",
+      "place": "warszawa",
+      "kind": "agenci",
+      "title": "Opłacane protesty wśród uchodźców",
+      "text": "ABW i Straż Graniczna zatrzymują w Warszawie, Wrocławiu, Krakowie, Zakopanem i Bydgoszczy dziewięciu Ukraińców i dwóch Białorusinów do wydalenia. Od jesieni 2025 werbowali i opłacali uczestników demonstracji wśród ukraińskich uchodźców; pieniądze i pomysł szły z Rosji.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "ABW"
+      }
+    },
+    {
+      "date": "2026-07-15",
+      "place": "monachium",
+      "kind": "agenci",
+      "title": "Dron nad zakładem KNDS",
+      "text": "Mieszkańcy zgłaszają drona nad bawarskim zakładem KNDS, producenta czołgów i haubic. Zatrzymany zostaje 37-letni Mołdawianin, który według prokuratury filmował teren na zlecenie rosyjskiego wywiadu.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "niemiecka prokuratura federalna"
+      }
+    },
+    {
+      "date": "2026-07-19",
+      "place": "ryga",
+      "kind": "podpalenie",
+      "title": "Spłonął magazyn pomocy dla Ukrainy",
+      "text": "W nocy z 18 na 19 lipca płonie biuro, magazyn i centrum logistyczne stowarzyszenia „Tavi draugi”, które wspiera Ukrainę; duża część zgromadzonej pomocy przepada. Monitoring pokazuje dwie zamaskowane osoby. Łotewska służba bezpieczeństwa nie wyklucza rosyjskiego tła.",
+      "przypisanie": {
+        "poziom": "nieustalony",
+        "kto": "łotewska Państwowa Służba Bezpieczeństwa (VDD)"
+      }
+    },
+    {
+      "date": "2026-07-24",
+      "place": "buzau",
+      "kind": "niebo",
+      "title": "Pierwszy zestrzelony dron nad Rumunią",
+      "text": "Dwa rumuńskie F-16 zestrzeliwują nad niezamieszkanym terenem drona, który doleciał na 80 km od Bukaresztu. To pierwsze takie zestrzelenie w historii kraju. Po analizie szczątków prezydent potwierdza: rosyjski Shahed.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "prezydent i ministerstwo obrony Rumunii"
+      }
+    },
+    {
+      "date": "2026-07-26",
+      "place": "delta",
+      "kind": "niebo",
+      "title": "Trzy drony w trzy dni",
+      "text": "25 i 26 lipca rumuńskie F-16 zestrzeliwują kolejne drony nad deltą Dunaju i wodami terytorialnymi. Rosja w tym czasie bombarduje ukraińskie porty naddunajskie po drugiej stronie rzeki.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "ministerstwo obrony Rumunii i NATO"
+      }
+    },
+    {
+      "date": "2026-07-30",
+      "place": "tarnawa",
+      "kind": "niebo",
+      "title": "Rosyjska rakieta spada w Polsce",
+      "text": "Podczas zmasowanego ataku na Ukrainę rakieta manewrująca Ch-101 wlatuje nad Polskę i uderza w pole pod Tarnawą-Kolonią, zostawiając lej o średnicy 10 m. Nikt nie ginie. Prokuratura potwierdza rosyjską produkcję, a Dowództwo Operacyjne ocenia na 80%, że rakietę wystrzelono celowo.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "premier, prokuratura i Dowództwo Operacyjne RP"
+      }
+    },
+    {
+      "date": "2026-08-04",
+      "place": "lipsk",
+      "kind": "dron",
+      "title": "Dron z Semteksem przy Antonowie",
+      "text": "Dron z ładunkiem Semteksu uderza w skrzydło ukraińskiego An-124 na lotnisku Lipsk/Halle; ładunek nie wybucha przez wadliwy zapalnik. Samolot miał w zbiornikach około 25 tys. litrów paliwa. Śledczy znajdują ślady jeszcze dwóch dronów i anteny sterującej. 1 września Berlin oficjalnie obwinia Rosję i zamyka rosyjski konsulat.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "rząd Niemiec i prokuratura federalna"
+      }
+    },
+    {
+      "date": "2026-08-05",
+      "place": "warszawa",
+      "kind": "agenci",
+      "title": "Niedoszły zamachowiec w Warszawie",
+      "text": "ABW zatrzymuje 63-letniego Ukraińca, który na zlecenie rosyjskich służb miał zabić bombą przedstawiciela ukraińskiego przemysłu zbrojeniowego w Irpieniu. Ładunek nie zadziałał, a sprawca uciekł do Polski.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "ABW i prokuratura"
+      }
+    },
+    {
+      "date": "2026-08-07",
+      "place": "warszawa",
+      "kind": "agenci",
+      "title": "Zlecenie zabójstwa Amerykanina",
+      "text": "ABW z pomocą służb USA zatrzymuje mężczyznę zwerbowanego przez rosyjskie służby do zabicia w Warszawie obywatela USA ukraińskiego pochodzenia. Premier Tusk: to pierwsza taka sytuacja, gdy Rosja zleca zabójstwo Amerykanina na terytorium NATO.",
+      "znane_od": "2026-08-13",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "premier Donald Tusk, ABW"
+      }
+    },
+    {
+      "date": "2026-08-11",
+      "place": "neptun",
+      "kind": "morze",
+      "title": "Drony przy platformie gazowej",
+      "text": "Robotnicy na Neptun Deep, 165 km od Konstancy, zauważają dwa dryfujące drony typu Gerbera. Wojskowi nurkowie wysadzają je w kontrolowany sposób. Ukraina potwierdza, że nie są jej.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "ministerstwo obrony Rumunii"
+      }
+    },
+    {
+      "date": "2026-08-13",
+      "place": "colleferro",
+      "kind": "wybuch",
+      "title": "Wybuch w fabryce amunicji pod Rzymem",
+      "text": "W zakładzie KNDS Ammo Italy w Colleferro wybucha pożar w dziale prasowania prochów, a potem eksplozja. Nikt nie zostaje ranny. Przyczyny nie ustalono; według „Telegraph” zachodni wywiad łączy ten i podobne pożary fabryk broni z Rosją, włoskie władze tego nie potwierdzają.",
+      "przypisanie": {
+        "poziom": "nieustalony",
+        "kto": "zachodnie źródła wywiadowcze według „The Telegraph”"
+      }
+    },
+    {
+      "date": "2026-08-15",
+      "place": "tallinn",
+      "kind": "podpalenie",
+      "title": "Podpalony producent robotów bojowych",
+      "text": "W nocy płonie budynek Milrem Robotics, producenta robotów THeMIS używanych w Ukrainie. Pożar podłożono celowo. Na podstawie ustaleń estońskiej policji i kontrwywiadu na Łotwie zostają zatrzymani trzej podejrzani.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "premier Estonii Kristen Michal, prokuratura"
+      }
+    },
+    {
+      "date": "2026-08-16",
+      "place": "mold_rum",
+      "kind": "niebo",
+      "title": "Hiszpański F-18 zestrzeliwuje drona",
+      "text": "Cel nadlatujący od strony Mołdawii zostaje wykryty 24 km na północ od Gałacza; hiszpański F-18 z misji NATO zestrzeliwuje go po kwadransie. To czwarte udane zestrzelenie nad Rumunią. Rzecznik NATO: dron wydaje się rosyjski.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "ministerstwo obrony Rumunii, NATO"
+      }
+    },
+    {
+      "date": "2026-08-20",
+      "place": "neptun",
+      "kind": "morze",
+      "title": "F-16 niszczy dron morski",
+      "text": "Rumuński F-16 pierwszy raz strzela z działka do drona morskiego, który zbliżał się do platformy Neptun Deep z kilkuset pracownikami na pokładzie. Decyzję o otwarciu ognia podjęto w porozumieniu z prezydentem.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "ministerstwo obrony Rumunii"
+      }
+    },
+    {
+      "date": "2026-08-20",
+      "place": "zatfin_pn",
+      "kind": "niebo",
+      "title": "Rosyjski Ił-20 nad Finlandią",
+      "text": "Rosyjski samolot rozpoznawczy Ił-20 wlatuje na około trzy minuty w fińską przestrzeń powietrzną, do 9 km w głąb kraju. Helsinki wzywają ambasadora Rosji.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "ministerstwo obrony Finlandii, straż graniczna"
+      }
+    },
+    {
+      "date": "2026-08-21",
+      "place": "baltyk",
+      "kind": "gps",
+      "title": "Zagłuszony polski okręt",
+      "text": "ORP „Albatros” traci sygnał GPS podczas zadań na Bałtyku, co potwierdza dowództwo NATO w Brunssum. Na Pomorzu zakłócenia trwają w lipcu blisko 90 godzin, a w sierpniu w 63% dni. Instytut Łączności wskazuje zewnętrzne źródło związane z walką elektroniczną; UE objęła sankcjami rosyjskie centrum walki elektronicznej w Kaliningradzie.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "Instytut Łączności, NATO"
+      }
+    },
+    {
+      "date": "2026-08-23",
+      "place": "oslo",
+      "kind": "cyber",
+      "title": "DDoS paraliżuje e-usługi Norwegii",
+      "text": "Atak DDoS wyłącza portale ID-porten i MinID, przez które Norwegowie logują się do urzędów, recept i aptek. To kolejny z serii ataków na norweskie instytucje. Dowódca sił zbrojnych gen. Eirik Kristoffersen mówi, że za częścią z nich stoi Rosja.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "dowódca sił zbrojnych Norwegii"
+      }
+    },
+    {
+      "date": "2026-08-24",
+      "place": "ciuslea",
+      "kind": "niebo",
+      "title": "Dron zawieszony w orzechu",
+      "text": "Po huku o 8:30 mieszkańcy wsi Ciușlea dopiero po południu znajdują drona zawieszonego w orzechu 5 m od domu. Ewakuacja w promieniu 300 m. Według ministerstwa obrony to najpewniej ten sam dron, który rano wleciał od strony Mołdawii w czasie rosyjskich ataków na obwód odeski; nie miał ładunku.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "ministerstwo obrony Rumunii"
+      }
+    },
+    {
+      "date": "2026-08-27",
+      "place": "moldawia",
+      "kind": "niebo",
+      "title": "Pięć dronów nad Mołdawią",
+      "text": "W ciągu dwóch godzin pięć dronów przekracza granicę Mołdawii; dwa znikają z radarów w głębi kraju. Tego dnia policja odgradza miejsce upadku drona-wabika.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "ministerstwo obrony Mołdawii"
+      }
+    },
+    {
+      "date": "2026-08-28",
+      "place": "haniska",
+      "kind": "podpalenie",
+      "title": "Udaremniony atak na fabrykę dronów",
+      "text": "Słowacka policja w operacji „Dron” zatrzymuje czterech cudzoziemców, którzy mieli podpalić fabrykę Skyeton, ukraińskiego producenta dronów w Haniskej; zabezpiecza mieszankę podobną do napalmu. Jeden z Łotyszy, zatrzymany w Hamburgu, miał według słowackich służb działać na zlecenie z Rosji.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "słowacka policja i służby"
+      }
+    },
+    {
+      "date": "2026-08-31",
+      "place": "skarzysko",
+      "kind": "podpalenie",
+      "title": "Podpalony zakład Grupy WB",
+      "text": "W nocy płonie hala Grupy WB, która wytwarza części do dronów wojskowych; straty co najmniej 15 mln zł. Monitoring nagrywa zamaskowaną osobę. Premier Tusk mówi o celowym sabotażu i łączy go z rosyjskimi działaniami, finansowanymi m.in. kryptowalutami.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "premier Donald Tusk, prokuratura"
+      }
+    },
+    {
+      "date": "2026-09-03",
+      "place": "monachium",
+      "kind": "podpalenie",
+      "title": "Ładunki pod firmami zbrojeniowymi",
+      "text": "W nocy dwaj Bułgarzy rzucają ładunki zapalające na teren przy siedzibach Helsinga i Rohde & Schwarz; jeden się zapala, drugi nie. Sprawcy zostają zatrzymani. Niemieckie służby widzą „silne przesłanki” udziału rosyjskiego wywiadu, który werbuje tanich wykonawców przez pośredników.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "niemieckie służby bezpieczeństwa"
+      }
+    },
+    {
+      "date": "2026-09-08",
+      "place": "budapeszt",
+      "kind": "agenci",
+      "title": "Węgry wydalają 10 dyplomatów",
+      "text": "Nowy rząd Pétera Magyara wydala dziesięciu rosyjskich dyplomatów za szpiegostwo, pierwszy raz od 2018 roku. Moskwa zapowiada „ostrą” odpowiedź.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "MSZ Węgier"
+      }
+    },
+    {
+      "date": "2026-09-08",
+      "place": "bukareszt",
+      "kind": "agenci",
+      "title": "Rosjanin szpiegował bazy w Rumunii",
+      "text": "Rumuńskie służby zatrzymują 40-letniego Rosjanina obserwowanego od lutego. Na polecenia z Rosji fotografował ukraińskie Antonowy i sprzęt w bazach w okręgach Kluż, Konstanca, Călărași, Ilfov i w Bukareszcie; śledczy łączą go z siatką sabotażową działającą w kilku krajach.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "SRI, DIICOT i wywiad wojskowy Rumunii"
+      }
+    },
+    {
+      "date": "2026-09-09",
+      "place": "granica_ua",
+      "kind": "agenci",
+      "title": "Udaremnione zagrożenie na granicy",
+      "text": "W nocy polskie i ukraińskie służby udaremniają „bezpośrednie zagrożenie” dla jednego z przejść granicznych z Ukrainą. Premier Tusk nie ujawnia, którego, i sugeruje, że stoi za tym Rosja; ostrzega przed kolejnymi prowokacjami.",
+      "przypisanie": {
+        "poziom": "podejrzenie",
+        "kto": "premier Donald Tusk"
+      }
+    },
+    {
+      "date": "2026-09-10",
+      "place": "swindon",
+      "kind": "agenci",
+      "title": "Brytyjczyk wskazywał GRU fabryki dronów",
+      "text": "31-letni Joshua Cammidge słyszy zarzuty w Londynie. Według prokuratury od marca przekazywał kontaktowi z GRU adresy czterech fabryk dronów w Swindon, planując ich sabotaż.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "brytyjska prokuratura"
+      }
+    },
+    {
+      "date": "2026-09-12",
+      "place": "emco",
+      "kind": "wybuch",
+      "title": "Znów wybuch w EMCO",
+      "text": "W nocy z 11 na 12 września płonie i wybucha magazyn broni firmy EMCO w środkowej Bułgarii, miesiąc po eksplozji w tej samej firmie. EMCO dostarcza broń Ukrainie, a bułgarscy śledczy już wcześniej ścigali sześciu Rosjan za niszczenie jej magazynów w latach 2011–2020. Minister spraw wewnętrznych wskazuje na zaniedbania.",
+      "przypisanie": {
+        "poziom": "nieustalony",
+        "kto": "opozycja i zachodnie źródła; rząd Bułgarii nie potwierdza"
+      }
+    },
+    {
+      "date": "2026-09-13",
+      "place": "jagodzin",
+      "kind": "dron",
+      "title": "Drony Geran-5 przy granicy z Polską",
+      "text": "Nad ranem kilkanaście odrzutowych dronów Geran-5 atakuje przejście Jagodzin po ukraińskiej stronie; jeden spada 1 km, drugi 5 km od granicy z Polską. Trafione są pociąg towarowy i stacja paliw, dwóch kierowców rannych. W Polsce alerty RCB w sześciu powiatach i poderwane myśliwce. Kaja Kallas: celem jest zastraszenie Zachodu.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "MON, premier Tusk, UE"
+      }
+    },
+    {
+      "date": "2026-09-14",
+      "place": "gedser",
+      "kind": "morze",
+      "title": "Flary w stronę duńskiego śmigłowca",
+      "text": "Rosyjska fregata odpala dwie flary w stronę duńskiego śmigłowca, który ją fotografował koło Gedser; jedna przelatuje tuż obok maszyny. Kopenhaga wzywa ambasadora Rosji i nazywa zachowanie załogi niedopuszczalnym.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "ministrowie obrony i spraw zagranicznych Danii"
+      }
+    },
+    {
+      "date": "2026-09-14",
+      "place": "kowno",
+      "kind": "dron",
+      "title": "Gerbera zestrzelona nad Litwą",
+      "text": "Włoski Eurofighter zestrzeliwuje drona, który wleciał nad Litwę z Białorusi i krążył w rejonie Wilna i Kowna. Prezydent Litwy potwierdza: to rosyjska Gerbera-2, a nie zabłąkany dron ukraiński. Pierwsze takie zestrzelenie nad Litwą.",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "prezydent Litwy"
+      }
+    },
+    {
+      "date": "2026-09-14",
+      "place": "rusinowo",
+      "kind": "dron",
+      "title": "Uzbrojony dron na polskiej plaży",
+      "text": "Marynarze wyławiają z Bałtyku przy Rusinowie drona, który okazuje się rosyjską Gerberą-2 z głowicą odłamkowo-burzącą. Saperzy detonują ją na plaży. MON: dron najpewniej zgubiony przez Rosjan podczas manewrów, wcześniej mógł przelecieć nad Litwą.",
+      "znane_od": "2026-09-16",
+      "przypisanie": {
+        "poziom": "rosja",
+        "kto": "prokuratura wojskowa i MON"
+      }
+    }
+  ]
+}

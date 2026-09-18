@@ -23,11 +23,16 @@
     "iran": {
       "title": "Wojna z Iranem: od uderzenia do Ormuzu",
       "kroki": 45
+    },
+    "rosja": {
+      "title": "Cicha wojna Rosji z Europą",
+      "kroki": 45
     }
   },
   "slowa": {
     "huti": "hut(?:i|ich|ów|om|ami)?\\b|jemen|bab al[- ]mandab|mandab|perim|majun|moch[aęy]|hudajd|hanisz|dhubab|rurociąg wschód|wschód[- ]zachód|dżizan|jizan|abha\\b|nadżran|salalah|morz[ea] czerwon",
-    "iran": "\\bira[nń]|teheran|ormuz|hormuz|irgc|gwardi[ai] rewolucyjn|pezeszkian|chamenei|szalamcze|shalamcheh|hezbollah|\\bliban|zatok[ai] persk|tankowc|tankowiec|centcom|bliski[m]? wschod|ras laffan|economic outcast"
+    "iran": "\\bira[nń]|teheran|ormuz|hormuz|irgc|gwardi[ai] rewolucyjn|pezeszkian|chamenei|szalamcze|shalamcheh|hezbollah|\\bliban|zatok[ai] persk|tankowc|tankowiec|centcom|bliski[m]? wschod|ras laffan|economic outcast",
+    "rosja": "^(?!.*(?:ukrai[nń]|kij[oó]w|chark[oó]w|odes|zaporo|donbas|donieck|chersoń|krym|front|iran|izrael|huti|jeme[nń]|chin|korea|wenezuel|rafineri|obwod|w rosji|rosyjsk\\w* (?:port|elektrown|biznes|portal|operator|gubernator)|kursk|ług|noworosyjsk|wildberries|ozon|saratów|nigr|zamach\\w* stanu|zestrzeliła \\d|cyberprzestęp))(?=.*(?:\\bros(?:ja|ji|ję|ją|yjsk|jan)|kreml|\\bgru\\b|\\bfsb\\b|gerber|putin)).*(?:hybrydow|sabota|dywers|podpal|zamach|szpieg|zagłusz|\\bgps\\b|kab(?:el|la|le|li)\\w* podmorsk|cyberatak|haker|apt28|zabójstw|flar|wydal|gerber|dron\\w*[^.]{0,40}(?:nad (?:polsk|litw|łotw|estoni|rumuni|mołdaw|niemc|dani|finland|europ)|lotnisk|w lipsku|w europie))"
   },
   "kategorie": {
     "Wojna w Iranie": "iran"

@@ -34,9 +34,14 @@
 </script>
 <style>
 :root { --bg:#fff; --text:#111; --sub:#333; --muted:#8a8a8a; --rule:#e2e2e2; --red:#e01f0f; --soft:#faf9f7; --node:#c9c9c9;
-        --k-tlo:#8a8a8a; --k-atak:#e01f0f; --k-zdobycie:#b91c1c; --k-dyplomacja:#2563eb; --k-rynek:#d97706; }
+        --k-tlo:#8a8a8a; --k-atak:#e01f0f; --k-zdobycie:#b91c1c; --k-dyplomacja:#2563eb; --k-rynek:#d97706;
+        /* Mapa wojny hybrydowej (15.09): rodzaje incydentów */
+        --k-kolej:#b91c1c; --k-podpalenie:#ea580c; --k-wybuch:#9f1239; --k-dron:#e01f0f; --k-niebo:#7c3aed;
+        --k-cyber:#0e7490; --k-morze:#1d4ed8; --k-gps:#a16207; --k-agenci:#4b5563; }
 :root[data-theme="dark"] { --bg:#0f0f0f; --text:#f2f2f2; --sub:#cfcfcf; --muted:#8a8a8a; --rule:#2e2e2e; --soft:#1a1a1a; --node:#4a4a4a;
-        --k-dyplomacja:#60a5fa; --k-rynek:#fbbf24; --k-zdobycie:#f87171; }
+        --k-dyplomacja:#60a5fa; --k-rynek:#fbbf24; --k-zdobycie:#f87171;
+        --k-kolej:#f87171; --k-podpalenie:#fb923c; --k-wybuch:#fb7185; --k-dron:#ff5a4e; --k-niebo:#a78bfa;
+        --k-cyber:#22d3ee; --k-morze:#60a5fa; --k-gps:#facc15; --k-agenci:#9ca3af; }
 * { box-sizing:border-box; margin:0; }
 html,body { background:var(--bg); color:var(--text); }
 body { font-family:'Space Mono',monospace; }
@@ -62,6 +67,16 @@ h1 { font-family:'DM Serif Display',serif; font-style:italic; font-size:34px; ma
 .when .kind { font-weight:700; }
 .kind[data-k="tlo"] { color:var(--k-tlo); } .kind[data-k="atak"] { color:var(--k-atak); } .kind[data-k="zdobycie"] { color:var(--k-zdobycie); }
 .kind[data-k="dyplomacja"] { color:var(--k-dyplomacja); } .kind[data-k="rynek"] { color:var(--k-rynek); } .kind[data-k="mapa"] { color:var(--text); }
+/* Pewność przypisania (mapa hybrydowa, 15.09, życzenie właściciela: „niepewne oznacz”) — etykieta na karcie i kształt markera */
+.przyp { display:inline-flex; align-items:center; gap:6px; margin-top:8px; font-size:9.5px; letter-spacing:1px; text-transform:uppercase; padding:3px 8px 3px 6px; border:1px solid var(--rule); color:var(--sub); }
+.przyp i { width:9px; height:9px; border-radius:50%; display:inline-block; flex:0 0 auto; }
+.przyp[data-p="rosja"] { border-color:var(--red); color:var(--red); font-weight:700; } .przyp[data-p="rosja"] i { background:var(--red); }
+.przyp[data-p="podejrzenie"] i { box-shadow:inset 0 0 0 2px var(--red); }
+.przyp[data-p="nieustalony"] { color:var(--muted); } .przyp[data-p="nieustalony"] i { box-shadow:inset 0 0 0 2px var(--muted); }
+.przyp[data-p="dementi"] { color:var(--muted); text-decoration:line-through; }
+.przyp { flex-wrap:wrap; row-gap:3px; }
+.przyp em { font-style:normal; font-weight:400; text-transform:none; letter-spacing:0; flex-basis:100%; padding-left:15px; color:var(--sub); }
+.legend .pw { display:inline-block; width:9px; height:9px; border-radius:50%; vertical-align:-1px; margin-right:3px; }
 .cta { display:block; margin-top:18px; padding:16px 16px 14px; background:var(--red); color:#fff; text-decoration:none; border-radius:2px; }
 .cta b { display:block; font-family:'DM Serif Display',serif; font-weight:400; font-size:22px; line-height:1.15; }
 .cta span { display:block; font-size:11px; line-height:1.5; margin-top:6px; opacity:.92; }
@@ -92,6 +107,9 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
 .mk.past { background:var(--node); box-shadow:0 0 0 1px var(--node); color:var(--text); }
 .mk.now { transform:scale(1.7); z-index:1000; animation:pulse 1.6s infinite; }
 .mk.also { background:transparent; border:2px solid var(--red); box-shadow:none; }
+.mk.pw-podejrzenie, body.calosc .mk.past.pw-podejrzenie { background:var(--bg); color:var(--red); box-shadow:0 0 0 2px var(--red); }
+.mk.past.pw-podejrzenie { background:var(--bg); color:var(--text); box-shadow:0 0 0 2px var(--node); }
+.mk.pw-nieustalony, .mk.past.pw-nieustalony, body.calosc .mk.past.pw-nieustalony { background:var(--bg); color:var(--muted); box-shadow:0 0 0 2px var(--muted); }
 @keyframes pulse { 0%{box-shadow:0 0 0 1px var(--red);} 70%{box-shadow:0 0 0 10px rgba(224,31,15,0);} 100%{box-shadow:0 0 0 1px var(--red);} }
 .lbl { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.5px; color:var(--text); background:var(--bg); padding:1px 5px; border:1px solid var(--rule); white-space:nowrap; opacity:.9; }
 .leaflet-container { background:var(--soft); font-family:'Space Mono',monospace; }
@@ -102,6 +120,9 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
 :root[data-theme="dark"] .mk { background:#fff; color:#111; box-shadow:0 0 0 2px var(--red); border-color:#fff; }
 :root[data-theme="dark"] .mk.past { background:#9a9a9a; box-shadow:0 0 0 1px #9a9a9a; color:#111; }
 :root[data-theme="dark"] .lbl { background:rgba(20,20,20,.85); color:#fff; border-color:#444; }
+:root[data-theme="dark"] .mk.pw-podejrzenie, :root[data-theme="dark"] body.calosc .mk.past.pw-podejrzenie { background:#0f0f0f; color:#fff; box-shadow:0 0 0 2px var(--red); }
+:root[data-theme="dark"] .mk.past.pw-podejrzenie { background:#0f0f0f; color:#ddd; box-shadow:0 0 0 2px #9a9a9a; }
+:root[data-theme="dark"] .mk.pw-nieustalony, :root[data-theme="dark"] .mk.past.pw-nieustalony, :root[data-theme="dark"] body.calosc .mk.past.pw-nieustalony { background:#0f0f0f; color:#9a9a9a; box-shadow:0 0 0 2px #9a9a9a; }
 :root[data-theme="dark"] .leaflet-control-attribution { background:rgba(0,0,0,.5); color:#aaa; }
 
 /* Podpowiedź „przewijaj” — bez niej czytelnik widzi mapę i jeden post i myśli, że to wszystko. Znika po pierwszym przewinięciu. */
@@ -165,17 +186,22 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
   <div class="steps" id="steps"></div>
 </div>
 <div class="legend">
-  <span style="color:var(--k-tlo)">● tło</span> &nbsp; <span style="color:var(--k-atak)">● atak</span> &nbsp;
+  <span id="legenda-rodzaje"><span style="color:var(--k-tlo)">● tło</span> &nbsp; <span style="color:var(--k-atak)">● atak</span> &nbsp;
   <span style="color:var(--k-zdobycie)">● zdobycie</span> &nbsp; <span style="color:var(--k-dyplomacja)">● dyplomacja</span> &nbsp;
-  <span style="color:var(--k-rynek)">● rynek</span><br>
-  Źródła: Al Jazeera, CNN, NBC, Reuters, The National, Wikipedia (2026 Yemen offensives). Stan na <span id="updated"></span>.
+  <span style="color:var(--k-rynek)">● rynek</span></span><br>
+  <span id="legenda-pewnosc"></span>
+  <span id="zrodla">Źródła: Al Jazeera, CNN, NBC, Reuters, The National, Wikipedia (2026 Yemen offensives).</span> Stan na <span id="updated"></span>.
   &nbsp;<a href="watki.html">Wątki →</a>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 (async function(){
-  const KIND = { tlo:'tło', atak:'atak', zdobycie:'zdobycie', dyplomacja:'dyplomacja', rynek:'rynek', mapa:'cała mapa', rozdzial:'rozdział' };
+  const KIND = { tlo:'tło', atak:'atak', zdobycie:'zdobycie', dyplomacja:'dyplomacja', rynek:'rynek', mapa:'cała mapa', rozdzial:'rozdział',
+                 kolej:'kolej', podpalenie:'podpalenie', wybuch:'wybuch', dron:'dron', niebo:'naruszenie nieba', cyber:'cyberatak', morze:'kable i morze', gps:'zakłócanie GPS', agenci:'agenci i zamachy' };
+  // Pewność przypisania sprawcy (mapa hybrydowa). Brak pola = mapa bez tej osi (Huti, Iran) — nic się nie zmienia.
+  const PEWNOSC = { rosja:'Rosja: potwierdzone', podejrzenie:'Podejrzenie Rosji', nieustalony:'Sprawca nieustalony', dementi:'Zdementowane' };
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   // Odmiana (14.09): „23 etapów” / „34 etapów” to błąd — 2–4 poza 12–14 biorą „etapy”.
   const etapy = n => n + ' ' + (n === 1 ? 'etap' : ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) ? 'etapy' : 'etapów');
   const id = new URLSearchParams(location.search).get('m') || 'huti';
@@ -188,6 +214,12 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
   document.getElementById('title').textContent = d.title;
   document.getElementById('lead').textContent = d.lead || '';
   document.getElementById('updated').textContent = d.updated || '';
+  if (d.zrodla) document.getElementById('zrodla').textContent = 'Źródła: ' + d.zrodla + '.';
+  // Legenda z rodzajów OBECNYCH w danej mapie — na sztywno wpisana pasowała tylko do Huti i Iranu.
+  const rodzaje = [...new Set(d.steps.map(x => x.kind))].filter(k => KIND[k]);
+  document.getElementById('legenda-rodzaje').innerHTML = rodzaje.map(k => '<span style="color:var(--k-'+k+', var(--text))">● '+ KIND[k] +'</span>').join(' &nbsp; ');
+  if (d.steps.some(x => x.przypisanie)) document.getElementById('legenda-pewnosc').innerHTML =
+    '<span class="pw" style="background:var(--red)"></span>Rosja: potwierdzone &nbsp; <span class="pw" style="box-shadow:inset 0 0 0 2px var(--red)"></span>podejrzenie &nbsp; <span class="pw" style="box-shadow:inset 0 0 0 2px var(--muted)"></span>sprawca nieustalony<br>';
   document.getElementById('topdate').textContent = (d.updated||'').split('-').reverse().join('.');
 
   const dark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -253,10 +285,17 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
     title: d.podsumowanie_tytul || 'Cała historia na jednej mapie',
     text: d.podsumowanie || (etapy(d.steps.filter(x => !x.naglowek).length) + ', od ' + pierwszy.date.split('-').reverse().join('.') + ' do ' + ostatni.date.split('-').reverse().join('.') + '. Numery na mapie to kolejność wydarzeń. Wróć do dowolnego etapu przewijając w górę.') });
   let nr = 0;
+  const maPewnosc = d.steps.some(x => x.przypisanie);
   d.steps.forEach((s, i) => {
     s.n = (s.naglowek || s.calosc) ? '' : ++nr;
     if (s.naglowek) return;
-    if (!markers[s.place]) markers[s.place] = { m: mk(s.place, s.n, 'past'), first: i };
+    if (!markers[s.place]) markers[s.place] = { m: mk(s.place, s.n, 'past'), first: i, pw: '' };
+    // Pewność miejsca = NAJMOCNIEJSZE przypisanie spośród jego etapów (jedno potwierdzone wystarcza do pełnej kropki).
+    if (s.przypisanie) { const rank = { rosja:3, podejrzenie:2, nieustalony:1, dementi:0 }, o = markers[s.place], cur = o.pw || '';
+      if (!cur || (rank[s.przypisanie.poziom] || 0) > (rank[cur] || 0)) o.pw = s.przypisanie.poziom; }
+    // Etap-tło na mapie z osią pewności (18.09): bez tego dostawał PEŁNĄ czerwoną kropkę, czyli wyglądał
+    // jak „Rosja potwierdzona” — a tło „Nie każdy dron to Rosja” mówi dokładnie odwrotnie. Rysujemy neutralnie.
+    else if (s.kind === 'tlo' && maPewnosc && !markers[s.place].pw) markers[s.place].pw = 'nieustalony';
     (s.also||[]).forEach(a => { if (!markers[a]) markers[a] = { m: mk(a, '', 'also'), first: i }; });
   });
 
@@ -272,9 +311,10 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
       box.appendChild(el); return;
     }
     el.innerHTML = '<div class="card"><div class="when"><span>'+ s.date.split('-').reverse().join('.') + (s.znane_od && s.znane_od!==s.date ? ' · wiadomo od '+ s.znane_od.split('-').reverse().join('.') : '') +'</span>'+
-      '<span class="kind" data-k="'+s.kind+'">'+ (KIND[s.kind]||s.kind) +'</span>'+
+      '<span class="kind" data-k="'+s.kind+'" style="color:var(--k-'+s.kind+', var(--text))">'+ (KIND[s.kind]||s.kind) +'</span>'+
       (WIDOK === 'chrono' && s.rozdzial && ROZ_BY[s.rozdzial] ? '<span class="roz">'+ ROZ_BY[s.rozdzial].tytul +'</span>' : '') +'</div>'+
       (s.calosc ? '' : '<div class="place">📍 '+ p.name +'</div>') +'<h2>'+ s.title +'</h2><p>'+ s.text +'</p>'+
+      (s.przypisanie && PEWNOSC[s.przypisanie.poziom] ? '<div class="przyp" data-p="'+ s.przypisanie.poziom +'"><i></i>'+ PEWNOSC[s.przypisanie.poziom] + (s.przypisanie.kto ? '<em>'+ esc(s.przypisanie.kto) +'</em>' : '') +'</div>' : '') +
       (p.why && !s.calosc ? '<div class="why"><b>Dlaczego to miejsce</b>'+ p.why +'</div>' : '') +
       (s.link ? '<a class="link" href="'+ s.link +'">'+ (s.link_tekst || 'Zobacz więcej →') +'</a>' : '') +
       (s.calosc ? '<a class="cta" href="index.html"><b>Więcej takich historii na Brif.up</b><span>Na bieżąco: co się stało, dlaczego i co to znaczy dla Twojego portfela. Bez szumu, w dwie minuty.</span><em>Wejdź na stronę główną →</em></a>' : '') + '</div>';
@@ -282,9 +322,9 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
   });
 
   let current = -1;
-  function setMarker(m, cls, n, show) {
+  function setMarker(m, cls, n, show, pw) {
     const el = m.getElement(); if (!el) return;
-    const dot = el.querySelector('.mk'); dot.className = 'mk ' + cls; if (n !== undefined) dot.textContent = n;
+    const dot = el.querySelector('.mk'); dot.className = 'mk ' + cls + (pw && pw !== 'rosja' ? ' pw-' + pw : ''); if (n !== undefined) dot.textContent = n;
     m.setOpacity(show ? 1 : 0);
     const tt = m.getTooltip(); if (tt && tt.getElement()) tt.getElement().style.opacity = show ? (cls==='now'?1:.75) : 0;
   }
@@ -301,7 +341,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
       const isAlso = s.naglowek ? s.miejsca.includes(pid) && o.first > i : (!s.calosc && (s.also||[]).includes(pid));
       const shown = o.first <= i || (s.naglowek && s.miejsca.includes(pid));
       const stepN = d.steps.findIndex(x => x.place === pid) + 1;
-      setMarker(o.m, isNow ? 'now' : (isAlso ? 'also' : 'past'), isNow || isAlso ? '' : (stepN>0?stepN:''), shown);
+      setMarker(o.m, isNow ? 'now' : (isAlso ? 'also' : 'past'), isNow || isAlso ? '' : (stepN>0?stepN:''), shown, o.pw);
     });
     lines.forEach(l => l.pl.setStyle({ opacity: l.from <= i ? .9 : 0 }));
     // Kadr: miejsce + „also” razem, inaczej dolot do miejsca.
