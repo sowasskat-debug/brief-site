@@ -248,7 +248,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "CERT Polska i rząd RP: grupa powiązana z FSB"
-      }
+      },
+      "rozdzial": "pl"
     },
     {
       "date": "2025-12-31",
@@ -259,7 +260,8 @@
       "przypisanie": {
         "poziom": "nieustalony",
         "kto": "fińska policja (śledztwo w sprawie sabotażu)"
-      }
+      },
+      "rozdzial": "fi"
     },
     {
       "date": "2026-02-26",
@@ -270,7 +272,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "szwedzkie siły zbrojne i minister obrony"
-      }
+      },
+      "rozdzial": "se"
     },
     {
       "date": "2026-03-20",
@@ -281,14 +284,16 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "czeska policja (rosyjski trop w śledztwie)"
-      }
+      },
+      "rozdzial": "cz"
     },
     {
       "date": "2026-03-25",
       "place": "baltyk_wsch",
       "kind": "tlo",
       "title": "Nie każdy dron to Rosja",
-      "text": "Od marca nad Bałtami i Finlandią spadają drony: w Varėnie (23.03), w kominie elektrowni Auvere i w Krāslavie (25.03), pod Kouvolą (29.03), w składzie paliw w Rēzekne (7.05); kolejne zestrzeliwane są nad Estonią (19.05) i Łotwą (8.06, 14.08). Według tych państw to drony ukraińskie, które rosyjskie zakłócanie GPS znosiło z kursu w drodze na porty Ust-Ługa i Primorsk. Ukraina przepraszała. Dlatego na tej mapie nie ma ich jako ataków Rosji."
+      "text": "Od marca nad Bałtami i Finlandią spadają drony: w Varėnie (23.03), w kominie elektrowni Auvere i w Krāslavie (25.03), pod Kouvolą (29.03), w składzie paliw w Rēzekne (7.05); kolejne zestrzeliwane są nad Estonią (19.05) i Łotwą (8.06, 14.08). Według tych państw to drony ukraińskie, które rosyjskie zakłócanie GPS znosiło z kursu w drodze na porty Ust-Ługa i Primorsk. Ukraina przepraszała. Dlatego na tej mapie nie ma ich jako ataków Rosji.",
+      "rozdzial": "tlo"
     },
     {
       "date": "2026-04-09",
@@ -299,7 +304,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "rząd Wielkiej Brytanii"
-      }
+      },
+      "rozdzial": "uk"
     },
     {
       "date": "2026-04-25",
@@ -310,7 +316,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "ministerstwa obrony i spraw zagranicznych Rumunii"
-      }
+      },
+      "rozdzial": "ro"
     },
     {
       "date": "2026-04-27",
@@ -321,7 +328,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "prokuratura generalna i policja Litwy"
-      }
+      },
+      "rozdzial": "lt"
     },
     {
       "date": "2026-05-12",
@@ -332,7 +340,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "ABW i Prokuratura Krajowa"
-      }
+      },
+      "rozdzial": "pl"
     },
     {
       "date": "2026-05-21",
@@ -343,7 +352,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "źródło w brytyjskim ministerstwie obrony"
-      }
+      },
+      "rozdzial": "uk"
     },
     {
       "date": "2026-05-27",
@@ -354,7 +364,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "ministerstwo obrony Finlandii"
-      }
+      },
+      "rozdzial": "fi"
     },
     {
       "date": "2026-05-29",
@@ -365,7 +376,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "prezydent Rumunii Nicușor Dan"
-      }
+      },
+      "rozdzial": "ro"
     },
     {
       "date": "2026-06-01",
@@ -376,7 +388,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "prokuratura w Paryżu (podejrzenie obcej, możliwie rosyjskiej ingerencji)"
-      }
+      },
+      "rozdzial": "fr"
     },
     {
       "date": "2026-06-11",
@@ -388,7 +401,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "niemieckie służby bezpieczeństwa"
-      }
+      },
+      "rozdzial": "de"
     },
     {
       "date": "2026-06-29",
@@ -399,7 +413,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "ABW"
-      }
+      },
+      "rozdzial": "pl"
     },
     {
       "date": "2026-07-15",
@@ -410,7 +425,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "niemiecka prokuratura federalna"
-      }
+      },
+      "rozdzial": "de"
     },
     {
       "date": "2026-07-19",
@@ -421,7 +437,8 @@
       "przypisanie": {
         "poziom": "nieustalony",
         "kto": "łotewska Państwowa Służba Bezpieczeństwa (VDD)"
-      }
+      },
+      "rozdzial": "lv"
     },
     {
       "date": "2026-07-24",
@@ -432,7 +449,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "prezydent i ministerstwo obrony Rumunii"
-      }
+      },
+      "rozdzial": "ro"
     },
     {
       "date": "2026-07-26",
@@ -443,7 +461,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "ministerstwo obrony Rumunii i NATO"
-      }
+      },
+      "rozdzial": "ro"
     },
     {
       "date": "2026-07-30",
@@ -454,7 +473,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "premier, prokuratura i Dowództwo Operacyjne RP"
-      }
+      },
+      "rozdzial": "pl"
     },
     {
       "date": "2026-08-04",
@@ -465,7 +485,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "rząd Niemiec i prokuratura federalna"
-      }
+      },
+      "rozdzial": "de"
     },
     {
       "date": "2026-08-05",
@@ -476,7 +497,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "ABW i prokuratura"
-      }
+      },
+      "rozdzial": "pl"
     },
     {
       "date": "2026-08-07",
@@ -488,7 +510,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "premier Donald Tusk, ABW"
-      }
+      },
+      "rozdzial": "pl"
     },
     {
       "date": "2026-08-11",
@@ -499,7 +522,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "ministerstwo obrony Rumunii"
-      }
+      },
+      "rozdzial": "ro"
     },
     {
       "date": "2026-08-13",
@@ -510,7 +534,8 @@
       "przypisanie": {
         "poziom": "nieustalony",
         "kto": "zachodnie źródła wywiadowcze według „The Telegraph”"
-      }
+      },
+      "rozdzial": "it"
     },
     {
       "date": "2026-08-15",
@@ -521,7 +546,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "premier Estonii Kristen Michal, prokuratura"
-      }
+      },
+      "rozdzial": "ee"
     },
     {
       "date": "2026-08-16",
@@ -532,7 +558,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "ministerstwo obrony Rumunii, NATO"
-      }
+      },
+      "rozdzial": "ro"
     },
     {
       "date": "2026-08-20",
@@ -543,7 +570,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "ministerstwo obrony Rumunii"
-      }
+      },
+      "rozdzial": "ro"
     },
     {
       "date": "2026-08-20",
@@ -554,7 +582,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "ministerstwo obrony Finlandii, straż graniczna"
-      }
+      },
+      "rozdzial": "fi"
     },
     {
       "date": "2026-08-21",
@@ -565,7 +594,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "Instytut Łączności, NATO"
-      }
+      },
+      "rozdzial": "pl"
     },
     {
       "date": "2026-08-23",
@@ -576,7 +606,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "dowódca sił zbrojnych Norwegii"
-      }
+      },
+      "rozdzial": "no"
     },
     {
       "date": "2026-08-24",
@@ -587,7 +618,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "ministerstwo obrony Rumunii"
-      }
+      },
+      "rozdzial": "ro"
     },
     {
       "date": "2026-08-27",
@@ -598,7 +630,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "ministerstwo obrony Mołdawii"
-      }
+      },
+      "rozdzial": "md"
     },
     {
       "date": "2026-08-28",
@@ -609,7 +642,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "słowacka policja i służby"
-      }
+      },
+      "rozdzial": "sk"
     },
     {
       "date": "2026-08-31",
@@ -620,7 +654,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "premier Donald Tusk, prokuratura"
-      }
+      },
+      "rozdzial": "pl"
     },
     {
       "date": "2026-09-03",
@@ -631,7 +666,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "niemieckie służby bezpieczeństwa"
-      }
+      },
+      "rozdzial": "de"
     },
     {
       "date": "2026-09-08",
@@ -642,7 +678,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "MSZ Węgier"
-      }
+      },
+      "rozdzial": "hu"
     },
     {
       "date": "2026-09-08",
@@ -653,7 +690,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "SRI, DIICOT i wywiad wojskowy Rumunii"
-      }
+      },
+      "rozdzial": "ro"
     },
     {
       "date": "2026-09-09",
@@ -664,7 +702,8 @@
       "przypisanie": {
         "poziom": "podejrzenie",
         "kto": "premier Donald Tusk"
-      }
+      },
+      "rozdzial": "pl"
     },
     {
       "date": "2026-09-10",
@@ -675,7 +714,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "brytyjska prokuratura"
-      }
+      },
+      "rozdzial": "uk"
     },
     {
       "date": "2026-09-12",
@@ -686,7 +726,8 @@
       "przypisanie": {
         "poziom": "nieustalony",
         "kto": "opozycja i zachodnie źródła; rząd Bułgarii nie potwierdza"
-      }
+      },
+      "rozdzial": "bg"
     },
     {
       "date": "2026-09-13",
@@ -697,7 +738,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "MON, premier Tusk, UE"
-      }
+      },
+      "rozdzial": "pl"
     },
     {
       "date": "2026-09-14",
@@ -708,7 +750,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "ministrowie obrony i spraw zagranicznych Danii"
-      }
+      },
+      "rozdzial": "dk"
     },
     {
       "date": "2026-09-14",
@@ -719,7 +762,8 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "prezydent Litwy"
-      }
+      },
+      "rozdzial": "lt"
     },
     {
       "date": "2026-09-14",
@@ -731,9 +775,109 @@
       "przypisanie": {
         "poziom": "rosja",
         "kto": "prokuratura wojskowa i MON"
-      }
+      },
+      "rozdzial": "pl"
     }
   ],
   "najnowsze_pierwsze": true,
-  "start_od_calosci": true
+  "start_od_calosci": true,
+  "rozdzialy": [
+    {
+      "id": "pl",
+      "tytul": "Polska",
+      "opis": "11 wydarzeń"
+    },
+    {
+      "id": "ro",
+      "tytul": "Rumunia",
+      "opis": "9 wydarzeń"
+    },
+    {
+      "id": "de",
+      "tytul": "Niemcy",
+      "opis": "4 wydarzenia"
+    },
+    {
+      "id": "fi",
+      "tytul": "Finlandia",
+      "opis": "3 wydarzenia"
+    },
+    {
+      "id": "uk",
+      "tytul": "Wielka Brytania",
+      "opis": "3 wydarzenia"
+    },
+    {
+      "id": "lt",
+      "tytul": "Litwa",
+      "opis": "2 wydarzenia"
+    },
+    {
+      "id": "bg",
+      "tytul": "Bułgaria",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "cz",
+      "tytul": "Czechy",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "dk",
+      "tytul": "Dania",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "ee",
+      "tytul": "Estonia",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "fr",
+      "tytul": "Francja",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "md",
+      "tytul": "Mołdawia",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "no",
+      "tytul": "Norwegia",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "se",
+      "tytul": "Szwecja",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "sk",
+      "tytul": "Słowacja",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "hu",
+      "tytul": "Węgry",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "it",
+      "tytul": "Włochy",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "lv",
+      "tytul": "Łotwa",
+      "opis": "1 wydarzenie"
+    },
+    {
+      "id": "tlo",
+      "tytul": "Drony, które nie były rosyjskie",
+      "opis": "Ukraińskie drony zniesione z kursu rosyjskim zakłócaniem GPS — dlatego nie ma ich na mapie jako ataków Rosji."
+    }
+  ],
+  "rozdzialy_nazwa": "kraje",
+  "rozdzial_kicker": "Kraj"
 }

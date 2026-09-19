@@ -111,7 +111,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
 .mk.past.pw-podejrzenie { background:var(--bg); color:var(--text); box-shadow:0 0 0 2px var(--node); }
 .mk.pw-nieustalony, .mk.past.pw-nieustalony, body.calosc .mk.past.pw-nieustalony { background:var(--bg); color:var(--muted); box-shadow:0 0 0 2px var(--muted); }
 @keyframes pulse { 0%{box-shadow:0 0 0 1px var(--red);} 70%{box-shadow:0 0 0 10px rgba(224,31,15,0);} 100%{box-shadow:0 0 0 1px var(--red);} }
-.lbl { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.5px; color:var(--text); background:var(--bg); padding:1px 5px; border:1px solid var(--rule); white-space:nowrap; opacity:.9; }
+.lbl { cursor:pointer; font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.5px; color:var(--text); background:var(--bg); padding:1px 5px; border:1px solid var(--rule); white-space:nowrap; opacity:.9; }
 .leaflet-container { background:var(--soft); font-family:'Space Mono',monospace; }
 .leaflet-control-attribution { font-size:8px !important; }
 
@@ -248,7 +248,8 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
     const icon = L.divIcon({ className:'', html:'<div class="mk '+cls+'">'+(n||'')+'</div>', iconSize:[14,14], iconAnchor:[7,7] });
     const m = L.marker([p.lat,p.lng], { icon, interactive:true, keyboard:false, opacity:0 }).addTo(map);
     m.on('click', () => { if (typeof doMiejsca === 'function') doMiejsca(pid); });
-    m.bindTooltip(p.name, { permanent:true, direction:'auto', offset:[10,0], className:'lbl', opacity:0 });
+    // Podpis też klikalny (18.09): interactive przekazuje klik do markera, więc napis przewija jak kropka.
+    m.bindTooltip(p.name, { permanent:true, direction:'auto', offset:[10,0], className:'lbl', opacity:0, interactive:true });
     return m;
   }
   // Rozdziały (mapa Iranu, 11.09): sekwencja = [nagłówek rozdziału, jego kroki, nagłówek, kroki…].
@@ -260,12 +261,13 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
     // Chronologia: stabilne sortowanie po dacie (etapy tego samego dnia zostają w kolejności z JSON).
     d.steps = d.steps.map((x, i) => [x, i]).sort((a, b) => a[0].date < b[0].date ? -1 : a[0].date > b[0].date ? 1 : a[1] - b[1]).map(a => a[0]);
     const ch = document.getElementById('chapters'); ch.hidden = false;
-    const b = document.createElement('a'); b.className = 'tog'; b.href = urlWidok('rozdzialy'); b.textContent = 'Widok: chronologia · przełącz na rozdziały'; ch.appendChild(b);
+    const b = document.createElement('a'); b.className = 'tog'; b.href = urlWidok('rozdzialy'); b.textContent = 'Widok: chronologia · przełącz na ' + (d.rozdzialy_nazwa || 'rozdziały'); ch.appendChild(b);
   }
   if (ROZ.length && WIDOK === 'rozdzialy') {
     const seq = [];
     ROZ.forEach((r, ri) => {
-      const kroki = d.steps.filter(x => x.rozdzial === r.id);
+      // Mapa od najnowszego (18.09): wewnątrz rozdziału też najnowszy etap pierwszy.
+      const kroki = d.steps.filter(x => x.rozdzial === r.id).map((x, i) => [x, i]).sort((a, b) => d.najnowsze_pierwsze ? (a[0].date > b[0].date ? -1 : a[0].date < b[0].date ? 1 : a[1] - b[1]) : a[1] - b[1]).map(a => a[0]);
       if (!kroki.length) return;
       seq.push({ naglowek:true, rozdzial:r.id, ri, date:kroki[0].date, place:kroki[0].place, kind:'rozdzial',
                  title:r.tytul, text:r.opis || '', miejsca:[...new Set(kroki.flatMap(x => [x.place].concat(x.also||[])))] });
@@ -319,7 +321,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
     el.className = 'step'; el.dataset.i = i;
     if (s.naglowek) {
       el.dataset.ri = s.ri;
-      el.innerHTML = '<div class="card chapter"><div class="kicker">Rozdział '+ (s.ri+1) +' z '+ ROZ.length +'</div><h2>'+ s.title +'</h2><p>'+ s.text +'</p></div>';
+      el.innerHTML = '<div class="card chapter"><div class="kicker">'+ (d.rozdzial_kicker || 'Rozdział') +' '+ (s.ri+1) +' z '+ ROZ.length +'</div><h2>'+ s.title +'</h2><p>'+ s.text +'</p></div>';
       box.appendChild(el); return;
     }
     el.innerHTML = '<div class="card"><div class="when"><span>'+ (s.przeglad ? '' : s.date.split('-').reverse().join('.')) + (s.znane_od && s.znane_od!==s.date ? ' · wiadomo od '+ s.znane_od.split('-').reverse().join('.') : '') +'</span>'+
