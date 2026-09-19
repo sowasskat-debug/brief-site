@@ -9,6 +9,33 @@ Czysty HTML/CSS/JS (bez frameworka, bez builda). Dane generuje osobny bot
 (repo `financialnewsbot`) i zapisuje jako `briefs.json`.
 
 
+## Mapy: oś pewności, flagi kolejności, kraje, klikalne punkty — mapa Rosji (2026-09-18/19) 🗺
+Trzecia mapa: `mapy/rosja.json` („Cicha wojna Rosji z Europą”). Silnik `mapa.html` dostał opcje sterowane z JSON —
+**Huti i Iran ich nie mają, więc zachowują się jak dotąd**:
+- **`przypisanie: {poziom, kto}`** na etapie: `rosja` (pełna kropka) / `podejrzenie` (czerwony pierścień) /
+  `nieustalony` (szary pierścień) / `dementi`. Etykieta pod tekstem karty, instytucja w osobnej linii. Punkt bierze
+  NAJMOCNIEJSZE przypisanie spośród swoich etapów. Legenda pewności pokazuje się tylko, gdy mapa ma tę oś.
+  ⚠️ Etap `kind:'tlo'` na mapie z osią pewności rysuje się jak `nieustalony` — inaczej dostawał pełną czerwoną kropkę
+  i wyglądał jak „Rosja potwierdzona” (etap „Nie każdy dron to Rosja” mówi odwrotnie).
+- **`najnowsze_pierwsze: true`** — chronologia malejąco (stabilnie), także wewnątrz rozdziałów; `?od=` szuka wtedy
+  pierwszego etapu ≤ daty. **`start_od_calosci: true`** — syntetyczny krok 0 „Wszystko na jednej mapie” (wszystkie
+  punkty, bez daty i bez CTA). Numer markera = numer pierwszego etapu miejsca (`o.n`), nie indeks kroku.
+- **Rozdziały jako kraje:** `rozdzialy` + `rozdzialy_nazwa:'kraje'` (tekst przełącznika) + `rozdzial_kicker:'Kraj'`.
+  Polska zawsze pierwsza, dalej wg liczby wydarzeń. Chronologia zostaje widokiem domyślnym.
+- **Klik w kropkę ALBO podpis → przewija do wydarzenia** (`doMiejsca`, wszystkie mapy). Kilka wydarzeń w miejscu:
+  kolejne kliknięcia idą po nich. Podpis klikalny przez `interactive:true` w tooltipie.
+- **`kind` mapy hybrydowej:** kolej/podpalenie/wybuch/dron/niebo/cyber/morze/gps/agenci (kolory `--k-*`, oba motywy);
+  legenda rodzajów budowana z danych, `zrodla` z JSON.
+- 🔴 **Reguła redakcyjna mapy Rosji (idzie publicznie na X):** zdarzenie wchodzi, tylko gdy rząd, służby albo
+  prokuratura wiążą je z Rosją; „nieustalony” wyłącznie przy oficjalnym rosyjskim wątku w śledztwie; data = data
+  ZDARZENIA od 12.2025. Lista odrzuconych i dlaczego: `STAN.md` 18–19.09. Każde zdarzenie weryfikować u źródła.
+- **Stub pod X: `mapa-rosja.html`** — `mapa.html` ma STATYCZNE tagi og (karta Huti), więc każda mapa udostępniana na X
+  potrzebuje własnego stuba (przekierowanie JS-em, przenosi parametry). Karta `mapy/rosja-og.png`: Chrome headless
+  z szablonu HTML (Leaflet + kafle Esri + fonty Google; tekst po lewej, logo w ramce z prawej, legenda pewności).
+  Liczba etapów siedzi w TRZECH opisach stuba i na karcie — zmiana = poprawić wszystkie + bump `?v=`.
+- Słowa minimapy `slowa.rosja` wymagają w nagłówku wątku rosyjskiego ORAZ tematu hybrydowego i wykluczają front
+  ukraiński oraz ataki na terytorium Rosji (samo „dron + Rosja” łapało ukraińskie ataki na rafinerie).
+
 ## Service worker: reload na `controllerchange` TYLKO gdy SW kontrolował stronę na starcie (2026-09-14) 🔴
 `clients.claim()` przy PIERWSZEJ instalacji też odpala `controllerchange`, a `reloadOnce` przeładowywał wtedy stronę
 w trakcie ładowania — mimo że przyszła świeżo z sieci. Przeglądarka wbudowana w aplikację X startuje bez SW przy

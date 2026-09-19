@@ -1,9 +1,66 @@
 # STAN — od czego zacząć w nowej sesji
 
-Zdjęcie stanu na **2026-09-15 rano (awaria DeepSeeka 14.09 wieczorem = ich przeciążenie, nie nasz kod; dubel Revoluta → pomiar bramki eskalacji: drugi głos do decyzji, zmiany promptu i reguła daty ODRZUCONE); wcześniej 14.09 wieczór (Bankier martwy od 10.09 bez błędu w logu → podmienione działy RSS; mapy: Salalah sprostowane, Chamis Muszajt, Janbu, Hanisz, czarna lista 77 statków, słowa kluczowe Iranu bez „Bessent”; blok „Ciąg dalszy” = linia pod zdjęciem (SW v180); pierwsza wizyta bez przeładowania przez SW — zgłoszenie „z X strona się nie ładuje” (SW v178); SW v181; wcześniej 13.09: minimapa, kontynuacje, gotowiec X)**. Czytaj to PRZED `CLAUDE.md` — mówi
+Zdjęcie stanu na **2026-09-19 noc (grafika na X wróciła — zamiennik Contents API gubił commit stubów od 16.09; mapa wojny hybrydowej Rosji wdrożona, 45 zweryfikowanych etapów, widok krajów; sprawdź mapę 18.09: Huti 31, Iran 45); wcześniej 2026-09-15 rano (awaria DeepSeeka 14.09 wieczorem = ich przeciążenie, nie nasz kod; dubel Revoluta → pomiar bramki eskalacji: drugi głos do decyzji, zmiany promptu i reguła daty ODRZUCONE); wcześniej 14.09 wieczór (Bankier martwy od 10.09 bez błędu w logu → podmienione działy RSS; mapy: Salalah sprostowane, Chamis Muszajt, Janbu, Hanisz, czarna lista 77 statków, słowa kluczowe Iranu bez „Bessent”; blok „Ciąg dalszy” = linia pod zdjęciem (SW v180); pierwsza wizyta bez przeładowania przez SW — zgłoszenie „z X strona się nie ładuje” (SW v178); SW v181; wcześniej 13.09: minimapa, kontynuacje, gotowiec X)**. Czytaj to PRZED `CLAUDE.md` — mówi
 *co jest niedokończone*, `CLAUDE.md` mówi *jak działa to, co skończone*.
 
 ---
+
+## 🟡 18–19.09: SESJA — grafika na X, sprawdź mapę, mapa wojny hybrydowej Rosji
+### ⬜ OTWARTE — czytaj najpierw
+1. 🔴 **Zrotować `SITE_PUSH_TOKEN` (`ghp_…`)** — wyciekł do transkryptu sesji przy podsłuchu ruchu do zamiennika
+   (pcap-y z serwera usunięte). Nowy token wpisać w `/root/bot_secrets.env`; zamiennik czyta go przy starcie
+   (`systemctl restart brif-contents-api`).
+2. **Posty na X z 16–18.09 mają ogólną kartę** — X nie odświeży podglądu; usunąć post i wkleić link ponownie.
+3. **`/usr/local/bin/brif_contents_api.py` NIE JEST W ŻADNYM REPO** (poprawka 18.09 żyje tylko na serwerze, kopia
+   `…bak-20260918-stuby`). Wnieść do repo bota (np. `deploy/`), inaczej reinstalacja serwera cofnie poprawkę.
+4. **Mapa Rosji — aktualizacja na „sprawdź mapę”** jak Huti/Iran. Przy zmianie liczby etapów poprawić liczbę w TRZECH
+   opisach `mapa-rosja.html` i kartę `mapy/rosja-og.png` (szablon `scratchpad/mapy-preview/og-rosja.html` —
+   PRZEPADNIE ze scratchpadem; kartę da się odtworzyć z opisu w `CLAUDE.md`), bump `?v=`.
+5. Punkty z 15.09 i 14.09 niżej bez zmian (drugi głos w bramce, dubel Revoluta, feedy NatGeo/BI/ForexLive/PAP, Lotos).
+6. Mapa Iranu dalej bez własnej karty OG/stuba (link `mapa.html?m=iran` pokazuje na X kartę Huti) — wzorzec gotowy:
+   stub jak `mapa-rosja.html`.
+
+### ✅ „Nie generuje się grafika na X” — stuby `s/` nie powstawały od 16.09 11:35 UTC
+Objaw: link z przycisku udostępniania był hashowy (`/#dawka/slug`) → X brał kartę strony głównej. Funkcja `og` była
+SPRAWNA (200, PNG ~1 s dla dzisiejszych slugów); 404 dawały same strony `s/<slug>.html`. Log bota w każdym biegu:
+`[STUBY] Błąd (pomijam, bieg leci dalej): An error occurred while sending the request.`
+Przyczyna (tcpdump na `lo:8787`): zamiennik Contents API to `BaseHTTPRequestHandler` HTTP/1.0, zamyka połączenie po
+odpowiedzi BEZ nagłówka `Connection: close`; HttpClient bota wysyłał kolejne żądanie na tym samym gnieździe, zanim
+doszedł FIN → RST → wyjątek. Padało zawsze po serii blobów, na `POST git/trees` (żądanie nie docierało do serwera,
+więc w journalu zamiennika NIE MA śladu). Poprawka: `send_header("Connection", "close")` w `_json` + restart usługi.
+Pierwszy bieg po poprawce: 179 stubów zapisanych, 218 przeterminowanych usuniętych, 178 kart OG rozgrzanych.
+
+### ✅ Sprawdź mapę 18.09 (front `19865d4ec`, SW v188): Huti 25→31, Iran 38→45
+Huti: rozmowy USA–Huti w Maskacie (13.09), dron nad Mekką (15.09), front w Marib, Rijad prosi o rozejm, rurociąg wraca
+w połowie (16.09), październik bez ropy dla Europy (17.09). Iran: Izba po raz trzeci przeciw wojnie, BitBank, „Ormuz do
+odejścia Trumpa”, tankowiec pod banderą Togo, ONZ o Minab, wizy na ZO ONZ, diesel 6,45. Pominięte (tylko deklaracje
+strony zestrzeliwującej / brak treści): F-15, trzeci MQ-1, Janbu 16.09, miny przy Bab al-Mandab, Eurofighter, Qeshm.
+
+### ✅ Mapa wojny hybrydowej Rosji (front `e7184f25e`, `6bb2b9e08`, `1d8fa6353`; SW v189→v191)
+`mapy/rosja.json` — 45 etapów (25 Rosja potwierdzona, 15 podejrzenie, 4 nieustalone + 1 tło), 29.12.2025–14.09.2026.
+Link na X: **`brifup.com/mapa-rosja.html`** (stub z własną kartą; `?widok=rozdzialy` = od razu kraje).
+Research w `~/Documents/hybryda-research/` (surowe partie; plik mapy jest wersją ostateczną, NIE odwrotnie).
+Silnik (`mapa.html`): oś pewności przypisania, flagi JSON `najnowsze_pierwsze` i `start_od_calosci`, rozdziały jako kraje
+(`rozdzialy_nazwa`, `rozdzial_kicker`), klik w kropkę i podpis przewija do wydarzenia (wszystkie mapy).
+Słowa minimapy: 35 trafień w archiwum, 0 kolizji z Huti/Iranem.
+
+### ⚠️ Pułapki z tej sesji
+- **Zamiennik Contents API: brak śladu w journalu ≠ żądanie przeszło.** Gdy klient traci połączenie przed wysłaniem
+  żądania, serwer nic nie loguje. Diagnoza tylko podsłuchem (`tcpdump -i lo port 8787`). ⚠️ `pkill -f "<wzorzec>"`
+  przez ssh zabija WŁASNĄ sesję (wzorzec jest w linii poleceń) — używać `pkill -x tcpdump`.
+- **pcap zawiera token w nagłówku `Authorization`** — po diagnozie kasować od razu, nie wypisywać do terminala.
+- **Research mapy: zbiorcze źródła się mylą.** Henry Jackson Society przypisało Rosji rakiety na linie w Brandenburgii —
+  sprawca to niemiecki ekoterrorysta z listem (policja: brak wskazań na obce państwo). Każde zdarzenie sprawdzać u źródła.
+- **Drony nad Bałtami w 2026 to w większości UKRAIŃSKIE** (zniesione rosyjskim zakłócaniem GPS; Ukraina przepraszała) —
+  Varėna, Auvere, Krāslava, Kouvola, Rēzekne, Estonia 19.05 i 01.09, Bērzgale, Rugaji; także dron morski w Konstancy.
+- **Ukryty panel podglądu:** płynne przewijanie i `requestAnimationFrame` nie działają — `.active` pokazuje stan sprzed
+  kliknięcia. Test logiki: podmienić `scrollTo` na `instant` i `requestAnimationFrame` na `setTimeout`.
+
+### ⛔ Odrzucone (mapa Rosji) — nie dodawać bez OFICJALNEGO rosyjskiego tropu
+Rouen–Caen (sabotaż, 44 rannych, bez wskazania Rosji), holenderska kolej 15.09 (rury na torach, bez atrybucji),
+ransomware Rhysida w Berlinie, DDoS na ZUS, wyciek CSDD, Mechernich, Großenkneten, strzały fregaty w La Manche
+(brytyjskie MON: unikanie kolizji), zdarzenia sprzed 12.2025 ujawnione w 2026 (pociąg na Łotwie, ciepłownia w Szwecji,
+Nova Post w Bukareszcie, litewski akt oskarżenia ws. 2024, broń w Berlinie).
 
 ## 🟡 15.09: SESJA — cisza w dodawaniu (DeepSeek), dubel Revoluta, pomiar bramki eskalacji
 ### ⬜ OTWARTE — czytaj najpierw
