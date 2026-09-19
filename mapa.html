@@ -342,6 +342,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
     m.setOpacity(show ? 1 : 0);
     const tt = m.getTooltip(); if (tt && tt.getElement()) tt.getElement().style.opacity = show ? (cls==='now'?1:.75) : 0;
   }
+  let kadrT = 0, ostatniScroll = -1e9;
   function activate(i) {
     if (i === current) return; current = i;
     const s = d.steps[i], p = d.places[s.place];
@@ -364,18 +365,24 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
       document.querySelectorAll('#chapters button').forEach(b => { const k = +b.dataset.ri; b.classList.toggle('on', k === cur); b.classList.toggle('done', k < cur); });
       const on = document.querySelector('#chapters button.on'); if (on) on.scrollIntoView({ inline:'center', block:'nearest', behavior:'smooth' });
     }
-    if (s.naglowek) {
-      map.flyToBounds(L.latLngBounds(s.miejsca.map(a => [d.places[a].lat, d.places[a].lng])).pad(0.3), { duration:1.2, maxZoom:7 });
-      return;
-    }
-    if (s.calosc) {
-      const all = d.steps.filter(x => !x.calosc && !x.naglowek).map(x => [d.places[x.place].lat, d.places[x.place].lng]);
-      map.flyToBounds(L.latLngBounds(all).pad(0.15), { duration:1.4 });
-      return;
-    }
-    const pts = [[p.lat,p.lng]].concat((s.also||[]).map(a => [d.places[a].lat, d.places[a].lng]));
-    if (pts.length > 1) map.flyToBounds(L.latLngBounds(pts).pad(0.5), { duration:1.1, maxZoom:7 });
-    else map.flyTo([p.lat, p.lng], s.zoom || (s.kind==='zdobycie' ? 8 : 6), { duration:1.1 });
+    // Kamera dopiero, gdy przewijanie się uspokoi (19.09): szybki ruch palcem przeskakuje 3–5 kart, a każda
+    // restartowała 1-sekundowy przelot przez pół Europy — na telefonie mapa szarpała (12 przelotów w 2 s).
+    // Markery i pasek wyżej zmieniają się od razu; ruch kamery tylko do karty, na której czytelnik stanął.
+    clearTimeout(kadrT);
+    kadrT = setTimeout(() => {
+      if (s.naglowek) {
+        map.flyToBounds(L.latLngBounds(s.miejsca.map(a => [d.places[a].lat, d.places[a].lng])).pad(0.3), { duration:1.2, maxZoom:7 });
+        return;
+      }
+      if (s.calosc) {
+        const all = d.steps.filter(x => !x.calosc && !x.naglowek).map(x => [d.places[x.place].lat, d.places[x.place].lng]);
+        map.flyToBounds(L.latLngBounds(all).pad(0.15), { duration:1.4 });
+        return;
+      }
+      const pts = [[p.lat,p.lng]].concat((s.also||[]).map(a => [d.places[a].lat, d.places[a].lng]));
+      if (pts.length > 1) map.flyToBounds(L.latLngBounds(pts).pad(0.5), { duration:1.1, maxZoom:7 });
+      else map.flyTo([p.lat, p.lng], s.zoom || (s.kind==='zdobycie' ? 8 : 6), { duration:1.1 });
+    }, performance.now() - ostatniScroll < 200 ? 220 : 0);
   }
   // Aktywny = krok, którego karta jest najbliżej środka ekranu. IntersectionObserver sam nie wystarcza:
   // przy szybkim przewijaniu wpisy przychodzą w kolejności DOM, nie scrolla, i mapa zostawała w tyle za kartą.
@@ -413,7 +420,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
     const nast = tu ? ix.find(i => i > current) : undefined;
     doKroku(nast !== undefined ? nast : ix[0]);
   };
-  window.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(pick); }, { passive:true });
+  window.addEventListener('scroll', () => { ostatniScroll = performance.now(); if (!raf) raf = requestAnimationFrame(pick); }, { passive:true });
   window.addEventListener('resize', pick);
   activate(0);
 
