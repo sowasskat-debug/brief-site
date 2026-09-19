@@ -227,7 +227,7 @@ body.calosc .mk.past { background:var(--red); color:#fff; box-shadow:0 0 0 1px v
   const PR = { base: E + (dark?'Canvas/World_Dark_Gray_Base':'Canvas/World_Light_Gray_Base') + '/MapServer/tile/{z}/{y}/{x}',
                ref:  E + (dark?'Canvas/World_Dark_Gray_Reference':'Canvas/World_Light_Gray_Reference') + '/MapServer/tile/{z}/{y}/{x}',
                refOp: dark ? .8 : .7, line: dark ? '#fbbf24' : '#d97706' };
-  const map = L.map('map', { zoomControl:false, scrollWheelZoom:false, dragging:!L.Browser.mobile, attributionControl:true })
+  const map = L.map('map', { zoomControl:false, scrollWheelZoom:false, dragging:true, attributionControl:true })
                .setView([d.view.lat, d.view.lng], d.view.zoom);
   // Podkład Esri (bez klucza; CARTO od 2026 wymaga API key i stempluje kafle). Jasny/ciemny wg motywu strony.
   L.tileLayer(PR.base, { attribution:'© Esri, HERE, Garmin, © OpenStreetMap', maxZoom:12 }).addTo(map);
