@@ -21,6 +21,21 @@
 <meta property="og:url" content="https://brifup.com/mapa.html">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://brifup.com/mapy/huti-og.png?v=7">
+<script>
+// Scrapery z przeglądarką (Wykop, 19.09) wykonują przekierowanie ze stuba mapa-<id>.html i czytają tagi TEJ strony,
+// czyli kartę Huti. Podmieniamy je synchronicznie, zanim ktokolwiek je przeczyta. Liczby = te same co w stubie.
+(function(){
+  var K = { rosja: { t:'Cicha wojna Rosji z Europą — interaktywna mapa',
+    d:'Podpalenia fabryk, drony nad lotniskami, zlecone zabójstwa, kable na dnie Bałtyku. 45 wydarzeń od grudnia 2025, każde z oceną, kto za nim stoi.',
+    i:'https://brifup.com/mapy/rosja-og.png?v=1', u:'https://brifup.com/mapa-rosja.html' } };
+  var k = K[new URLSearchParams(location.search).get('m')]; if (!k) return;
+  document.title = k.t + ' — Brif.up';
+  var set = function(sel, v){ var e = document.querySelector(sel); if (e) e.setAttribute(sel.indexOf('canonical')>0?'href':'content', v); };
+  set('meta[property="og:title"]', k.t); set('meta[property="og:description"]', k.d); set('meta[name="description"]', k.d);
+  set('meta[property="og:image"]', k.i); set('meta[name="twitter:image"]', k.i);
+  set('meta[property="og:url"]', k.u); set('link[rel="canonical"]', k.u);
+})();
+</script>
 <link rel="icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
